@@ -1,0 +1,956 @@
+{
+  "1. category/l1 (try 1/4)": {
+    "ok": false,
+    "httpStatus": 200,
+    "code": 500,
+    "message": "language：must match \"th-TH|en-US|id-ID|zh-CN|ms-MY|vi-VN\", ",
+    "ms": 698,
+    "endpoint": "/echotik/category/l1",
+    "params": {
+      "region": "US",
+      "language": "en"
+    },
+    "body": {
+      "code": 500,
+      "message": "language：must match \"th-TH|en-US|id-ID|zh-CN|ms-MY|vi-VN\", ",
+      "data": null,
+      "requestId": null
+    }
+  },
+  "1. category/l1 (try 2/4)": {
+    "ok": true,
+    "httpStatus": 200,
+    "code": 0,
+    "message": "success",
+    "ms": 106,
+    "endpoint": "/echotik/category/l1",
+    "params": {
+      "region": "US",
+      "language": "en-US"
+    },
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": [
+        {
+          "category_id": "0",
+          "category_level": "1",
+          "category_name": "Other",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "2344592",
+          "category_level": "1",
+          "category_name": "Bookings & Vouchers",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "600001",
+          "category_level": "1",
+          "category_name": "Home Supplies",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "600024",
+          "category_level": "1",
+          "category_name": "Kitchenware",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "600154",
+          "category_level": "1",
+          "category_name": "Textiles & Soft Furnishings",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "600942",
+          "category_level": "1",
+          "category_name": "Household Appliances",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "601152",
+          "category_level": "1",
+          "category_name": "Womenswear & Underwear",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "601303",
+          "category_level": "1",
+          "category_name": "Muslim Fashion",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "601352",
+          "category_level": "1",
+          "category_name": "Shoes",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "601450",
+          "category_level": "1",
+          "category_name": "Beauty & Personal Care",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "601739",
+          "category_level": "1",
+          "category_name": "Phones & Electronics",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "601755",
+          "category_level": "1",
+          "category_name": "Computers & Office Equipment",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "602118",
+          "category_level": "1",
+          "category_name": "Pet Supplies",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "602284",
+          "category_level": "1",
+          "category_name": "Baby & Maternity",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "603014",
+          "category_level": "1",
+          "category_name": "Sports & Outdoor",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "604206",
+          "category_level": "1",
+          "category_name": "Toys & Hobbies",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "604453",
+          "category_level": "1",
+          "category_name": "Furniture",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "604579",
+          "category_level": "1",
+          "category_name": "Tools & Hardware",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "604968",
+          "category_level": "1",
+          "category_name": "Home Improvement",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "605196",
+          "category_level": "1",
+          "category_name": "Automotive & Motorcycle",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "605248",
+          "category_level": "1",
+          "category_name": "Fashion Accessories",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "700437",
+          "category_level": "1",
+          "category_name": "Food & Beverages",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "700645",
+          "category_level": "1",
+          "category_name": "Health",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "801928",
+          "category_level": "1",
+          "category_name": "Books, Magazines & Audio",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "802184",
+          "category_level": "1",
+          "category_name": "Kids' Fashion",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "824328",
+          "category_level": "1",
+          "category_name": "Menswear & Underwear",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "824584",
+          "category_level": "1",
+          "category_name": "Luggage & Bags",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "834312",
+          "category_level": "1",
+          "category_name": "Virtual Products",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "856720",
+          "category_level": "1",
+          "category_name": "Pre-Owned",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "951432",
+          "category_level": "1",
+          "category_name": "Collectibles",
+          "language": "en-US",
+          "parent_id": "0"
+        },
+        {
+          "category_id": "953224",
+          "category_level": "1",
+          "category_name": "Jewelry Accessories & Derivatives",
+          "language": "en-US",
+          "parent_id": "0"
+        }
+      ],
+      "requestId": "73a4f455-2f8c-46b1-b386-a6dbd938e0c5"
+    }
+  },
+  "2. product/ranklist (try 1/6)": {
+    "ok": false,
+    "httpStatus": 200,
+    "code": 500,
+    "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"sales\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"hot\", ",
+    "ms": 90,
+    "endpoint": "/echotik/product/ranklist",
+    "params": {
+      "region": "US",
+      "rank_type": "hot",
+      "page_num": 1,
+      "page_size": 5,
+      "date": "2026-05-25",
+      "product_rank_field": "sales"
+    },
+    "body": {
+      "code": 500,
+      "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"sales\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"hot\", ",
+      "data": null,
+      "requestId": null
+    }
+  },
+  "2. product/ranklist (try 2/6)": {
+    "ok": false,
+    "httpStatus": 200,
+    "code": 500,
+    "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"sales_growth\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"rising\", ",
+    "ms": 86,
+    "endpoint": "/echotik/product/ranklist",
+    "params": {
+      "region": "US",
+      "rank_type": "rising",
+      "page_num": 1,
+      "page_size": 5,
+      "date": "2026-05-25",
+      "product_rank_field": "sales_growth"
+    },
+    "body": {
+      "code": 500,
+      "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"sales_growth\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"rising\", ",
+      "data": null,
+      "requestId": null
+    }
+  },
+  "2. product/ranklist (try 3/6)": {
+    "ok": false,
+    "httpStatus": 200,
+    "code": 500,
+    "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"sales\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"new\", ",
+    "ms": 86,
+    "endpoint": "/echotik/product/ranklist",
+    "params": {
+      "region": "US",
+      "rank_type": "new",
+      "page_num": 1,
+      "page_size": 5,
+      "date": "2026-05-25",
+      "product_rank_field": "sales"
+    },
+    "body": {
+      "code": 500,
+      "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"sales\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"new\", ",
+      "data": null,
+      "requestId": "cf6e2ab1-2b95-4d0c-ab5b-1ee23219b16d"
+    }
+  },
+  "2. product/ranklist (try 4/6)": {
+    "ok": false,
+    "httpStatus": 200,
+    "code": 500,
+    "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"gmv\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"hot\", ",
+    "ms": 99,
+    "endpoint": "/echotik/product/ranklist",
+    "params": {
+      "region": "US",
+      "rank_type": "hot",
+      "page_num": 1,
+      "page_size": 5,
+      "date": "2026-05-25",
+      "product_rank_field": "gmv"
+    },
+    "body": {
+      "code": 500,
+      "message": "product_rank_field：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'product_rank_field'; For input string: \"gmv\", rank_type：Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Integer' for property 'rank_type'; For input string: \"hot\", ",
+      "data": null,
+      "requestId": null
+    }
+  },
+  "2. product/ranklist (try 5/6)": {
+    "ok": true,
+    "httpStatus": 200,
+    "code": 0,
+    "message": "success",
+    "ms": 103,
+    "endpoint": "/echotik/product/ranklist",
+    "params": {
+      "region": "US",
+      "rank_type": 1,
+      "page_num": 1,
+      "page_size": 5,
+      "date": "2026-05-25",
+      "product_rank_field": 1
+    },
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": [
+        {
+          "category_id": "601450",
+          "category_l2_id": "848776",
+          "category_l3_id": "601611",
+          "max_price": 7599,
+          "min_price": 21,
+          "product_commission_rate": 0,
+          "product_id": "1729508370969629931",
+          "product_name": "[NEW] [medicube] PDRN Pink Collagen Volume Multi Balm | All In One Volufiline, PDRN, NAD Stick for Youthful-Looking, Helping Look of Fine Lines, Firming Care, Anti-Aging Care | For Under-Eyes, Neck, Forehead, Smile Lines, Lip Care | Korean Skincare",
+          "region": "US",
+          "spu_avg_price": 63,
+          "total_ifl_cnt": 67,
+          "total_live_cnt": 45,
+          "total_sale_cnt": 8501,
+          "total_sale_gmv_amt": 535563,
+          "total_video_cnt": 35
+        },
+        {
+          "category_id": "700645",
+          "category_l2_id": "700646",
+          "category_l3_id": "700650",
+          "max_price": 17.97,
+          "min_price": 17.97,
+          "product_commission_rate": 0.35,
+          "product_id": "1729448464509734958",
+          "product_name": "Toplux Magnesium Complex 8 Essential Magnesium Supplement 1000mg",
+          "region": "US",
+          "spu_avg_price": 17.97,
+          "total_ifl_cnt": 57,
+          "total_live_cnt": 37,
+          "total_sale_cnt": 6574,
+          "total_sale_gmv_amt": 118134.78,
+          "total_video_cnt": 32
+        },
+        {
+          "category_id": "700437",
+          "category_l2_id": "914824",
+          "category_l3_id": "917512",
+          "max_price": 4.5,
+          "min_price": 3.75,
+          "product_commission_rate": 0.13,
+          "product_id": "1729679758111249333",
+          "product_name": "Loaded Tea – Single Packet | 32oz Caffeinated Flavored Hydration Powder Beverage Mix | Made in USA | Easy to Mix",
+          "region": "US",
+          "spu_avg_price": 4.13,
+          "total_ifl_cnt": 13,
+          "total_live_cnt": 14,
+          "total_sale_cnt": 4966,
+          "total_sale_gmv_amt": 20484.75,
+          "total_video_cnt": 3
+        },
+        {
+          "category_id": "605196",
+          "category_l2_id": "940808",
+          "category_l3_id": "945160",
+          "max_price": 8.59,
+          "min_price": 8.59,
+          "product_commission_rate": 0,
+          "product_id": "1732352253118812691",
+          "product_name": "Home Hige Pressure Car Wash Water Gun with Booster Nozzle Excluding Quick Connectors",
+          "region": "US",
+          "spu_avg_price": 8.59,
+          "total_ifl_cnt": 1,
+          "total_live_cnt": 0,
+          "total_sale_cnt": 4355,
+          "total_sale_gmv_amt": 37409.45,
+          "total_video_cnt": 1
+        },
+        {
+          "category_id": "601450",
+          "category_l2_id": "849672",
+          "category_l3_id": "601694",
+          "max_price": 19.99,
+          "min_price": 19.99,
+          "product_commission_rate": 0.2,
+          "product_id": "1732164626458252048",
+          "product_name": "Hismile iD Stain Whitening Mouthwash for White Teeth, Freshens Breath with Essential Oils 237ml",
+          "region": "US",
+          "spu_avg_price": 19.99,
+          "total_ifl_cnt": 35,
+          "total_live_cnt": 17,
+          "total_sale_cnt": 3646,
+          "total_sale_gmv_amt": 72883.54,
+          "total_video_cnt": 24
+        }
+      ],
+      "requestId": "0693cb05-3bc5-455a-b2e7-b4af7e88f064"
+    }
+  },
+  "3. product/detail (try 1/2)": {
+    "ok": true,
+    "httpStatus": 200,
+    "code": 0,
+    "message": "success",
+    "ms": 154,
+    "endpoint": "/echotik/product/detail",
+    "params": {
+      "product_ids": "1729508370969629931",
+      "region": "US"
+    },
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": [
+        {
+          "category_id": "601450",
+          "category_l2_id": "848776",
+          "category_l3_id": "601611",
+          "cover_url": "[{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_1.jpeg\",\"index\":1},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_0.webp\",\"index\":0},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_7.jpeg\",\"index\":7},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_4.jpeg\",\"index\":4},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_6.jpeg\",\"index\":6},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_8.jpeg\",\"index\":8},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_5.jpeg\",\"index\":5},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_2.jpeg\",\"index\":2},{ \"url\":\"https://echosell-images.tos-ap-southeast-1.volces.com/product-cover/26/1729508370969629931_3.jpeg\",\"index\":3}]",
+          "desc_detail": "[{\"type\":\"image\",\"image\":{\"height\":2000,\"width\":2000,\"uri\":\"tos-useast5-i-omjb5zjo8w-tx/a015e9016bee4db39f117f6681391731\",\"url_list\":[\"https://p16-oec-general-useast5.ttcdn-us.com/tos-useast5-i-omjb5zjo8w-tx/a015e9016bee4db39f117f6681391731~tplv-fhlh96nyum-origin-jpeg.jpeg?dr=12178&t=555f072d&ps=933b5bde&shp=a3510d86&shcp=6ce186a1&idc=useast5&from=2739998086\",\"https://p19-oec-general-useast5.ttcdn-us.com/tos-useast5-i-omjb5zjo8w-tx/a015e9016bee4db39f117f6681391731~tplv-fhlh96nyum-origin-jpeg.jpeg?dr=12178&t=555f072d&ps=933b5bde&shp=a3510d86&shcp=6ce186a1&idc=useast5&from=2739998086\"],\"remove_gap\":\"false\"}},{\"type\":\"text\",\"text\":\"\\nBring Back the Look of Volume — Anytime, Anywhere\\n\\nThe PDRN Pink Collagen Volume Multi Balm helps improve the appearance of areas that look less full, fine lines, and dryness while supporting smoother, more radiant-looking skin.\\n\\nPowered by 5% Volufiline — a globally recognized ingredient known for helping support fuller-looking skin — combined with Liposomal PDRN and 200 Dalton Collagen to help skin appear plumper, smoother, and well-hydrated.\\n\\n\\n[Why You’ll Love It]\\n5% Volufiline for Premium Plumping Care\\nFormulated with patented, authentic Volufiline ingredient by Sederma France that helps improve the appearance of hollow-looking areas\\n\\nMulti Balm for Easy, Multi Uses\\nPerfect for areas that may appear less firm such as under eyes, cheeks, necklines, smile lines, lips. The melting balm texture glides smoothly without stickiness, making it perfect for quick touch-ups.\\n\\nLip Care Tip!\\nYour lips can show signs of aging too. Apply the multi balm also as a lip care to support the look of elasticity and visibly smooth the look of lip lines that come from daily facial movements.\\n\\nBrightening + Smoothing Care in One Stick\\nGreat for dull-looking areas too! Our PDRN Multi Balm has been approved by Korea’s Ministry of Food and Drug Safety (MFDS) as a dual-functional cosmetic for brightening and fine-line care, with clinical testing completed to help improve the appearance of uneven skin tone and dullness. (Uneven tone improved by 6.2% after 2 weeks of use*)\\n\\n*Clinical Trial Tested by 'Global Institute of Dermatological Sciences' / Results may vary depending on individual skin types.\\n\\n\\n[Key Ingredients]\\n\\nVolume & Firmness Care\\n• 5% Volufiline – a key ingredient known for helping support plumper-looking skin in areas that appear less full.\\n• Liposomal PDRN - a Korean aesthetic-favorite ingredient encapsulated in liposomes for enhanced absorption and firmer-looking skin.\\n 200 Dalton Collagen – ultra-low molecular collagen designed for better skin absorption and firmer-looking skin\\n• NAD, Liposomal EGF, Peptides, Elastin & Retinol – advanced ingredients for smoother, youthful-looking skin\\n\\nGlow & Skin Texture Care\\n• Caffeine & Vitamin E, Hyaluronic Acid – help hydrate and improve the look of radiance and smooth texture\\n\\n*The above information pertains only to the characters of the raw material  \\n\\n\\n[Clinical-Tested Visible Results*]\\n\\nAfter 2 Weeks of Use\\n• Appearance of under-eye hollowness improved by 25.7%\\n• Appearance of cheek hollowness improved by 2.8%\\n• Crow’s feet appearance improved by 10.7%\\n• Smile lines appearance improved by 9%\\n• Mouth line appearance improved by 5.2%\\n• Neck line appearance improved by 5.6%\\n• Forehead line appearance improved by 3.3%\\n\\nAfter 1 Use\\n• Under-eye line appearance improved by 10.6%\\n• Look of under-eye line puffiness improved by 8.2%\\n• Appearance of fine lines around the eyes improved by 7.5%\\n• Eyelid line appearance improved by 3.5%\\n• Frown line appearance improved by 6.2%\\n• Lip line appearance improved by 12.1%\\n• Skin hydration improved by 38.6%\\n• Skin radiance improved by 36.2%\\n\\n*Clinical Trial Tested by 'CUTIS Biomedical Research Center' / Results may vary depending on individual skin types.\\n\\n\\nGentle Formula \\n• Low-irritation tested*, suitable for delicate areas\\n• Naturally pink formula derived from key ingredients, with no artificial colorants or fragrance\\n• FSC-certified eco-friendly paper packaging, with a thoughtfully designed stick that lets you use every last bit of the product\\n\\n*Clinical Trial Tested by 'Global Institute of Dermatological Sciences' / Results may vary depending on individual skin types.\\n\\n\\n[How to Use]\\n1) Twist the bottom of the container to dispense a small amount.\\n2️) At the final step of your skincare routine, apply gently to areas that need hydration or firmness care.\\nCan also be used before or after makeup throughout the day!\\n\\nBetter Together!\\n[PDRN Volume Multi Balm & PDRN Eye Patch]\\nA powerful duo designed for intensive hydration and smoother-looking skin\\n\\nStep 1: Multi Balm\\nAt the final step of your skincare routine, gently swipe an appropriate amount onto areas of concern to smooth the look of fine lines and hydrate dry areas.\\n\\nStep 2: Eye Patch\\nUsing the included spatula, apply the eye patch over the area to help boost hydration, support absorption, and enhance care\\n*Not just for the eyes! Place the patch on any area of concern to help improve the appearance of fine lines and support the look of skin elasticity\\n\\n[Glow On-the-Go]\\nGet 2 Multi Balms at a special price so you can keep one at home and take one with you wherever you go.\",\"sub\":[{\"t\":\"\\n\"},{\"t\":\"Bring Back the Look of Volume — Anytime, Anywhere\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"The PDRN Pink Collagen Volume Multi Balm helps improve the appearance of areas that look less full, fine lines, and dryness while supporting smoother, more radiant-looking skin.\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Powered by 5% Volufiline — a globally recognized ingredient known for helping support fuller-looking skin — combined with Liposomal PDRN and 200 Dalton Collagen to help skin appear plumper, smoother, and well-hydrated.\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"[Why You’ll Love It]\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"5% Volufiline for Premium Plumping Care\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"Formulated with patented, authentic Volufiline ingredient by Sederma France that helps improve the appearance of hollow-looking areas\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Multi Balm for Easy, Multi Uses\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"Perfect for areas that may appear less firm such as under eyes, cheeks, necklines, smile lines, lips. The melting balm texture glides smoothly without stickiness, making it perfect for quick touch-ups.\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Lip Care Tip!\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"Your lips can show signs of aging too. Apply the multi balm also as a lip care to support the look of elasticity and visibly smooth the look of lip lines that come from daily facial movements.\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Brightening + Smoothing Care in One Stick\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"Great for dull-looking areas too! Our PDRN Multi Balm has been approved by Korea’s Ministry of Food and Drug Safety (MFDS) as a dual-functional cosmetic for brightening and fine-line care, with clinical testing completed to help improve the appearance of uneven skin tone and dullness. (Uneven tone improved by 6.2% after 2 weeks of use*)\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"*Clinical Trial Tested by 'Global Institute of Dermatological Sciences' / Results may vary depending on individual skin types.\",\"em\":true},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"[Key Ingredients]\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Volume & Firmness Care\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"• 5% Volufiline – a key ingredient known for helping support plumper-looking skin in areas that appear less full.\"},{\"t\":\"\\n\"},{\"t\":\"• Liposomal PDRN - a Korean aesthetic-favorite ingredient encapsulated in liposomes for enhanced absorption and firmer-looking skin.\"},{\"t\":\"\\n\"},{\"t\":\" 200 Dalton Collagen – ultra-low molecular collagen designed for better skin absorption and firmer-looking skin\"},{\"t\":\"\\n\"},{\"t\":\"• NAD, Liposomal EGF, Peptides, Elastin & Retinol – advanced ingredients for smoother, youthful-looking skin\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Glow & Skin Texture Care\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"• Caffeine & Vitamin E, Hyaluronic Acid – help hydrate and improve the look of radiance and smooth texture\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"*The above information pertains only to the characters of the raw material  \",\"em\":true},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"[Clinical-Tested Visible Results*]\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"After 2 Weeks of Use\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"• Appearance of under-eye hollowness improved by 25.7%\"},{\"t\":\"\\n\"},{\"t\":\"• Appearance of cheek hollowness improved by 2.8%\"},{\"t\":\"\\n\"},{\"t\":\"• Crow’s feet appearance improved by 10.7%\"},{\"t\":\"\\n\"},{\"t\":\"• Smile lines appearance improved by 9%\"},{\"t\":\"\\n\"},{\"t\":\"• Mouth line appearance improved by 5.2%\"},{\"t\":\"\\n\"},{\"t\":\"• Neck line appearance improved by 5.6%\"},{\"t\":\"\\n\"},{\"t\":\"• Forehead line appearance improved by 3.3%\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"After 1 Use\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"• Under-eye line appearance improved by 10.6%\"},{\"t\":\"\\n\"},{\"t\":\"• Look of under-eye line puffiness improved by 8.2%\"},{\"t\":\"\\n\"},{\"t\":\"• Appearance of fine lines around the eyes improved by 7.5%\"},{\"t\":\"\\n\"},{\"t\":\"• Eyelid line appearance improved by 3.5%\"},{\"t\":\"\\n\"},{\"t\":\"• Frown line appearance improved by 6.2%\"},{\"t\":\"\\n\"},{\"t\":\"• Lip line appearance improved by 12.1%\"},{\"t\":\"\\n\"},{\"t\":\"• Skin hydration improved by 38.6%\"},{\"t\":\"\\n\"},{\"t\":\"• Skin radiance improved by 36.2%\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"*Clinical Trial Tested by 'CUTIS Biomedical Research Center' / Results may vary depending on individual skin types.\",\"em\":true},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Gentle Formula \",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"• Low-irritation tested*, suitable for delicate areas\"},{\"t\":\"\\n\"},{\"t\":\"• Naturally pink formula derived from key ingredients, with no artificial colorants or fragrance\"},{\"t\":\"\\n\"},{\"t\":\"• FSC-certified eco-friendly paper packaging, with a thoughtfully designed stick that lets you use every last bit of the product\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"*Clinical Trial Tested by 'Global Institute of Dermatological Sciences' / Results may vary depending on individual skin types.\",\"em\":true},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"[How to Use]\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"1) Twist the bottom of the container to dispense a small amount.\"},{\"t\":\"\\n\"},{\"t\":\"2️) At the final step of your skincare routine, apply gently to areas that need hydration or firmness care.\"},{\"t\":\"\\n\"},{\"t\":\"Can also be used before or after makeup throughout the day!\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Better Together!\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"[PDRN Volume Multi Balm & PDRN Eye Patch]\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"A powerful duo designed for intensive hydration and smoother-looking skin\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Step 1: Multi Balm\"},{\"t\":\"\\n\"},{\"t\":\"At the final step of your skincare routine, gently swipe an appropriate amount onto areas of concern to smooth the look of fine lines and hydrate dry areas.\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"Step 2: Eye Patch\"},{\"t\":\"\\n\"},{\"t\":\"Using the included spatula, apply the eye patch over the area to help boost hydration, support absorption, and enhance care\"},{\"t\":\"\\n\"},{\"t\":\"*Not just for the eyes! Place the patch on any area of concern to help improve the appearance of fine lines and support the look of skin elasticity\"},{\"t\":\"\\n\"},{\"t\":\"\\n\"},{\"t\":\"[Glow On-the-Go]\",\"b\":true},{\"t\":\"\\n\"},{\"t\":\"Get 2 Multi Balms at a special price so you can keep one at home and take one with you wherever you go.\"}]}]",
+          "discount": "53%",
+          "first_crawl_dt": 20260319,
+          "free_shipping": 1,
+          "is_s_shop": 0,
+          "max_price": 7599,
+          "min_price": 21,
+          "off_mark": 0,
+          "product_commission_rate": 0,
+          "product_id": "1729508370969629931",
+          "product_name": "[NEW] [medicube] PDRN Pink Collagen Volume Multi Balm | All In One Volufiline, PDRN, NAD Stick for Youthful-Looking, Helping Look of Fine Lines, Firming Care, Anti-Aging Care | For Under-Eyes, Neck, Forehead, Smile Lines, Lip Care | Korean Skincare",
+          "product_rating": 4.4,
+          "region": "US",
+          "review_count": 15168,
+          "sale_props": "[{\"prop_name\":\"Specification\",\"has_image\":\"true\",\"prop_id\":\"7617216226011531030\",\"sale_prop_values\":[{\"image\":\"https://p16-oec-general-useast5.ttcdn-us.com/tos-useast5-i-omjb5zjo8w-tx/9e8a46995b964c68b291b56a7c1631d8~tplv-fhlh96nyum-crop-webp:2000:2000.webp?dr=12190&t=555f072d&ps=933b5bde&shp=8dbd94bf&shcp=607f11de&idc=useast5&from=2378011839\",\"property_value_name\":\"1EA\",\"property_value_id\":\"7117199491295528710\"},{\"image\":\"https://p16-oec-general-useast5.ttcdn-us.com/tos-useast5-i-omjb5zjo8w-tx/e43c5bf197fc43fabf85b1f93da8d650~tplv-fhlh96nyum-crop-webp:2000:2000.webp?dr=12190&t=555f072d&ps=933b5bde&shp=8dbd94bf&shcp=607f11de&idc=useast5&from=2378011839\",\"property_value_name\":\"2EA\",\"property_value_id\":\"7117199491295545094\"},{\"image\":\"https://p16-oec-general-useast5.ttcdn-us.com/tos-useast5-i-omjb5zjo8w-tx/b40dc17ccf574b03869d03f8bb891c30~tplv-fhlh96nyum-crop-webp:2000:2000.webp?dr=12190&t=555f072d&ps=933b5bde&shp=8dbd94bf&shcp=607f11de&idc=useast5&from=2378011839\",\"property_value_name\":\"Multi Balm & Eye Patch\",\"property_value_id\":\"7616272836694132493\"}]}]",
+          "sales_flag": 1,
+          "sales_trend_flag": 1,
+          "seller_id": "7495514739648989419",
+          "skus": "[{\"sku_id\":\"1732293572420341995\",\"sale_prop_value_ids\":\"7117199491295528710\",\"stock\":0,\"real_price\":{\"sku_id\":\"1732293572420341995\",\"symbol_position\":1,\"show_currency_space\":false,\"currency_show_mode\":1,\"currency_name\":\"USD\",\"currency_symbol\":\"$\",\"sale_price_decimal\":\"2*\",\"origin_price_decimal\":\"3*\",\"sale_price_format\":\"2*\",\"origin_price_format\":\"3*\",\"discount_format\":\"44%\",\"discount_decimal\":\"0.44\",\"reduce_price_format\":\"Saving $1*\",\"single_product_price_format\":\"2*\",\"single_product_price_decimal\":\"2*\",\"sale_price_integer_part_format\":\"2*\",\"sale_price_decimal_part_format\":\"0*\",\"decimal_point_symbol\":\".\",\"promotion_deduction_details\":{\"seller_subtotal_deduction\":\"16.00\",\"seller_subtotal_deduction_decimal\":\"16\"},\"price_str\":\"2*\",\"price_val\":\"2*\",\"currency\":\"USD\"}},{\"sku_id\":\"1732291680308728043\",\"sale_prop_value_ids\":\"7117199491295545094\",\"stock\":81755,\"real_price\":{\"sku_id\":\"1732291680308728043\",\"symbol_position\":1,\"show_currency_space\":false,\"currency_show_mode\":1,\"currency_name\":\"USD\",\"currency_symbol\":\"$\",\"sale_price_decimal\":\"3*\",\"origin_price_decimal\":\"7*\",\"sale_price_format\":\"3*\",\"origin_price_format\":\"7*\",\"discount_format\":\"53%\",\"discount_decimal\":\"0.53\",\"reduce_price_format\":\"Saving $3*\",\"single_product_price_format\":\"3*\",\"single_product_price_decimal\":\"3*\",\"sale_price_integer_part_format\":\"3*\",\"sale_price_decimal_part_format\":\"0*\",\"decimal_point_symbol\":\".\",\"promotion_deduction_details\":{\"seller_subtotal_deduction\":\"38.00\",\"seller_subtotal_deduction_decimal\":\"38\"},\"price_str\":\"3*\",\"price_val\":\"3*\",\"currency\":\"USD\"}},{\"sku_id\":\"1732291680308793579\",\"sale_prop_value_ids\":\"7616272836694132493\",\"stock\":0,\"real_price\":{\"sku_id\":\"1732291680308793579\",\"symbol_position\":1,\"show_currency_space\":false,\"currency_show_mode\":1,\"currency_name\":\"USD\",\"currency_symbol\":\"$\",\"sale_price_decimal\":\"3*\",\"origin_price_decimal\":\"6*\",\"sale_price_format\":\"3*\",\"origin_price_format\":\"6*\",\"discount_format\":\"48%\",\"discount_decimal\":\"0.48\",\"reduce_price_format\":\"Saving $3*\",\"single_product_price_format\":\"3*\",\"single_product_price_decimal\":\"3*\",\"sale_price_integer_part_format\":\"3*\",\"sale_price_decimal_part_format\":\"0*\",\"decimal_point_symbol\":\".\",\"promotion_deduction_details\":{\"seller_subtotal_deduction\":\"31.00\",\"seller_subtotal_deduction_decimal\":\"31\"},\"price_str\":\"3*\",\"price_val\":\"3*\",\"currency\":\"USD\"}}]",
+          "specification": "[{\"name\":\"Brand\",\"value\":\"medicube\"},{\"name\":\"Manufacturer\",\"value\":\"COSMAX\"},{\"name\":\"Ingredients\",\"value\":\"Cetyl Ethylhexanoate,Synthetic Wax,Polyglyceryl-2 Triisostearate,Diisostearyl Malate,Microcrystalline Wax,Hydrogenated Polyisobutene,Octyldodecanol,Caprylic/Capric Triglyceride,Euphorbia Cerifera (Candelilla) Wax,Silica Dimethyl Silylate,Lithospermum Erythrorhizon Root Extract,Bisabolol,Butylene Glycol,Polyglyceryl-2 Oleate,Oryza Sativa (Rice) Bran Oil,Adenosine,Sodium DNA,Helianthus Annuus (Sunflower) Seed Oil,Pelargonium Graveolens Flower Oil,Anemarrhena Asphodeloides Root Extract,Cananga Odorata Flower Oil,Citrus Aurantium Bergamia (Bergamot) Fruit Oil,Rosa Damascena Flower Oil,Tocopherol,Water,Caffeine,Collagen,Hippophae Rhamnoides Oil,Sodium Hyaluronate,Glycine Soja (Soybean) Oil,Propanediol,Glycerin,Retinol,Polyglyceryl-10 Oleate,1,2-Hexanediol,Nicotinamide Mononucleotide,Adenosine Triphosphate,Nicotinamide Adenine Dinucleotide,Alkanna Tinctoria Root Extract,Lecithin,Sodium Phosphate,Ethylhexylglycerin,Hydrolyzed Elastin,Acetyl Hexapeptide-8,Copper Tripeptide-1,Palmitoyl Pentapeptide-4,Acetyl Tetrapeptide-5,Palmitoyl Tetrapeptide-7,Palmitoyl Tripeptide-1,sh-Oligopeptide-1,sh-Oligopeptide-2,sh-Polypeptide-1,sh-Polypeptide-10,sh-Polypeptide-11,sh-Polypeptide-3,sh-Polypeptide-59,sh-Polypeptide-9\"},{\"name\":\"Contains Batteries Or Cells?\",\"value\":\"None\"},{\"name\":\"Dangerous Goods Or Hazardous Materials\",\"value\":\"No\"},{\"name\":\"Flammable Liquid\",\"value\":\"No\"}]",
+          "spu_avg_price": 63,
+          "total_ifl_cnt": 4680,
+          "total_ifl_live_15d_cnt": 191,
+          "total_ifl_live_1d_cnt": 40,
+          "total_ifl_live_30d_cnt": 291,
+          "total_ifl_live_60d_cnt": 419,
+          "total_ifl_live_7d_cnt": 144,
+          "total_ifl_live_90d_cnt": 419,
+          "total_ifl_video_15d_cnt": 1239,
+          "total_ifl_video_1d_cnt": 27,
+          "total_ifl_video_30d_cnt": 2331,
+          "total_ifl_video_60d_cnt": 4244,
+          "total_ifl_video_7d_cnt": 761,
+          "total_ifl_video_90d_cnt": 4390,
+          "total_live_15d_cnt": 680,
+          "total_live_1d_cnt": 45,
+          "total_live_30d_cnt": 1432,
+          "total_live_60d_cnt": 2551,
+          "total_live_7d_cnt": 375,
+          "total_live_90d_cnt": 2551,
+          "total_live_cnt": 2551,
+          "total_live_sale_15d_cnt": 302,
+          "total_live_sale_1d_cnt": 5,
+          "total_live_sale_30d_cnt": 996,
+          "total_live_sale_60d_cnt": 2578,
+          "total_live_sale_7d_cnt": 177,
+          "total_live_sale_90d_cnt": 2578,
+          "total_live_sale_cnt": 2578,
+          "total_live_sale_gmv_15d_amt": 8619.39,
+          "total_live_sale_gmv_1d_amt": 134.1,
+          "total_live_sale_gmv_30d_amt": 26377.22,
+          "total_live_sale_gmv_60d_amt": 67782.47,
+          "total_live_sale_gmv_7d_amt": 5442.04,
+          "total_live_sale_gmv_90d_amt": 67782.47,
+          "total_live_sale_gmv_amt": 67782.47,
+          "total_sale_15d_cnt": 83607,
+          "total_sale_1d_cnt": 8501,
+          "total_sale_30d_cnt": 171760,
+          "total_sale_60d_cnt": 411786,
+          "total_sale_7d_cnt": 59779,
+          "total_sale_90d_cnt": 436767,
+          "total_sale_cnt": 486805,
+          "total_sale_gmv_15d_amt": 5310751.5,
+          "total_sale_gmv_1d_amt": 535563,
+          "total_sale_gmv_30d_amt": 9833605.5,
+          "total_sale_gmv_60d_amt": 104575279.5,
+          "total_sale_gmv_7d_amt": 3809520,
+          "total_sale_gmv_90d_amt": 199752889.5,
+          "total_sale_gmv_amt": 390772527,
+          "total_video_15d_cnt": 2643,
+          "total_video_1d_cnt": 35,
+          "total_video_30d_cnt": 6371,
+          "total_video_60d_cnt": 17488,
+          "total_video_7d_cnt": 1405,
+          "total_video_90d_cnt": 19287,
+          "total_video_cnt": 19287,
+          "total_video_sale_15d_cnt": 83403,
+          "total_video_sale_1d_cnt": 8496,
+          "total_video_sale_30d_cnt": 171334,
+          "total_video_sale_60d_cnt": 321071,
+          "total_video_sale_7d_cnt": 59604,
+          "total_video_sale_90d_cnt": 359400,
+          "total_video_sale_cnt": 0,
+          "total_video_sale_gmv_15d_amt": 5305106.57,
+          "total_video_sale_gmv_1d_amt": 535428.9,
+          "total_video_sale_gmv_30d_amt": 7994268.24,
+          "total_video_sale_gmv_60d_amt": 390160031.97,
+          "total_video_sale_gmv_7d_amt": 3804573.33,
+          "total_video_sale_gmv_90d_amt": 463109997.62,
+          "total_video_sale_gmv_amt": 0,
+          "total_views_15d_cnt": 18450254,
+          "total_views_1d_cnt": 28914,
+          "total_views_30d_cnt": 47955062,
+          "total_views_60d_cnt": 206401450,
+          "total_views_7d_cnt": 16565230,
+          "total_views_90d_cnt": 284235442,
+          "total_views_cnt": 284235442
+        }
+      ],
+      "requestId": "e4f98a74-f48a-4059-8aba-9a010b799235"
+    }
+  },
+  "4. product/influencer/list (try 1/3)": {
+    "ok": true,
+    "httpStatus": 200,
+    "code": 0,
+    "message": "success",
+    "ms": 105,
+    "endpoint": "/echotik/product/influencer/list",
+    "params": {
+      "product_id": "1729508370969629931",
+      "page_num": 1,
+      "page_size": 5
+    },
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": [
+        {
+          "avatar": "https://echosell-images.tos-ap-southeast-1.volces.com/user-avatar/634/MS4wLjABAAAATc9lIlXmQIAkvcu2kqXBVk3Bhl6G-Z6gkRwIuJHaXG9pbgguwEaXbLo4ugsmkOMn.jpg",
+          "category": "Other",
+          "nick_name": "Nat | Unruly Wife & Mama 💫",
+          "per_product_ifl_gmv_amt": 68710,
+          "per_product_ifl_sale_cnt": 23,
+          "product_id": "1729508370969629931",
+          "region": "US",
+          "total_digg_cnt": 1451091,
+          "total_followers_cnt": 16746,
+          "total_following_cnt": 2730,
+          "total_live_cnt": 0,
+          "total_live_views_cnt": 0,
+          "total_post_video_cnt": 4118,
+          "total_views_cnt": 31839381,
+          "user_id": "100084605138993153"
+        },
+        {
+          "avatar": "https://echosell-images.tos-ap-southeast-1.volces.com/user-avatar/852/MS4wLjABAAAA6lv_ztqpNNrpkcQ0nCFMRoNKtTgAQ1Ot5gbjWR7DR_E.jpg",
+          "category": "Other",
+          "nick_name": "Larry deals",
+          "per_product_ifl_gmv_amt": 210,
+          "per_product_ifl_sale_cnt": 5,
+          "product_id": "1729508370969629931",
+          "region": "US",
+          "total_digg_cnt": 1514112,
+          "total_followers_cnt": 248368,
+          "total_following_cnt": 120,
+          "total_live_cnt": 0,
+          "total_live_views_cnt": 0,
+          "total_post_video_cnt": 1971,
+          "total_views_cnt": 62256361,
+          "user_id": "11027048"
+        },
+        {
+          "avatar": "https://echosell-images.tos-ap-southeast-1.volces.com/user-avatar/791/MS4wLjABAAAAlqQsHekna9B9wKNNzDugm5OdcmVAJX33twgTzqTWlzUutO_cY8sL9eIzynzFkziV.jpg",
+          "category": "Other",
+          "nick_name": "Olivia🤍",
+          "per_product_ifl_gmv_amt": 742,
+          "per_product_ifl_sale_cnt": 14,
+          "product_id": "1729508370969629931",
+          "region": "US",
+          "total_digg_cnt": 726215,
+          "total_followers_cnt": 21643,
+          "total_following_cnt": 517,
+          "total_live_cnt": 0,
+          "total_live_views_cnt": 0,
+          "total_post_video_cnt": 648,
+          "total_views_cnt": 4110572,
+          "user_id": "111649824998871040"
+        },
+        {
+          "avatar": "https://echosell-images.tos-ap-southeast-1.volces.com/user-avatar/836/MS4wLjABAAAAHZaiU13hMzNAZKTjB3IWA5QNZReiY8YmNV-SqtBKVdbxhjZcEMHwOjUIRBotOCOZ.jpg",
+          "category": "Health & Wellness",
+          "nick_name": "Diane Ruggiero",
+          "per_product_ifl_gmv_amt": 15723,
+          "per_product_ifl_sale_cnt": 15,
+          "product_id": "1729508370969629931",
+          "region": "US",
+          "total_digg_cnt": 103783,
+          "total_followers_cnt": 32675,
+          "total_following_cnt": 318,
+          "total_live_cnt": 0,
+          "total_live_views_cnt": 0,
+          "total_post_video_cnt": 1104,
+          "total_views_cnt": 2520014,
+          "user_id": "112041298848616448"
+        },
+        {
+          "avatar": "https://echosell-images.tos-ap-southeast-1.volces.com/user-avatar/633/MS4wLjABAAAAQhywvwP1OGkYnb00JuG10-psak_EYFPpiXpUA8BwGfJ4_OPFXikkfueCUw1xC7Vh.jpg",
+          "category": "Other",
+          "nick_name": "Jennifer Stark",
+          "per_product_ifl_gmv_amt": 34290,
+          "per_product_ifl_sale_cnt": 9,
+          "product_id": "1729508370969629931",
+          "region": "US",
+          "total_digg_cnt": 13924,
+          "total_followers_cnt": 6923,
+          "total_following_cnt": 6712,
+          "total_live_cnt": 0,
+          "total_live_views_cnt": 0,
+          "total_post_video_cnt": 745,
+          "total_views_cnt": 145131,
+          "user_id": "113812569479364608"
+        }
+      ],
+      "requestId": "9a71fcf3-2b3f-4788-afe5-8a417df8c570"
+    }
+  },
+  "5. product/video/list (try 1/3)": {
+    "ok": true,
+    "httpStatus": 200,
+    "code": 0,
+    "message": "success",
+    "ms": 106,
+    "endpoint": "/echotik/product/video/list",
+    "params": {
+      "product_id": "1729508370969629931",
+      "page_num": 1,
+      "page_size": 5
+    },
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": [
+        {
+          "create_time": "1773844494",
+          "data_size": "1531039",
+          "duration": 28,
+          "hash_tag": "#MedicubeGlow #PDRN #Volufiline #Medicube #Skincare",
+          "height": "1280",
+          "play_addr": "https://v45.tiktokcdn-eu.com/909545fce3a07fc85736c8ca257ae47b/69d09961/video/tos/maliva/tos-maliva-ve-0068c799-us/o8BX7GdwIAkJCxgIeHuIw4AH8QejARLWT6Ctge/?a=1233&bti=OUBzOTg7QGo6OjZAL3AjLTAzYCMxNDNg&&bt=1048&ft=XsFbYqgwmILPD12Y07Js3wUFI~pcMeF~O5&mime_type=video_mp4&rc=Z2Y2ZjY2Zzs3ODczOzY0aEBpM3Jnb3k5cjRlOTMzZzczNEBhNGM2Ni0xXjExNjIwNDI0YSNsbGktMmQ0ZHFhLS1kMS9zcw%3D%3D&vvpl=1&l=20260403045325A1216EC3B45AA78B41AE&btag=e000bd000",
+          "product_id": "1729508370969629931",
+          "ratio": "720p",
+          "reflow_cover": "https://echosell-images.tos-ap-southeast-1.volces.com/video-cover/842/7618603892959464717.jpg",
+          "region": "US",
+          "total_comments_cnt": 90,
+          "total_digg_cnt": 1941,
+          "total_favorites_cnt": 629,
+          "total_shares_cnt": 137,
+          "total_video_sale_cnt": 233,
+          "total_video_sale_gmv_amt": 6583,
+          "total_views_cnt": 501424,
+          "user_id": "6863179338755687429",
+          "video_desc": "STOP EVERYTHING—Medicube’s PDRN Collagen Volume Multi Balm just dropped today, and I’m already adding it to my cart! 🛒✨ It’s packed with 5% Volufiline (aka my new obsession for plumper, fuller-looking skin) PLUS Liposomal PDRN and 200 Dalton Collagen to smooth, hydrate, and bring back that glow. I’ve been loving Volufiline from another brand, so I can’t wait to see how this multitasking balm works for areas like my under-eyes, smile lines, cheeks, and even my lips! 💖 Medicube just keeps delivering the skincare magic, and I am HERE FOR IT. Who else is excited to try this? 👀 #MedicubeGlow #PDRN #Volufiline #Medicube #Skincare",
+          "video_id": "7618603892959464717",
+          "width": "720"
+        },
+        {
+          "create_time": "1773846250",
+          "data_size": "786223",
+          "duration": 9,
+          "hash_tag": "#tiktokshopcreatorpicks #tiktokshopspringglowpup  as soon as fast track said the guildines were updated i knew what i needed to do ",
+          "height": "1280",
+          "play_addr": "https://v45.tiktokcdn-eu.com/1a33e6c83cdd28474e2fdfd1ba1e5148/69d08997/video/tos/maliva/tos-maliva-ve-0068c799-us/oMRDFBaerE6im276IQBvEfTGSvucpEA7yDxRg8/?a=1233&bti=OUBzOTg7QGo6OjZAL3AjLTAzYCMxNDNg&&bt=1385&ft=td_Ls8s6oA-O12NvVGEe.IxR0YDJb3_45SY&mime_type=video_mp4&rc=NmRlaTw8Zzg0NjxnaTo5NEBpajllaHc5cmtlOTMzZzczNEBhNC1fLjQwX18xXjFhYGFfYSM2MG9jMmRrcXFhLS1kMS9zcw%3D%3D&vvpl=1&l=202604030346221D97FB813566B1716748&btag=e000b5000",
+          "product_id": "1729508370969629931",
+          "ratio": "720p",
+          "reflow_cover": "https://echosell-images.tos-ap-southeast-1.volces.com/video-cover/802/7618611371009248525.jpg",
+          "region": "US",
+          "total_comments_cnt": 43,
+          "total_digg_cnt": 697,
+          "total_favorites_cnt": 157,
+          "total_shares_cnt": 85,
+          "total_video_sale_cnt": 213,
+          "total_video_sale_gmv_amt": 5769,
+          "total_views_cnt": 385123,
+          "user_id": "7502571880760624170",
+          "video_desc": "medicube volume balm stick #tiktokshopcreatorpicks #tiktokshopspringglowpup  as soon as fast track said the guildines were updated i knew what i needed to do ",
+          "video_id": "7618611371009248525",
+          "width": "720"
+        },
+        {
+          "create_time": "1773862108",
+          "data_size": "281204",
+          "duration": 8,
+          "hash_tag": "#volufiline #pdrn #collagen #NAD #niacinamide ",
+          "height": "854",
+          "play_addr": "https://v45.tiktokcdn-eu.com/f1fd9cffeb57d734c23b7b3dc0d669f1/69d0a675/video/tos/maliva/tos-maliva-ve-0068c799-us/oYfIAU6QbLOfO4m0xLfrRYIl1GMOeEABGIFMlI/?a=1233&bti=OUBzOTg7QGo6OjZAL3AjLTAzYCMxNDNg&ch=0&cr=13&dr=0&er=0&lr=all&net=0&cd=0%7C0%7C0%7C&br=532&bt=266&cs=0&ds=2&ft=td_Lr8QLodzR12Nvde6e.IxRcz8biq_45SY&mime_type=video_mp4&qs=0&rc=Zjs6ZmUzPDk2aWQ7NmkzNEBpMzNlaW05cjhpOTMzZzczNEAtMGMuNDY0NWIxNS8xMl9gYSNxcy8wMmRjZ3FhLS1kMS9zcw%3D%3D&vvpl=1&l=202604030549331AA3956FDC9A4C7D5482&btag=e000b5000",
+          "product_id": "1729508370969629931",
+          "ratio": "480p",
+          "reflow_cover": "https://echosell-images.tos-ap-southeast-1.volces.com/video-cover/996/7618679550528081165.jpg",
+          "region": "US",
+          "total_comments_cnt": 12,
+          "total_digg_cnt": 45,
+          "total_favorites_cnt": 12,
+          "total_shares_cnt": 6,
+          "total_video_sale_cnt": 2,
+          "total_video_sale_gmv_amt": 52,
+          "total_views_cnt": 1504,
+          "user_id": "7252811761057104942",
+          "video_desc": "This just LAUNCHED and people are already calling it a FILLER alternative🫢  I don’t think people understand what this ingredient ACTUALLY DOES for YOU 🥹  It’s about to BLOW UP!  5% VOLUFILINE is the reason everyone’s talking about this 😍  @medicube global #volufiline #pdrn #collagen #NAD #niacinamide ",
+          "video_id": "7618679550528081165",
+          "width": "480"
+        },
+        {
+          "create_time": "1773868958",
+          "data_size": "3394721",
+          "duration": 32,
+          "hash_tag": "#medicube ",
+          "height": "1280",
+          "play_addr": "https://v45.tiktokcdn-eu.com/237cefa75af158145755a9fbb6aa2f65/69d09b26/video/tos/useast5/tos-useast5-ve-0068c002-tx/oI7EHivDaOZ4oPmIsSzUQ2EgbBF6b7V5FWAiB/?a=1233&bti=OUBzOTg7QGo6OjZAL3AjLTAzYCMxNDNg&ch=0&cr=13&dr=0&er=0&lr=all&net=0&cd=0%7C0%7C0%7C&cv=1&br=2760&bt=1380&cs=0&ds=3&ft=XsFbYqgwmILPD12sI7Js3wUHN~pcMeF~O5&mime_type=video_mp4&qs=0&rc=NmlpM2Q1OWg0PGc8aTk7OUBpM281dnQ5cnNrOTMzZzczNEAuNmMxMTNeNTAxNS0xNjRjYSM2YHFwMmRrYHFhLS1kMS9zcw%3D%3D&vvpl=1&l=202604030500540B61EC06CBC3C47A1F6B&btag=e0008d000",
+          "product_id": "1729508370969629931",
+          "ratio": "720p",
+          "reflow_cover": "https://echosell-images.tos-ap-southeast-1.volces.com/video-cover/441/7618709004004461837.jpg",
+          "region": "US",
+          "total_comments_cnt": 3,
+          "total_digg_cnt": 59,
+          "total_favorites_cnt": 11,
+          "total_shares_cnt": 9,
+          "total_video_sale_cnt": 29,
+          "total_video_sale_gmv_amt": 775,
+          "total_views_cnt": 39947,
+          "user_id": "7547371958666609678",
+          "video_desc": "New Medicube volume stick!!! #medicube ",
+          "video_id": "7618709004004461837",
+          "width": "720"
+        },
+        {
+          "create_time": "1773873707",
+          "data_size": "9045795",
+          "duration": 78,
+          "hash_tag": "#MedicubeGlow #PDRN #over40skincare #Volufiline #Medicube ",
+          "height": "1280",
+          "play_addr": "https://v45.tiktokcdn-eu.com/c04641eca58933ce0f94aa2731ed4161/69d08c3b/video/tos/maliva/tos-maliva-ve-0068c799-us/oo2UIpiBWzfBq1ZQK0Z7CyIEpViHKIA3pQAtAw/?a=1233&bti=OUBzOTg7QGo6OjZAL3AjLTAzYCMxNDNg&ch=0&cr=13&dr=0&er=0&lr=all&net=0&cd=0%7C0%7C0%7C&cv=1&br=4444&bt=2222&cs=0&ds=3&ft=td_Ls8s6ogVP12NvduEe.IxR1FBO63_45SY&mime_type=video_mp4&qs=0&rc=MzYzZjNkZzloZTNnaGc7NUBpM2w5bG85cjtsOTMzZzczNEAtYC8vLmEtX2AxNDQxMGJjYSMxaWltMmRjaHFhLS1kMS9zcw%3D%3D&vvpl=1&l=20260403035629261052F532FAE781C6CD&btag=e00095000",
+          "product_id": "1729508370969629931",
+          "ratio": "720p",
+          "reflow_cover": "https://echosell-images.tos-ap-southeast-1.volces.com/video-cover/499/7618729406718119181.jpg",
+          "region": "US",
+          "total_comments_cnt": 26,
+          "total_digg_cnt": 242,
+          "total_favorites_cnt": 70,
+          "total_shares_cnt": 14,
+          "total_video_sale_cnt": 43,
+          "total_video_sale_gmv_amt": 1229,
+          "total_views_cnt": 31759,
+          "user_id": "6863179338755687429",
+          "video_desc": "When I say I’m OBSESSED with Volufiline, I mean it. 💕 So you already know I couldn’t add the brand-new Medicube PDRN Collagen Volume Multi Balm to my cart fast enough! Packed with 5% Volufiline, Liposomal PDRN, and 200 Dalton Collagen, this balm is like a magic wand for plumper, smoother, radiant skin. ✨ Perfect for those areas that need a little extra love—under eyes, smile lines, lips, cheeks, you name it. And let’s be real, Medicube NEVER misses. I can’t wait to see what this multitasking gem can do! Who else is snagging one ASAP? @medicube US Store #MedicubeGlow #PDRN #over40skincare #Volufiline #Medicube ",
+          "video_id": "7618729406718119181",
+          "width": "720"
+        }
+      ],
+      "requestId": "aaedd9d9-96d0-4495-9a5d-70172b742f1f"
+    }
+  },
+  "6. product/trend (try 1/1)": {
+    "ok": true,
+    "httpStatus": 200,
+    "code": 0,
+    "message": "success",
+    "ms": 533,
+    "endpoint": "/echotik/product/trend",
+    "params": {
+      "product_id": "1729508370969629931",
+      "start_date": "2026-04-26",
+      "end_date": "2026-05-25",
+      "page_num": 1,
+      "page_size": 10
+    },
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": [
+        {
+          "dt": "2026-04-26",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 28,
+          "total_ifl_cnt": 3253,
+          "total_live_cnt": 1177,
+          "total_sale_1d_cnt": 11170,
+          "total_sale_cnt": 326215,
+          "total_sale_gmv_1d_amt": 312760,
+          "total_sale_gmv_amt": 381251681.5,
+          "total_video_cnt": 12966
+        },
+        {
+          "dt": "2026-04-27",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 28,
+          "total_ifl_cnt": 3323,
+          "total_live_cnt": 1255,
+          "total_sale_1d_cnt": 11701,
+          "total_sale_cnt": 337916,
+          "total_sale_gmv_1d_amt": 327628,
+          "total_sale_gmv_amt": 381579309.5,
+          "total_video_cnt": 13379
+        },
+        {
+          "dt": "2026-04-28",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 28,
+          "total_ifl_cnt": 3368,
+          "total_live_cnt": 1311,
+          "total_sale_1d_cnt": 5808,
+          "total_sale_cnt": 343724,
+          "total_sale_gmv_1d_amt": 162624,
+          "total_sale_gmv_amt": 381741933.5,
+          "total_video_cnt": 13581
+        },
+        {
+          "dt": "2026-04-29",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 28,
+          "total_ifl_cnt": 3418,
+          "total_live_cnt": 1336,
+          "total_sale_1d_cnt": 772,
+          "total_sale_cnt": 344496,
+          "total_sale_gmv_1d_amt": 21616,
+          "total_sale_gmv_amt": 381763549.5,
+          "total_video_cnt": 13851
+        },
+        {
+          "dt": "2026-05-01",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 28,
+          "total_ifl_cnt": 3487,
+          "total_live_cnt": 1390,
+          "total_sale_1d_cnt": 899,
+          "total_sale_cnt": 345395,
+          "total_sale_gmv_1d_amt": 25172,
+          "total_sale_gmv_amt": 381788721.5,
+          "total_video_cnt": 14008
+        },
+        {
+          "dt": "2026-05-02",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 28,
+          "total_ifl_cnt": 3501,
+          "total_live_cnt": 1428,
+          "total_sale_1d_cnt": 4865,
+          "total_sale_cnt": 350260,
+          "total_sale_gmv_1d_amt": 136220,
+          "total_sale_gmv_amt": 381924941.5,
+          "total_video_cnt": 14053
+        },
+        {
+          "dt": "2026-05-03",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 28,
+          "total_ifl_cnt": 3654,
+          "total_live_cnt": 1472,
+          "total_sale_1d_cnt": 6987,
+          "total_sale_cnt": 357247,
+          "total_sale_gmv_1d_amt": 195636,
+          "total_sale_gmv_amt": 382120577.5,
+          "total_video_cnt": 14750
+        },
+        {
+          "dt": "2026-05-05",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 63,
+          "total_ifl_cnt": 0,
+          "total_live_cnt": 0,
+          "total_sale_1d_cnt": 12724,
+          "total_sale_cnt": 369971,
+          "total_sale_gmv_1d_amt": 801612,
+          "total_sale_gmv_amt": 383368474.5,
+          "total_video_cnt": 0
+        },
+        {
+          "dt": "2026-05-06",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 63,
+          "total_ifl_cnt": 0,
+          "total_live_cnt": 0,
+          "total_sale_1d_cnt": 7814,
+          "total_sale_cnt": 377785,
+          "total_sale_gmv_1d_amt": 492282,
+          "total_sale_gmv_amt": 383860756.5,
+          "total_video_cnt": 0
+        },
+        {
+          "dt": "2026-05-07",
+          "product_id": "1729508370969629931",
+          "spu_avg_price": 63,
+          "total_ifl_cnt": 0,
+          "total_live_cnt": 0,
+          "total_sale_1d_cnt": 6297,
+          "total_sale_cnt": 384082,
+          "total_sale_gmv_1d_amt": 396711,
+          "total_sale_gmv_amt": 384257467.5,
+          "total_video_cnt": 0
+        }
+      ],
+      "requestId": "73d6c64c-f429-42da-8a4c-ec919bc563ea"
+    }
+  }
+}
