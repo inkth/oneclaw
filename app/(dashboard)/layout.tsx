@@ -1,4 +1,5 @@
 import { Sidebar } from '@/components/sidebar';
+import { Copilot } from '@/components/ai/copilot';
 
 export default function DashboardLayout({
   children,
@@ -11,6 +12,7 @@ export default function DashboardLayout({
       <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-black">
         {children}
       </main>
+      <Copilot />
     </div>
   );
 }

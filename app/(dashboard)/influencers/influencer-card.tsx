@@ -1,17 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, Eye, Video, MessageSquare, Copy, Check } from 'lucide-react';
+import { Users, Eye, Video, MessageSquare, Copy, Check, Sparkles, Loader2 } from 'lucide-react';
 import type { ProductInfluencer } from '@/lib/echotik/types';
+
+interface ProductContext {
+  name: string;
+  commissionRate?: number;
+  price?: number;
+}
 
 interface Props {
   influencer: ProductInfluencer;
   productId: string;
   region: string;
+  product?: ProductContext;
 }
 
-export function InfluencerCard({ influencer: inf, productId, region }: Props) {
-  const [showTemplate, setShowTemplate] = useState(false);
+export function InfluencerCard({ influencer: inf, product }: Props) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [streaming, setStreaming] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const engagementRate = inf.total_followers_cnt > 0
@@ -22,10 +31,53 @@ export function InfluencerCard({ influencer: inf, productId, region }: Props) {
     ? (inf.per_product_ifl_gmv_amt / inf.per_product_ifl_sale_cnt).toFixed(2)
     : '—';
 
-  const template = generateOutreachTemplate(inf);
+  async function generate() {
+    if (streaming) return;
+    setStreaming(true);
+    setText('');
+    try {
+      const res = await fetch('/api/ai/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          influencer: {
+            nick_name: inf.nick_name,
+            category: inf.category,
+            total_followers_cnt: inf.total_followers_cnt,
+            per_product_ifl_gmv_amt: inf.per_product_ifl_gmv_amt,
+            per_product_ifl_sale_cnt: inf.per_product_ifl_sale_cnt,
+          },
+          product,
+          lang: 'en',
+        }),
+      });
+      if (!res.ok || !res.body) throw new Error('stream failed');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        acc += decoder.decode(value, { stream: true });
+        setText(acc);
+      }
+      if (!acc.trim()) setText(fallbackTemplate(inf));
+    } catch {
+      // Offline / no-key fallback so the feature never dead-ends.
+      setText(fallbackTemplate(inf));
+    } finally {
+      setStreaming(false);
+    }
+  }
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && !text && !streaming) void generate();
+  }
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(template);
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -65,29 +117,43 @@ export function InfluencerCard({ influencer: inf, productId, region }: Props) {
               <span className="font-semibold">${roi}</span>
             </div>
             <button
-              onClick={() => setShowTemplate(!showTemplate)}
-              className="ml-auto px-3 py-1 text-xs font-medium rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-black hover:opacity-90"
+              onClick={toggle}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 text-white hover:opacity-90"
             >
-              {showTemplate ? '收起' : '生成邀约'}
+              <Sparkles size={12} />
+              {open ? '收起' : 'AI 邀约'}
             </button>
           </div>
         </div>
       </div>
 
-      {showTemplate && (
+      {open && (
         <div className="mt-4 p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900 relative">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] text-zinc-500 uppercase tracking-wide">英文邀约模板</span>
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700"
-            >
-              {copied ? <Check size={12} /> : <Copy size={12} />}
-              {copied ? '已复制' : '复制'}
-            </button>
+            <span className="text-[10px] text-zinc-500 uppercase tracking-wide flex items-center gap-1">
+              {streaming && <Loader2 size={11} className="animate-spin" />}
+              AI 生成的邀约文案
+            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={generate}
+                disabled={streaming}
+                className="text-xs text-zinc-500 hover:text-zinc-700 disabled:opacity-40"
+              >
+                重新生成
+              </button>
+              <button
+                onClick={handleCopy}
+                disabled={!text || streaming}
+                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 disabled:opacity-40"
+              >
+                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? '已复制' : '复制'}
+              </button>
+            </div>
           </div>
-          <pre className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-sans leading-relaxed">
-            {template}
+          <pre className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-sans leading-relaxed min-h-[3rem]">
+            {text || (streaming ? '生成中…' : '')}
           </pre>
         </div>
       )}
@@ -111,21 +177,18 @@ function formatNum(n: number): string {
   return n.toString();
 }
 
-function generateOutreachTemplate(inf: ProductInfluencer): string {
+/** Offline fallback used when the AI call fails (no key / network). */
+function fallbackTemplate(inf: ProductInfluencer): string {
   return `Hi ${inf.nick_name},
 
-I hope this message finds you well! I came across your amazing content and I'm really impressed by your creativity and engagement with your audience.
+I really enjoy your content and think it's a great fit for a product I'm launching on TikTok Shop. I'd love to explore a collaboration.
 
-I'm reaching out because I have a product that I believe would be a great fit for your content style and audience. I'd love to explore a collaboration opportunity with you.
-
-Here's what I can offer:
-- Free product samples for you to try
-- Competitive commission rate on sales
+What I can offer:
+- Free product samples
+- Competitive commission on sales
 - Long-term partnership potential
 
-Would you be interested in learning more? I'd be happy to send over product details and discuss the specifics.
-
-Looking forward to hearing from you!
+Would you be open to learning more? Happy to send over the details.
 
 Best regards`;
 }
