@@ -9,6 +9,8 @@ import {
 import type { Region } from '@/lib/echotik/types';
 import { ProfitCalculator } from './profit-calculator';
 import { SalesTrendChart } from './sales-trend-chart';
+import { AIVerdict } from './ai-verdict';
+import { AIScript } from './ai-script';
 
 export default async function ProductPage({
   params,
@@ -79,6 +81,11 @@ export default async function ProductPage({
         </div>
       </section>
 
+      {/* AI 选品诊断 */}
+      <section className="mt-8">
+        <AIVerdict productId={id} region={rg} />
+      </section>
+
       {/* Windowed Metrics */}
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-zinc-500 mb-3">核心数据</h2>
@@ -107,6 +114,11 @@ export default async function ProductPage({
           sellingPrice={detail.spu_avg_price}
           commissionRate={detail.product_commission_rate}
         />
+      </section>
+
+      {/* AI 内容脚本 */}
+      <section className="mt-8">
+        <AIScript productId={id} region={rg} />
       </section>
 
       {/* Influencers */}

@@ -14,6 +14,8 @@ export default async function InfluencersPage({
 
   let influencers: ProductInfluencer[] = [];
   let productName: string | null = null;
+  let productCommission: number | undefined;
+  let productPrice: number | undefined;
   let error: string | null = null;
 
   if (productId) {
@@ -24,6 +26,8 @@ export default async function InfluencersPage({
       ]);
       influencers = infList ?? [];
       productName = detail?.product_name ?? null;
+      productCommission = detail?.product_commission_rate;
+      productPrice = detail?.spu_avg_price;
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     }
@@ -80,7 +84,17 @@ export default async function InfluencersPage({
           ) : (
             <div className="space-y-3">
               {influencers.map(inf => (
-                <InfluencerCard key={inf.user_id} influencer={inf} productId={productId} region={region} />
+                <InfluencerCard
+                  key={inf.user_id}
+                  influencer={inf}
+                  productId={productId}
+                  region={region}
+                  product={
+                    productName
+                      ? { name: productName, commissionRate: productCommission, price: productPrice }
+                      : undefined
+                  }
+                />
               ))}
             </div>
           )}
