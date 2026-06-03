@@ -18,7 +18,7 @@ import type { Region } from '@/lib/echotik/types';
 
 export async function GET(
   request: NextRequest,
-  ctx: RouteContext<'/api/echotik/products/[id]'>,
+  ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
   const sp = request.nextUrl.searchParams;
