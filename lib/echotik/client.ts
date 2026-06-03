@@ -120,33 +120,40 @@ export interface RanklistParams {
 const MAX_PAGE_SIZE = 10;
 
 export async function getProductRanklist(params: RanklistParams) {
-  const date = params.date ?? yesterday();
   const desired = params.page_size ?? 20;
   const pageSize = Math.min(desired, MAX_PAGE_SIZE);
   const startPage = params.page_num ?? 1;
   const pagesNeeded = Math.ceil(desired / pageSize);
 
-  const common = {
-    region: params.region,
-    rank_type: params.rank_type,
-    product_rank_field: params.product_rank_field,
-    date,
-    page_size: pageSize,
-    category_id: params.category_id,
-    category_l2_id: params.category_l2_id,
-    category_l3_id: params.category_l3_id,
-  };
+  // T-1 数据不一定及时生成；如果用户没指定 date 就 fallback 试 T-1 → T-2 → T-3
+  const candidates = params.date
+    ? [params.date]
+    : [yesterday(), daysAgo(2), daysAgo(3)];
 
-  const pages = await Promise.all(
-    Array.from({ length: pagesNeeded }, (_, i) =>
-      call<ProductListItem[]>(
-        '/echotik/product/ranklist',
-        { ...common, page_num: startPage + i },
-        { revalidate: 1800, tags: [`ranklist:${params.region}`] },
+  for (const date of candidates) {
+    const common = {
+      region: params.region,
+      rank_type: params.rank_type,
+      product_rank_field: params.product_rank_field,
+      date,
+      page_size: pageSize,
+      category_id: params.category_id,
+      category_l2_id: params.category_l2_id,
+      category_l3_id: params.category_l3_id,
+    };
+    const pages = await Promise.all(
+      Array.from({ length: pagesNeeded }, (_, i) =>
+        call<ProductListItem[]>(
+          '/echotik/product/ranklist',
+          { ...common, page_num: startPage + i },
+          { revalidate: 1800, tags: [`ranklist:${params.region}:${date}`] },
+        ),
       ),
-    ),
-  );
-  return pages.flat().slice(0, desired);
+    );
+    const flat = pages.flat();
+    if (flat.length > 0) return flat.slice(0, desired);
+  }
+  return [];
 }
 
 export async function getProductDetail(productId: string, region: Region = 'US') {
@@ -166,6 +173,44 @@ export async function getProductDetailBatch(productIds: string[], region: Region
     { product_ids: productIds.join(','), region },
     { revalidate: 600 },
   );
+}
+
+/**
+ * 批量把"防盗链原始 URL"换成"3 天有效的签名 URL"。
+ * 单次最多 10 个，仅支持主机 echosell-images.tos-ap-southeast-1.volces.com 的链接。
+ * 响应是 [ { sourceUrl: signedUrl }, ... ] —— 每个对象是一对映射。
+ *
+ * 签名 URL 用 GET 可以拿到字节；HEAD 会被拒（TOS server 行为）。
+ */
+export async function batchDownloadCovers(
+  coverUrls: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (coverUrls.length === 0) return out;
+
+  const MAX_BATCH = 10;
+  const SUPPORTED_HOST = 'echosell-images.tos-ap-southeast-1.volces.com';
+  const eligible = coverUrls.filter((u) => {
+    try {
+      return new URL(u).host === SUPPORTED_HOST;
+    } catch {
+      return false;
+    }
+  });
+
+  for (let i = 0; i < eligible.length; i += MAX_BATCH) {
+    const chunk = eligible.slice(i, i + MAX_BATCH);
+    const data = await call<Array<Record<string, string>>>(
+      '/echotik/batch/cover/download',
+      { cover_urls: chunk.join(',') },
+      { revalidate: false },
+    );
+    for (const obj of data) {
+      const entries = Object.entries(obj);
+      for (const [src, dst] of entries) out.set(src, dst);
+    }
+  }
+  return out;
 }
 
 export async function getProductInfluencers(

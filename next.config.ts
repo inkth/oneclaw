@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: resolve(import.meta.dirname),
   },
+  // wechatpay-node-v3 -> superagent -> formidable 内部用 dynamic require，
+  // Turbopack 静态分析时无法解析。这里把这些包标为 server external，运行时再 require。
+  serverExternalPackages: [
+    "wechatpay-node-v3",
+    "alipay-sdk",
+    "tencentcloud-sdk-nodejs-sms",
+    "cos-nodejs-sdk-v5",
+    "superagent",
+    "formidable",
+  ],
 };
 
 export default nextConfig;
