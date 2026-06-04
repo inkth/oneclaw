@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
+import { Copilot } from "@/components/ai/copilot";
 import {
   LayoutDashboard,
   Store,
@@ -164,6 +165,8 @@ export default async function AppLayout({
         </header>
         <main className="flex-1 p-4 sm:p-8">{children}</main>
       </div>
+
+      <Copilot />
     </div>
   );
 }

@@ -98,6 +98,46 @@ export async function chat(opts: {
 }
 
 /**
+ * 流式对话——用于全局 AI Copilot 等需要逐字返回的场景。
+ * 复用 OpenRouter（OpenAI SDK）的 stream 能力，返回纯文本 token 的 ReadableStream，
+ * 客户端只需追加字符串即可。注意：流式不做成本落库（无最终 usage），
+ * 仅用于轻量助手对话，不计入 Agent 任务配额。
+ */
+export async function chatStream(opts: {
+  system: string;
+  messages: { role: "user" | "assistant"; content: string }[];
+  model?: string;
+  maxTokens?: number;
+}): Promise<ReadableStream<Uint8Array>> {
+  const model = opts.model ?? DEFAULT_MODEL;
+  const stream = await getOpenRouter().chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: opts.system },
+      ...opts.messages,
+    ],
+    max_tokens: opts.maxTokens ?? 1500,
+    temperature: 0.7,
+    stream: true,
+  });
+
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const chunk of stream) {
+          const token = chunk.choices?.[0]?.delta?.content;
+          if (token) controller.enqueue(encoder.encode(token));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+/**
  * 当 LLM 输出在 ```json ... ``` 块里 / 前后有解释文字 / 思维链中混合时，尽可能抽出 JSON。
  */
 export function extractJson<T = unknown>(text: string): T {
