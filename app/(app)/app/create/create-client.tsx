@@ -21,6 +21,8 @@ import {
   Bookmark,
   Trash2,
   Library,
+  Link2,
+  ArrowRight,
 } from "lucide-react";
 import { VideoDetailDrawer } from "@/components/VideoDetailDrawer";
 import { TemplateOptimizerModal } from "@/components/TemplateOptimizerModal";
@@ -101,6 +103,8 @@ type Template = {
   usageCount: number;
 };
 
+const DRAFT_KEY = "oneclaw:create-draft";
+
 export function CreateClient({
   workspaceId,
   falReady,
@@ -111,6 +115,7 @@ export function CreateClient({
   recentVideos,
   starterTemplates,
   customTemplates,
+  isGuest = false,
 }: {
   workspaceId: string;
   falReady: boolean;
@@ -121,6 +126,7 @@ export function CreateClient({
   recentVideos: RecentVideo[];
   starterTemplates: Template[];
   customTemplates: Template[];
+  isGuest?: boolean;
 }) {
   const router = useRouter();
   const [engineKey, setEngineKey] = useState<string>(
@@ -145,9 +151,23 @@ export function CreateClient({
   const [generateCover, setGenerateCover] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // 贴链接一键出片
+  const [linkUrl, setLinkUrl] = useState("");
+  const [parsingLink, setParsingLink] = useState(false);
+  const [linkPreview, setLinkPreview] = useState<{
+    title: string;
+    emoji: string;
+    sellingPoints: string[];
+    ogImage: string | null;
+  } | null>(null);
+
   const [history, setHistory] = useState<RecentVideo[]>(recentVideos);
   const [drawerVideoId, setDrawerVideoId] = useState<string | null>(null);
   const [optimizerOpen, setOptimizerOpen] = useState(false);
+
+  // 游客登录引导
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false);
 
   // Template state
   const [customs, setCustoms] = useState<Template[]>(customTemplates);
@@ -162,6 +182,45 @@ export function CreateClient({
       }),
     [customs, starterTemplates],
   );
+
+  // 把当前已填内容存到本地，登录回来后恢复，避免游客重填
+  function saveDraft() {
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ engineKey, duration, aspect, style, prompt, title, generateScript, generateCover }),
+      );
+    } catch {}
+  }
+
+  // 游客触发需要账号的动作时：先存草稿，再弹登录引导。返回 true 表示已拦截。
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    saveDraft();
+    setLoginPromptOpen(true);
+    return true;
+  }
+
+  // 登录回来（已是登录态）后恢复草稿，只在挂载时跑一次
+  useEffect(() => {
+    if (isGuest) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      localStorage.removeItem(DRAFT_KEY);
+      const d = JSON.parse(raw);
+      if (d.engineKey && engines.some((e) => e.key === d.engineKey)) setEngineKey(d.engineKey);
+      if (typeof d.duration === "number") setDuration(d.duration);
+      if (d.aspect) setAspect(d.aspect);
+      if (d.style) setStyle(d.style);
+      if (typeof d.prompt === "string") setPrompt(d.prompt);
+      if (typeof d.title === "string") setTitle(d.title);
+      if (typeof d.generateScript === "boolean") setGenerateScript(d.generateScript);
+      if (typeof d.generateCover === "boolean") setGenerateCover(d.generateCover);
+      if (d.prompt) toast.success("已恢复你登录前填写的内容");
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function applyTemplate(t: Template) {
     setAppliedTemplateId(t.id);
@@ -305,11 +364,68 @@ export function CreateClient({
     );
   }
 
+  async function parseLink() {
+    const url = linkUrl.trim();
+    if (!url) {
+      toast.error("先贴一个商品链接");
+      return;
+    }
+    if (gateGuest()) return;
+    setParsingLink(true);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/creation/from-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        toast.error(json?.error?.message || "解析失败，换个链接或手动填");
+        return;
+      }
+      const { parsed, ogImage } = json.data as {
+        parsed: {
+          title: string;
+          emoji: string;
+          sellingPoints: string[];
+          suggestedStyle: VideoStyle;
+          suggestedEngine: string;
+          suggestedPrompt: string;
+          videoTitle: string;
+        };
+        ogImage: string | null;
+      };
+
+      // 预填创作向导
+      setStyle(parsed.suggestedStyle);
+      if (engines.some((e) => e.key === parsed.suggestedEngine)) {
+        setEngineKey(parsed.suggestedEngine);
+      }
+      setPrompt(parsed.suggestedPrompt);
+      setTitle(parsed.videoTitle || parsed.title);
+      setGenerateScript(true);
+      setGenerateCover(true);
+      setAppliedTemplateId(null);
+      setLinkPreview({
+        title: parsed.title,
+        emoji: parsed.emoji,
+        sellingPoints: parsed.sellingPoints,
+        ogImage,
+      });
+      toast.success(`已识别：${parsed.emoji} ${parsed.title}，提示词已填好，可微调后生成`);
+    } catch {
+      toast.error("网络异常，稍后再试");
+    } finally {
+      setParsingLink(false);
+    }
+  }
+
   async function submit() {
     if (!prompt.trim()) {
       toast.error("先写一句提示词");
       return;
     }
+    if (gateGuest()) return;
     setSubmitting(true);
     const res = await fetch(`/api/workspaces/${workspaceId}/videos/create`, {
       method: "POST",
@@ -352,7 +468,18 @@ export function CreateClient({
           </p>
         </div>
 
-        {!falReady && (
+        {isGuest && (
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3 flex items-start gap-3">
+            <Sparkles className="h-4 w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-indigo-900 leading-relaxed">
+              <span className="font-semibold">试用模式</span>
+              ：随便逛、随便填、套模板都免费。点「识别 / 生成 / 存模板」时再登录即可，
+              你填的内容会自动保留。
+            </div>
+          </div>
+        )}
+
+        {!falReady && !isGuest && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 flex items-start gap-3">
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-amber-800 leading-relaxed">
@@ -361,6 +488,77 @@ export function CreateClient({
             </div>
           </div>
         )}
+
+        {/* 贴链接一键出片 */}
+        <section className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-violet-50/40 p-4">
+          <div className="inline-flex items-center gap-1.5 text-sm font-semibold mb-2.5">
+            <Link2 className="h-4 w-4 text-indigo-600" />
+            贴商品链接，一键出片
+            <span className="text-[10px] text-zinc-400 font-normal">
+              自动识别商品 + 写好提示词
+            </span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !parsingLink) parseLink();
+              }}
+              placeholder="粘贴 TikTok Shop / 亚马逊 / 独立站等商品页链接…"
+              className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            />
+            <button
+              onClick={parseLink}
+              disabled={parsingLink || !linkUrl.trim()}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap"
+            >
+              {parsingLink ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRight className="h-4 w-4" />
+              )}
+              {parsingLink ? "识别中…" : "识别"}
+            </button>
+          </div>
+          {linkPreview && (
+            <div className="mt-3 flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-2.5">
+              {linkPreview.ogImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={linkPreview.ogImage}
+                  alt=""
+                  className="h-14 w-14 rounded-lg object-cover flex-shrink-0 bg-zinc-100"
+                />
+              ) : (
+                <div className="h-14 w-14 rounded-lg bg-zinc-100 flex items-center justify-center text-2xl flex-shrink-0">
+                  {linkPreview.emoji}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium truncate">
+                  {linkPreview.emoji} {linkPreview.title}
+                </div>
+                {linkPreview.sellingPoints.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {linkPreview.sellingPoints.map((s, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-700"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1 text-[10px] text-zinc-400">
+                  提示词与标题已填入下方，可微调后点「生成视频」。
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
 
         {/* 模板库横滑 */}
         <section className="rounded-2xl border border-zinc-200 bg-white p-4">
@@ -374,7 +572,10 @@ export function CreateClient({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setOptimizerOpen(true)}
+                onClick={() => {
+                  if (gateGuest()) return;
+                  setOptimizerOpen(true);
+                }}
                 className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2.5 py-1 text-[11px] font-medium text-white hover:opacity-90 transition-opacity"
                 title="基于历史使用 + 视频成绩，AI 推荐高效模板"
               >
@@ -801,7 +1002,10 @@ export function CreateClient({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setSaveOpen(true)}
+                onClick={() => {
+                  if (gateGuest()) return;
+                  setSaveOpen(true);
+                }}
                 disabled={!prompt.trim()}
                 className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3.5 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
                 title="把当前组合保存为模板"
@@ -811,7 +1015,7 @@ export function CreateClient({
               </button>
               <button
                 onClick={submit}
-                disabled={submitting || !prompt.trim() || !falReady}
+                disabled={submitting || !prompt.trim() || (!falReady && !isGuest)}
                 className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-5 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {submitting ? (
@@ -836,6 +1040,10 @@ export function CreateClient({
             if (ok) setSaveOpen(false);
           }}
         />
+      )}
+
+      {loginPromptOpen && (
+        <LoginPromptModal onClose={() => setLoginPromptOpen(false)} />
       )}
 
       {/* 右侧最近生成 */}
@@ -989,6 +1197,51 @@ function EmptyPickerHint({ href, label }: { href: string; label: string }) {
     >
       还没有，{label} →
     </Link>
+  );
+}
+
+function LoginPromptModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-sm rounded-2xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <div className="p-6 space-y-4 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
+            <Sparkles className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight">登录后即可生成</h2>
+            <p className="mt-1 text-xs text-zinc-500 leading-relaxed">
+              你刚才填写的内容已经帮你保存好了，登录回来会自动恢复，不用重填。
+            </p>
+          </div>
+          <Link
+            href="/login?callbackUrl=/app/create"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+          >
+            登录 / 注册
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <button
+            onClick={onClose}
+            className="w-full text-xs text-zinc-400 hover:text-zinc-600"
+          >
+            再逛逛
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

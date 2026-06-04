@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -67,9 +66,12 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // 不再无条件拦截：游客也能进来逛功能页（如创作工坊），
+  // 真正需要账号的页面/动作各自提示登录。
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
 
   return (
     <div className="min-h-screen flex bg-zinc-50/50">
@@ -86,13 +88,13 @@ export default async function AppLayout({
         <div className="px-3 py-3 border-b border-zinc-100">
           <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
             <div className="text-[10px] uppercase tracking-wider text-zinc-400">
-              当前工作台
+              {workspace ? "当前工作台" : "试用模式"}
             </div>
             <div className="mt-0.5 text-sm font-medium truncate">
-              {workspace.name}
+              {workspace ? workspace.name : "未登录"}
             </div>
             <div className="mt-0.5 text-[10px] text-zinc-500">
-              方案 · {workspace.plan}
+              {workspace ? `方案 · ${workspace.plan}` : "登录后解锁全部功能"}
             </div>
           </div>
         </div>
@@ -122,35 +124,46 @@ export default async function AppLayout({
         </nav>
 
         <div className="border-t border-zinc-100 p-3">
-          <div className="flex items-center gap-2 mb-3 px-2">
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
-              {(session.user.name || session.user.phone || session.user.email || "?").charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-medium truncate">
-                {session.user.name || session.user.phone || session.user.email}
+          {session?.user ? (
+            <>
+              <div className="flex items-center gap-2 mb-3 px-2">
+                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
+                  {(session.user.name || session.user.phone || session.user.email || "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-medium truncate">
+                    {session.user.name || session.user.phone || session.user.email}
+                  </div>
+                  <div className="text-[10px] text-zinc-500 truncate font-mono">
+                    {session.user.phone
+                      ? `+86 ${session.user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
+                      : session.user.email}
+                  </div>
+                </div>
               </div>
-              <div className="text-[10px] text-zinc-500 truncate font-mono">
-                {session.user.phone
-                  ? `+86 ${session.user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
-                  : session.user.email}
-              </div>
-            </div>
-          </div>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
-          >
-            <button
-              type="submit"
-              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50"
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/" });
+                }}
+              >
+                <button
+                  type="submit"
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  退出登录
+                </button>
+              </form>
+            </>
+          ) : (
+            <Link
+              href="/login?callbackUrl=/app/create"
+              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-2 text-xs font-medium text-white hover:opacity-90"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              退出登录
-            </button>
-          </form>
+              登录 / 注册
+            </Link>
+          )}
         </div>
       </aside>
 
@@ -166,7 +179,7 @@ export default async function AppLayout({
         <main className="flex-1 p-4 sm:p-8">{children}</main>
       </div>
 
-      <Copilot />
+      {session?.user && <Copilot />}
     </div>
   );
 }

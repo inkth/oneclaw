@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -14,7 +15,7 @@ function maskPhone(p?: string | null) {
 
 export default async function SettingsPage() {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
   const workspace = await getOrCreateDefaultWorkspace(session.user.id);
   const [user, quota] = await Promise.all([
     prisma.user.findUnique({

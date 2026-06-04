@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -15,7 +16,7 @@ export default async function DiscoverProductsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
   const workspace = await getOrCreateDefaultWorkspace(session.user.id);
 
   const sp = await searchParams;

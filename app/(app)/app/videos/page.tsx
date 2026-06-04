@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -7,7 +8,7 @@ export const metadata = { title: "短视频 · OneClaw" };
 
 export default async function VideosPage() {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
   const workspace = await getOrCreateDefaultWorkspace(session.user.id);
 
   const videos = await prisma.video.findMany({
