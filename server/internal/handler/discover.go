@@ -1,0 +1,115 @@
+package handler
+
+import (
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+
+	apperr "github.com/oneclaw/server/internal/errors"
+	"github.com/oneclaw/server/internal/service"
+	"github.com/oneclaw/server/internal/service/echotik"
+)
+
+type DiscoverHandler struct {
+	discover *service.DiscoverService
+	ws       *service.WorkspaceService
+}
+
+func NewDiscoverHandler(d *service.DiscoverService, ws *service.WorkspaceService) *DiscoverHandler {
+	return &DiscoverHandler{discover: d, ws: ws}
+}
+
+// Ranklist GET /workspaces/:wid/discover/ranklist?region&rank_type&product_rank_field&page_size
+func (h *DiscoverHandler) Ranklist(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	p := echotik.RanklistParams{
+		Region:    defaultStr(c.Query("region"), "US"),
+		RankType:  defaultInt(c.Query("rank_type"), echotik.RankHot),
+		RankField: defaultInt(c.Query("product_rank_field"), echotik.FieldSales),
+		PageSize:  defaultInt(c.Query("page_size"), 12),
+		Date:      c.Query("date"),
+	}
+	res, err := h.discover.Ranklist(c.Request.Context(), wid, p)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, res)
+}
+
+func (h *DiscoverHandler) Interaction(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	var in service.InteractionInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数不合法:" + err.Error()))
+		return
+	}
+	rec, err := h.discover.UpsertInteraction(c.Request.Context(), wid, in)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"interaction": rec})
+}
+
+type importReq struct {
+	ProductID     string `json:"productId" binding:"required"`
+	Region        string `json:"region" binding:"required"`
+	CategoryLabel string `json:"categoryLabel"`
+}
+
+func (h *DiscoverHandler) Import(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	var in importReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数不合法:" + err.Error()))
+		return
+	}
+	res, err := h.discover.ImportProduct(c.Request.Context(), wid, in.ProductID, in.Region, in.CategoryLabel)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	if res.AlreadyExists {
+		OK(c, res)
+		return
+	}
+	Created(c, res)
+}
+
+// Detail GET /discover/products/:externalId?region=US (仅需登录)。
+func (h *DiscoverHandler) Detail(c *gin.Context) {
+	region := defaultStr(c.Query("region"), "US")
+	dp, err := h.discover.GetDiscoverProduct(c.Request.Context(), c.Param("externalId"), region)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"product": dp})
+}
+
+func defaultStr(v, def string) string {
+	if v == "" {
+		return def
+	}
+	return v
+}
+
+func defaultInt(v string, def int) int {
+	if v == "" {
+		return def
+	}
+	if n, err := strconv.Atoi(v); err == nil {
+		return n
+	}
+	return def
+}

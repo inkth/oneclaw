@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, RotateCcw, Trash2, Video as VideoIcon, Loader2 } from "lucide-react";
-import { DispatchButton } from "@/components/DispatchButton";
+import { Archive, RotateCcw, Trash2, Loader2 } from "lucide-react";
+import { apiBrowser } from "@/lib/api-browser";
 
 type Status = "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 
@@ -55,40 +55,31 @@ export function ProductsClient({
   async function patchProduct(id: string, patch: Partial<Product>) {
     setBusyId(id);
     setError(null);
-    const res = await fetch(
-      `/api/workspaces/${workspaceId}/products/${id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
-      },
-    );
-    const json = await res.json();
-    setBusyId(null);
-    if (!res.ok || !json.ok) {
-      setError(json?.error?.message || "更新失败");
-      return;
+    try {
+      const data = await apiBrowser<{ product: Product }>(
+        `/workspaces/${workspaceId}/products/${id}`,
+        { method: "PATCH", body: JSON.stringify(patch) },
+      );
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...data.product } : p)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "更新失败");
+    } finally {
+      setBusyId(null);
     }
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...json.data.product } : p)),
-    );
   }
 
   async function deleteProduct(id: string) {
-    if (!confirm("确定删除？该选品产生的视频会保留但不再关联。")) return;
+    if (!confirm("确定删除？")) return;
     setBusyId(id);
-    const res = await fetch(
-      `/api/workspaces/${workspaceId}/products/${id}`,
-      { method: "DELETE" },
-    );
-    const json = await res.json();
-    setBusyId(null);
-    if (!res.ok || !json.ok) {
-      setError(json?.error?.message || "删除失败");
-      return;
+    try {
+      await apiBrowser(`/workspaces/${workspaceId}/products/${id}`, { method: "DELETE" });
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "删除失败");
+    } finally {
+      setBusyId(null);
     }
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    router.refresh();
   }
 
   return (
@@ -205,14 +196,6 @@ export function ProductsClient({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">
-                      {p.status !== "ARCHIVED" && (
-                        <DispatchButton
-                          workspaceId={workspaceId}
-                          agent="DIRECTOR"
-                          input={`productId=${p.id} 为这个产品生成 4 套差异化短视频`}
-                          size="xs"
-                        />
-                      )}
                       {p.status === "ARCHIVED" ? (
                         <button
                           onClick={() => patchProduct(p.id, { status: "EVALUATING" })}
@@ -249,27 +232,6 @@ export function ProductsClient({
         </div>
       )}
 
-      {filter === "ALL" && products.filter((p) => p.status === "RECOMMENDED").length > 0 && (
-        <div className="rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-violet-900">
-                <VideoIcon className="h-4 w-4" />
-                批量动作
-              </div>
-              <p className="mt-1 text-xs text-violet-700">
-                把所有「推荐」品类的视频脚本一次出齐？让运营官给你排好本周日程？
-              </p>
-            </div>
-            <DispatchButton
-              workspaceId={workspaceId}
-              agent="OPERATOR"
-              input="基于当前工作台所有视频，排一份本周三平台发布日历"
-              size="sm"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

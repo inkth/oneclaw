@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { apiBrowser } from "@/lib/api-browser";
 import {
   Sparkles,
   Plus,
@@ -130,34 +131,33 @@ export function DiscoverClient({
   async function importProduct(p: DiscoverProduct) {
     if (importing.has(p.productId)) return;
     setImporting((prev) => new Set(prev).add(p.productId));
-    const res = await fetch(
-      `/api/workspaces/${workspaceId}/discover/import-product`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: p.productId,
-          region: p.region,
-          categoryLabel: "TikTok 爆品",
-        }),
-      },
-    );
-    const json = await res.json();
-    setImporting((prev) => {
-      const n = new Set(prev);
-      n.delete(p.productId);
-      return n;
-    });
-    if (!res.ok || !json.ok) {
-      toast.error(json?.error?.message || "加入失败");
-      return;
+    try {
+      const data = await apiBrowser<{ alreadyExists: boolean }>(
+        `/workspaces/${workspaceId}/discover/import-product`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            productId: p.productId,
+            region: p.region,
+            categoryLabel: "TikTok 爆品",
+          }),
+        },
+      );
+      if (data.alreadyExists) {
+        toast(`选品库里已经有了：${p.productName.slice(0, 30)}…`);
+      } else {
+        toast.success(`已加入选品库：${p.productName.slice(0, 30)}…`);
+      }
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "加入失败");
+    } finally {
+      setImporting((prev) => {
+        const n = new Set(prev);
+        n.delete(p.productId);
+        return n;
+      });
     }
-    if (json.data.alreadyExists) {
-      toast(`选品库里已经有了：${p.productName.slice(0, 30)}…`);
-    } else {
-      toast.success(`已加入选品库：${p.productName.slice(0, 30)}…`);
-    }
-    router.refresh();
   }
 
   const [starring, setStarring] = useState<Set<string>>(new Set());
@@ -172,48 +172,27 @@ export function DiscoverClient({
     const next = !stars[p.productId];
     setStarring((prev) => new Set(prev).add(p.productId));
     setStars((prev) => ({ ...prev, [p.productId]: next }));
-    const res = await fetch(`/api/workspaces/${workspaceId}/discover/interactions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ externalId: p.productId, region: p.region, isStarred: next }),
-    });
-    setStarring((prev) => {
-      const n = new Set(prev);
-      n.delete(p.productId);
-      return n;
-    });
-    if (!res.ok) {
+    try {
+      await apiBrowser(`/workspaces/${workspaceId}/discover/interactions`, {
+        method: "POST",
+        body: JSON.stringify({ externalId: p.productId, region: p.region, isStarred: next }),
+      });
+      if (next) toast.success("已收藏");
+    } catch {
       setStars((prev) => ({ ...prev, [p.productId]: !next }));
       toast.error("收藏失败");
-    } else if (next) {
-      toast.success("已收藏");
+    } finally {
+      setStarring((prev) => {
+        const n = new Set(prev);
+        n.delete(p.productId);
+        return n;
+      });
     }
   }
 
-  async function analyzeProduct(p: DiscoverProduct) {
-    if (analyzing.has(p.productId)) return;
-    setAnalyzing((prev) => new Set(prev).add(p.productId));
-    const res = await fetch(`/api/workspaces/${workspaceId}/discover/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: p.productId, region: p.region }),
-    });
-    const json = await res.json();
-    setAnalyzing((prev) => {
-      const n = new Set(prev);
-      n.delete(p.productId);
-      return n;
-    });
-    if (!res.ok || !json.ok) {
-      toast.error(json?.error?.message || "分析失败");
-      return;
-    }
-    toast.success("已派给分析师，10-20s 后到工作流页查看", {
-      action: {
-        label: "去看",
-        onClick: () => router.push("/app/agents"),
-      },
-    });
+  // Phase 1:AI 选品分析(ANALYST agent)迁移中,先占位。
+  async function analyzeProduct(_p: DiscoverProduct) {
+    toast.message("AI 选品分析迁移中", { description: "Agent 工作流将在后续阶段上线" });
   }
 
   const top = useMemo(() => products.slice(0, 3), [products]);

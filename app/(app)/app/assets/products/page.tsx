@@ -1,20 +1,36 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/db";
-import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
+import { redirect } from "next/navigation";
+import { getMe, apiServer } from "@/lib/api-client";
 import { ProductsClient } from "./products-client";
 
 export const metadata = { title: "商品 · OneClaw" };
 
-export default async function ProductsPage() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+type GoProduct = {
+  id: string;
+  title: string;
+  category: string;
+  emoji: string | null;
+  priceCents: number;
+  costCents: number;
+  marginPct: number;
+  roiScore: number;
+  monthlySales: number;
+  trendDelta: number;
+  status: "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
+  note: string | null;
+};
 
-  const products = await prisma.product.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: [{ status: "asc" }, { roiScore: "desc" }],
-    include: { shop: { select: { id: true, name: true, platform: true } } },
-  });
+export default async function ProductsPage() {
+  const me = await getMe();
+  if (!me) redirect("/login?callbackUrl=/app/assets/products");
+  const workspace = me.workspace;
+
+  let products: GoProduct[] = [];
+  try {
+    const data = await apiServer<{ products: GoProduct[] }>(`/workspaces/${workspace.id}/products`);
+    products = data.products ?? [];
+  } catch {
+    products = [];
+  }
 
   return (
     <ProductsClient
@@ -32,9 +48,7 @@ export default async function ProductsPage() {
         trendDelta: p.trendDelta,
         status: p.status,
         note: p.note,
-        shop: p.shop
-          ? { id: p.shop.id, name: p.shop.name, platform: p.shop.platform }
-          : null,
+        shop: null,
       }))}
     />
   );
