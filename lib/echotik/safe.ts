@@ -208,13 +208,13 @@ export function safeVideoRanklist(params: EntityRanklistParams) {
 export type CategoryOption = { id: string; name: string };
 
 /**
- * 一级类目下拉用：取 region 的 L1 列表（统一用 en-US，类目库最全）。
+ * 一级类目下拉用：取 region 的 L1 列表（统一用 zh-CN，展示中文类目名）。
  * 没凭证 / 调用失败时返回空数组——下拉只剩「全部类目」，不影响主榜。
  */
 export async function safeCategoriesL1(region: Region): Promise<CategoryOption[]> {
   if (!isEchoTikConfigured()) return [];
   try {
-    const cats = await listCategoriesL1("en-US", region);
+    const cats = await listCategoriesL1("zh-CN", region);
     return cats
       .filter((c) => c.category_id && c.category_id !== "0")
       .map((c) => ({ id: c.category_id, name: c.category_name }))
