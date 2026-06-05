@@ -55,7 +55,6 @@ export default async function CreatePage() {
         products={[]}
         materials={[]}
         models={[]}
-        recentVideos={[]}
         starterTemplates={STARTER_TEMPLATE_PROPS}
         customTemplates={[]}
       />
@@ -63,7 +62,7 @@ export default async function CreatePage() {
   }
   const workspace = await getOrCreateDefaultWorkspace(session.user.id);
 
-  const [products, materials, models, recentVideos, customTemplates] = await Promise.all([
+  const [products, materials, models, customTemplates] = await Promise.all([
     prisma.product.findMany({
       where: { workspaceId: workspace.id, status: { not: "ARCHIVED" } },
       orderBy: [{ status: "asc" }, { roiScore: "desc" }],
@@ -95,22 +94,6 @@ export default async function CreatePage() {
         avatarUrl: true,
         usageCount: true,
         isFavorite: true,
-      },
-    }),
-    prisma.video.findMany({
-      where: { workspaceId: workspace.id, engine: { not: null } },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      select: {
-        id: true,
-        title: true,
-        thumbnailUrl: true,
-        videoUrl: true,
-        processing: true,
-        engine: true,
-        aspectRatio: true,
-        durationSec: true,
-        createdAt: true,
       },
     }),
     prisma.creationTemplate.findMany({
@@ -146,17 +129,6 @@ export default async function CreatePage() {
         avatarUrl: m.avatarUrl,
         usageCount: m.usageCount,
         isFavorite: m.isFavorite,
-      }))}
-      recentVideos={recentVideos.map((v) => ({
-        id: v.id,
-        title: v.title,
-        thumbnailUrl: v.thumbnailUrl,
-        videoUrl: v.videoUrl,
-        processing: v.processing,
-        engine: v.engine,
-        aspectRatio: v.aspectRatio,
-        durationSec: v.durationSec,
-        createdAt: v.createdAt.toISOString(),
       }))}
       starterTemplates={STARTER_TEMPLATE_PROPS}
       customTemplates={customTemplates.map((t) => ({

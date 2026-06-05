@@ -11,10 +11,8 @@ import {
   Package,
   UserSquare2,
   Image as ImageIcon,
-  Video as VideoIcon,
   Check,
   X,
-  Play,
   AlertTriangle,
   Crown,
   Star,
@@ -23,8 +21,9 @@ import {
   Library,
   Link2,
   ArrowRight,
+  ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
-import { VideoDetailDrawer } from "@/components/VideoDetailDrawer";
 import { TemplateOptimizerModal } from "@/components/TemplateOptimizerModal";
 
 type AspectRatio = "9:16" | "16:9" | "1:1";
@@ -64,18 +63,6 @@ type ModelAsset = {
   isFavorite: boolean;
 };
 
-type RecentVideo = {
-  id: string;
-  title: string;
-  thumbnailUrl: string | null;
-  videoUrl: string | null;
-  processing: string;
-  engine: string | null;
-  aspectRatio: string | null;
-  durationSec: number;
-  createdAt: string;
-};
-
 const STYLES: Array<{ v: VideoStyle; cn: string; emoji: string }> = [
   { v: "UNBOXING", cn: "开箱", emoji: "📦" },
   { v: "COMPARISON", cn: "对比", emoji: "⚖️" },
@@ -112,7 +99,6 @@ export function CreateClient({
   products,
   materials,
   models,
-  recentVideos,
   starterTemplates,
   customTemplates,
   isGuest = false,
@@ -123,7 +109,6 @@ export function CreateClient({
   products: Product[];
   materials: Material[];
   models: ModelAsset[];
-  recentVideos: RecentVideo[];
   starterTemplates: Template[];
   customTemplates: Template[];
   isGuest?: boolean;
@@ -162,9 +147,11 @@ export function CreateClient({
     ogImage: string | null;
   } | null>(null);
 
-  const [history, setHistory] = useState<RecentVideo[]>(recentVideos);
-  const [drawerVideoId, setDrawerVideoId] = useState<string | null>(null);
   const [optimizerOpen, setOptimizerOpen] = useState(false);
+
+  // 精简界面：模板库与高级设置默认收起
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // 游客登录引导
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
@@ -452,21 +439,19 @@ export function CreateClient({
       return;
     }
     toast.success("已提交，等待 fal 出片", {
-      action: { label: "去视频墙", onClick: () => router.push("/app/videos") },
+      action: { label: "去看成片", onClick: () => router.push("/app/videos") },
     });
-    setHistory((prev) => [json.data.video, ...prev].slice(0, 12));
     setPrompt("");
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">创作工坊</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            把商品 / 素材 / 模特拼成提示词，挑个引擎，让 AI 帮你做带货短视频。
-          </p>
-        </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">创作工坊</h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          贴个商品链接或挑个模板，写一句提示词，让 AI 帮你做带货短视频。
+        </p>
+      </div>
 
         {!falReady && !isGuest && (
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 flex items-start gap-3">
@@ -549,32 +534,44 @@ export function CreateClient({
           )}
         </section>
 
-        {/* 模板库横滑 */}
+        {/* 模板库（默认收起） */}
         <section className="rounded-xl border border-zinc-200/80 bg-white p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="inline-flex items-center gap-1.5 text-sm font-semibold">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setTemplatesOpen((o) => !o)}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold"
+            >
               <Library className="h-4 w-4 text-indigo-600" />
               模板库
               <span className="text-2xs text-zinc-400 font-normal">
                 {customs.length} 个自定义 · {starterTemplates.length} 个起步模板
               </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (gateGuest()) return;
-                  setOptimizerOpen(true);
-                }}
-                className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-indigo-700 transition-colors"
-                title="基于历史使用 + 视频成绩，AI 推荐高效模板"
-              >
-                <Sparkles className="h-3 w-3" />
-                AI 推荐
-              </button>
-              <span className="text-2xs text-zinc-400">点击套用</span>
-            </div>
+              <ChevronDown
+                className={`h-4 w-4 text-zinc-400 transition-transform ${
+                  templatesOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {templatesOpen && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (gateGuest()) return;
+                    setOptimizerOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-indigo-700 transition-colors"
+                  title="基于历史使用 + 视频成绩，AI 推荐高效模板"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  AI 推荐
+                </button>
+                <span className="text-2xs text-zinc-400">点击套用</span>
+              </div>
+            )}
           </div>
-          <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
+          {templatesOpen && (
+          <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
             {allTemplates.map((t) => {
               const applied = appliedTemplateId === t.id;
               return (
@@ -642,15 +639,23 @@ export function CreateClient({
               );
             })}
           </div>
+          )}
         </section>
 
-        {/* 步骤 1：引擎 */}
-        <Section
-          step={1}
-          title="选择视频引擎"
-          subtitle="不同模型的画质/时长/价格不同。Kling 标准最便宜，适合做选品验证。"
+        {/* 高级设置：引擎 + 参数（默认收起，默认用推荐配置） */}
+        <CollapsibleSection
+          icon={SlidersHorizontal}
+          title="高级设置"
+          subtitle="引擎 / 风格 / 时长 / 比例 · 默认用推荐配置"
+          open={advancedOpen}
+          onToggle={() => setAdvancedOpen((o) => !o)}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="space-y-5">
+            <div>
+              <div className="mb-2 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
+                视频引擎
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {engines.map((e) => {
               const active = engineKey === e.key;
               return (
@@ -702,12 +707,13 @@ export function CreateClient({
                 </button>
               );
             })}
-          </div>
-        </Section>
-
-        {/* 步骤 2：参数 */}
-        <Section step={2} title="视频参数" subtitle="风格 / 时长 / 比例">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
+                参数
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <ParamGroup label="风格">
               <div className="grid grid-cols-2 gap-1.5">
                 {STYLES.map((s) => (
@@ -759,12 +765,13 @@ export function CreateClient({
                 ))}
               </div>
             </ParamGroup>
+              </div>
+            </div>
           </div>
-        </Section>
+        </CollapsibleSection>
 
-        {/* 步骤 3：商品 / 素材 / 模特 */}
+        {/* 商品 / 素材 / 模特 */}
         <Section
-          step={3}
           title="挂载素材（可选）"
           subtitle="选商品自动填入卖点，选素材作参考，选模特定人设"
         >
@@ -910,9 +917,8 @@ export function CreateClient({
           </div>
         </Section>
 
-        {/* 步骤 4：提示词 */}
+        {/* 提示词 */}
         <Section
-          step={4}
           title="提示词"
           subtitle="描述你想要的画面 / 镜头运动 / 风格"
         >
@@ -1017,7 +1023,6 @@ export function CreateClient({
             </div>
           </div>
         </div>
-      </div>
 
       {saveOpen && (
         <SaveTemplateModal
@@ -1033,69 +1038,6 @@ export function CreateClient({
 
       {loginPromptOpen && (
         <LoginPromptModal onClose={() => setLoginPromptOpen(false)} />
-      )}
-
-      {/* 右侧最近生成 */}
-      <aside className="space-y-3">
-        <h2 className="text-sm font-semibold flex items-center gap-1.5">
-          <VideoIcon className="h-3.5 w-3.5" />
-          最近生成
-        </h2>
-        {history.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-4 text-xs text-zinc-500 text-center">
-            还没生成过；提交后会在这里显示
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {history.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setDrawerVideoId(v.id)}
-                className="block w-full text-left rounded-xl border border-zinc-200/80 bg-white overflow-hidden hover:shadow-sm transition-shadow"
-              >
-                <div className="relative aspect-[9/14] bg-zinc-100">
-                  {v.thumbnailUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={v.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-zinc-300">
-                      <ImageIcon className="h-6 w-6" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    {v.processing === "COMPLETED" && v.videoUrl ? (
-                      <Play className="h-7 w-7 text-white/90 fill-white" />
-                    ) : v.processing === "FAILED" ? (
-                      <X className="h-6 w-6 text-rose-300" />
-                    ) : (
-                      <Loader2 className="h-6 w-6 text-white animate-spin" />
-                    )}
-                  </div>
-                  <div className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 text-2xs font-medium text-zinc-900">
-                    {v.aspectRatio} · {v.durationSec}s
-                  </div>
-                </div>
-                <div className="p-2.5">
-                  <div className="text-xs font-medium truncate">{v.title}</div>
-                  <div className="mt-0.5 text-2xs text-zinc-500 truncate">
-                    {v.engine ?? "—"} · {new Date(v.createdAt).toLocaleString("zh-CN")}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </aside>
-
-      {drawerVideoId && (
-        <VideoDetailDrawer
-          workspaceId={workspaceId}
-          videoId={drawerVideoId}
-          onClose={() => setDrawerVideoId(null)}
-          onDeleted={(id) =>
-            setHistory((prev) => prev.filter((v) => v.id !== id))
-          }
-        />
       )}
 
       {optimizerOpen && (
@@ -1114,12 +1056,10 @@ export function CreateClient({
 }
 
 function Section({
-  step,
   title,
   subtitle,
   children,
 }: {
-  step: number;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
@@ -1127,13 +1067,46 @@ function Section({
   return (
     <section className="rounded-xl border border-zinc-200/80 bg-white p-5">
       <div className="flex items-baseline gap-2.5 mb-4">
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-white text-2xs font-mono">
-          {step}
-        </div>
         <h2 className="text-sm font-semibold">{title}</h2>
         {subtitle && <span className="text-2xs text-zinc-500">— {subtitle}</span>}
       </div>
       {children}
+    </section>
+  );
+}
+
+function CollapsibleSection({
+  icon: Icon,
+  title,
+  subtitle,
+  open,
+  onToggle,
+  children,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-zinc-200/80 bg-white">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-2.5 p-5 text-left"
+      >
+        {Icon && <Icon className="h-4 w-4 text-zinc-500" />}
+        <h2 className="text-sm font-semibold">{title}</h2>
+        {subtitle && <span className="text-2xs text-zinc-500">— {subtitle}</span>}
+        <ChevronDown
+          className={`ml-auto h-4 w-4 text-zinc-400 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open && <div className="px-5 pb-5">{children}</div>}
     </section>
   );
 }

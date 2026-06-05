@@ -52,27 +52,26 @@ const BOARDS: Board[] = [
     ],
   },
   {
+    // 创作是单一聚焦流程，不挂二级 Tab；生成的成片归到「资产 · 短视频」。
     key: "create",
     label: "创作",
     icon: Clapperboard,
     href: "/app/create",
-    paths: ["/app/create", "/app/videos"],
-    tabs: [
-      { label: "创作工坊", href: "/app/create" },
-      { label: "短视频", href: "/app/videos" },
-    ],
+    paths: ["/app/create"],
+    tabs: [],
   },
   {
     key: "assets",
     label: "资产",
     icon: Boxes,
     href: "/app/assets/shops",
-    paths: ["/app/assets"],
+    paths: ["/app/assets", "/app/videos"],
     tabs: [
       { label: "店铺", href: "/app/assets/shops" },
       { label: "商品", href: "/app/assets/products" },
       { label: "模特", href: "/app/assets/models" },
       { label: "素材库", href: "/app/assets/materials" },
+      { label: "短视频", href: "/app/videos" },
     ],
   },
   {
