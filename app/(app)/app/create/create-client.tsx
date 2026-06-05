@@ -370,10 +370,10 @@ export function CreateClient({
       toast.error("先贴一个商品链接");
       return;
     }
-    if (gateGuest()) return;
+    // 识别链接对游客开放（只有「生成视频」才需要登录）
     setParsingLink(true);
     try {
-      const res = await fetch(`/api/workspaces/${workspaceId}/creation/from-link`, {
+      const res = await fetch(`/api/creation/from-link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
@@ -473,7 +473,7 @@ export function CreateClient({
             <Sparkles className="h-4 w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-indigo-900 leading-relaxed">
               <span className="font-semibold">试用模式</span>
-              ：随便逛、随便填、套模板都免费。点「识别 / 生成 / 存模板」时再登录即可，
+              ：随便逛、贴链接识别、套模板都免费。只有点「生成视频」时才需要登录，
               你填的内容会自动保留。
             </div>
           </div>
@@ -1221,7 +1221,7 @@ function LoginPromptModal({ onClose }: { onClose: () => void }) {
             <Sparkles className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold tracking-tight">登录后即可生成</h2>
+            <h2 className="text-lg font-bold tracking-tight">登录后继续</h2>
             <p className="mt-1 text-xs text-zinc-500 leading-relaxed">
               你刚才填写的内容已经帮你保存好了，登录回来会自动恢复，不用重填。
             </p>
