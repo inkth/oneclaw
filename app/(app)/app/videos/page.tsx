@@ -25,7 +25,7 @@ export default async function VideosPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">短视频</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          创意总监为每个选品生成的差异化短视频，封面与视频通过 fal.ai 实时生成。
+          创意总监为每个选品生成的差异化短视频，封面与视频实时生成。
         </p>
       </div>
 

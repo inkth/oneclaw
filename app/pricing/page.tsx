@@ -89,7 +89,7 @@ const faqs = [
     a: "每次派发市场分析师 / 创意总监 / 品牌运营官算 1 次。Director 调用的 fal 视频另外算在视频额度里。",
   },
   {
-    q: "fal 视频额度用完了怎么办？",
+    q: "视频额度用完了怎么办？",
     a: "Free / Pro 用完会暂停视频生成，分析师与运营官仍可正常使用；Team 按 $0.06/5s 视频实际消耗结算。",
   },
   {
@@ -97,12 +97,12 @@ const faqs = [
     a: "可以。升级即时生效，未消耗额度按比例转入新方案；降级在下个计费周期生效。",
   },
   {
-    q: "支持 BYOK（自带 OpenRouter / fal key）吗？",
+    q: "支持 BYOK（自带模型 key）吗？",
     a: "Team 起支持。BYOK 模式下 OneClaw 只对工作流编排和数据存储收费，模型成本走你自己的账户。",
   },
   {
     q: "用了 Agent 写出来的视频版权归谁？",
-    a: "归你。OneClaw 不主张任何素材版权，但建议你在商用前阅读 fal.ai 和 OpenRouter 各家模型的服务条款。",
+    a: "归你。OneClaw 不主张任何素材版权，但建议你在商用前阅读相关模型服务商的服务条款。",
   },
 ];
 
@@ -230,7 +230,7 @@ export default function PricingPage() {
             </div>
 
             <p className="mt-10 text-center text-xs text-zinc-500">
-              所有方案均不含 OpenRouter / fal.ai 实际推理成本，相关费用由 OneClaw
+              所有方案均不含模型实际推理成本，相关费用由 OneClaw
               在你的额度内代付；BYOK 模式下走你自己的账户。
             </p>
           </div>

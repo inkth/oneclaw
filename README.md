@@ -2,7 +2,7 @@
 
 > 你的 AI 出海团队 — 从洞察到变现，一站搞定。
 
-Next.js 16 App Router + Tailwind v4 + Prisma 6 + Auth.js v5 + Postgres + OpenRouter + fal.ai。
+Next.js 16 App Router + Tailwind v4 + Prisma 6 + Auth.js v5 + Postgres。
 
 ## 功能
 
@@ -10,12 +10,12 @@ Next.js 16 App Router + Tailwind v4 + Prisma 6 + Auth.js v5 + Postgres + OpenRou
 - 🔐 **认证**：邮箱+密码（bcrypt），Auth.js v5 凭证登录，JWT session，proxy 保护 `/app`
 - 🗄️ **数据层**：Prisma 6 / Postgres，`User` `Workspace` `Membership` `Product` `Video` `AgentTask` `NewsletterSubscription` `DemoRequest`
 - 🤖 **AI Agent**（已真实化，三种角色）：
-  - **Market Analyst** —— OpenRouter (Claude/GPT/Gemini 可切) 输出结构化 JSON，自动写入 `Product` 表
-  - **Creative Director** —— LLM 写 4 套脚本 + fal `flux/schnell` 并行生成 4 张封面 + fal `kling-video` 提交 4 个 5s 视频生成任务
+  - **Market Analyst** —— LLM（多模型可切）输出结构化 JSON，自动写入 `Product` 表
+  - **Creative Director** —— LLM 写 4 套脚本 + 并行生成 4 张封面 + 提交 4 个 5s 视频生成任务
   - **Brand Operator** —— 基于工作台已有视频生成本周三平台发布日历
-- ⏳ **异步执行**：`POST /agent-tasks` 立即返回 `QUEUED` 任务，`after()` 后台执行，前端每 2.5s 轮询任务状态，视频生成每 8s 轮询 fal 队列
+- ⏳ **异步执行**：`POST /agent-tasks` 立即返回 `QUEUED` 任务，`after()` 后台执行，前端每 2.5s 轮询任务状态，视频生成每 8s 轮询生成队列
 - 📡 **API**：见下表
-- 🧑‍💻 **/app 工作台**：概览（任务/选品/视频统计）、选品库、短视频墙（含 fal 视频内联播放）、Agent Runner、设置
+- 🧑‍💻 **/app 工作台**：概览（任务/选品/视频统计）、选品库、短视频墙（含视频内联播放）、Agent Runner、设置
 
 ## 本地开发
 
@@ -44,7 +44,7 @@ npm run dev
 | `/login` | 登录 |
 | `/app` | 工作台首页（未登录会跳 `/login`） |
 | `/app/products` | 选品库（Analyst 写入） |
-| `/app/videos` | 短视频墙（Director 写入，含 fal 视频/封面） |
+| `/app/videos` | 短视频墙（Director 写入，含视频/封面） |
 | `/app/agents` | Agent 派发器（含历史） |
 | `/app/settings` | 账号/工作台 |
 | `npm run db:studio` | Prisma Studio |
@@ -60,18 +60,18 @@ npm run dev
 | `/api/me` | GET | 登录 | 当前用户 + 默认工作台 |
 | `/api/workspaces/:id/products` | GET / POST | Membership | 选品 |
 | `/api/workspaces/:id/videos` | GET | Membership | 视频 |
-| `/api/workspaces/:id/videos/:videoId/refresh` | POST | Membership | 拉一次 fal 队列状态，回写 `videoUrl` |
+| `/api/workspaces/:id/videos/:videoId/refresh` | POST | Membership | 拉一次生成队列状态，回写 `videoUrl` |
 | `/api/workspaces/:id/agent-tasks` | GET / POST | Membership | 列出 / 派发 Agent 任务（异步） |
 | `/api/workspaces/:id/agent-tasks/:taskId` | GET | Membership | 查单个任务，用于前端轮询 |
 
 ## Agent 实现
 
-[`lib/agents/`](lib/agents/) 三个文件对应三位 Agent。它们都是 **真实** LLM/fal 调用：
+[`lib/agents/`](lib/agents/) 三个文件对应三位 Agent。它们都是 **真实** LLM / 视频生成调用：
 
 ```
-lib/agents/llm.ts       —— OpenRouter chat 封装 + JSON 抽取（容忍 markdown 包裹）
+lib/agents/llm.ts       —— LLM chat 封装 + JSON 抽取（容忍 markdown 包裹）
 lib/agents/analyst.ts   —— 系统 prompt 强制 JSON 输出 → zod 校验 → prisma.product.createMany
-lib/agents/director.ts  —— 关联工作台 RECOMMENDED 商品 → LLM 4 脚本 → fal flux 4 封面（并行）+ fal kling 4 视频提交（并行）→ Video 行
+lib/agents/director.ts  —— 关联工作台 RECOMMENDED 商品 → LLM 4 脚本 → 并行生成 4 封面 + 提交 4 视频 → Video 行
 lib/agents/operator.ts  —— 抓最近 12 个视频喂给 LLM → 三平台周日历 JSON
 lib/agents/index.ts     —— executeAgentTask(): 更新状态 → dispatch → 写回 output / metadata / cost / tokens
 ```
@@ -82,7 +82,7 @@ lib/agents/index.ts     —— executeAgentTask(): 更新状态 → dispatch →
 client POST → route.ts 创建 QUEUED 任务 → after() 异步跑 executeAgentTask
 client poll GET → 任务转 RUNNING → DONE/FAILED
 DONE 时 router.refresh() 让选品/视频页同步
-GENERATING 视频前端每 8s 轮询 fal 队列；完成后内联 <video> 播放
+GENERATING 视频前端每 8s 轮询生成队列；完成后内联 <video> 播放
 ```
 
 **模型 / 价格**：通过 env 切：
@@ -122,8 +122,8 @@ GENERATING 视频前端每 8s 轮询 fal 队列；完成后内联 <video> 播放
 | `lib/workspace.ts` | 自动获取/创建默认工作台 |
 | `lib/validations.ts` | 全部 zod schema |
 | `lib/api.ts` | 统一 `ok` / `fail` / `handleError` |
-| `lib/openrouter.ts` | OpenAI SDK 指向 OpenRouter，lazy 单例 |
-| `lib/fal.ts` | fal.ai 客户端 + `generateCover` / `submitVideoJob` / `pollVideoStatus` |
+| `lib/openrouter.ts` | OpenAI SDK 指向 LLM 网关，lazy 单例 |
+| `lib/fal.ts` | 视频/图片生成客户端 + `generateCover` / `submitVideoJob` / `pollVideoStatus` |
 | `lib/agents/*` | 三个 Agent 实现 + 调度器 |
 | `auth.ts` / `auth.config.ts` / `proxy.ts` | Auth.js v5 + Next.js 16 proxy |
 | `app/(auth)/` | login / register |
