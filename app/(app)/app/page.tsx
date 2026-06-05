@@ -7,6 +7,7 @@ import { OnboardingCard } from "@/components/OnboardingCard";
 import { Stat } from "@/components/ui/Stat";
 import { Badge } from "@/components/ui/Badge";
 import { AGENT_IDENTITY, TASK_STATUS_TONE, TASK_STATUS_LABEL, type AgentKey } from "@/lib/ui/tokens";
+import { AgentComposer } from "./agent-composer";
 
 export const metadata = { title: "工作台 · OneClaw" };
 
@@ -39,12 +40,15 @@ export default async function DashboardPage() {
         </h1>
         <p className="mt-1.5 text-sm text-zinc-500">
           {!workspace
-            ? "这是 OneClaw 概览。登录后即可拥有自己的工作台、选品库与数据。"
+            ? "这是 OneClaw 概览。给下面的 Agent 派个活，或登录后拥有自己的工作台。"
             : isFresh
-              ? `欢迎来到 ${workspace.name} —— 先跑通你的第一条出海链路吧。`
-              : `这是 ${workspace.name} 的今日概览。`}
+              ? `欢迎来到 ${workspace.name} —— 给 Agent 派个活，跑通你的第一条出海链路吧。`
+              : `这是 ${workspace.name} 的今日概览。给 Agent 派个活就从下面开始。`}
         </p>
       </div>
+
+      {/* 核心：给三位 Agent 派活的聊天框 */}
+      <AgentComposer workspaceId={workspace?.id ?? ""} isGuest={!workspace} />
 
       {workspace && isFresh && <OnboardingCard workspaceId={workspace.id} />}
 

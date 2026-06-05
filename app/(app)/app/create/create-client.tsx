@@ -21,10 +21,10 @@ import {
   Library,
   Link2,
   ArrowRight,
-  ChevronDown,
   SlidersHorizontal,
 } from "lucide-react";
 import { TemplateOptimizerModal } from "@/components/TemplateOptimizerModal";
+import { Popover, ToolbarButton } from "@/components/ui/Popover";
 
 type AspectRatio = "9:16" | "16:9" | "1:1";
 type VideoStyle = "UNBOXING" | "COMPARISON" | "SCENE" | "BEFORE_AFTER";
@@ -149,10 +149,6 @@ export function CreateClient({
 
   const [optimizerOpen, setOptimizerOpen] = useState(false);
 
-  // 精简界面：模板库与高级设置默认收起
-  const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-
   // 游客登录引导
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
 
@@ -169,6 +165,9 @@ export function CreateClient({
       }),
     [customs, starterTemplates],
   );
+
+  const selectedProduct = products.find((p) => p.id === productId) ?? null;
+  const selectedModel = models.find((m) => m.id === modelId) ?? null;
 
   // 把当前已填内容存到本地，登录回来后恢复，避免游客重填
   function saveDraft() {
@@ -444,348 +443,251 @@ export function CreateClient({
     setPrompt("");
   }
 
+  const canSubmit = !!prompt.trim() && !submitting && (falReady || isGuest);
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">创作工坊</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          贴个商品链接或挑个模板，写一句提示词，让 AI 帮你做带货短视频。
+          写一句提示词，让 AI 帮你做带货短视频。商品、素材、模板、引擎参数都收在输入框下方。
         </p>
       </div>
 
-        {!falReady && !isGuest && (
-          <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 flex items-start gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-amber-800 leading-relaxed">
-              <div className="font-semibold">FAL_KEY 未配置</div>
-              <p className="mt-0.5">提交后会立刻失败。请先在 .env.local 填上 fal.ai 凭证。</p>
-            </div>
+      {!falReady && !isGuest && (
+        <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="text-xs text-amber-800 leading-relaxed">
+            <div className="font-semibold">FAL_KEY 未配置</div>
+            <p className="mt-0.5">提交后会立刻失败。请先在 .env.local 填上 fal.ai 凭证。</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 贴链接一键出片 */}
-        <section className="rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-4">
-          <div className="inline-flex items-center gap-1.5 text-sm font-semibold mb-2.5">
-            <Link2 className="h-4 w-4 text-indigo-600" />
-            贴商品链接，一键出片
-            <span className="text-2xs text-zinc-400 font-normal">
-              自动识别商品 + 写好提示词
-            </span>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="url"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !parsingLink) parseLink();
-              }}
-              placeholder="粘贴 TikTok Shop / 亚马逊 / 独立站等商品页链接…"
-              className="flex-1 rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+      {/* 链接识别结果（识别后浮现在 composer 上方） */}
+      {linkPreview && (
+        <div className="flex items-start gap-3 rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-3">
+          {linkPreview.ogImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={linkPreview.ogImage}
+              alt=""
+              className="h-14 w-14 rounded-lg object-cover flex-shrink-0 bg-zinc-100"
             />
-            <button
-              onClick={parseLink}
-              disabled={parsingLink || !linkUrl.trim()}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors whitespace-nowrap"
-            >
-              {parsingLink ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArrowRight className="h-4 w-4" />
-              )}
-              {parsingLink ? "识别中…" : "识别"}
-            </button>
-          </div>
-          {linkPreview && (
-            <div className="mt-3 flex items-start gap-3 rounded-xl border border-zinc-200/80 bg-white p-2.5">
-              {linkPreview.ogImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={linkPreview.ogImage}
-                  alt=""
-                  className="h-14 w-14 rounded-lg object-cover flex-shrink-0 bg-zinc-100"
-                />
-              ) : (
-                <div className="h-14 w-14 rounded-lg bg-zinc-100 flex items-center justify-center text-2xl flex-shrink-0">
-                  {linkPreview.emoji}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium truncate">
-                  {linkPreview.emoji} {linkPreview.title}
-                </div>
-                {linkPreview.sellingPoints.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {linkPreview.sellingPoints.map((s, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex rounded-full bg-indigo-50 px-1.5 py-0.5 text-2xs text-indigo-700"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <p className="mt-1 text-2xs text-zinc-400">
-                  提示词与标题已填入下方，可微调后点「生成视频」。
-                </p>
-              </div>
+          ) : (
+            <div className="h-14 w-14 rounded-lg bg-white flex items-center justify-center text-2xl flex-shrink-0">
+              {linkPreview.emoji}
             </div>
           )}
-        </section>
-
-        {/* 模板库（默认收起） */}
-        <section className="rounded-xl border border-zinc-200/80 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setTemplatesOpen((o) => !o)}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold"
-            >
-              <Library className="h-4 w-4 text-indigo-600" />
-              模板库
-              <span className="text-2xs text-zinc-400 font-normal">
-                {customs.length} 个自定义 · {starterTemplates.length} 个起步模板
-              </span>
-              <ChevronDown
-                className={`h-4 w-4 text-zinc-400 transition-transform ${
-                  templatesOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {templatesOpen && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (gateGuest()) return;
-                    setOptimizerOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-indigo-700 transition-colors"
-                  title="基于历史使用 + 视频成绩，AI 推荐高效模板"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  AI 推荐
-                </button>
-                <span className="text-2xs text-zinc-400">点击套用</span>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-medium truncate">
+              {linkPreview.emoji} {linkPreview.title}
+            </div>
+            {linkPreview.sellingPoints.length > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {linkPreview.sellingPoints.map((s, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex rounded-full bg-white px-1.5 py-0.5 text-2xs text-indigo-700"
+                  >
+                    {s}
+                  </span>
+                ))}
               </div>
             )}
+            <p className="mt-1 text-2xs text-zinc-400">
+              提示词与标题已填入下方，可微调后点「生成视频」。
+            </p>
           </div>
-          {templatesOpen && (
-          <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
-            {allTemplates.map((t) => {
-              const applied = appliedTemplateId === t.id;
-              return (
-                <div
-                  key={t.id}
-                  className={`relative flex-shrink-0 w-44 rounded-xl border p-2.5 cursor-pointer transition-all ${
-                    applied
-                      ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/30"
-                      : "border-zinc-200/80 bg-zinc-50/40 hover:border-zinc-300 hover:bg-white"
-                  }`}
-                  onClick={() => applyTemplate(t)}
-                >
-                  <div className="flex items-start justify-between gap-1">
-                    <div className="text-lg leading-none">{t.emoji}</div>
-                    <div className="flex items-center gap-0.5">
-                      {t.kind === "starter" ? (
-                        <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-2xs text-zinc-500">
-                          官方
-                        </span>
-                      ) : (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleStarTemplate(t);
-                            }}
-                            className="p-0.5 rounded hover:bg-zinc-200"
-                            title={t.isFavorite ? "取消收藏" : "收藏"}
-                          >
-                            <Star
-                              className={`h-3 w-3 ${
-                                t.isFavorite ? "fill-amber-400 text-amber-400" : "text-zinc-300"
-                              }`}
-                            />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteTemplate(t);
-                            }}
-                            className="p-0.5 rounded hover:bg-rose-50 text-zinc-300 hover:text-rose-600"
-                            title="删除"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-1.5 text-xs font-medium truncate">{t.name}</div>
-                  <p className="mt-0.5 text-2xs text-zinc-500 line-clamp-2 min-h-[1.6em]">
-                    {t.description || t.promptTemplate}
-                  </p>
-                  <div className="mt-2 flex items-center gap-1 text-2xs text-zinc-400">
-                    <span className="rounded bg-zinc-100 px-1 py-px font-mono">
-                      {engines.find((e) => e.key === t.engine)?.cn ?? t.engine}
-                    </span>
-                    <span>{t.durationSec}s</span>
-                    <span>{t.aspectRatio}</span>
-                    {t.usageCount > 0 && (
-                      <span className="ml-auto text-zinc-300">×{t.usageCount}</span>
-                    )}
-                  </div>
+          <button
+            onClick={() => setLinkPreview(null)}
+            className="rounded-full p-1 text-zinc-400 hover:bg-white hover:text-zinc-600"
+            aria-label="关闭"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* === 核心：创作 composer === */}
+      <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={120}
+          placeholder="视频标题（可选，默认取提示词前 60 字）"
+          className="w-full rounded-t-2xl border-b border-zinc-100 bg-transparent px-4 py-2.5 text-sm font-medium outline-none placeholder:font-normal placeholder:text-zinc-400"
+        />
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={5}
+          maxLength={2000}
+          placeholder="例：USB 充电便携榨汁杯，9:16 竖屏，金色 hour 户外公园场景，年轻女生倒入草莓和牛奶按下开关，特写气泡上涌，3 秒打通…"
+          className="w-full resize-none bg-transparent px-4 py-3 text-sm leading-relaxed outline-none placeholder:text-zinc-400"
+        />
+
+        {/* 工具栏：配置都收在这一排并列按钮里 */}
+        <div className="flex flex-wrap items-center gap-2 border-t border-zinc-100 px-3 py-2.5">
+          {/* 贴链接 */}
+          <Popover
+            align="start"
+            panelClassName="w-80"
+            trigger={({ open }) => (
+              <ToolbarButton icon={Link2} label="贴链接" open={open} />
+            )}
+          >
+            {({ close }) => (
+              <div className="space-y-2">
+                <div className="text-2xs text-zinc-500">
+                  贴 TikTok Shop / 亚马逊 / 独立站商品页，自动识别 + 写好提示词
                 </div>
-              );
-            })}
-          </div>
-          )}
-        </section>
-
-        {/* 高级设置：引擎 + 参数（默认收起，默认用推荐配置） */}
-        <CollapsibleSection
-          icon={SlidersHorizontal}
-          title="高级设置"
-          subtitle="引擎 / 风格 / 时长 / 比例 · 默认用推荐配置"
-          open={advancedOpen}
-          onToggle={() => setAdvancedOpen((o) => !o)}
-        >
-          <div className="space-y-5">
-            <div>
-              <div className="mb-2 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
-                视频引擎
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !parsingLink) {
+                        parseLink().then(() => close());
+                      }
+                    }}
+                    placeholder="粘贴商品页链接…"
+                    autoFocus
+                    className="flex-1 rounded-lg border border-zinc-200/80 px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                  />
+                  <button
+                    onClick={() => parseLink().then(() => close())}
+                    disabled={parsingLink || !linkUrl.trim()}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {parsingLink ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    )}
+                    识别
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {engines.map((e) => {
-              const active = engineKey === e.key;
-              return (
-                <button
-                  key={e.key}
-                  onClick={() => setEngineKey(e.key)}
-                  className={`text-left rounded-xl border p-4 transition-all ${
-                    active
-                      ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/40"
-                      : "border-zinc-200/80 bg-white hover:border-zinc-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-sm font-semibold truncate">{e.cn}</span>
-                    <div className="flex items-center gap-1">
-                      {e.supportsImageInput && (
-                        <span
-                          className="inline-flex items-center gap-0.5 rounded-full bg-sky-50 px-1.5 py-0.5 text-2xs font-medium text-sky-700"
-                          title="支持把图片当作首帧"
-                        >
-                          <ImageIcon className="h-2.5 w-2.5" />
-                          i2v
-                        </span>
-                      )}
-                      {e.recommended && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-2xs font-medium text-amber-700">
-                          <Crown className="h-2.5 w-2.5" />
-                          推荐
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <p className="mt-1.5 text-2xs text-zinc-500 line-clamp-2 min-h-[2.4em]">
-                    {e.tagline}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {e.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="inline-flex rounded-full bg-zinc-100 px-1.5 py-0.5 text-2xs text-zinc-600"
+            )}
+          </Popover>
+
+          {/* 模板库 */}
+          <Popover
+            align="start"
+            panelClassName="w-[22rem]"
+            trigger={({ open }) => (
+              <ToolbarButton icon={Library} label="模板" open={open} active={!!appliedTemplateId} />
+            )}
+          >
+            {({ close }) => (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xs text-zinc-500">
+                    {customs.length} 自定义 · {starterTemplates.length} 起步 · 点击套用
+                  </span>
+                  <button
+                    onClick={() => {
+                      close();
+                      if (gateGuest()) return;
+                      setOptimizerOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2 py-0.5 text-2xs font-medium text-white hover:bg-indigo-700"
+                    title="基于历史使用 + 视频成绩，AI 推荐高效模板"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    AI 推荐
+                  </button>
+                </div>
+                <div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto">
+                  {allTemplates.map((t) => {
+                    const applied = appliedTemplateId === t.id;
+                    return (
+                      <div
+                        key={t.id}
+                        className={`relative rounded-xl border p-2.5 cursor-pointer transition-all ${
+                          applied
+                            ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/30"
+                            : "border-zinc-200/80 bg-zinc-50/40 hover:border-zinc-300 hover:bg-white"
+                        }`}
+                        onClick={() => {
+                          applyTemplate(t);
+                          close();
+                        }}
                       >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-2.5 text-2xs text-zinc-400 font-mono">
-                    {e.priceHint}
-                  </div>
-                </button>
-              );
-            })}
+                        <div className="flex items-start justify-between gap-1">
+                          <div className="text-lg leading-none">{t.emoji}</div>
+                          <div className="flex items-center gap-0.5">
+                            {t.kind === "starter" ? (
+                              <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-2xs text-zinc-500">
+                                官方
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleStarTemplate(t);
+                                  }}
+                                  className="p-0.5 rounded hover:bg-zinc-200"
+                                  title={t.isFavorite ? "取消收藏" : "收藏"}
+                                >
+                                  <Star
+                                    className={`h-3 w-3 ${
+                                      t.isFavorite ? "fill-amber-400 text-amber-400" : "text-zinc-300"
+                                    }`}
+                                  />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteTemplate(t);
+                                  }}
+                                  className="p-0.5 rounded hover:bg-rose-50 text-zinc-300 hover:text-rose-600"
+                                  title="删除"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-1.5 text-xs font-medium truncate">{t.name}</div>
+                        <p className="mt-0.5 text-2xs text-zinc-500 line-clamp-2 min-h-[1.6em]">
+                          {t.description || t.promptTemplate}
+                        </p>
+                        <div className="mt-2 flex items-center gap-1 text-2xs text-zinc-400">
+                          <span className="rounded bg-zinc-100 px-1 py-px font-mono">
+                            {engines.find((e) => e.key === t.engine)?.cn ?? t.engine}
+                          </span>
+                          <span>{t.durationSec}s</span>
+                          {t.usageCount > 0 && (
+                            <span className="ml-auto text-zinc-300">×{t.usageCount}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="mb-2 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
-                参数
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ParamGroup label="风格">
-              <div className="grid grid-cols-2 gap-1.5">
-                {STYLES.map((s) => (
-                  <button
-                    key={s.v}
-                    onClick={() => setStyle(s.v)}
-                    className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
-                      style === s.v
-                        ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
-                        : "border-zinc-200/80 hover:border-zinc-300"
-                    }`}
-                  >
-                    {s.emoji} {s.cn}
-                  </button>
-                ))}
-              </div>
-            </ParamGroup>
-            <ParamGroup label="时长">
-              <div className="flex flex-wrap gap-1.5">
-                {engine.durations.map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setDuration(d)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs transition-all ${
-                      duration === d
-                        ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
-                        : "border-zinc-200/80 hover:border-zinc-300"
-                    }`}
-                  >
-                    {d}s
-                  </button>
-                ))}
-              </div>
-            </ParamGroup>
-            <ParamGroup label="比例">
-              <div className="flex flex-wrap gap-1.5">
-                {engine.aspects.map((a) => (
-                  <button
-                    key={a}
-                    onClick={() => setAspect(a as AspectRatio)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs transition-all ${
-                      aspect === a
-                        ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
-                        : "border-zinc-200/80 hover:border-zinc-300"
-                    }`}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
-            </ParamGroup>
-              </div>
-            </div>
-          </div>
-        </CollapsibleSection>
+            )}
+          </Popover>
 
-        {/* 商品 / 素材 / 模特 */}
-        <Section
-          title="挂载素材（可选）"
-          subtitle="选商品自动填入卖点，选素材作参考，选模特定人设"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <PickerCard
-              label="商品"
-              icon={Package}
-              count={products.length}
-              emptyHref="/app/assets/products"
-            >
-              {products.length === 0 ? (
+          {/* 商品 */}
+          <Popover
+            align="start"
+            panelClassName="w-72"
+            trigger={({ open }) => (
+              <ToolbarButton icon={Package} label="商品" open={open} active={!!productId} />
+            )}
+          >
+            {() =>
+              products.length === 0 ? (
                 <EmptyPickerHint href="/app/assets/products" label="去选品库" />
               ) : (
-                <div className="space-y-1 max-h-56 overflow-y-auto">
+                <div className="max-h-64 space-y-1 overflow-y-auto">
                   {products.map((p) => (
                     <button
                       key={p.id}
@@ -798,88 +700,99 @@ export function CreateClient({
                     >
                       <span className="text-base">{p.emoji ?? "📦"}</span>
                       <span className="flex-1 truncate">{p.title}</span>
-                      <span className="text-2xs text-zinc-400 font-mono">
-                        R{p.roiScore}
-                      </span>
+                      <span className="text-2xs text-zinc-400 font-mono">R{p.roiScore}</span>
                       {productId === p.id && <Check className="h-3 w-3 text-indigo-600" />}
                     </button>
                   ))}
                 </div>
-              )}
-            </PickerCard>
+              )
+            }
+          </Popover>
 
-            <PickerCard
-              label="参考素材"
-              icon={ImageIcon}
-              count={materials.length}
-              hint={
-                engine.supportsImageInput
-                  ? "✨ 首张图作为视频首帧"
-                  : "最多 6 个"
-              }
-              emptyHref="/app/assets/materials"
-            >
-              {engine.requiresImage && materialIds.length === 0 && (
-                <div className="mb-2 rounded-md bg-amber-50 px-2 py-1.5 text-2xs text-amber-800 border border-amber-200/80">
-                  ⚠️ {engine.cn} 必须选一张图，否则无法提交
+          {/* 参考素材 */}
+          <Popover
+            align="start"
+            panelClassName="w-72"
+            trigger={({ open }) => (
+              <ToolbarButton
+                icon={ImageIcon}
+                label="素材"
+                open={open}
+                active={materialIds.length > 0}
+                badge={materialIds.length || undefined}
+              />
+            )}
+          >
+            {() => (
+              <div className="space-y-2">
+                <div className="text-2xs text-zinc-400">
+                  {engine.supportsImageInput ? "✨ 首张图作为视频首帧" : "最多 6 个"}
                 </div>
-              )}
-              {materials.length === 0 ? (
-                <EmptyPickerHint href="/app/assets/materials" label="去素材库" />
-              ) : (
-                <div className="grid grid-cols-3 gap-1.5 max-h-56 overflow-y-auto">
-                  {materials.map((m) => {
-                    const sel = materialIds.includes(m.id);
-                    const isI2vFirstFrame =
-                      engine.supportsImageInput &&
-                      sel &&
-                      m.type === "IMAGE" &&
-                      // 选中里第一张图就是首帧
-                      materials
-                        .filter((mm) => materialIds.includes(mm.id) && mm.type === "IMAGE")
-                        .findIndex((mm) => mm.id === m.id) === 0;
-                    return (
-                      <button
-                        key={m.id}
-                        onClick={() => toggleMaterial(m.id)}
-                        className={`relative aspect-square rounded-md overflow-hidden border ${
-                          sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200/80"
-                        }`}
-                        title={m.originalName}
-                      >
-                        {m.type === "IMAGE" ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={m.url} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <video src={m.url} className="h-full w-full object-cover" muted />
-                        )}
-                        {isI2vFirstFrame && (
-                          <span className="absolute left-0.5 top-0.5 rounded bg-sky-500 px-1 py-px text-2xs font-medium text-white">
-                            首帧
-                          </span>
-                        )}
-                        {sel && (
-                          <div className="absolute inset-0 bg-indigo-500/40 flex items-center justify-center">
-                            <Check className="h-4 w-4 text-white" strokeWidth={3} />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </PickerCard>
+                {engine.requiresImage && materialIds.length === 0 && (
+                  <div className="rounded-md bg-amber-50 px-2 py-1.5 text-2xs text-amber-800 border border-amber-200/80">
+                    ⚠️ {engine.cn} 必须选一张图，否则无法提交
+                  </div>
+                )}
+                {materials.length === 0 ? (
+                  <EmptyPickerHint href="/app/assets/materials" label="去素材库" />
+                ) : (
+                  <div className="grid grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
+                    {materials.map((m) => {
+                      const sel = materialIds.includes(m.id);
+                      const isI2vFirstFrame =
+                        engine.supportsImageInput &&
+                        sel &&
+                        m.type === "IMAGE" &&
+                        materials
+                          .filter((mm) => materialIds.includes(mm.id) && mm.type === "IMAGE")
+                          .findIndex((mm) => mm.id === m.id) === 0;
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => toggleMaterial(m.id)}
+                          className={`relative aspect-square rounded-md overflow-hidden border ${
+                            sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200/80"
+                          }`}
+                          title={m.originalName}
+                        >
+                          {m.type === "IMAGE" ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={m.url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <video src={m.url} className="h-full w-full object-cover" muted />
+                          )}
+                          {isI2vFirstFrame && (
+                            <span className="absolute left-0.5 top-0.5 rounded bg-sky-500 px-1 py-px text-2xs font-medium text-white">
+                              首帧
+                            </span>
+                          )}
+                          {sel && (
+                            <div className="absolute inset-0 bg-indigo-500/40 flex items-center justify-center">
+                              <Check className="h-4 w-4 text-white" strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </Popover>
 
-            <PickerCard
-              label="模特 / 人设"
-              icon={UserSquare2}
-              count={models.length}
-              emptyHref="/app/assets/models"
-            >
-              {models.length === 0 ? (
+          {/* 模特 / 人设 */}
+          <Popover
+            align="start"
+            panelClassName="w-72"
+            trigger={({ open }) => (
+              <ToolbarButton icon={UserSquare2} label="模特" open={open} active={!!modelId} />
+            )}
+          >
+            {() =>
+              models.length === 0 ? (
                 <EmptyPickerHint href="/app/assets/models" label="去模特库" />
               ) : (
-                <div className="grid grid-cols-3 gap-1.5 max-h-56 overflow-y-auto">
+                <div className="grid grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
                   {models.map((m) => {
                     const sel = modelId === m.id;
                     return (
@@ -912,117 +825,215 @@ export function CreateClient({
                     );
                   })}
                 </div>
-              )}
-            </PickerCard>
-          </div>
-        </Section>
+              )
+            }
+          </Popover>
 
-        {/* 提示词 */}
-        <Section
-          title="提示词"
-          subtitle="描述你想要的画面 / 镜头运动 / 风格"
-        >
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={120}
-              placeholder="视频标题（可选，默认取提示词前 60 字）"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
-            />
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={5}
-              maxLength={2000}
-              placeholder="例：USB 充电便携榨汁杯，9:16 竖屏，金色 hour 户外公园场景，年轻女生倒入草莓和牛奶按下开关，特写气泡上涌，3 秒打通..."
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
-            />
-            <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
-              <div className="flex items-center gap-3">
-                <label className="inline-flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={generateScript}
-                    onChange={(e) => setGenerateScript(e.target.checked)}
-                    className="rounded"
-                  />
-                  <Sparkles className="h-3 w-3 text-indigo-500" />
-                  AI 写脚本
-                </label>
-                <label className="inline-flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={generateCover}
-                    onChange={(e) => setGenerateCover(e.target.checked)}
-                    className="rounded"
-                  />
-                  <ImageIcon className="h-3 w-3 text-violet-500" />
-                  生成封面
-                </label>
+          {/* 引擎 / 参数 / 输出选项 */}
+          <Popover
+            align="start"
+            panelClassName="w-[24rem]"
+            trigger={({ open }) => (
+              <ToolbarButton icon={SlidersHorizontal} label="设置" open={open} />
+            )}
+          >
+            {() => (
+              <div className="max-h-[28rem] space-y-4 overflow-y-auto">
+                <div>
+                  <div className="mb-1.5 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
+                    视频引擎
+                  </div>
+                  <div className="space-y-1.5">
+                    {engines.map((e) => {
+                      const active = engineKey === e.key;
+                      return (
+                        <button
+                          key={e.key}
+                          onClick={() => setEngineKey(e.key)}
+                          className={`w-full text-left rounded-lg border p-2.5 transition-all ${
+                            active
+                              ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/40"
+                              : "border-zinc-200/80 bg-white hover:border-zinc-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-semibold truncate">{e.cn}</span>
+                            <div className="flex items-center gap-1">
+                              {e.supportsImageInput && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-50 px-1.5 py-0.5 text-2xs font-medium text-sky-700">
+                                  <ImageIcon className="h-2.5 w-2.5" />
+                                  i2v
+                                </span>
+                              )}
+                              {e.recommended && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-2xs font-medium text-amber-700">
+                                  <Crown className="h-2.5 w-2.5" />
+                                  推荐
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="mt-1 text-2xs text-zinc-500 line-clamp-1">{e.tagline}</p>
+                          <div className="mt-1 text-2xs text-zinc-400 font-mono">{e.priceHint}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <div className="mb-1.5 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
+                      风格
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {STYLES.map((s) => (
+                        <button
+                          key={s.v}
+                          onClick={() => setStyle(s.v)}
+                          className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
+                            style === s.v
+                              ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
+                              : "border-zinc-200/80 hover:border-zinc-300"
+                          }`}
+                        >
+                          {s.emoji} {s.cn}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="mb-1.5 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
+                        时长
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {engine.durations.map((d) => (
+                          <button
+                            key={d}
+                            onClick={() => setDuration(d)}
+                            className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
+                              duration === d
+                                ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
+                                : "border-zinc-200/80 hover:border-zinc-300"
+                            }`}
+                          >
+                            {d}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-1.5 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
+                        比例
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {engine.aspects.map((a) => (
+                          <button
+                            key={a}
+                            onClick={() => setAspect(a as AspectRatio)}
+                            className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
+                              aspect === a
+                                ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
+                                : "border-zinc-200/80 hover:border-zinc-300"
+                            }`}
+                          >
+                            {a}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-zinc-100 pt-3">
+                  <div className="mb-1.5 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
+                    输出选项
+                  </div>
+                  <div className="flex items-center gap-4 text-xs">
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={generateScript}
+                        onChange={(e) => setGenerateScript(e.target.checked)}
+                        className="rounded"
+                      />
+                      <Sparkles className="h-3 w-3 text-indigo-500" />
+                      AI 写脚本
+                    </label>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={generateCover}
+                        onChange={(e) => setGenerateCover(e.target.checked)}
+                        className="rounded"
+                      />
+                      <ImageIcon className="h-3 w-3 text-violet-500" />
+                      生成封面
+                    </label>
+                  </div>
+                </div>
               </div>
-              <span className="text-zinc-400 font-mono">
-                {prompt.length}/2000
-              </span>
-            </div>
-          </div>
-        </Section>
+            )}
+          </Popover>
 
-        {/* 提交 */}
-        <div className="sticky bottom-4 z-10">
-          <div className="rounded-xl border border-zinc-200/80 bg-white/90 backdrop-blur p-4 shadow-sm flex items-center justify-between flex-wrap gap-3">
-            <div className="text-xs text-zinc-500">
-              <span className="font-medium text-zinc-900">{engine.cn}</span>
-              {" · "}
-              {duration}s · {aspect}
-              {productId && (
-                <>
-                  {" · "}
-                  <span className="text-indigo-600">+商品</span>
-                </>
+          {/* 右侧：字数 + 存模板 + 生成 */}
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-2xs text-zinc-400 font-mono">{prompt.length}/2000</span>
+            <button
+              onClick={() => {
+                if (gateGuest()) return;
+                setSaveOpen(true);
+              }}
+              disabled={!prompt.trim()}
+              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              title="把当前组合保存为模板"
+            >
+              <Bookmark className="h-3.5 w-3.5" />
+              存为模板
+            </button>
+            <button
+              onClick={submit}
+              disabled={!canSubmit}
+              className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4" />
               )}
-              {modelId && (
-                <>
-                  {" · "}
-                  <span className="text-zinc-700">+模特</span>
-                </>
-              )}
-              {materialIds.length > 0 && (
-                <>
-                  {" · "}
-                  <span className="text-emerald-600">+{materialIds.length} 素材</span>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (gateGuest()) return;
-                  setSaveOpen(true);
-                }}
-                disabled={!prompt.trim()}
-                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3.5 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
-                title="把当前组合保存为模板"
-              >
-                <Bookmark className="h-3.5 w-3.5" />
-                存为模板
-              </button>
-              <button
-                onClick={submit}
-                disabled={submitting || !prompt.trim() || (!falReady && !isGuest)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-5 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors"
-              >
-                {submitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="h-4 w-4" />
-                )}
-                生成视频
-              </button>
-            </div>
+              生成视频
+            </button>
           </div>
         </div>
+      </div>
+
+      {/* 当前配置概览 */}
+      <div className="px-1 text-2xs text-zinc-500">
+        <span className="font-medium text-zinc-700">{engine.cn}</span>
+        {" · "}
+        {duration}s · {aspect} · {STYLES.find((s) => s.v === style)?.cn}
+        {selectedProduct && (
+          <>
+            {" · "}
+            <span className="text-indigo-600">{selectedProduct.emoji ?? "📦"} {selectedProduct.title}</span>
+          </>
+        )}
+        {selectedModel && (
+          <>
+            {" · "}
+            <span className="text-zinc-700">模特 {selectedModel.name}</span>
+          </>
+        )}
+        {materialIds.length > 0 && (
+          <>
+            {" · "}
+            <span className="text-emerald-600">+{materialIds.length} 素材</span>
+          </>
+        )}
+        {generateScript && <span className="text-indigo-500"> · AI 脚本</span>}
+        {generateCover && <span className="text-violet-500"> · 封面</span>}
+      </div>
 
       {saveOpen && (
         <SaveTemplateModal
@@ -1051,102 +1062,6 @@ export function CreateClient({
           }}
         />
       )}
-    </div>
-  );
-}
-
-function Section({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-xl border border-zinc-200/80 bg-white p-5">
-      <div className="flex items-baseline gap-2.5 mb-4">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {subtitle && <span className="text-2xs text-zinc-500">— {subtitle}</span>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function CollapsibleSection({
-  icon: Icon,
-  title,
-  subtitle,
-  open,
-  onToggle,
-  children,
-}: {
-  icon?: React.ComponentType<{ className?: string }>;
-  title: string;
-  subtitle?: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-xl border border-zinc-200/80 bg-white">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center gap-2.5 p-5 text-left"
-      >
-        {Icon && <Icon className="h-4 w-4 text-zinc-500" />}
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {subtitle && <span className="text-2xs text-zinc-500">— {subtitle}</span>}
-        <ChevronDown
-          className={`ml-auto h-4 w-4 text-zinc-400 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      {open && <div className="px-5 pb-5">{children}</div>}
-    </section>
-  );
-}
-
-function ParamGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="mb-1.5 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function PickerCard({
-  label,
-  icon: Icon,
-  count,
-  hint,
-  children,
-}: {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  count: number;
-  hint?: string;
-  emptyHref?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/30 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="inline-flex items-center gap-1.5 text-xs font-medium">
-          <Icon className="h-3.5 w-3.5 text-zinc-600" />
-          {label}
-          <span className="text-2xs text-zinc-400">({count})</span>
-        </div>
-        {hint && <span className="text-2xs text-zinc-400">{hint}</span>}
-      </div>
-      {children}
     </div>
   );
 }
