@@ -2,64 +2,8 @@ import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
 import { Copilot } from "@/components/ai/copilot";
-import {
-  LayoutDashboard,
-  Store,
-  Package,
-  UserSquare2,
-  Image as ImageIcon,
-  Video,
-  Bot,
-  Settings,
-  Sparkles,
-  LogOut,
-  Compass,
-} from "lucide-react";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
-type NavGroup = { label: string; items: NavItem[] };
-
-const navGroups: NavGroup[] = [
-  {
-    label: "",
-    items: [{ href: "/app", label: "概览", icon: LayoutDashboard }],
-  },
-  {
-    label: "发现",
-    items: [
-      { href: "/app/discover/products", label: "TikTok 爆品", icon: Compass },
-    ],
-  },
-  {
-    label: "资产",
-    items: [
-      { href: "/app/assets/shops", label: "店铺", icon: Store },
-      { href: "/app/assets/products", label: "商品", icon: Package },
-      { href: "/app/assets/models", label: "模特", icon: UserSquare2 },
-      { href: "/app/assets/materials", label: "素材库", icon: ImageIcon },
-    ],
-  },
-  {
-    label: "创意",
-    items: [
-      { href: "/app/create", label: "创作工坊", icon: Sparkles },
-      { href: "/app/videos", label: "短视频", icon: Video },
-    ],
-  },
-  {
-    label: "工作流",
-    items: [{ href: "/app/agents", label: "Agent", icon: Bot }],
-  },
-  {
-    label: "",
-    items: [{ href: "/app/settings", label: "设置", icon: Settings }],
-  },
-];
+import { Sparkles, LogOut } from "lucide-react";
+import { SidebarNav, BoardTabs } from "./_nav";
 
 export default async function AppLayout({
   children,
@@ -99,29 +43,7 @@ export default async function AppLayout({
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-3">
-          {navGroups.map((group, gi) => (
-            <div key={gi}>
-              {group.label && (
-                <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                  {group.label}
-                </div>
-              )}
-              <div className="space-y-0.5">
-                {group.items.map(({ href, label, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600 transition-colors"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
+        <SidebarNav />
 
         <div className="border-t border-zinc-100 p-3">
           {session?.user ? (
@@ -176,7 +98,10 @@ export default async function AppLayout({
             <span className="text-sm font-semibold">OneClaw</span>
           </Link>
         </header>
-        <main className="flex-1 p-4 sm:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-8">
+          <BoardTabs />
+          {children}
+        </main>
       </div>
 
       {session?.user && <Copilot />}
