@@ -27,7 +27,7 @@ export function Hero() {
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href="/login"
+              href="/app/create"
               className="group inline-flex items-center gap-2 rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800 hover:shadow-xl transition-all"
             >
               免费开始体验

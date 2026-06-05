@@ -50,7 +50,7 @@ export function Header() {
               登录
             </a>
             <a
-              href="/login"
+              href="/app/create"
               className="group relative inline-flex items-center gap-1 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 transition-all shadow-sm hover:shadow-md"
             >
               开始体验
@@ -89,7 +89,7 @@ export function Header() {
               <a href="/login" className="flex-1 text-center rounded-full border border-zinc-300 py-2 text-sm font-medium">
                 登录
               </a>
-              <a href="/login" className="flex-1 text-center rounded-full bg-zinc-900 py-2 text-sm font-medium text-white">
+              <a href="/app/create" className="flex-1 text-center rounded-full bg-zinc-900 py-2 text-sm font-medium text-white">
                 开始体验
               </a>
             </div>

@@ -37,7 +37,7 @@ export function CTA() {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
               <a
-                href="/login"
+                href="/app/create"
                 className="group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 transition-all shadow-xl"
               >
                 免费开始体验
