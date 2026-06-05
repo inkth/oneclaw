@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { LoginPromptModal } from "@/components/LoginPromptModal";
 import {
   Sparkles,
   Plus,
@@ -104,6 +105,7 @@ export function DiscoverClient({
   state,
   fetchedAt,
   products,
+  isGuest = false,
 }: {
   workspaceId: string;
   region: Region;
@@ -112,11 +114,20 @@ export function DiscoverClient({
   state: DiscoverState;
   fetchedAt: string | null;
   products: DiscoverProduct[];
+  isGuest?: boolean;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState<Set<string>>(new Set());
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+
+  // 游客触发绑账号的动作（导入/分析/收藏）时拦下来提示登录。返回 true 表示已拦截。
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    setLoginPromptOpen(true);
+    return true;
+  }
 
   function navigate(patch: { region?: Region; rank_type?: RankType; field?: Field }) {
     const p = new URLSearchParams({
@@ -129,6 +140,7 @@ export function DiscoverClient({
 
   async function importProduct(p: DiscoverProduct) {
     if (importing.has(p.productId)) return;
+    if (gateGuest()) return;
     setImporting((prev) => new Set(prev).add(p.productId));
     const res = await fetch(
       `/api/workspaces/${workspaceId}/discover/import-product`,
@@ -169,6 +181,7 @@ export function DiscoverClient({
 
   async function toggleStar(p: DiscoverProduct) {
     if (starring.has(p.productId)) return;
+    if (gateGuest()) return;
     const next = !stars[p.productId];
     setStarring((prev) => new Set(prev).add(p.productId));
     setStars((prev) => ({ ...prev, [p.productId]: next }));
@@ -192,6 +205,7 @@ export function DiscoverClient({
 
   async function analyzeProduct(p: DiscoverProduct) {
     if (analyzing.has(p.productId)) return;
+    if (gateGuest()) return;
     setAnalyzing((prev) => new Set(prev).add(p.productId));
     const res = await fetch(`/api/workspaces/${workspaceId}/discover/analyze`, {
       method: "POST",
@@ -220,6 +234,25 @@ export function DiscoverClient({
 
   return (
     <div className="space-y-6">
+      {loginPromptOpen && (
+        <LoginPromptModal
+          onClose={() => setLoginPromptOpen(false)}
+          callbackUrl="/app/discover/products"
+          title="登录后即可操作"
+          desc="导入选品、AI 分析、收藏都需要账号。趋势榜随便逛，登录后即可一键操作。"
+        />
+      )}
+
+      {isGuest && (
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3 flex items-start gap-3">
+          <Sparkles className="h-4 w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+          <div className="text-xs text-indigo-900 leading-relaxed">
+            <span className="font-semibold">试用模式</span>
+            ：TikTok 实时爆品榜随便逛、随便看数据。导入选品 / AI 分析 / 收藏需要登录。
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight inline-flex items-center gap-2">

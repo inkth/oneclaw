@@ -13,8 +13,10 @@ export const authConfig: NextAuthConfig = {
       const onApp = pathname.startsWith("/app");
       const onAuthPage = pathname === "/login";
 
-      // 游客可逛的功能页（试用入口）：放行到页面，由页面/动作按需提示登录
-      const guestAllowed = pathname.startsWith("/app/create");
+      // 游客可逛的内容页（试用入口）：放行到页面，由页面/动作按需提示登录
+      const guestAllowed =
+        pathname.startsWith("/app/create") ||
+        pathname.startsWith("/app/discover");
 
       if (onApp && !isLoggedIn && !guestAllowed) return false; // 触发跳转到 signIn
       if (onAuthPage && isLoggedIn) {

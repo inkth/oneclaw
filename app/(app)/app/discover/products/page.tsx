@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -15,9 +14,12 @@ export default async function DiscoverProductsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  // 游客也能逛公共趋势榜；「我的导入/分析/收藏」浮层无 workspace 时留空，
+  // 导入/分析/收藏等动作再提示登录。
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
 
   const sp = await searchParams;
   const region = (VALID_REGIONS.includes(sp.region as Region)
@@ -36,7 +38,7 @@ export default async function DiscoverProductsPage({
   // 计算交集：这批 EchoTik 商品里，哪些已经被 import / 分析 / 收藏
   const externalIds = result.products.map((p) => p.product_id);
   const [importedProducts, recentAnalyses, interactions] = await Promise.all([
-    externalIds.length
+    workspace && externalIds.length
       ? prisma.product.findMany({
           where: {
             workspaceId: workspace.id,
@@ -53,7 +55,7 @@ export default async function DiscoverProductsPage({
           },
         })
       : Promise.resolve([]),
-    externalIds.length
+    workspace && externalIds.length
       ? prisma.agentTask.findMany({
           where: {
             workspaceId: workspace.id,
@@ -70,7 +72,7 @@ export default async function DiscoverProductsPage({
           },
         })
       : Promise.resolve([]),
-    externalIds.length
+    workspace && externalIds.length
       ? prisma.workspaceDiscoverInteraction.findMany({
           where: {
             workspaceId: workspace.id,
@@ -118,7 +120,8 @@ export default async function DiscoverProductsPage({
 
   return (
     <DiscoverClient
-      workspaceId={workspace.id}
+      isGuest={!workspace}
+      workspaceId={workspace?.id ?? ""}
       region={region}
       rankType={rankType}
       field={field}
