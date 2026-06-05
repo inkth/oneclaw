@@ -29,26 +29,6 @@ export function Partners() {
             </div>
           ))}
         </div>
-
-        <div className="mt-16 mx-auto max-w-4xl rounded-2xl border border-zinc-200/80 bg-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
-            </div>
-            <div>
-              <div className="text-sm font-semibold">基于 OpenRouter + fal.ai 构建</div>
-              <div className="mt-0.5 text-xs text-zinc-500">
-                自由切换 Claude / GPT / Gemini / DeepSeek，视频走 flux + kling，BYOK 可选。
-              </div>
-            </div>
-          </div>
-          <a
-            href="/pricing"
-            className="rounded-full bg-zinc-900 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-800 transition-colors"
-          >
-            查看定价 →
-          </a>
-        </div>
       </div>
     </section>
   );
