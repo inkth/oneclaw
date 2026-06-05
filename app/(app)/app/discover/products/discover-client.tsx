@@ -200,16 +200,6 @@ export function DiscoverClient({
         />
       )}
 
-      {isGuest && (
-        <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
-          <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
-          <div className="text-xs leading-relaxed text-indigo-900">
-            <span className="font-semibold">试用模式</span>
-            ：TikTok 实时爆品榜随便逛、随便看数据。导入选品 / AI 分析 / 收藏需要登录。
-          </div>
-        </div>
-      )}
-
       <PageHeader
         title="发现 · TikTok 爆品"
         badge={<StateBadge state={state} fetchedAt={fetchedAt} />}

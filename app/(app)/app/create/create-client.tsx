@@ -468,17 +468,6 @@ export function CreateClient({
           </p>
         </div>
 
-        {isGuest && (
-          <div className="rounded-xl border border-indigo-200/80 bg-indigo-50/50 p-3 flex items-start gap-3">
-            <Sparkles className="h-4 w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-indigo-900 leading-relaxed">
-              <span className="font-semibold">试用模式</span>
-              ：随便逛、贴链接识别、套模板都免费。只有点「生成视频」时才需要登录，
-              你填的内容会自动保留。
-            </div>
-          </div>
-        )}
-
         {!falReady && !isGuest && (
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 flex items-start gap-3">
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />

@@ -6,7 +6,6 @@ import { TrendingUp, Video, Bot, ArrowRight } from "lucide-react";
 import { OnboardingCard } from "@/components/OnboardingCard";
 import { Stat } from "@/components/ui/Stat";
 import { Badge } from "@/components/ui/Badge";
-import { ButtonLink } from "@/components/ui/Button";
 import { AGENT_IDENTITY, TASK_STATUS_TONE, TASK_STATUS_LABEL, type AgentKey } from "@/lib/ui/tokens";
 
 export const metadata = { title: "工作台 · OneClaw" };
@@ -46,18 +45,6 @@ export default async function DashboardPage() {
               : `这是 ${workspace.name} 的今日概览。`}
         </p>
       </div>
-
-      {!workspace && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white p-4">
-          <div className="text-sm text-zinc-600">
-            <span className="font-semibold text-zinc-900">试用模式</span>
-            ：可逛全部页面与 TikTok 爆品。登录后解锁选品库、生成视频与数据看板。
-          </div>
-          <ButtonLink href="/login?callbackUrl=/app" variant="primary" size="sm">
-            登录 / 注册
-          </ButtonLink>
-        </div>
-      )}
 
       {workspace && isFresh && <OnboardingCard workspaceId={workspace.id} />}
 

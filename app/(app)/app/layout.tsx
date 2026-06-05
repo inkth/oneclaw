@@ -33,7 +33,7 @@ export default async function AppLayout({
         <div className="px-3 py-3 border-b border-zinc-100">
           <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
             <div className="text-2xs uppercase tracking-wider text-zinc-400">
-              {workspace ? "当前工作台" : "试用模式"}
+              {workspace ? "当前工作台" : "账户"}
             </div>
             <div className="mt-0.5 text-sm font-medium truncate">
               {workspace ? workspace.name : "未登录"}
