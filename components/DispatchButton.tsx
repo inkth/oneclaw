@@ -46,7 +46,7 @@ export function DispatchButton({
       setErr(json?.error?.message || "派发失败");
       return;
     }
-    router.push("/app/agents");
+    router.push("/app");
   }
 
   const sizeCls =

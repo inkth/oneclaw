@@ -79,7 +79,7 @@ export function AgentComposer({
     }
     setInput("");
     toast.success("已派发，Agent 正在工作", {
-      action: { label: "查看进度", onClick: () => router.push("/app/agents") },
+      action: { label: "查看进度", onClick: () => router.push("/app") },
     });
     // 让下方「最近 Agent 任务」刷新出新任务
     router.refresh();

@@ -29,13 +29,12 @@ type Board = {
 // 所有现有页面都归进某个板块，子页面收进板块内 Tab，侧边栏永远只有这 6 行 + 设置。
 const BOARDS: Board[] = [
   {
-    // 工作台的核心是 Agent：首页直接呈现/进入 Agent，不用 Tab 切换。
-    // /app/agents 仍归属工作台（侧边栏高亮工作台），通过首页入口进入。
+    // 工作台的核心是 Agent：首页直接呈现派活聊天框与最近任务，不用 Tab 切换。
     key: "workspace",
     label: "工作台",
     icon: LayoutDashboard,
     href: "/app",
-    paths: ["/app", "/app/agents"],
+    paths: ["/app"],
     tabs: [],
   },
   {
@@ -168,7 +167,7 @@ export function BoardTabs() {
   const board = activeBoard(pathname);
   if (!board || board.tabs.length < 2) return null;
 
-  // 取匹配到的最长 href 作为当前 Tab，避免 '/app' 在 '/app/agents' 上也被点亮。
+  // 取匹配到的最长 href 作为当前 Tab，避免父级 href 在子页面上也被点亮。
   const activeTabHref = board.tabs
     .filter((t) => matchPath(t.href, pathname))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;

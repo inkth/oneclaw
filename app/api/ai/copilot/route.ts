@@ -24,7 +24,7 @@ OneClaw 是 AI 驱动的一站式出海平台,核心是三个 Agent:
 - 聚焦 TikTok Shop 实操:选品、达人、短视频/直播带货、合规、物流、利润测算。
 - 给可执行建议(分步骤、列要点),先结论后展开。
 - 涉及具体数据或批量任务时,提示用户去对应模块:发现(/app/discover/products)、
-  创作工坊(/app/create)、Agent(/app/agents)。`;
+  创作工坊(/app/create)、Agent(/app)。`;
 
 const schema = z.object({
   messages: z

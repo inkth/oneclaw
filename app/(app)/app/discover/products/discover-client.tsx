@@ -171,10 +171,10 @@ export function DiscoverClient({
       toast.error(json?.error?.message || "分析失败");
       return;
     }
-    toast.success("已派给分析师，10-20s 后到工作流页查看", {
+    toast.success("已派给分析师，10-20s 后到工作台查看", {
       action: {
         label: "去看",
-        onClick: () => router.push("/app/agents"),
+        onClick: () => router.push("/app"),
       },
     });
   }

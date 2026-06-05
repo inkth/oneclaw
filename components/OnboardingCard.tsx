@@ -41,7 +41,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
       setError(json?.error?.message || "派发失败");
       return;
     }
-    router.push("/app/agents");
+    router.push("/app");
   }
 
   return (
@@ -86,7 +86,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
 
           <div className="mt-5 text-xs text-zinc-500">
             或者，
-            <Link href="/app/agents" className="ml-1 text-brand-600 hover:text-brand-700 font-medium">
+            <Link href="/app" className="ml-1 text-brand-600 hover:text-brand-700 font-medium">
               手写一个 Agent 派发指令 →
             </Link>
           </div>

@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
-import { TrendingUp, Video, Bot, ArrowRight } from "lucide-react";
+import { TrendingUp, Video, Bot } from "lucide-react";
 import { OnboardingCard } from "@/components/OnboardingCard";
 import { Stat } from "@/components/ui/Stat";
 import { Badge } from "@/components/ui/Badge";
@@ -55,26 +54,16 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat icon={TrendingUp} label="选品库存" value={productCount} href="/app/assets/products" />
         <Stat icon={Video} label="已生成视频" value={videoCount} href="/app/videos" />
-        <Stat icon={Bot} label="Agent 任务" value={taskCount} href="/app/agents" />
+        <Stat icon={Bot} label="Agent 任务" value={taskCount} />
       </div>
 
       <section className="rounded-xl border border-zinc-200/80 bg-white">
-        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+        <div className="border-b border-zinc-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-zinc-900">最近 Agent 任务</h2>
-          <Link
-            href="/app/agents"
-            className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
-          >
-            全部 <ArrowRight className="h-3 w-3" />
-          </Link>
         </div>
         {recentTasks.length === 0 ? (
           <div className="px-5 py-12 text-center text-sm text-zinc-500">
-            还没有任务。前往{" "}
-            <Link href="/app/agents" className="text-brand-600 hover:text-brand-700">
-              Agent 工作流
-            </Link>{" "}
-            提交一个吧。
+            还没有任务。在上方聊天框给 Agent 派个活吧。
           </div>
         ) : (
           <ul className="divide-y divide-zinc-100">
