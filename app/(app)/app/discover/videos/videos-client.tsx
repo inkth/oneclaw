@@ -88,8 +88,14 @@ export function VideosClient({
 }
 
 function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
+  const tiktokUrl = `https://www.tiktok.com/@${v.uniqueId}/video/${v.videoId}`;
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-indigo-200 hover:shadow-sm">
+    <a
+      href={tiktokUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-indigo-200 hover:shadow-sm"
+    >
       <div className="relative aspect-[3/4] w-full bg-zinc-100">
         {v.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -102,6 +108,12 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
             {initial(v.nickName)}
           </div>
         )}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm">
+            <Play className="h-3 w-3 fill-zinc-900" />
+            在 TikTok 查看
+          </span>
+        </div>
         <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/60 px-1.5 text-2xs font-semibold tabular-nums text-white">
           {rank}
         </span>
@@ -142,7 +154,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
         </div>
         <div className="text-2xs text-zinc-400">{fmtUnixDate(v.createTime)} · {v.region}</div>
       </div>
-    </div>
+    </a>
   );
 }
 
