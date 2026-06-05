@@ -33,7 +33,7 @@ const AGENTS = [
 
 /**
  * 工作台核心：以聊天框为中心给三位 Agent 派活。
- * Agent 选择收成输入框下方的并列按钮，派发后刷新页面，新任务落到下方「最近 Agent 任务」。
+ * Agent 选择收成输入框下方的并列按钮，发送后刷新页面，新任务落到下方「最近 Agent 任务」。
  */
 export function AgentComposer({
   workspaceId,
@@ -51,7 +51,7 @@ export function AgentComposer({
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
-    toast("登录后即可派发任务", {
+    toast("登录后即可发送任务", {
       action: {
         label: "去登录",
         onClick: () => {
@@ -74,11 +74,11 @@ export function AgentComposer({
     const json = await res.json();
     setSubmitting(false);
     if (!res.ok || !json.ok) {
-      toast.error(json?.error?.message || "派发失败");
+      toast.error(json?.error?.message || "发送失败");
       return;
     }
     setInput("");
-    toast.success("已派发，Agent 正在工作", {
+    toast.success("已发送，Agent 正在工作", {
       action: { label: "查看进度", onClick: () => router.push("/app") },
     });
     // 让下方「最近 Agent 任务」刷新出新任务
@@ -119,7 +119,7 @@ export function AgentComposer({
         })}
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 派发</span>
+          <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 发送</span>
           <button
             onClick={submit}
             disabled={submitting || !input.trim()}
@@ -130,7 +130,7 @@ export function AgentComposer({
             ) : (
               <Send className="h-4 w-4" />
             )}
-            派发
+            发送
           </button>
         </div>
       </div>

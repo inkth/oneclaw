@@ -7,7 +7,7 @@ type Size = "sm" | "md";
 const VARIANTS: Record<Variant, string> = {
   // 主操作：实心黑（留住品牌色稀缺性）
   primary: "bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm press",
-  // 品牌操作：实心电紫 + 紫色辉光，用于「派发」/定价高亮等需上品牌色处
+  // 品牌操作：实心电紫 + 紫色辉光，用于「发送」/定价高亮等需上品牌色处
   brand: "bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow-[var(--shadow-brand)] press",
   // 次级：白底 + 描边
   secondary: "bg-white text-zinc-800 ring-1 ring-zinc-200 hover:ring-zinc-300 hover:bg-zinc-50 press",

@@ -43,7 +43,7 @@ export function DispatchButton({
     const json = await res.json();
     if (!res.ok || !json.ok) {
       setBusy(false);
-      setErr(json?.error?.message || "派发失败");
+      setErr(json?.error?.message || "发送失败");
       return;
     }
     router.push("/app");

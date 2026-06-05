@@ -89,7 +89,7 @@ export function TemplateOptimizerModal({
       const j = await r.json();
       if (cancelled) return;
       if (!r.ok || !j.ok) {
-        setError(j.error?.message || "派发失败");
+        setError(j.error?.message || "发送失败");
         return;
       }
       setTask(j.data.task);

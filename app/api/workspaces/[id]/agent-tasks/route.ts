@@ -54,7 +54,7 @@ export async function POST(
       windowMs: 60 * 60_000, // 30 任务 / 小时 / 工作台（除了月度配额额外的短期防刷）
     });
     if (!rl.success) {
-      return fail(`派发过于频繁，请 ${rl.retryAfter}s 后再试`, 429);
+      return fail(`发送过于频繁，请 ${rl.retryAfter}s 后再试`, 429);
     }
 
     const body = await req.json();
