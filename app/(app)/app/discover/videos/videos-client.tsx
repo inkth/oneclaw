@@ -25,11 +25,6 @@ type Video = {
   totalVideoSaleGmvAmt: number;
 };
 
-const FIELDS = [
-  { v: 1, cn: "带货销量" },
-  { v: 2, cn: "带货 GMV" },
-];
-
 export function VideosClient({
   region,
   rankType,
@@ -68,7 +63,6 @@ export function VideosClient({
         field={field}
         categoryId={categoryId}
         categories={categories}
-        fields={FIELDS}
       />
 
       {state === "empty" ? (

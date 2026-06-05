@@ -22,11 +22,6 @@ type Seller = {
   totalLiveCnt: number;
 };
 
-const FIELDS = [
-  { v: 1, cn: "销量" },
-  { v: 2, cn: "GMV" },
-];
-
 export function SellersClient({
   region,
   rankType,
@@ -65,7 +60,6 @@ export function SellersClient({
         field={field}
         categoryId={categoryId}
         categories={categories}
-        fields={FIELDS}
       />
 
       {state === "empty" ? (

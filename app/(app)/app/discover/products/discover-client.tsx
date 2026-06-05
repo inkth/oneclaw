@@ -22,12 +22,6 @@ import { fmt, fmtMoney } from "@/lib/echotik/format";
 type RankType = 1 | 2 | 3;
 type Field = 1 | 2 | 3;
 
-const FIELDS = [
-  { v: 1, cn: "销量" },
-  { v: 2, cn: "GMV" },
-  { v: 3, cn: "增长" },
-];
-
 type AnalysisInfo = {
   taskId: string;
   status: string;
@@ -198,7 +192,7 @@ export function DiscoverClient({
 
       <PageHeader
         title="发现 · TikTok 爆品"
-        description="来自 EchoTik 的 TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断"
+        description="TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断"
       />
 
 
@@ -209,11 +203,10 @@ export function DiscoverClient({
         field={field}
         categoryId={categoryId}
         categories={categories}
-        fields={FIELDS}
       />
 
       {state === "empty" && (
-        <EmptyState hint="EchoTik 这个区域 / 榜单组合下还没有可用数据（可能 T-1 数据未生成，或当前账号订阅未覆盖此榜单）。试试切换到「热销」榜或者换个区域。" />
+        <EmptyState hint="这个区域 / 榜单组合下还没有可用数据（可能 T-1 数据未生成，或当前账号订阅未覆盖此榜单）。试试换个区域。" />
       )}
 
       {/* Main table */}

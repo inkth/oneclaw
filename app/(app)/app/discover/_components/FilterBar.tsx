@@ -18,12 +18,6 @@ export const REGIONS: Array<{ code: Region; cn: string }> = [
   { code: "MY", cn: "马来西亚" },
 ];
 
-const RANK_TYPES: Array<{ v: number; cn: string }> = [
-  { v: 1, cn: "热销" },
-  { v: 2, cn: "上升" },
-  { v: 3, cn: "新品" },
-];
-
 // 行内单个可选项
 type Item = { value: string; label: string };
 
@@ -35,7 +29,6 @@ export function FilterBar({
   field,
   categoryId,
   categories,
-  fields,
 }: {
   basePath: string;
   region: Region;
@@ -43,7 +36,6 @@ export function FilterBar({
   field: number;
   categoryId: string | null;
   categories: CategoryOption[];
-  fields: FieldOption[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -64,8 +56,6 @@ export function FilterBar({
   }
 
   const regionItems: Item[] = REGIONS.map((r) => ({ value: r.code, label: r.cn }));
-  const rankItems: Item[] = RANK_TYPES.map((r) => ({ value: String(r.v), label: r.cn }));
-  const fieldItems: Item[] = fields.map((f) => ({ value: String(f.v), label: f.cn }));
   const categoryItems: Item[] = [
     { value: "", label: "全部" },
     ...categories.map((c) => ({ value: c.id, label: c.name })),
@@ -82,18 +72,6 @@ export function FilterBar({
         items={regionItems}
         active={region}
         onSelect={(v) => navigate({ region: v as Region })}
-      />
-      <PillRow
-        label="榜单类型"
-        items={rankItems}
-        active={String(rankType)}
-        onSelect={(v) => navigate({ rank_type: Number(v) })}
-      />
-      <PillRow
-        label="排序"
-        items={fieldItems}
-        active={String(field)}
-        onSelect={(v) => navigate({ field: Number(v) })}
       />
       <PillRow
         label="商品分类"
