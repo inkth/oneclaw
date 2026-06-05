@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2, Video } from "lucide-react";
 import { VideoDetailDrawer } from "@/components/VideoDetailDrawer";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 
 type Processing = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
 
@@ -23,27 +24,11 @@ type Video = {
   createdAt: string;
 };
 
-const styleMap: Record<string, { label: string; gradient: string; emoji: string }> = {
-  UNBOXING: {
-    label: "Unboxing",
-    gradient: "from-rose-400 via-pink-500 to-fuchsia-500",
-    emoji: "📦",
-  },
-  COMPARISON: {
-    label: "对比测评",
-    gradient: "from-amber-400 via-orange-500 to-rose-500",
-    emoji: "⚖️",
-  },
-  SCENE: {
-    label: "生活场景",
-    gradient: "from-emerald-400 via-teal-500 to-cyan-500",
-    emoji: "🌿",
-  },
-  BEFORE_AFTER: {
-    label: "Before/After",
-    gradient: "from-brand-400 via-violet-500 to-purple-500",
-    emoji: "✨",
-  },
+const styleMap: Record<string, { label: string }> = {
+  UNBOXING: { label: "Unboxing" },
+  COMPARISON: { label: "对比测评" },
+  SCENE: { label: "生活场景" },
+  BEFORE_AFTER: { label: "Before/After" },
 };
 
 export function VideosClient({
@@ -117,6 +102,7 @@ export function VideosClient({
   if (videos.length === 0) {
     return (
       <EmptyState
+        icon={Video}
         title="还没有视频"
         description="去 Agent 工作流里调用「创意总监」即可一键生成 4 套短视频。"
       />
@@ -143,7 +129,7 @@ export function VideosClient({
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
-                <div className={`absolute inset-0 bg-gradient-to-br ${style.gradient}`} />
+                <MediaPlaceholder seed={v.id} icon={Video} rounded="rounded-none" className="absolute inset-0" />
               )}
               <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/60" />
 
@@ -158,7 +144,7 @@ export function VideosClient({
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   {isGenerating ? (
-                    <div className="rounded-full bg-black/50 backdrop-blur px-3 py-1.5 text-2xs font-medium text-white inline-flex items-center gap-1.5">
+                    <div className="glow-pulse rounded-full bg-black/50 backdrop-blur px-3 py-1.5 text-2xs font-medium text-white inline-flex items-center gap-1.5">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       生成中…
                     </div>
@@ -172,9 +158,7 @@ export function VideosClient({
                       <Play className="h-3 w-3 fill-current" />
                       仅封面
                     </div>
-                  ) : (
-                    <div className="text-6xl opacity-90">{style.emoji}</div>
-                  )}
+                  ) : null}
                 </div>
               )}
 
@@ -190,7 +174,7 @@ export function VideosClient({
 
               <div className="absolute inset-x-0 bottom-0 p-3 text-white pointer-events-none">
                 <div className="text-xs font-semibold truncate">{v.title}</div>
-                <div className="mt-0.5 text-2xs opacity-90">
+                <div className="mt-0.5 text-2xs opacity-90 nums">
                   {v.views.toLocaleString()} 播放 · {v.likes.toLocaleString()} 赞
                 </div>
               </div>

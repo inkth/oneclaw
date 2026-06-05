@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 
 type Kind = "DIGITAL_HUMAN" | "REAL_PERSON";
 type Gender = "FEMALE" | "MALE" | "NEUTRAL";
@@ -38,14 +39,13 @@ const PRESETS: Array<{
   gender: Gender;
   style: string;
   description: string;
-  emoji: string;
 }> = [
-  { name: "都市少女", kind: "DIGITAL_HUMAN", gender: "FEMALE", style: "甜美 / 时尚", description: "20+ 都市年轻女性，适合美妆 / 服饰 / 小家电", emoji: "💁‍♀️" },
-  { name: "商务女精英", kind: "DIGITAL_HUMAN", gender: "FEMALE", style: "干练 / 自信", description: "30+ 职场，适合数码 / 办公 / 高客单产品", emoji: "💼" },
-  { name: "户外大叔", kind: "DIGITAL_HUMAN", gender: "MALE", style: "硬朗 / 真实", description: "户外露营 / 工具 / 男性消费品", emoji: "🧔" },
-  { name: "学生男友", kind: "DIGITAL_HUMAN", gender: "MALE", style: "阳光 / 邻家", description: "Gen Z 数码 / 潮玩 / 运动", emoji: "👦" },
-  { name: "宝妈日常", kind: "DIGITAL_HUMAN", gender: "FEMALE", style: "温柔 / 信赖", description: "母婴 / 厨房 / 家居好物", emoji: "👩‍🍼" },
-  { name: "汪星人主理人", kind: "DIGITAL_HUMAN", gender: "NEUTRAL", style: "宠粉 / 治愈", description: "宠物用品 / 萌宠生活", emoji: "🐕" },
+  { name: "都市少女", kind: "DIGITAL_HUMAN", gender: "FEMALE", style: "甜美 / 时尚", description: "20+ 都市年轻女性，适合美妆 / 服饰 / 小家电" },
+  { name: "商务女精英", kind: "DIGITAL_HUMAN", gender: "FEMALE", style: "干练 / 自信", description: "30+ 职场，适合数码 / 办公 / 高客单产品" },
+  { name: "户外大叔", kind: "DIGITAL_HUMAN", gender: "MALE", style: "硬朗 / 真实", description: "户外露营 / 工具 / 男性消费品" },
+  { name: "学生男友", kind: "DIGITAL_HUMAN", gender: "MALE", style: "阳光 / 邻家", description: "Gen Z 数码 / 潮玩 / 运动" },
+  { name: "宝妈日常", kind: "DIGITAL_HUMAN", gender: "FEMALE", style: "温柔 / 信赖", description: "母婴 / 厨房 / 家居好物" },
+  { name: "汪星人主理人", kind: "DIGITAL_HUMAN", gender: "NEUTRAL", style: "宠粉 / 治愈", description: "宠物用品 / 萌宠生活" },
 ];
 
 const genderMeta: Record<Gender, { cn: string; cls: string }> = {
@@ -159,11 +159,9 @@ export function ModelsClient({
               <button
                 key={p.name}
                 onClick={() => createFromPreset(p)}
-                className="group rounded-xl border border-zinc-200/80 bg-white p-3 hover:border-brand-200 hover:shadow-sm transition-all text-left"
+                className="group rounded-xl ring-edge bg-white p-3 lift hover:border-brand-200 text-left"
               >
-                <div className="aspect-square rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-4xl">
-                  {p.emoji}
-                </div>
+                <MediaPlaceholder seed={p.name} icon={UserSquare2} rounded="rounded-lg" className="aspect-square" />
                 <div className="mt-2 text-sm font-medium">{p.name}</div>
                 <div className="mt-0.5 text-2xs text-zinc-500 truncate">
                   {p.style}
@@ -179,13 +177,13 @@ export function ModelsClient({
           {models.map((m) => {
             const g = genderMeta[m.gender];
             return (
-              <div key={m.id} className="group rounded-xl border border-zinc-200/80 bg-white overflow-hidden">
-                <div className="aspect-[3/4] bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center relative">
+              <div key={m.id} className="group rounded-xl ring-edge bg-white overflow-hidden shadow-xs">
+                <div className="aspect-[3/4] relative overflow-hidden">
                   {m.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.avatarUrl} alt={m.name} className="absolute inset-0 h-full w-full object-cover" />
                   ) : (
-                    <UserSquare2 className="h-10 w-10 text-zinc-400" />
+                    <MediaPlaceholder seed={m.id} icon={UserSquare2} rounded="rounded-none" className="absolute inset-0" />
                   )}
                   <div className="absolute left-2 top-2 flex gap-1">
                     <span className={`inline-flex rounded-full px-1.5 py-0.5 text-2xs font-medium ${g.cls}`}>
@@ -305,7 +303,7 @@ function CreateModelModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-xl bg-white shadow-sm"
+        className="relative w-full max-w-md rounded-2xl ring-edge bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button

@@ -19,7 +19,7 @@ export default async function AppLayout({
     : null;
 
   return (
-    <div className="min-h-screen flex bg-zinc-50/50">
+    <div className="grain relative min-h-screen flex bg-zinc-50/50">
       <aside className="hidden md:flex w-60 flex-col border-r border-zinc-200 bg-white">
         <Link href="/" className="flex items-center gap-2 px-5 h-16 border-b border-zinc-100">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500">

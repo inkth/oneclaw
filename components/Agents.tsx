@@ -53,7 +53,7 @@ export function Agents() {
           <p className="text-sm font-semibold uppercase tracking-wider text-brand-600">
             Meet the team
           </p>
-          <h2 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">
+          <h2 className="mt-2 text-display-sm">
             三位 AI Agent，覆盖出海全链路
           </h2>
           <p className="mt-4 text-zinc-600">

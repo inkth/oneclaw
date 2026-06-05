@@ -2,7 +2,7 @@ import { ArrowRight, Play, Sparkles, TrendingUp, Video, Globe } from "lucide-rea
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-16 pb-24 sm:pt-24 sm:pb-32">
+    <section className="grain relative overflow-hidden pt-16 pb-24 sm:pt-24 sm:pb-32">
       <div className="absolute inset-0 gradient-bg" aria-hidden />
       <div
         aria-hidden
@@ -16,13 +16,13 @@ export function Hero() {
             Beta 公测中 · 2026 新版上线
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
+          <h1 className="text-display">
             你的 <span className="gradient-text">AI 出海团队</span>
             <br />
             从洞察到变现，一站搞定
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-zinc-600 leading-relaxed">
+          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-zinc-600 text-cjk-relaxed">
             OneClaw 用三位专属 AI Agent —— 市场分析师、创意总监、品牌运营官，
             <br className="hidden sm:block" />
             帮跨境团队把每周 30+ 小时的重复工作压缩到 10 分钟内。
@@ -140,8 +140,8 @@ function PreviewCard({
   const p = tonePalette[tone];
   return (
     <div
-      className={`relative rounded-xl border border-zinc-200/80 bg-white p-4 ${
-        highlight ? "ring-2 ring-violet-200" : ""
+      className={`relative rounded-xl bg-white p-4 ${
+        highlight ? "gradient-border shadow-md" : "border border-zinc-200/80"
       }`}
     >
       <div className="flex items-center gap-2">

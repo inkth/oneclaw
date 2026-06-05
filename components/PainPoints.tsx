@@ -29,7 +29,7 @@ export function PainPoints() {
           <p className="text-sm font-semibold uppercase tracking-wider text-brand-600">
             为什么需要 OneClaw
           </p>
-          <h2 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">
+          <h2 className="mt-2 text-display-sm">
             出海团队每天都在重复打同一场仗
           </h2>
           <p className="mt-4 text-zinc-600">

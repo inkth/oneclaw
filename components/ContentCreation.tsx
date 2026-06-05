@@ -45,7 +45,7 @@ export function ContentCreation() {
               <Video className="h-3 w-3" />
               创意总监 Agent
             </div>
-            <h2 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight">
+            <h2 className="mt-4 text-display-sm">
               一个产品，
               <br />
               四套差异化短视频

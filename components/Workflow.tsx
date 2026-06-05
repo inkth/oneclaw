@@ -20,7 +20,7 @@ export function Workflow() {
     <section className="relative py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          <h2 className="text-display-sm">
             把每周 <span className="gradient-text">30+ 小时</span> 压缩到{" "}
             <span className="gradient-text">10 分钟</span>
           </h2>

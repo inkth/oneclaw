@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, RotateCcw, Trash2, Video as VideoIcon, Loader2 } from "lucide-react";
+import { Archive, RotateCcw, Trash2, Video as VideoIcon, Loader2, Package } from "lucide-react";
 import { DispatchButton } from "@/components/DispatchButton";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 
 type Status = "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 
@@ -131,6 +132,7 @@ export function ProductsClient({
 
       {visible.length === 0 ? (
         <EmptyState
+          icon={Package}
           title={filter === "ALL" ? "还没有选品" : "这个分类下还没有选品"}
           description={
             <>
@@ -158,12 +160,10 @@ export function ProductsClient({
                 <Tr key={p.id}>
                   <Td>
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-lg bg-zinc-100 flex items-center justify-center text-lg">
-                        {p.emoji ?? "📦"}
-                      </div>
+                      <MediaPlaceholder seed={p.id} rounded="rounded-lg" className="h-9 w-9 shrink-0" />
                       <div>
                         <div className="font-medium" title={p.note ?? undefined}>{p.title}</div>
-                        <div className="text-2xs text-zinc-500 font-mono">
+                        <div className="text-2xs text-zinc-500 font-mono nums">
                           ${(p.priceCents / 100).toFixed(2)} · 成本 $
                           {(p.costCents / 100).toFixed(2)}
                         </div>
@@ -180,18 +180,18 @@ export function ProductsClient({
                     )}
                   </Td>
                   <Td className="text-zinc-600">{p.category}</Td>
-                  <Td align="right" className="font-semibold">
+                  <Td align="right" className="font-semibold nums">
                     {p.roiScore}
                   </Td>
-                  <Td align="right">
+                  <Td align="right" className="nums">
                     {p.marginPct}%
                   </Td>
-                  <Td align="right">
+                  <Td align="right" className="nums">
                     {p.monthlySales.toLocaleString()}
                   </Td>
                   <Td
                     align="right"
-                    className={p.trendDelta >= 0 ? "text-emerald-600" : "text-rose-600"}
+                    className={`nums ${p.trendDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}
                   >
                     {p.trendDelta >= 0 ? "↑" : "↓"} {Math.abs(p.trendDelta)}%
                   </Td>

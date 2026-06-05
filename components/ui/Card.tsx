@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const base = "rounded-xl border border-zinc-200/80 bg-white shadow-xs";
+const base = "rounded-xl ring-edge surface-sheen shadow-xs";
 
 export function Card({
   className,

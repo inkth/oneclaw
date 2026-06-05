@@ -10,7 +10,7 @@ export function ProductDiscovery() {
               <Sparkles className="h-3 w-3" />
               市场分析师 Agent
             </div>
-            <h2 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight">
+            <h2 className="mt-4 text-display-sm">
               一句话描述需求，
               <br />
               拿到带 ROI 评分的选品建议

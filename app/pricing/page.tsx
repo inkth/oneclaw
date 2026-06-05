@@ -108,17 +108,17 @@ const faqs = [
 
 const toneClass: Record<string, { ring: string; icon: string; cta: string }> = {
   zinc: {
-    ring: "ring-zinc-200/80",
+    ring: "ring-1 ring-zinc-200/80",
     icon: "bg-zinc-900",
     cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
   },
   brand: {
-    ring: "ring-2 ring-brand-600 shadow-xl",
+    ring: "gradient-border shadow-xl",
     icon: "bg-brand-600",
     cta: "bg-brand-600 hover:bg-brand-700 text-white hover:shadow-[var(--shadow-brand)]",
   },
   fuchsia: {
-    ring: "ring-zinc-200/80",
+    ring: "ring-1 ring-zinc-200/80",
     icon: "bg-zinc-900",
     cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
   },
@@ -136,10 +136,10 @@ export default function PricingPage() {
               <Sparkles className="h-3.5 w-3.5" />
               试用期 14 天 · 无需信用卡
             </div>
-            <h1 className="mt-6 text-4xl sm:text-5xl font-bold tracking-tight">
+            <h1 className="mt-6 text-display-sm">
               定价透明，<span className="gradient-text">按真实用量算</span>
             </h1>
-            <p className="mt-4 text-zinc-600 max-w-2xl mx-auto">
+            <p className="mt-4 text-zinc-600 max-w-2xl mx-auto text-cjk-relaxed">
               三档方案覆盖从个人测试到 MCN 全场景，每一档都包含全部核心功能 ——
               区别只在每月能跑多少次 Agent、多少条 fal 视频、能拉几个人进来。
             </p>
@@ -155,7 +155,7 @@ export default function PricingPage() {
                 return (
                   <div
                     key={t.name}
-                    className={`relative rounded-2xl bg-white p-6 sm:p-8 ring-1 ${c.ring} ${
+                    className={`relative rounded-2xl bg-white p-6 sm:p-8 ${c.ring} ${
                       t.highlight ? "md:-translate-y-2" : ""
                     } transition-transform`}
                   >
@@ -184,7 +184,7 @@ export default function PricingPage() {
                     </div>
 
                     <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold tracking-tight">{t.price}</span>
+                      <span className="text-4xl font-bold tracking-tight nums">{t.price}</span>
                       <span className="text-sm text-zinc-500">{t.priceSub}</span>
                     </div>
 
@@ -238,7 +238,7 @@ export default function PricingPage() {
 
         <section className="bg-zinc-50/60 py-20">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">
+            <h2 className="text-display-sm text-center">
               常见问题
             </h2>
             <div className="mt-10 space-y-3">
