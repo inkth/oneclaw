@@ -6,6 +6,7 @@
  *   4. 真实调用挂掉 → 降级 mock + error
  */
 import { after } from "next/server";
+import { unstable_cache } from "next/cache";
 import {
   getProductRanklist,
   getSellerRanklist,
@@ -209,16 +210,29 @@ export type CategoryOption = { id: string; name: string };
 
 /**
  * 一级类目下拉用：取 region 的 L1 列表（统一用 zh-CN，展示中文类目名）。
- * 没凭证 / 调用失败时返回空数组——下拉只剩「全部类目」，不影响主榜。
+ *
+ * ⚠️ 必须用 unstable_cache 包一层：discover 页在 auth()/searchParams 这些
+ * request-time API 之后才发起本调用，Next 16 默认 fetchCache='auto' 会
+ * 「不缓存 request-time API 之后的 fetch」，导致 client.ts 里的
+ * next.revalidate 形同虚设、每次打开页面都实时打 EchoTik（~4s）。
+ * unstable_cache 的缓存不受渲染位置影响，按 region 建键，6h 刷新一次。
  */
-export async function safeCategoriesL1(region: Region): Promise<CategoryOption[]> {
-  if (!isEchoTikConfigured()) return [];
-  try {
+const getCachedCategoriesL1 = unstable_cache(
+  async (region: Region): Promise<CategoryOption[]> => {
     const cats = await listCategoriesL1("zh-CN", region);
     return cats
       .filter((c) => c.category_id && c.category_id !== "0")
       .map((c) => ({ id: c.category_id, name: c.category_name }))
       .sort((a, b) => a.name.localeCompare(b.name));
+  },
+  ["echotik-categories-l1"],
+  { revalidate: 6 * 60 * 60, tags: ["echotik:categories"] },
+);
+
+export async function safeCategoriesL1(region: Region): Promise<CategoryOption[]> {
+  if (!isEchoTikConfigured()) return [];
+  try {
+    return await getCachedCategoriesL1(region);
   } catch (e) {
     console.error("[echotik] safeCategoriesL1 failed (non-fatal)", e);
     return [];
