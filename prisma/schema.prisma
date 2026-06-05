@@ -3,6 +3,9 @@
 
 generator client {
   provider = "prisma-client-js"
+  // 本地在 macOS 构建，部署到 Linux 服务器：必须同时生成 Linux 查询引擎，
+  // 否则 standalone 只带 darwin 引擎，线上所有 Prisma 查询会 PrismaClientInitializationError。
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
