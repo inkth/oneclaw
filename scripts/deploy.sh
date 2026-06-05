@@ -76,7 +76,11 @@ echo "==> [3/6] 上传到 $DEPLOY_DIR..."
 run_remote "mkdir -p $DEPLOY_DIR"
 
 # 上传 standalone (包含 server.js + node_modules 子集)
-rsync -az --delete -e "ssh ${SSH_OPTS[*]}" "$STANDALONE/" "$TARGET:$DEPLOY_DIR/"
+# --delete 会清理 DEPLOY_DIR 里 standalone 没有的文件；必须排除服务器自有的环境变量，
+# 否则会把生产 .env.local 删掉（standalone 产物里没有它），导致下方 env 逻辑误判为"首次部署"。
+rsync -az --delete \
+  --exclude='.env.local' --exclude='.env.local.bak' --exclude='.env.production' \
+  -e "ssh ${SSH_OPTS[*]}" "$STANDALONE/" "$TARGET:$DEPLOY_DIR/"
 
 # 上传静态资源 (.next/static → .next/static)
 rsync -az -e "ssh ${SSH_OPTS[*]}" "$ROOT/.next/static/" "$TARGET:$DEPLOY_DIR/.next/static/"
