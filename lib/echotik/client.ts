@@ -126,12 +126,7 @@ export async function getProductRanklist(params: RanklistParams) {
   const startPage = params.page_num ?? 1;
   const pagesNeeded = Math.ceil(desired / pageSize);
 
-  // T-1 数据不一定及时生成；如果用户没指定 date 就 fallback 试 T-1 → T-2 → T-3
-  const candidates = params.date
-    ? [params.date]
-    : [yesterday(), daysAgo(2), daysAgo(3)];
-
-  for (const date of candidates) {
+  const fetchForDate = async (date: string) => {
     const common = {
       region: params.region,
       rank_type: params.rank_type,
@@ -151,9 +146,30 @@ export async function getProductRanklist(params: RanklistParams) {
         ),
       ),
     );
-    const flat = pages.flat();
-    if (flat.length > 0) return flat.slice(0, desired);
+    return pages.flat();
+  };
+
+  if (params.date) {
+    return (await fetchForDate(params.date)).slice(0, desired);
   }
+  return (await ranklistWithDateFallback(fetchForDate)).slice(0, desired);
+}
+
+/**
+ * T-1 数据不一定及时生成，需要往前回退。先试 T-1（命中即返回，不多打接口）；
+ * 只有 T-1 空时才并行探测 T-2/T-3（一轮 RTT），优先取较新的 T-2。
+ */
+async function ranklistWithDateFallback<T>(
+  fetchForDate: (date: string) => Promise<T[]>,
+): Promise<T[]> {
+  const t1 = await fetchForDate(yesterday());
+  if (t1.length > 0) return t1;
+  const [t2, t3] = await Promise.all([
+    fetchForDate(daysAgo(2)),
+    fetchForDate(daysAgo(3)),
+  ]);
+  if (t2.length > 0) return t2;
+  if (t3.length > 0) return t3;
   return [];
 }
 
@@ -182,9 +198,8 @@ async function getEntityRanklist<T>(
   const pageSize = Math.min(desired, MAX_PAGE_SIZE);
   const startPage = params.page_num ?? 1;
   const pagesNeeded = Math.ceil(desired / pageSize);
-  const candidates = params.date ? [params.date] : [yesterday(), daysAgo(2), daysAgo(3)];
 
-  for (const date of candidates) {
+  const fetchForDate = async (date: string) => {
     const common = {
       region: params.region,
       rank_type: params.rank_type,
@@ -204,10 +219,13 @@ async function getEntityRanklist<T>(
         ),
       ),
     );
-    const flat = pages.flat();
-    if (flat.length > 0) return flat.slice(0, desired);
+    return pages.flat();
+  };
+
+  if (params.date) {
+    return (await fetchForDate(params.date)).slice(0, desired);
   }
-  return [];
+  return (await ranklistWithDateFallback(fetchForDate)).slice(0, desired);
 }
 
 export function getSellerRanklist(params: EntityRanklistParams) {

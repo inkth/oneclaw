@@ -62,13 +62,22 @@ export default async function DiscoverProductsPage({
       : Promise.resolve([]),
     workspace && externalIds.length
       ? prisma.agentTask.findMany({
+          // 直接在 DB 把 productId/region 过滤下推到 metadata（jsonb），
+          // 而不是捞 30 天全部 ANALYST 任务再内存筛——后者数据越多越慢。
           where: {
             workspaceId: workspace.id,
             agent: "ANALYST",
-            createdAt: { gte: new Date(Date.now() - 30 * 86400_000) },
+            AND: [
+              { metadata: { path: ["source"], equals: "discover.echotik" } },
+              { metadata: { path: ["region"], equals: region } },
+              {
+                OR: externalIds.map((pid) => ({
+                  metadata: { path: ["productId"], equals: pid },
+                })),
+              },
+            ],
           },
           orderBy: { createdAt: "desc" },
-          take: 100,
           select: {
             id: true,
             status: true,
@@ -104,16 +113,15 @@ export default async function DiscoverProductsPage({
     { taskId: string; status: string; createdAt: string; verdict?: string }
   >();
   for (const t of recentAnalyses) {
+    // DB 已按 source/region/productId 过滤，这里只做「每个商品取最近一次」的去重。
     const meta = t.metadata as Record<string, unknown> | null;
-    if (!meta || meta.source !== "discover.echotik") continue;
-    if (meta.region !== region) continue;
-    const extId = meta.productId as string | undefined;
+    const extId = meta?.productId as string | undefined;
     if (!extId || analysisByExtId.has(extId)) continue;
     analysisByExtId.set(extId, {
       taskId: t.id,
       status: t.status,
       createdAt: t.createdAt.toISOString(),
-      verdict: (meta.verdict as string | undefined) ?? undefined,
+      verdict: (meta?.verdict as string | undefined) ?? undefined,
     });
   }
 
