@@ -2,7 +2,10 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { ok, fail, handleError } from "@/lib/api";
-import { pollVideoStatus, isFalConfigured } from "@/lib/fal";
+import { pollVideoStatus as falPollVideoStatus, isFalConfigured } from "@/lib/fal";
+import { pollVideoStatus as orPollVideoStatus } from "@/lib/openrouter-video";
+import { isOpenRouterConfigured } from "@/lib/openrouter";
+import { getEngine } from "@/lib/video-engines";
 import {
   rehostUrl,
   isStorageConfigured,
@@ -33,16 +36,22 @@ export async function POST(
     if (!video) return fail("视频不存在", 404);
 
     if (!video.falRequestId) {
-      return ok({ video, hint: "本视频未关联 fal 任务" });
-    }
-    if (!isFalConfigured()) {
-      return fail("FAL_KEY 未配置", 503);
+      return ok({ video, hint: "本视频未关联生成任务" });
     }
     if (video.processing === "COMPLETED" || video.processing === "FAILED") {
       return ok({ video, hint: "已完成或失败，无需轮询" });
     }
 
-    const status = await pollVideoStatus(video.falRequestId, video.falModel ?? undefined);
+    // 按引擎 provider 决定走 OpenRouter 还是 fal（注册表里没有的旧引擎按 fal 兜底）。
+    const isOpenRouter = getEngine(video.engine ?? "")?.provider === "openrouter";
+    const backendReady = isOpenRouter ? isOpenRouterConfigured() : isFalConfigured();
+    if (!backendReady) {
+      return fail("视频服务暂不可用，请稍后再试", 503);
+    }
+
+    const status = isOpenRouter
+      ? await orPollVideoStatus(video.falRequestId)
+      : await falPollVideoStatus(video.falRequestId, video.falModel ?? undefined);
 
     if (status.state === "COMPLETED") {
       // 尝试把 fal CDN 临时 URL 转存到持久存储（防 24-48h 失效）

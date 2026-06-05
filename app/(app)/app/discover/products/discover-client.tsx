@@ -15,7 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
-import { StateBadge, MockNotice, EmptyState, Thumb } from "../_components/shared";
+import { EmptyState, Thumb } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { fmt, fmtMoney } from "@/lib/echotik/format";
@@ -68,7 +68,6 @@ export function DiscoverClient({
   categoryId,
   categories,
   state,
-  fetchedAt,
   products,
   isGuest = false,
 }: {
@@ -202,11 +201,9 @@ export function DiscoverClient({
 
       <PageHeader
         title="发现 · TikTok 爆品"
-        badge={<StateBadge state={state} fetchedAt={fetchedAt} />}
         description="来自 EchoTik 的 TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断"
       />
 
-      {state === "mock" && <MockNotice />}
 
       <FilterBar
         basePath="/app/discover/products"

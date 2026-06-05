@@ -7,7 +7,9 @@ import { ok, fail, handleError } from "@/lib/api";
 import { rateLimit } from "@/lib/ratelimit";
 import { assertCanGenerateVideo } from "@/lib/quota";
 import { getEngine } from "@/lib/video-engines";
-import { submitVideoJob, generateCover, isFalConfigured } from "@/lib/fal";
+import { submitVideoJob as falSubmitVideoJob, generateCover, isFalConfigured } from "@/lib/fal";
+import { submitVideoJob as orSubmitVideoJob } from "@/lib/openrouter-video";
+import { isOpenRouterConfigured } from "@/lib/openrouter";
 import { chat } from "@/lib/agents/llm";
 import type { VideoStyle, Prisma } from "@prisma/client";
 
@@ -47,8 +49,6 @@ export async function POST(
     const { id } = await params;
     if (!(await authorize(id, session.user.id))) return fail("无权访问", 403);
 
-    if (!isFalConfigured()) return fail("FAL_KEY 未配置", 503);
-
     const rl = await rateLimit({
       key: `video-create:${id}`,
       limit: 30,
@@ -66,6 +66,10 @@ export async function POST(
 
     const engine = getEngine(data.engine);
     if (!engine) return fail(`不支持的引擎: ${data.engine}`, 400);
+
+    const backendReady =
+      engine.provider === "openrouter" ? isOpenRouterConfigured() : isFalConfigured();
+    if (!backendReady) return fail("视频服务暂不可用，请稍后再试", 503);
 
     const duration = data.durationSec ?? engine.durations[0];
     if (!engine.durations.includes(duration)) {
@@ -111,7 +115,7 @@ export async function POST(
           ?.url ?? null;
     }
 
-    if (engine.supportsImageInput && !firstImageMaterialUrl && engine.key === "kling-i2v") {
+    if (engine.requiresImage && !firstImageMaterialUrl) {
       return fail("该引擎需要至少 1 张图片素材作为首帧", 400);
     }
 
@@ -138,7 +142,7 @@ export async function POST(
         aspectRatio: data.aspectRatio,
         prompt: data.prompt,
         engine: engine.key,
-        falModel: engine.falModel,
+        falModel: engine.model,
         referenceMaterialIds: data.referenceMaterialIds,
         costCents: engine.costCentsBySeconds(duration),
         processing: "PENDING",
@@ -189,21 +193,28 @@ export async function POST(
         }
 
         // 3. 提交视频生成（支持 i2v 时用首张素材图）
-        const sub = await submitVideoJob(data.prompt, {
-          modelOverride: engine.falModel,
-          duration,
-          aspectRatio: data.aspectRatio,
-          imageUrl:
-            engine.supportsImageInput && firstImageMaterialUrl
-              ? firstImageMaterialUrl
-              : undefined,
-        });
+        const imageUrl =
+          engine.supportsImageInput && firstImageMaterialUrl ? firstImageMaterialUrl : undefined;
+        const sub =
+          engine.provider === "openrouter"
+            ? await orSubmitVideoJob(data.prompt, {
+                model: engine.model,
+                duration,
+                aspectRatio: data.aspectRatio,
+                imageUrl,
+              })
+            : await falSubmitVideoJob(data.prompt, {
+                modelOverride: engine.model,
+                duration,
+                aspectRatio: data.aspectRatio,
+                imageUrl,
+              });
         if (!sub) {
           await prisma.video.update({
             where: { id: placeholder.id },
             data: {
               processing: "FAILED",
-              errorMessage: "fal video submit failed",
+              errorMessage: "video submit failed",
             },
           });
           return;

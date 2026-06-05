@@ -2,7 +2,7 @@
 
 import { Users, Award } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
-import { StateBadge, MockNotice, EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { fmt, fmtMoney } from "@/lib/echotik/format";
@@ -36,7 +36,6 @@ export function InfluencersClient({
   categoryId,
   categories,
   state,
-  fetchedAt,
   influencers,
 }: {
   region: Region;
@@ -57,11 +56,9 @@ export function InfluencersClient({
             选品 · 达人榜
           </span>
         }
-        badge={<StateBadge state={state} fetchedAt={fetchedAt} />}
         description="各国带货达人榜单 · 看粉丝量、带货 GMV、商品与内容产出 · 找对的人合作"
       />
 
-      {state === "mock" && <MockNotice />}
 
       <FilterBar
         basePath="/app/discover/influencers"

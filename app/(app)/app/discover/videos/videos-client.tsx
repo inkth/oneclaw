@@ -2,7 +2,7 @@
 
 import { Clapperboard, Play, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
-import { StateBadge, MockNotice, EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, stringToGradient, initial } from "@/lib/echotik/format";
 
@@ -37,7 +37,6 @@ export function VideosClient({
   categoryId,
   categories,
   state,
-  fetchedAt,
   videos,
 }: {
   region: Region;
@@ -58,11 +57,9 @@ export function VideosClient({
             选品 · 带货视频榜
           </span>
         }
-        badge={<StateBadge state={state} fetchedAt={fetchedAt} />}
         description="各国带货短视频榜单 · 看播放、互动与转化 · 拆解爆款脚本和带货玩法"
       />
 
-      {state === "mock" && <MockNotice />}
 
       <FilterBar
         basePath="/app/discover/videos"

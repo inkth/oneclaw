@@ -13,7 +13,6 @@ import {
   Image as ImageIcon,
   Check,
   X,
-  AlertTriangle,
   Crown,
   Star,
   Bookmark,
@@ -94,7 +93,7 @@ const DRAFT_KEY = "oneclaw:create-draft";
 
 export function CreateClient({
   workspaceId,
-  falReady,
+  genReady,
   engines,
   products,
   materials,
@@ -104,7 +103,7 @@ export function CreateClient({
   isGuest = false,
 }: {
   workspaceId: string;
-  falReady: boolean;
+  genReady: boolean;
   engines: Engine[];
   products: Product[];
   materials: Material[];
@@ -443,7 +442,7 @@ export function CreateClient({
     setPrompt("");
   }
 
-  const canSubmit = !!prompt.trim() && !submitting && (falReady || isGuest);
+  const canSubmit = !!prompt.trim() && !submitting && (genReady || isGuest);
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -453,16 +452,6 @@ export function CreateClient({
           写一句提示词，让 AI 帮你做带货短视频。商品、素材、模板、引擎参数都收在输入框下方。
         </p>
       </div>
-
-      {!falReady && !isGuest && (
-        <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 flex items-start gap-3">
-          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-amber-800 leading-relaxed">
-            <div className="font-semibold">FAL_KEY 未配置</div>
-            <p className="mt-0.5">提交后会立刻失败。请先在 .env.local 填上 fal.ai 凭证。</p>
-          </div>
-        </div>
-      )}
 
       {/* 链接识别结果（识别后浮现在 composer 上方） */}
       {linkPreview && (

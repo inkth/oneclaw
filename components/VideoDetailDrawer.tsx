@@ -443,8 +443,8 @@ export function VideoDetailDrawer({
               <Section title="技术参数">
                 <dl className="grid grid-cols-2 gap-2 text-2xs">
                   <KV label="引擎 key" value={video.engine ?? "—"} mono />
-                  <KV label="fal 模型" value={video.falModel ?? "—"} mono />
-                  <KV label="fal 请求 ID" value={video.falRequestId ?? "—"} mono />
+                  <KV label="模型" value={video.falModel ?? "—"} mono />
+                  <KV label="请求 ID" value={video.falRequestId ?? "—"} mono />
                   <KV label="比例" value={video.aspectRatio ?? "—"} />
                   <KV label="时长" value={`${video.durationSec}s`} />
                   <KV

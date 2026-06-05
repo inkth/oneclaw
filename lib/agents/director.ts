@@ -1,13 +1,10 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { chat, extractJson, type LLMUsage } from "./llm";
-import {
-  generateCover,
-  submitVideoJob,
-  FAL_IMAGE_MODEL,
-  FAL_VIDEO_MODEL,
-  isFalConfigured,
-} from "@/lib/fal";
+import { generateCover, FAL_IMAGE_MODEL, isFalConfigured } from "@/lib/fal";
+import { submitVideoJob as orSubmitVideoJob } from "@/lib/openrouter-video";
+import { isOpenRouterConfigured } from "@/lib/openrouter";
+import { defaultEngine } from "@/lib/video-engines";
 import type { VideoStyle } from "@prisma/client";
 
 const directorOutputSchema = z.object({
@@ -126,7 +123,9 @@ export async function runDirector(
   const raw = extractJson(content);
   const parsed = directorOutputSchema.parse(raw);
 
-  const falReady = isFalConfigured();
+  const falReady = isFalConfigured(); // 仅用于封面图（fal flux）
+  const videoReady = isOpenRouterConfigured(); // 视频走 OpenRouter
+  const videoModel = defaultEngine().model;
 
   // 并行：4 个封面 + 4 个视频任务提交
   const coverUrls = await Promise.all(
@@ -136,7 +135,9 @@ export async function runDirector(
   );
   const videoSubmits = await Promise.all(
     parsed.videos.map((v) =>
-      falReady ? submitVideoJob(v.videoPrompt) : Promise.resolve(null),
+      videoReady
+        ? orSubmitVideoJob(v.videoPrompt, { model: videoModel, aspectRatio: "9:16" })
+        : Promise.resolve(null),
     ),
   );
 
@@ -153,7 +154,7 @@ export async function runDirector(
           script: v.script,
           thumbnailUrl: coverUrls[i],
           falRequestId: sub?.requestId ?? null,
-          falModel: sub?.model ?? (sub ? FAL_VIDEO_MODEL : null),
+          falModel: sub?.model ?? null,
           processing: sub ? "GENERATING" : "PENDING",
         },
       });
@@ -176,9 +177,9 @@ export async function runDirector(
     "",
     `策略：${parsed.hookSummary}`,
     "",
-    falReady
-      ? `→ 视频还在 ${FAL_VIDEO_MODEL} 队列里跑，30s-5min 后到【短视频】页刷新即可。`
-      : `→ FAL_KEY 未配置，本次仅生成脚本，封面/视频跳过。`,
+    videoReady
+      ? `→ 视频还在生成队列里跑，30s-5min 后到【短视频】页刷新即可。`
+      : `→ 视频服务未就绪，本次仅生成脚本${falReady ? "与封面" : ""}。`,
   ];
 
   return {

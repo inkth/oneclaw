@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
 import { VIDEO_ENGINES } from "@/lib/video-engines";
-import { isFalConfigured } from "@/lib/fal";
+import { isOpenRouterConfigured } from "@/lib/openrouter";
 import { STARTER_TEMPLATES } from "@/lib/creation-templates";
 import { CreateClient } from "./create-client";
 
@@ -37,7 +37,7 @@ const ENGINE_PROPS = VIDEO_ENGINES.map((e) => ({
   tags: e.tags,
   recommended: !!e.recommended,
   supportsImageInput: e.supportsImageInput,
-  requiresImage: e.key === "kling-i2v",
+  requiresImage: !!e.requiresImage,
   priceHint: `约 ¢${e.costCentsBySeconds(e.durations[0]!)} / ${e.durations[0]}s`,
 }));
 
@@ -50,7 +50,7 @@ export default async function CreatePage() {
       <CreateClient
         isGuest
         workspaceId=""
-        falReady={isFalConfigured()}
+        genReady={isOpenRouterConfigured()}
         engines={ENGINE_PROPS}
         products={[]}
         materials={[]}
@@ -105,7 +105,7 @@ export default async function CreatePage() {
   return (
     <CreateClient
       workspaceId={workspace.id}
-      falReady={isFalConfigured()}
+      genReady={isOpenRouterConfigured()}
       engines={ENGINE_PROPS}
       products={products.map((p) => ({
         id: p.id,

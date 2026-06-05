@@ -11,7 +11,6 @@ import {
   Music,
   Trash2,
   Tag,
-  CloudOff,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -90,7 +89,7 @@ export function MaterialsClient({
   async function uploadFiles(files: FileList | File[]) {
     if (gateGuest()) return;
     if (!storageReady) {
-      toast.error("存储未配置：请先在 .env 填 TENCENT_COS_BUCKET/REGION");
+      toast.error("上传暂不可用，请稍后再试");
       return;
     }
     const arr = Array.from(files);
@@ -172,21 +171,6 @@ export function MaterialsClient({
         }
       />
 
-      {!storageReady && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 flex items-start gap-3">
-          <CloudOff className="h-4 w-4 mt-0.5 text-amber-600 flex-shrink-0" />
-          <div className="text-sm text-amber-800 leading-relaxed">
-            <div className="font-semibold">存储未配置</div>
-            <p className="mt-0.5 text-xs">
-              当前没有可用的对象存储 driver。请在 <code>.env.local</code> 填上
-              <code className="mx-1 rounded bg-amber-100 px-1">TENCENT_COS_BUCKET</code>+
-              <code className="mx-1 rounded bg-amber-100 px-1">TENCENT_COS_REGION</code>
-              （和 SMS 共用 SECRET_ID/KEY），重启后即可上传。
-            </p>
-          </div>
-        </div>
-      )}
-
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -203,7 +187,7 @@ export function MaterialsClient({
           dragOver
             ? "border-indigo-300 bg-indigo-50/40"
             : "border-zinc-300 bg-white hover:border-zinc-400"
-        } ${!storageReady ? "opacity-50 pointer-events-none" : ""}`}
+        }`}
       >
         <Upload className="mx-auto h-6 w-6 text-zinc-400" />
         <div className="mt-2 text-sm font-medium text-zinc-900">

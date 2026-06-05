@@ -2,7 +2,7 @@
 
 import { Store, Star } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
-import { StateBadge, MockNotice, EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { fmt, fmtMoney } from "@/lib/echotik/format";
@@ -34,7 +34,6 @@ export function SellersClient({
   categoryId,
   categories,
   state,
-  fetchedAt,
   sellers,
 }: {
   region: Region;
@@ -55,11 +54,9 @@ export function SellersClient({
             选品 · 店铺榜
           </span>
         }
-        badge={<StateBadge state={state} fetchedAt={fetchedAt} />}
         description="TikTok Shop 各国热销店铺榜单 · 按销量 / GMV 排序 · 看店铺规模、达人覆盖与内容矩阵"
       />
 
-      {state === "mock" && <MockNotice />}
 
       <FilterBar
         basePath="/app/discover/sellers"
