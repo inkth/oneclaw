@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export type TabItem = { label: string; href: string };
 
-/** 下划线式二级 Tab 栏。激活态统一 accent(indigo)。 */
+/** 下划线式二级 Tab 栏。激活态统一 accent(brand)。 */
 export function Tabs({
   items,
   activeHref,
@@ -24,7 +24,7 @@ export function Tabs({
             className={cn(
               "-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors",
               isActive
-                ? "border-indigo-600 font-medium text-indigo-700"
+                ? "border-brand-600 font-medium text-brand-700"
                 : "border-transparent text-zinc-500 hover:text-zinc-900"
             )}
           >

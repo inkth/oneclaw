@@ -142,7 +142,7 @@ function PillRow({
       {overflow && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-100"
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-600 hover:bg-brand-100"
         >
           {expanded ? "收起" : "展开"}
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

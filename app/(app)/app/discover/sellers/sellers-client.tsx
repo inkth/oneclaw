@@ -50,7 +50,7 @@ export function SellersClient({
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2">
-            <Store className="h-5 w-5 text-indigo-500" />
+            <Store className="h-5 w-5 text-brand-500" />
             选品 · 店铺榜
           </span>
         }

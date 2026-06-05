@@ -109,7 +109,8 @@ function activeBoard(pathname: string): Board | undefined {
 
 const itemBase =
   "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors";
-const itemActive = " bg-indigo-50 text-indigo-700 font-medium";
+const itemActive =
+  " bg-brand-50 text-brand-700 font-medium shadow-[inset_0_0_0_1px_var(--color-brand-100)]";
 const itemIdle = " text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900";
 
 export function SidebarNav() {
@@ -128,7 +129,7 @@ export function SidebarNav() {
               href={board.href}
               className={itemBase + (isActive ? itemActive : itemIdle)}
             >
-              <Icon className={"h-4 w-4 " + (isActive ? "text-indigo-600" : "text-zinc-400")} />
+              <Icon className={"h-4 w-4 " + (isActive ? "text-brand-600" : "text-zinc-400")} />
               <span className="flex-1">{board.label}</span>
               {board.soon && (
                 <span className="rounded px-1.5 py-0.5 text-2xs font-medium text-zinc-400 bg-zinc-100">
@@ -150,7 +151,7 @@ export function SidebarNav() {
           <settingsItem.icon
             className={
               "h-4 w-4 " +
-              (matchPath(settingsItem.href, pathname) ? "text-indigo-600" : "text-zinc-400")
+              (matchPath(settingsItem.href, pathname) ? "text-brand-600" : "text-zinc-400")
             }
           />
           {settingsItem.label}

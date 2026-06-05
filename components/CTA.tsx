@@ -4,7 +4,7 @@ const avatars = [
   "from-rose-400 to-orange-400",
   "from-amber-400 to-yellow-400",
   "from-emerald-400 to-teal-400",
-  "from-sky-400 to-indigo-400",
+  "from-sky-400 to-brand-400",
   "from-violet-400 to-fuchsia-400",
 ];
 

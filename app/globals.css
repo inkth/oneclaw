@@ -3,24 +3,63 @@
 :root {
   --background: #ffffff;
   --foreground: #0a0a1a;
-  /* 单一自信主色 = indigo-600，全站链接/激活/选中/focus 统一用它 */
-  --brand: #4f46e5;
-  --brand-dark: #3730a3;
-  --accent: #4f46e5;
+
+  /* 品牌 = 电紫 Violet。全站唯一真源：改这 11 个值即整站换肤。 */
+  --brand-50: #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed; /* 主色 */
+  --brand-700: #6d28d9;
+  --brand-800: #5b21b6;
+  --brand-900: #4c1d95;
+  --brand-950: #2e1065;
+
+  /* 兼容别名：旧的 --brand / --accent 引用点继续可用 */
+  --brand: var(--brand-600);
+  --brand-dark: var(--brand-800);
+  --accent: var(--brand-600);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* 品牌色阶 → 生成 bg-brand-600 / text-brand-700 / ring-brand-500 / border-brand-200 等工具类 */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  /* 别名 token：bg-brand / text-accent 仍可用 */
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-accent: var(--accent);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* 精炼极简的固定阶梯：补一档 11px 辅助字号，清除全站随手 text-[10px/11px] */
+  /* 11px 辅助字号 */
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
+
+  /* 分层柔阴影：低透明、多层，Stripe 质感。覆盖 Tailwind 默认 shadow-*，现有 shadow-sm/lg/xl 自动升级 */
+  --shadow-xs: 0 1px 2px rgba(16, 14, 30, 0.04);
+  --shadow-sm: 0 1px 2px rgba(16, 14, 30, 0.05), 0 1px 1px rgba(16, 14, 30, 0.03);
+  --shadow-md: 0 4px 12px -2px rgba(16, 14, 30, 0.06), 0 2px 6px -2px rgba(16, 14, 30, 0.05);
+  --shadow-lg: 0 12px 32px -8px rgba(16, 14, 30, 0.1), 0 4px 12px -4px rgba(16, 14, 30, 0.06);
+  --shadow-xl: 0 24px 56px -12px rgba(16, 14, 30, 0.14), 0 8px 20px -8px rgba(16, 14, 30, 0.08);
+  /* 品牌辉光投影：可点击/重点卡 hover */
+  --shadow-brand: 0 8px 28px -6px rgba(124, 58, 237, 0.22), 0 2px 8px -2px rgba(124, 58, 237, 0.14);
 }
 
 html,
@@ -33,32 +72,108 @@ body {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate-fade-up { animation: fadeUp 0.5s ease-out forwards; }
+.animate-fade-up {
+  animation: fadeUp 0.5s ease-out forwards;
+}
 
-/* 唯一保留的品牌强调：仅用于关键词，收敛为单色 indigo（极简，不再三段彩虹） */
+/* 品牌强调字：violet → fuchsia 渐变，仅用于关键词 */
 .gradient-text {
-  color: var(--accent);
+  background: linear-gradient(90deg, var(--brand-600), #d946ef);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-/* 极克制的顶部光晕，仅营销页 hero 使用 */
+/* hero 顶部柔光：双层 violet / fuchsia 极光 */
 .gradient-bg {
   background: radial-gradient(
-    ellipse 70% 45% at 50% -10%,
-    rgba(79, 70, 229, 0.06),
-    transparent
-  );
+      ellipse 60% 50% at 50% -10%,
+      rgba(124, 58, 237, 0.1),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 40% at 85% 5%,
+      rgba(217, 70, 239, 0.06),
+      transparent 70%
+    );
 }
 
+/* 玻璃面：磨砂 + 提饱和 */
 .glass {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+/* 近白微渐变卡面（顶部微光） */
+.surface-sheen {
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.9),
+      rgba(250, 250, 252, 0.6)
+    ),
+    #ffffff;
+}
+
+/* 柔紫极光：放在 hero / 重点卡背后（absolute, aria-hidden） */
+.aura-violet {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(124, 58, 237, 0.18),
+    transparent 70%
+  );
+  filter: blur(40px);
+}
+
+/* 精致卡缘：1px 描边 + 顶部内高光 */
+.ring-edge {
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+}
+
+/* 微交互：hover 上浮 + 柔阴影 */
+.lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.lift:active {
+  transform: translateY(0);
+  transition-duration: 0.08s;
+}
+
+/* 微交互：按压轻缩 */
+.press {
+  transition: transform 0.08s ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lift,
+  .press,
+  .animate-fade-up {
+    transition: none;
+    animation: none;
+  }
+  .lift:hover {
+    transform: none;
+  }
 }
 
 ::selection {
-  background: rgba(79, 70, 229, 0.16);
+  background: rgba(124, 58, 237, 0.16);
 }

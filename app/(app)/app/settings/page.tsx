@@ -79,7 +79,7 @@ export default async function SettingsPage() {
             label="Agent 任务"
             used={quota.tasks.used}
             limit={quota.tasks.limit}
-            color="indigo"
+            color="brand"
           />
           <UsageBar
             label="fal 视频生成"
@@ -151,7 +151,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const colorMap = {
-  indigo: { fill: "bg-indigo-600", track: "bg-indigo-100" },
+  brand: { fill: "bg-brand-600", track: "bg-brand-100" },
   violet: { fill: "bg-violet-600", track: "bg-violet-100" },
 } as const;
 

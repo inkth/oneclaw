@@ -319,7 +319,7 @@ export function DiscoverClient({
                   <button
                     onClick={() => analyzeProduct(p)}
                     disabled={analyzing.has(p.productId)}
-                    className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-2xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-50"
                     title="让分析师 Agent 基于真实数据做深度分析"
                   >
                     {analyzing.has(p.productId) ? (

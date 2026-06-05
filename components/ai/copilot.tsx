@@ -85,9 +85,9 @@ export function Copilot() {
         <button
           onClick={() => setOpen(true)}
           aria-label="打开 AI 助手"
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-3 text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800 transition-colors"
+          className="press fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-3 text-white shadow-[var(--shadow-brand)] hover:bg-zinc-800 transition-colors"
         >
-          <Sparkles size={18} className="text-indigo-300" />
+          <Sparkles size={18} className="text-brand-300" />
           <span className="text-sm font-medium">AI 助手</span>
         </button>
       )}
@@ -98,7 +98,7 @@ export function Copilot() {
           <header className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900 text-white">
-                <Sparkles size={15} strokeWidth={2.5} className="text-indigo-300" />
+                <Sparkles size={15} strokeWidth={2.5} className="text-brand-300" />
               </div>
               <div>
                 <div className="text-sm font-semibold leading-tight">AI 经营助手</div>
@@ -139,7 +139,7 @@ export function Copilot() {
                   <div
                     className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                       m.role === 'user'
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-brand-600 text-white'
                         : 'bg-zinc-100 text-zinc-800'
                     }`}
                   >
@@ -168,7 +168,7 @@ export function Copilot() {
               }}
               rows={1}
               placeholder="输入问题…"
-              className="flex-1 resize-none rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 max-h-28"
+              className="flex-1 resize-none rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 max-h-28"
             />
             <button
               type="submit"

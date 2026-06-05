@@ -63,7 +63,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-zinc-900">最近 Agent 任务</h2>
           <Link
             href="/app/agents"
-            className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700"
+            className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
           >
             全部 <ArrowRight className="h-3 w-3" />
           </Link>
@@ -71,7 +71,7 @@ export default async function DashboardPage() {
         {recentTasks.length === 0 ? (
           <div className="px-5 py-12 text-center text-sm text-zinc-500">
             还没有任务。前往{" "}
-            <Link href="/app/agents" className="text-indigo-600 hover:text-indigo-700">
+            <Link href="/app/agents" className="text-brand-600 hover:text-brand-700">
               Agent 工作流
             </Link>{" "}
             提交一个吧。

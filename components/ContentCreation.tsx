@@ -28,7 +28,7 @@ const videos = [
   {
     id: "04",
     title: "Before/After",
-    gradient: "from-indigo-400 via-violet-500 to-purple-500",
+    gradient: "from-brand-400 via-violet-500 to-purple-500",
     emoji: "✨",
     views: "31.0K",
     likes: "4.4K",

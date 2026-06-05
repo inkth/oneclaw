@@ -149,8 +149,8 @@ export function ModelsClient({
       />
 
       {models.length === 0 && (
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-6">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700 mb-3">
+        <div className="rounded-xl border border-brand-200 bg-brand-50/40 p-6">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-brand-700 mb-3">
             <Sparkles className="h-3.5 w-3.5" />
             一键添加预设人设
           </div>
@@ -159,7 +159,7 @@ export function ModelsClient({
               <button
                 key={p.name}
                 onClick={() => createFromPreset(p)}
-                className="group rounded-xl border border-zinc-200/80 bg-white p-3 hover:border-indigo-200 hover:shadow-sm transition-all text-left"
+                className="group rounded-xl border border-zinc-200/80 bg-white p-3 hover:border-brand-200 hover:shadow-sm transition-all text-left"
               >
                 <div className="aspect-square rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-4xl">
                   {p.emoji}
@@ -192,7 +192,7 @@ export function ModelsClient({
                       {g.cn}
                     </span>
                     {m.kind === "DIGITAL_HUMAN" && (
-                      <span className="inline-flex rounded-full bg-indigo-50 px-1.5 py-0.5 text-2xs font-medium text-indigo-700">
+                      <span className="inline-flex rounded-full bg-brand-50 px-1.5 py-0.5 text-2xs font-medium text-brand-700">
                         AI
                       </span>
                     )}
@@ -325,7 +325,7 @@ function CreateModelModal({
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：户外探险家"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
@@ -338,7 +338,7 @@ function CreateModelModal({
                   onClick={() => setGender(g)}
                   className={`rounded-lg border px-3 py-2 text-sm transition-all ${
                     gender === g
-                      ? "border-indigo-300 bg-indigo-50/40 ring-2 ring-indigo-200"
+                      ? "border-brand-300 bg-brand-50/40 ring-2 ring-brand-200"
                       : "border-zinc-200/80 hover:border-zinc-300"
                   }`}
                 >
@@ -356,7 +356,7 @@ function CreateModelModal({
               onChange={(e) => setStyle(e.target.value)}
               maxLength={80}
               placeholder="例：阳光 / 商务 / 治愈"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
@@ -368,7 +368,7 @@ function CreateModelModal({
               maxLength={800}
               rows={3}
               placeholder="人设、年龄段、典型场景、口播语气…"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300 resize-none"
             />
           </div>
 

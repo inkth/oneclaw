@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const base = "rounded-xl border border-zinc-200/80 bg-white";
+const base = "rounded-xl border border-zinc-200/80 bg-white shadow-xs";
 
 export function Card({
   className,
@@ -30,7 +30,7 @@ export function CardLink({
       href={href}
       className={cn(
         base,
-        "group block p-5 transition-all hover:border-indigo-200 hover:shadow-sm",
+        "group block p-5 lift hover:border-brand-200",
         className
       )}
     >

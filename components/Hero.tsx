@@ -4,10 +4,14 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden pt-16 pb-24 sm:pt-24 sm:pb-32">
       <div className="absolute inset-0 gradient-bg" aria-hidden />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-0 h-80 w-[42rem] -translate-x-1/2 aura-violet"
+      />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200/60 bg-white/60 px-3 py-1 text-xs font-medium text-indigo-700 shadow-sm backdrop-blur">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-200/60 bg-white/60 px-3 py-1 text-xs font-medium text-brand-700 shadow-sm backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
             Beta 公测中 · 2026 新版上线
           </div>
@@ -27,14 +31,14 @@ export function Hero() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="/app/create"
-              className="group inline-flex items-center gap-2 rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 transition-all"
+              className="lift group inline-flex items-center gap-2 rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-zinc-800"
             >
               免费开始体验
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
             <a
               href="#demo"
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-200 hover:ring-zinc-300 transition-all"
+              className="lift group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-200 hover:ring-zinc-300"
             >
               <Play className="h-4 w-4 fill-current" />
               观看 90 秒演示
@@ -62,7 +66,7 @@ export function Hero() {
 function HeroPreview() {
   return (
     <div className="relative">
-      <div className="relative rounded-2xl border border-zinc-200/80 bg-white/80 backdrop-blur shadow-xl overflow-hidden">
+      <div className="glass relative rounded-2xl border border-zinc-200/80 shadow-xl overflow-hidden">
         <div className="flex items-center gap-1.5 border-b border-zinc-100 px-4 py-3 bg-zinc-50/60">
           <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
           <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
@@ -75,7 +79,7 @@ function HeroPreview() {
           <PreviewCard
             icon={<TrendingUp className="h-4 w-4" />}
             agent="市场分析师"
-            tone="indigo"
+            tone="brand"
             title="检测到 3 个高潜品类"
             sub="便携榨汁杯 · ROI 94 · 月销 12.4K"
           />
@@ -101,10 +105,10 @@ function HeroPreview() {
 }
 
 const tonePalette = {
-  indigo: {
-    grad: "from-indigo-500 to-indigo-600",
-    bar: "bg-indigo-50",
-    text: "text-indigo-600",
+  brand: {
+    grad: "from-brand-500 to-brand-600",
+    bar: "bg-brand-50",
+    text: "text-brand-600",
   },
   violet: {
     grad: "from-violet-500 to-violet-600",

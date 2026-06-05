@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-/** 可点选 pill（筛选 / 分段）：选中态统一 accent(indigo)，未选 hover 浅 accent。 */
+/** 可点选 pill（筛选 / 分段）：选中态统一 accent(brand)，未选 hover 浅 accent。 */
 export function Pill({
   active,
   onClick,
@@ -18,10 +18,10 @@ export function Pill({
     <button
       onClick={onClick}
       className={cn(
-        "rounded-full px-3 py-1 text-sm font-medium transition-colors",
+        "press rounded-full px-3 py-1 text-sm font-medium transition-colors",
         active
-          ? "bg-indigo-600 text-white"
-          : "text-zinc-600 hover:bg-indigo-50 hover:text-indigo-700",
+          ? "bg-brand-600 text-white shadow-[var(--shadow-brand)]"
+          : "text-zinc-600 hover:bg-brand-50 hover:text-brand-700",
         className
       )}
     >

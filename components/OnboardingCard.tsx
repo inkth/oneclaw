@@ -48,7 +48,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 sm:p-10">
         <div className="relative">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-indigo-700 shadow-sm">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-brand-700 shadow-sm">
             <Sparkles className="h-3 w-3" />
             欢迎来到 OneClaw
           </div>
@@ -66,13 +66,13 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
                 key={p.label}
                 onClick={() => quickStart(p.prompt, p.label)}
                 disabled={!!dispatching}
-                className="group inline-flex items-center justify-between gap-2 rounded-xl border border-zinc-200/80 bg-white px-3.5 py-2.5 text-sm font-medium text-zinc-800 hover:border-indigo-300 hover:bg-indigo-50/50 disabled:opacity-50 transition-all text-left"
+                className="group inline-flex items-center justify-between gap-2 rounded-xl border border-zinc-200/80 bg-white px-3.5 py-2.5 text-sm font-medium text-zinc-800 hover:border-brand-300 hover:bg-brand-50/50 disabled:opacity-50 transition-all text-left"
               >
                 <span>{p.label}</span>
                 {dispatching === p.label ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+                  <Loader2 className="h-4 w-4 animate-spin text-brand-500" />
                 ) : (
-                  <ArrowRight className="h-4 w-4 text-zinc-400 group-hover:text-indigo-500 transition-colors" />
+                  <ArrowRight className="h-4 w-4 text-zinc-400 group-hover:text-brand-500 transition-colors" />
                 )}
               </button>
             ))}
@@ -86,7 +86,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
 
           <div className="mt-5 text-xs text-zinc-500">
             或者，
-            <Link href="/app/agents" className="ml-1 text-indigo-600 hover:text-indigo-700 font-medium">
+            <Link href="/app/agents" className="ml-1 text-brand-600 hover:text-brand-700 font-medium">
               手写一个 Agent 派发指令 →
             </Link>
           </div>
@@ -97,7 +97,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
         <Step
           n={1}
           icon={TrendingUp}
-          tone="indigo"
+          tone="brand"
           title="市场分析师"
           desc="给它一句话需求，它会扫数据 → 排 ROI → 写入选品库。"
         />
@@ -121,7 +121,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
 }
 
 const toneMap = {
-  indigo: "bg-indigo-50 text-indigo-600",
+  brand: "bg-brand-50 text-brand-600",
   violet: "bg-violet-50 text-violet-600",
   fuchsia: "bg-fuchsia-50 text-fuchsia-600",
 } as const;

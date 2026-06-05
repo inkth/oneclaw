@@ -53,7 +53,7 @@ export function VideosClient({
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2">
-            <Clapperboard className="h-5 w-5 text-indigo-500" />
+            <Clapperboard className="h-5 w-5 text-brand-500" />
             选品 · 带货视频榜
           </span>
         }
@@ -91,7 +91,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
       href={tiktokUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-indigo-200 hover:shadow-sm"
+      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-brand-200 hover:shadow-sm"
     >
       <div className="relative aspect-[3/4] w-full bg-zinc-100">
         {v.coverUrl ? (

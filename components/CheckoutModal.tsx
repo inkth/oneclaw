@@ -144,7 +144,7 @@ export function CheckoutModal({
           // 选档 + 选支付方式
           <div className="p-6 space-y-6">
             <div>
-              <div className="text-2xs font-medium uppercase tracking-wider text-indigo-600">
+              <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
                 升级到 {planLabel}
               </div>
               <h2 className="mt-1 text-xl font-bold tracking-tight">选择订阅周期</h2>
@@ -157,7 +157,7 @@ export function CheckoutModal({
                   onClick={() => setPeriod(p.months)}
                   className={`rounded-xl border px-3 py-3 text-center transition-all ${
                     period === p.months
-                      ? "border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-200"
+                      ? "border-brand-500 bg-brand-50/60 ring-2 ring-brand-200"
                       : "border-zinc-200/80 hover:border-zinc-300"
                   }`}
                 >
@@ -193,7 +193,7 @@ export function CheckoutModal({
                       onClick={() => setProvider(pv)}
                       className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
                         active
-                          ? "border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-200"
+                          ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
                           : "border-zinc-200/80 hover:border-zinc-300"
                       }`}
                     >
@@ -229,7 +229,7 @@ export function CheckoutModal({
           <div className="p-6 space-y-4">
             <div className="flex items-baseline justify-between">
               <div>
-                <div className="text-2xs font-medium uppercase tracking-wider text-indigo-600">
+                <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
                   {PROVIDER_META[order.provider].cn} · {order.periodMonths} 个月
                 </div>
                 <h2 className="mt-1 text-xl font-bold tracking-tight">

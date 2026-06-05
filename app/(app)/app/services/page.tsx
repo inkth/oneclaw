@@ -291,7 +291,7 @@ function ServiceCard({ service }: { service: Service }) {
       className={
         "flex h-full flex-col rounded-xl border p-5 transition-colors " +
         (live
-          ? "border-zinc-200/80 bg-white hover:border-indigo-200 hover:bg-indigo-50/30"
+          ? "border-zinc-200/80 bg-white hover:border-brand-200 hover:bg-brand-50/30"
           : "border-zinc-100 bg-zinc-50/60")
       }
     >
@@ -299,7 +299,7 @@ function ServiceCard({ service }: { service: Service }) {
         <div
           className={
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " +
-            (live ? "bg-indigo-50 text-indigo-500" : "bg-zinc-100 text-zinc-400")
+            (live ? "bg-brand-50 text-brand-500" : "bg-zinc-100 text-zinc-400")
           }
         >
           <Icon className="h-4.5 w-4.5" />

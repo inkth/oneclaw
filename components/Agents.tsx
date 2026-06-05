@@ -7,7 +7,7 @@ const agents = [
     cn: "市场分析师",
     desc: "扫描全球趋势数据，量化筛选高潜爆品，输出可落地的选品报告。",
     use: '"帮我找下东南亚母婴类目本周新爆品，毛利 40% 以上。"',
-    tone: "indigo",
+    tone: "brand",
   },
   {
     icon: Video,
@@ -28,10 +28,10 @@ const agents = [
 ] as const;
 
 const toneMap = {
-  indigo: {
-    badge: "bg-indigo-50 text-indigo-700",
-    icon: "from-indigo-500 to-indigo-600",
-    ring: "ring-indigo-100",
+  brand: {
+    badge: "bg-brand-50 text-brand-700",
+    icon: "from-brand-500 to-brand-600",
+    ring: "ring-brand-100",
   },
   violet: {
     badge: "bg-violet-50 text-violet-700",
@@ -50,7 +50,7 @@ export function Agents() {
     <section id="agents" className="relative py-24 bg-gradient-to-b from-white via-zinc-50/40 to-white scroll-mt-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-600">
             Meet the team
           </p>
           <h2 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">

@@ -52,7 +52,7 @@ export function InfluencersClient({
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2">
-            <Users className="h-5 w-5 text-indigo-500" />
+            <Users className="h-5 w-5 text-brand-500" />
             选品 · 达人榜
           </span>
         }
@@ -107,7 +107,7 @@ export function InfluencersClient({
                 </Td>
                 <Td align="right">
                   {i.ecScore > 0 ? (
-                    <span className="inline-flex items-center gap-0.5 font-medium text-indigo-600">
+                    <span className="inline-flex items-center gap-0.5 font-medium text-brand-600">
                       <Award className="h-3 w-3" />
                       {i.ecScore.toFixed(1)}
                     </span>

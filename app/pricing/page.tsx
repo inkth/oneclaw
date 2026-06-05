@@ -13,7 +13,7 @@ const tiers: Array<{
   price: string;
   priceSub: string;
   icon: typeof Sparkles;
-  tone: "zinc" | "indigo" | "fuchsia";
+  tone: "zinc" | "brand" | "fuchsia";
   highlight: boolean;
   description: string;
   features: string[];
@@ -45,7 +45,7 @@ const tiers: Array<{
     price: "¥199",
     priceSub: "/ 月",
     icon: Zap,
-    tone: "indigo",
+    tone: "brand",
     highlight: true,
     description: "出海个体卖家 / 独立站团队的甜点配置",
     features: [
@@ -112,10 +112,10 @@ const toneClass: Record<string, { ring: string; icon: string; cta: string }> = {
     icon: "bg-zinc-900",
     cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
   },
-  indigo: {
-    ring: "ring-2 ring-indigo-600 shadow-sm",
-    icon: "bg-indigo-600",
-    cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
+  brand: {
+    ring: "ring-2 ring-brand-600 shadow-xl",
+    icon: "bg-brand-600",
+    cta: "bg-brand-600 hover:bg-brand-700 text-white hover:shadow-[var(--shadow-brand)]",
   },
   fuchsia: {
     ring: "ring-zinc-200/80",
@@ -132,7 +132,7 @@ export default function PricingPage() {
         <section className="relative pt-16 pb-12 sm:pt-24">
           <div className="absolute inset-0 gradient-bg" aria-hidden />
           <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200/60 bg-white/60 px-3 py-1 text-xs font-medium text-indigo-700 backdrop-blur">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-200/60 bg-white/60 px-3 py-1 text-xs font-medium text-brand-700 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" />
               试用期 14 天 · 无需信用卡
             </div>
@@ -160,7 +160,13 @@ export default function PricingPage() {
                     } transition-transform`}
                   >
                     {t.highlight && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute -inset-4 -z-10 aura-violet"
+                      />
+                    )}
+                    {t.highlight && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
                         <Zap className="h-3 w-3" />
                         最受欢迎
                       </div>

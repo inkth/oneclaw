@@ -6,7 +6,7 @@ export function ProductDiscovery() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
               <Sparkles className="h-3 w-3" />
               市场分析师 Agent
             </div>
@@ -26,7 +26,7 @@ export function ProductDiscovery() {
                 "一键导出竞品分析报告，PDF / Notion 同步",
               ].map((t) => (
                 <li key={t} className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
                   {t}
                 </li>
               ))}
@@ -59,7 +59,7 @@ function ProductCard() {
             🥤
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-2xs font-medium uppercase tracking-wider text-indigo-600">
+            <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
               便携家电 · 厨房小电
             </div>
             <h3 className="mt-1 text-base font-semibold text-zinc-900 truncate">
@@ -76,13 +76,13 @@ function ProductCard() {
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2">
-          <Metric label="ROI 评分" value="94" suffix="/100" tone="indigo" />
+          <Metric label="ROI 评分" value="94" suffix="/100" tone="brand" />
           <Metric label="毛利率" value="62" suffix="%" tone="violet" />
           <Metric label="月销估算" value="12.4K" suffix="件" tone="emerald" />
         </div>
 
-        <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 text-xs text-zinc-700 leading-relaxed">
-          <span className="font-semibold text-indigo-700">分析师小记：</span>
+        <div className="mt-5 rounded-xl border border-brand-100 bg-brand-50/40 p-3 text-xs text-zinc-700 leading-relaxed">
+          <span className="font-semibold text-brand-700">分析师小记：</span>
           近 14 天 TikTok 相关话题播放 +218%，欧美夏季消费季前的高增长品类，建议优先备货。
         </div>
 
@@ -105,7 +105,7 @@ function ProductCard() {
 }
 
 const toneClasses = {
-  indigo: "bg-indigo-50 text-indigo-700",
+  brand: "bg-brand-50 text-brand-700",
   violet: "bg-violet-50 text-violet-700",
   emerald: "bg-emerald-50 text-emerald-700",
 } as const;

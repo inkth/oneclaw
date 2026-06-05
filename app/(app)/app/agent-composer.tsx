@@ -13,7 +13,7 @@ const AGENTS = [
     name: "市场分析师",
     placeholder: "例：东南亚母婴本周新爆品，毛利 40%+",
     icon: TrendingUp,
-    solid: "bg-indigo-600",
+    solid: "bg-brand-600",
   },
   {
     kind: "DIRECTOR" as AgentKind,
@@ -86,7 +86,7 @@ export function AgentComposer({
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
+    <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-md transition-shadow focus-within:border-brand-300 focus-within:shadow-lg">
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}

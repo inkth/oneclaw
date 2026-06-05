@@ -34,7 +34,7 @@ const agents = [
     name: "市场分析师",
     placeholder: "例：东南亚母婴本周新爆品，毛利 40%+",
     icon: TrendingUp,
-    tone: "indigo",
+    tone: "brand",
   },
   {
     kind: "DIRECTOR" as AgentKind,
@@ -54,7 +54,7 @@ const agents = [
 
 // 三 Agent 身份：选中态用扁平实色（非渐变），任务卡用浅底小 chip。
 const toneMap = {
-  indigo: { solid: "bg-indigo-600", chip: "bg-indigo-50 text-indigo-700" },
+  brand: { solid: "bg-brand-600", chip: "bg-brand-50 text-brand-700" },
   violet: { solid: "bg-violet-600", chip: "bg-violet-50 text-violet-700" },
   fuchsia: { solid: "bg-fuchsia-600", chip: "bg-fuchsia-50 text-fuchsia-700" },
 } as const;
@@ -183,7 +183,7 @@ export function AgentRunner({
             onChange={(e) => setInput(e.target.value)}
             rows={2}
             placeholder={activeMeta.placeholder}
-            className="flex-1 resize-none rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200"
+            className="flex-1 resize-none rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
             }}

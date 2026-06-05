@@ -31,7 +31,7 @@ export function LoginPromptModal({
           <X className="h-4 w-4" />
         </button>
         <div className="p-6 space-y-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
             <Sparkles className="h-6 w-6" />
           </div>
           <div>

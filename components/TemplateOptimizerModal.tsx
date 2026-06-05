@@ -14,7 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-type Tone = "indigo" | "amber" | "emerald";
+type Tone = "brand" | "amber" | "emerald";
 
 type Proposal = {
   name: string;
@@ -171,7 +171,7 @@ export function TemplateOptimizerModal({
       >
         <header className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
               <Sparkles className="h-3.5 w-3.5" />
             </div>
             <div>
@@ -198,7 +198,7 @@ export function TemplateOptimizerModal({
 
           {!error && !done && !failed && (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
               <div className="text-sm font-medium">DeepSeek 正在分析…</div>
               <div className="text-2xs text-zinc-500">
                 {task?.status === "QUEUED" ? "排队中" : "运行中"} · 通常 10-20 秒
@@ -220,8 +220,8 @@ export function TemplateOptimizerModal({
 
           {done && data && (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-indigo-200/80 bg-indigo-50/40 p-4">
-                <div className="text-2xs uppercase tracking-wider text-indigo-600 font-semibold">
+              <div className="rounded-2xl border border-brand-200/80 bg-brand-50/40 p-4">
+                <div className="text-2xs uppercase tracking-wider text-brand-600 font-semibold">
                   📌 总览
                 </div>
                 <p className="mt-1.5 text-sm text-zinc-800 leading-relaxed">
@@ -242,7 +242,7 @@ export function TemplateOptimizerModal({
                   onClick={() => setTab("new")}
                   icon={Sparkles}
                   count={data.newProposals.length}
-                  tone="indigo"
+                  tone="brand"
                   label="新模板提案"
                 />
                 <TabBtn
@@ -272,7 +272,7 @@ export function TemplateOptimizerModal({
                     data.newProposals.map((p, i) => (
                       <div
                         key={i}
-                        className="rounded-2xl border border-zinc-200/80 bg-white p-4 hover:border-indigo-200 transition-colors"
+                        className="rounded-2xl border border-zinc-200/80 bg-white p-4 hover:border-brand-200 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2.5 min-w-0">
@@ -290,7 +290,7 @@ export function TemplateOptimizerModal({
                           <button
                             onClick={() => createFromProposal(p, i)}
                             disabled={creatingProposalIdx === i}
-                            className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1 text-2xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 flex-shrink-0"
+                            className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-3 py-1 text-2xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 flex-shrink-0"
                           >
                             {creatingProposalIdx === i ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
@@ -388,8 +388,8 @@ export function TemplateOptimizerModal({
 }
 
 const TONE_TAB: Record<Tone, { active: string; idle: string }> = {
-  indigo: {
-    active: "border-indigo-500 text-indigo-700",
+  brand: {
+    active: "border-brand-500 text-brand-700",
     idle: "border-transparent text-zinc-500 hover:text-zinc-900",
   },
   amber: {

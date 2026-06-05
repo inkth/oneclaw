@@ -455,7 +455,7 @@ export function CreateClient({
 
       {/* 链接识别结果（识别后浮现在 composer 上方） */}
       {linkPreview && (
-        <div className="flex items-start gap-3 rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-3">
+        <div className="flex items-start gap-3 rounded-xl border border-brand-200/80 bg-brand-50/40 p-3">
           {linkPreview.ogImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -477,7 +477,7 @@ export function CreateClient({
                 {linkPreview.sellingPoints.map((s, i) => (
                   <span
                     key={i}
-                    className="inline-flex rounded-full bg-white px-1.5 py-0.5 text-2xs text-indigo-700"
+                    className="inline-flex rounded-full bg-white px-1.5 py-0.5 text-2xs text-brand-700"
                   >
                     {s}
                   </span>
@@ -544,7 +544,7 @@ export function CreateClient({
                     }}
                     placeholder="粘贴商品页链接…"
                     autoFocus
-                    className="flex-1 rounded-lg border border-zinc-200/80 px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                    className="flex-1 rounded-lg border border-zinc-200/80 px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
                   />
                   <button
                     onClick={() => parseLink().then(() => close())}
@@ -583,7 +583,7 @@ export function CreateClient({
                       if (gateGuest()) return;
                       setOptimizerOpen(true);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2 py-0.5 text-2xs font-medium text-white hover:bg-indigo-700"
+                    className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-2xs font-medium text-white hover:bg-brand-700"
                     title="基于历史使用 + 视频成绩，AI 推荐高效模板"
                   >
                     <Sparkles className="h-3 w-3" />
@@ -598,7 +598,7 @@ export function CreateClient({
                         key={t.id}
                         className={`relative rounded-xl border p-2.5 cursor-pointer transition-all ${
                           applied
-                            ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/30"
+                            ? "border-brand-500 ring-2 ring-brand-200 bg-brand-50/30"
                             : "border-zinc-200/80 bg-zinc-50/40 hover:border-zinc-300 hover:bg-white"
                         }`}
                         onClick={() => {
@@ -683,14 +683,14 @@ export function CreateClient({
                       onClick={() => pickProduct(p)}
                       className={`w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-left transition-colors ${
                         productId === p.id
-                          ? "bg-indigo-50 ring-1 ring-indigo-200"
+                          ? "bg-brand-50 ring-1 ring-brand-200"
                           : "hover:bg-zinc-50"
                       }`}
                     >
                       <span className="text-base">{p.emoji ?? "📦"}</span>
                       <span className="flex-1 truncate">{p.title}</span>
                       <span className="text-2xs text-zinc-400 font-mono">R{p.roiScore}</span>
-                      {productId === p.id && <Check className="h-3 w-3 text-indigo-600" />}
+                      {productId === p.id && <Check className="h-3 w-3 text-brand-600" />}
                     </button>
                   ))}
                 </div>
@@ -740,7 +740,7 @@ export function CreateClient({
                           key={m.id}
                           onClick={() => toggleMaterial(m.id)}
                           className={`relative aspect-square rounded-md overflow-hidden border ${
-                            sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200/80"
+                            sel ? "border-brand-500 ring-2 ring-brand-200" : "border-zinc-200/80"
                           }`}
                           title={m.originalName}
                         >
@@ -756,7 +756,7 @@ export function CreateClient({
                             </span>
                           )}
                           {sel && (
-                            <div className="absolute inset-0 bg-indigo-500/40 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-brand-500/40 flex items-center justify-center">
                               <Check className="h-4 w-4 text-white" strokeWidth={3} />
                             </div>
                           )}
@@ -789,7 +789,7 @@ export function CreateClient({
                         key={m.id}
                         onClick={() => setModelId(sel ? null : m.id)}
                         className={`relative aspect-[3/4] rounded-md overflow-hidden border bg-zinc-100 flex items-center justify-center ${
-                          sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200/80"
+                          sel ? "border-brand-500 ring-2 ring-brand-200" : "border-zinc-200/80"
                         }`}
                         title={m.name}
                       >
@@ -806,7 +806,7 @@ export function CreateClient({
                           <Star className="absolute right-1 top-1 h-2.5 w-2.5 fill-amber-400 text-amber-400" />
                         )}
                         {sel && (
-                          <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-brand-500/30 flex items-center justify-center">
                             <Check className="h-4 w-4 text-white" strokeWidth={3} />
                           </div>
                         )}
@@ -841,7 +841,7 @@ export function CreateClient({
                           onClick={() => setEngineKey(e.key)}
                           className={`w-full text-left rounded-lg border p-2.5 transition-all ${
                             active
-                              ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/40"
+                              ? "border-brand-500 ring-2 ring-brand-200 bg-brand-50/40"
                               : "border-zinc-200/80 bg-white hover:border-zinc-300"
                           }`}
                         >
@@ -882,7 +882,7 @@ export function CreateClient({
                           onClick={() => setStyle(s.v)}
                           className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
                             style === s.v
-                              ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
+                              ? "border-brand-500 bg-brand-50/40 text-brand-700 font-medium"
                               : "border-zinc-200/80 hover:border-zinc-300"
                           }`}
                         >
@@ -903,7 +903,7 @@ export function CreateClient({
                             onClick={() => setDuration(d)}
                             className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
                               duration === d
-                                ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
+                                ? "border-brand-500 bg-brand-50/40 text-brand-700 font-medium"
                                 : "border-zinc-200/80 hover:border-zinc-300"
                             }`}
                           >
@@ -923,7 +923,7 @@ export function CreateClient({
                             onClick={() => setAspect(a as AspectRatio)}
                             className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
                               aspect === a
-                                ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
+                                ? "border-brand-500 bg-brand-50/40 text-brand-700 font-medium"
                                 : "border-zinc-200/80 hover:border-zinc-300"
                             }`}
                           >
@@ -947,7 +947,7 @@ export function CreateClient({
                         onChange={(e) => setGenerateScript(e.target.checked)}
                         className="rounded"
                       />
-                      <Sparkles className="h-3 w-3 text-indigo-500" />
+                      <Sparkles className="h-3 w-3 text-brand-500" />
                       AI 写脚本
                     </label>
                     <label className="inline-flex items-center gap-1.5 cursor-pointer">
@@ -1005,7 +1005,7 @@ export function CreateClient({
         {selectedProduct && (
           <>
             {" · "}
-            <span className="text-indigo-600">{selectedProduct.emoji ?? "📦"} {selectedProduct.title}</span>
+            <span className="text-brand-600">{selectedProduct.emoji ?? "📦"} {selectedProduct.title}</span>
           </>
         )}
         {selectedModel && (
@@ -1020,7 +1020,7 @@ export function CreateClient({
             <span className="text-emerald-600">+{materialIds.length} 素材</span>
           </>
         )}
-        {generateScript && <span className="text-indigo-500"> · AI 脚本</span>}
+        {generateScript && <span className="text-brand-500"> · AI 脚本</span>}
         {generateCover && <span className="text-violet-500"> · 封面</span>}
       </div>
 
@@ -1059,7 +1059,7 @@ function EmptyPickerHint({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="block text-center rounded-lg border border-dashed border-zinc-300 py-6 text-xs text-zinc-500 hover:bg-white hover:text-indigo-600"
+      className="block text-center rounded-lg border border-dashed border-zinc-300 py-6 text-xs text-zinc-500 hover:bg-white hover:text-brand-600"
     >
       还没有，{label} →
     </Link>
@@ -1083,7 +1083,7 @@ function LoginPromptModal({ onClose }: { onClose: () => void }) {
           <X className="h-4 w-4" />
         </button>
         <div className="p-6 space-y-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600">
             <Sparkles className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -1166,7 +1166,7 @@ function SaveTemplateModal({
                   onClick={() => setEmoji(e)}
                   className={`h-9 w-9 rounded-lg text-lg transition-all ${
                     emoji === e
-                      ? "bg-indigo-100 ring-2 ring-indigo-300"
+                      ? "bg-brand-100 ring-2 ring-brand-300"
                       : "bg-zinc-50 hover:bg-zinc-100"
                   }`}
                 >
@@ -1186,7 +1186,7 @@ function SaveTemplateModal({
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：3C 数码 9:16 开箱模板"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
               autoFocus
             />
           </div>
@@ -1201,7 +1201,7 @@ function SaveTemplateModal({
               maxLength={800}
               rows={2}
               placeholder="什么时候用、有什么诀窍…"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300 resize-none"
             />
           </div>
 

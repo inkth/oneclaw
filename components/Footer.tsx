@@ -43,11 +43,11 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div className="col-span-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500">
                 <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
               </div>
               <span className="text-lg font-semibold tracking-tight">
-                One<span className="text-indigo-600">Claw</span>
+                One<span className="text-brand-600">Claw</span>
               </span>
             </div>
             <p className="mt-4 text-sm text-zinc-600 leading-relaxed max-w-xs">
@@ -55,11 +55,11 @@ export function Footer() {
               让每一个出海人都能像团队一样高效。
             </p>
             <div className="mt-6 flex flex-col gap-2 text-sm text-zinc-600">
-              <a href="mailto:hello@oneclaw.ai" className="inline-flex items-center gap-2 hover:text-indigo-600">
+              <a href="mailto:hello@oneclaw.ai" className="inline-flex items-center gap-2 hover:text-brand-600">
                 <Mail className="h-4 w-4" />
                 hello@oneclaw.ai
               </a>
-              <a href="#" className="inline-flex items-center gap-2 hover:text-indigo-600">
+              <a href="#" className="inline-flex items-center gap-2 hover:text-brand-600">
                 <MessageSquare className="h-4 w-4" />
                 微信公众号：OneClaw 出海
               </a>
@@ -72,7 +72,7 @@ export function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {s.links.map((l) => (
                   <li key={l.label}>
-                    <a href={l.href} className="text-sm text-zinc-600 hover:text-indigo-600 transition-colors">
+                    <a href={l.href} className="text-sm text-zinc-600 hover:text-brand-600 transition-colors">
                       {l.label}
                     </a>
                   </li>

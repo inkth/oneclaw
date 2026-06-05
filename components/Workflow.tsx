@@ -56,14 +56,14 @@ export function Workflow() {
             </ul>
           </div>
 
-          <div className="relative rounded-2xl border border-indigo-200 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="absolute -top-3 right-6 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
+          <div className="relative rounded-2xl border border-brand-200 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="absolute -top-3 right-6 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
               <Zap className="h-3 w-3" />
               推荐
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
                   <Zap className="h-4 w-4" />
                 </div>
                 <h3 className="text-base font-semibold text-zinc-900">
@@ -77,7 +77,7 @@ export function Workflow() {
             <ul className="mt-6 space-y-3">
               {afterSteps.map((s, i) => (
                 <li key={s} className="flex items-start gap-3 text-sm">
-                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white">
+                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-brand-600 text-white">
                     <Check className="h-3 w-3" strokeWidth={3} />
                   </span>
                   <span className="text-zinc-700">{s}</span>

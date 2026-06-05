@@ -17,11 +17,11 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <a href="#" className="flex items-center gap-2">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-sm">
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500 shadow-sm">
               <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-lg font-semibold tracking-tight">
-              One<span className="text-indigo-600">Claw</span>
+              One<span className="text-brand-600">Claw</span>
             </span>
           </a>
 
@@ -30,7 +30,7 @@ export function Header() {
               <a
                 key={item.label}
                 href={item.href}
-                className="relative px-3 py-2 text-sm font-medium text-zinc-700 hover:text-indigo-600 transition-colors"
+                className="relative px-3 py-2 text-sm font-medium text-zinc-700 hover:text-brand-600 transition-colors"
               >
                 {item.label}
                 {item.badge && (
@@ -45,7 +45,7 @@ export function Header() {
           <div className="hidden md:flex items-center gap-2">
             <a
               href="/login"
-              className="px-3 py-2 text-sm font-medium text-zinc-700 hover:text-indigo-600 transition-colors"
+              className="px-3 py-2 text-sm font-medium text-zinc-700 hover:text-brand-600 transition-colors"
             >
               登录
             </a>

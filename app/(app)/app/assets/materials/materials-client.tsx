@@ -29,7 +29,7 @@ type Material = {
 };
 
 const typeMeta: Record<MaterialType, { cn: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = {
-  IMAGE: { cn: "图片", icon: ImageIcon, tone: "bg-indigo-50 text-indigo-700" },
+  IMAGE: { cn: "图片", icon: ImageIcon, tone: "bg-brand-50 text-brand-700" },
   VIDEO: { cn: "视频", icon: Video, tone: "bg-violet-50 text-violet-700" },
   AUDIO: { cn: "音频", icon: Music, tone: "bg-emerald-50 text-emerald-700" },
   LOGO: { cn: "Logo", icon: ImageIcon, tone: "bg-amber-50 text-amber-700" },
@@ -156,7 +156,7 @@ export function MaterialsClient({
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   filter === f.key
                     ? "bg-white text-zinc-900 shadow-sm"
-                    : "text-zinc-600 hover:bg-indigo-50 hover:text-indigo-700"
+                    : "text-zinc-600 hover:bg-brand-50 hover:text-brand-700"
                 }`}
               >
                 {f.label}
@@ -185,7 +185,7 @@ export function MaterialsClient({
         onClick={() => fileRef.current?.click()}
         className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
           dragOver
-            ? "border-indigo-300 bg-indigo-50/40"
+            ? "border-brand-300 bg-brand-50/40"
             : "border-zinc-300 bg-white hover:border-zinc-400"
         }`}
       >
@@ -210,9 +210,9 @@ export function MaterialsClient({
       </div>
 
       {uploading.length > 0 && (
-        <div className="rounded-xl bg-indigo-50/60 border border-indigo-100 p-3 space-y-1">
+        <div className="rounded-xl bg-brand-50/60 border border-brand-100 p-3 space-y-1">
           {uploading.map((name) => (
-            <div key={name} className="flex items-center gap-2 text-xs text-indigo-900">
+            <div key={name} className="flex items-center gap-2 text-xs text-brand-900">
               <Loader2 className="h-3 w-3 animate-spin" />
               <span className="truncate">{name}</span>
             </div>

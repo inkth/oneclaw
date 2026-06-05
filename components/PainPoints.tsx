@@ -26,7 +26,7 @@ export function PainPoints() {
     <section className="relative py-24 bg-zinc-50/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-600">
             为什么需要 OneClaw
           </p>
           <h2 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">
@@ -41,7 +41,7 @@ export function PainPoints() {
           {points.map(({ icon: Icon, title, desc, tag }) => (
             <div
               key={title}
-              className="group relative rounded-2xl border border-zinc-200/80 bg-white p-6 hover:border-indigo-200 hover:shadow-sm transition-all"
+              className="group relative rounded-2xl border border-zinc-200/80 bg-white p-6 hover:border-brand-200 hover:shadow-sm transition-all"
             >
               <div className="flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-white">
@@ -53,7 +53,7 @@ export function PainPoints() {
               </div>
               <h3 className="mt-5 text-lg font-semibold">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-zinc-600">{desc}</p>
-              <div className="mt-6 inline-flex items-center text-xs text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-6 inline-flex items-center text-xs text-brand-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                 OneClaw 的解法 →
               </div>
             </div>

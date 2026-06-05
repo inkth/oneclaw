@@ -41,7 +41,7 @@ const styleMap: Record<string, { label: string; gradient: string; emoji: string 
   },
   BEFORE_AFTER: {
     label: "Before/After",
-    gradient: "from-indigo-400 via-violet-500 to-purple-500",
+    gradient: "from-brand-400 via-violet-500 to-purple-500",
     emoji: "✨",
   },
 };
@@ -199,7 +199,7 @@ export function VideosClient({
             <div className="px-3 py-2.5 flex items-center justify-between text-2xs text-zinc-500 border-t border-zinc-100">
               <button
                 onClick={() => setDrawerVideoId(v.id)}
-                className="truncate text-left hover:text-indigo-600 transition-colors"
+                className="truncate text-left hover:text-brand-600 transition-colors"
                 title="查看详情"
               >
                 {v.productTitle ?? "未关联选品"} · 详情 ›
@@ -224,7 +224,7 @@ export function VideosClient({
                   <button
                     onClick={() => refresh(v.id)}
                     disabled={refreshingId === v.id}
-                    className="inline-flex items-center gap-0.5 rounded-full bg-indigo-50 px-1.5 py-0.5 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-0.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-brand-700 hover:bg-brand-100 disabled:opacity-50"
                     title="检查 fal 状态"
                   >
                     <RefreshCw

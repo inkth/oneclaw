@@ -23,7 +23,7 @@ import { QUADRANT_META, type Quadrant, type ReviewResult } from "@/lib/review/ty
 import { CopyButton } from "./copy-button";
 
 const QUADRANT_BG: Record<Tone, string> = {
-  brand: "border-indigo-100 bg-indigo-50/40",
+  brand: "border-brand-100 bg-brand-50/40",
   neutral: "border-zinc-200/80 bg-zinc-50/60",
   success: "border-emerald-100 bg-emerald-50/40",
   warning: "border-amber-100 bg-amber-50/40",
@@ -108,7 +108,7 @@ export function ReviewClient({ workspaceId }: { workspaceId: string | null }) {
             if (f) onPick(f);
           }}
           onClick={() => inputRef.current?.click()}
-          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60 px-4 py-8 text-center transition-colors hover:border-indigo-300 hover:bg-indigo-50/40"
+          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60 px-4 py-8 text-center transition-colors hover:border-brand-300 hover:bg-brand-50/40"
         >
           <input
             ref={inputRef}
@@ -117,7 +117,7 @@ export function ReviewClient({ workspaceId }: { workspaceId: string | null }) {
             className="hidden"
             onChange={(e) => onPick(e.target.files?.[0] ?? null)}
           />
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-indigo-600 ring-1 ring-zinc-200">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-brand-600 ring-1 ring-zinc-200">
             {file ? <FileSpreadsheet className="h-5 w-5" /> : <ArrowUpFromLine className="h-5 w-5" />}
           </div>
           {file ? (
@@ -141,7 +141,7 @@ export function ReviewClient({ workspaceId }: { workspaceId: string | null }) {
               min="0"
               value={targetRoi}
               onChange={(e) => setTargetRoi(e.target.value)}
-              className="h-9 w-20 rounded-lg border border-zinc-200 px-2 text-sm tabular-nums focus:border-indigo-400 focus:outline-none"
+              className="h-9 w-20 rounded-lg border border-zinc-200 px-2 text-sm tabular-nums focus:border-brand-400 focus:outline-none"
             />
             <span className="text-2xs text-zinc-400">象限以此为高/低 ROI 分界</span>
           </label>

@@ -124,7 +124,7 @@ export function ShopsClient({
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="总营收" value={`¥${(totals.revenueCents / 100).toLocaleString()}`} icon={TrendingUp} tone="indigo" />
+        <StatCard label="总营收" value={`¥${(totals.revenueCents / 100).toLocaleString()}`} icon={TrendingUp} tone="brand" />
         <StatCard label="订单数" value={totals.orders.toLocaleString()} icon={ShoppingCart} tone="violet" />
         <StatCard label="已售商品" value={totals.itemsSold.toLocaleString()} icon={Package} tone="fuchsia" />
         <StatCard label="访客" value={totals.visitors.toLocaleString()} icon={Users} tone="emerald" />
@@ -214,7 +214,7 @@ export function ShopsClient({
 }
 
 const toneMap = {
-  indigo: { fg: "text-indigo-600", bg: "bg-indigo-50" },
+  brand: { fg: "text-brand-600", bg: "bg-brand-50" },
   violet: { fg: "text-violet-600", bg: "bg-violet-50" },
   fuchsia: { fg: "text-fuchsia-600", bg: "bg-fuchsia-50" },
   emerald: { fg: "text-emerald-600", bg: "bg-emerald-50" },
@@ -337,7 +337,7 @@ function AddShopModal({
                     disabled={!m.available}
                     className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
                       active
-                        ? "border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-200"
+                        ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
                         : "border-zinc-200/80 hover:border-zinc-300"
                     } ${!m.available ? "opacity-40 cursor-not-allowed" : ""}`}
                   >
@@ -362,7 +362,7 @@ function AddShopModal({
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：OneClaw US 旗舰店"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
@@ -376,7 +376,7 @@ function AddShopModal({
               onChange={(e) => setCountry(e.target.value.toUpperCase())}
               maxLength={4}
               placeholder="US / GB / SG / JP …"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none font-mono focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none font-mono focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 

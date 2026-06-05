@@ -48,7 +48,7 @@ export function Popover({
       {open && (
         <div
           className={cn(
-            "absolute z-30 mt-2 rounded-xl border border-zinc-200/80 bg-white p-3 shadow-lg shadow-zinc-900/5",
+            "absolute z-30 mt-2 rounded-xl border border-zinc-200/80 bg-white p-3 shadow-lg",
             align === "end" && "right-0",
             align === "center" && "left-1/2 -translate-x-1/2",
             align === "start" && "left-0",
@@ -81,14 +81,14 @@ export function ToolbarButton({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
         active || open
-          ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+          ? "border-brand-200 bg-brand-50 text-brand-700"
           : "border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50",
       )}
     >
       <Icon className="h-3.5 w-3.5" />
       {label}
       {badge != null && badge !== false && (
-        <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-2xs font-semibold text-white">
+        <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-2xs font-semibold text-white">
           {badge}
         </span>
       )}

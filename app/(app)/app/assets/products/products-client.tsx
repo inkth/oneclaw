@@ -107,12 +107,12 @@ export function ProductsClient({
                 onClick={() => setFilter(f.key)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   filter === f.key
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-zinc-600 hover:text-indigo-700"
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-zinc-600 hover:text-brand-700"
                 }`}
               >
                 {f.label}
-                <span className={`ml-1 text-2xs ${filter === f.key ? "text-indigo-200" : "text-zinc-400"}`}>
+                <span className={`ml-1 text-2xs ${filter === f.key ? "text-brand-200" : "text-zinc-400"}`}>
                   {f.key === "ALL"
                     ? products.length
                     : products.filter((p) => p.status === f.key).length}
@@ -134,7 +134,7 @@ export function ProductsClient({
           title={filter === "ALL" ? "还没有选品" : "这个分类下还没有选品"}
           description={
             <>
-              前往 <span className="text-indigo-600">Agent 工作流</span>，让市场分析师扫描热门品类。
+              前往 <span className="text-brand-600">Agent 工作流</span>，让市场分析师扫描热门品类。
             </>
           }
         />
