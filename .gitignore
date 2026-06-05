@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime lock from ScheduleWakeup
+.claude/scheduled_tasks.lock

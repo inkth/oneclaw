@@ -28,8 +28,10 @@ export function getOpenRouter(): OpenAI {
   return _client;
 }
 
+// 全局默认走 DeepSeek（经 OpenRouter）。非 reasoning、便宜、支持 JSON 模式，
+// 适合做 Agent / 助手默认。可由 OPENROUTER_MODEL env 覆盖。
 export const DEFAULT_MODEL =
-  process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
+  process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat";
 
 export function isOpenRouterConfigured() {
   return !!process.env.OPENROUTER_API_KEY;
