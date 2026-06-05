@@ -67,7 +67,7 @@ export function Agents() {
             return (
               <div
                 key={name}
-                className={`group relative rounded-2xl border border-zinc-200/80 bg-white p-6 hover:shadow-sm hover:-translate-y-0.5 transition-all ring-1 ${t.ring}`}
+                className={`group relative rounded-2xl ring-edge surface-sheen p-6 lift ring-1 ${t.ring}`}
               >
                 <div
                   className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${t.icon} text-white shadow-sm`}

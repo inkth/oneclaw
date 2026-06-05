@@ -19,14 +19,14 @@ export function Partners() {
         <p className="text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
           适配的出海品类赛道
         </p>
-        <div className="mt-8 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-x-6 gap-y-4 items-center">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
           {categories.map((c) => (
-            <div
+            <span
               key={c}
-              className="text-center text-zinc-400 hover:text-zinc-700 transition-colors font-semibold tracking-tight text-sm sm:text-base"
+              className="rounded-full ring-edge surface-sheen px-3.5 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:border-brand-200 hover:text-brand-700"
             >
               {c}
-            </div>
+            </span>
           ))}
         </div>
       </div>

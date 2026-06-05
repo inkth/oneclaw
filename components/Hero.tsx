@@ -8,6 +8,10 @@ export function Hero() {
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 h-80 w-[42rem] -translate-x-1/2 aura-violet"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute right-[8%] top-24 h-64 w-64 rounded-full bg-fuchsia-400/10 blur-[100px]"
+      />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
@@ -133,7 +137,7 @@ function PreviewCard({
   const p = tonePalette[tone];
   return (
     <div
-      className={`relative rounded-xl bg-white p-4 ${
+      className={`relative rounded-xl surface-sheen p-4 ${
         highlight ? "gradient-border shadow-md" : "border border-zinc-200/80"
       }`}
     >

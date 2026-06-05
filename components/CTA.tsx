@@ -12,7 +12,16 @@ export function CTA() {
   return (
     <section className="relative py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-2xl bg-zinc-900 px-6 py-16 sm:px-16 sm:py-20 text-center">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-brand-950 px-6 py-16 sm:px-16 sm:py-20 text-center shadow-xl">
+          {/* 柔紫 / 品红辉光，营造深色高级感 */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[44rem] -translate-x-1/2 rounded-full bg-brand-500/25 blur-[100px]"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-28 right-0 h-64 w-96 rounded-full bg-fuchsia-500/15 blur-[90px]"
+          />
           <div className="relative">
             <div className="flex justify-center -space-x-2 mb-6">
               {avatars.map((a, i) => (
