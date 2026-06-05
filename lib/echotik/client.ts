@@ -266,10 +266,12 @@ export async function batchDownloadCovers(
 
   for (let i = 0; i < eligible.length; i += MAX_BATCH) {
     const chunk = eligible.slice(i, i + MAX_BATCH);
+    // 签名 URL 有效期 3 天，远长于榜单缓存；缓存 1h 即可大幅减少对签名接口的调用，
+    // 又安全地短于过期时间。按 cover_urls 入参建键，相同批次命中同一缓存。
     const data = await call<Array<Record<string, string>>>(
       '/echotik/batch/cover/download',
       { cover_urls: chunk.join(',') },
-      { revalidate: false },
+      { revalidate: 3600 },
     );
     for (const obj of data) {
       const entries = Object.entries(obj);
