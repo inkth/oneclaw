@@ -90,7 +90,6 @@ const BOARDS: Board[] = [
     href: "/app/services",
     paths: ["/app/services"],
     tabs: [],
-    soon: true,
   },
 ];
 
