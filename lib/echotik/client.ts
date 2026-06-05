@@ -20,6 +20,7 @@ import type {
   EchoTikEnvelope, Region, Language, RankType, RankField,
   Category, ProductListItem, ProductDetail,
   ProductInfluencer, ProductVideo, ProductTrendPoint,
+  EntityRankField, SellerListItem, InfluencerRankItem, VideoRankItem,
 } from './types';
 
 const BASE_URL = process.env.ECHOTIK_BASE_URL ?? 'https://open.echotik.live/api/v3';
@@ -154,6 +155,71 @@ export async function getProductRanklist(params: RanklistParams) {
     if (flat.length > 0) return flat.slice(0, desired);
   }
   return [];
+}
+
+// ── Seller / Influencer / Video ranklists ───────────────────────────────────
+// 三者结构与 product/ranklist 一致：region + rank_type + <entity>_rank_field +
+// date（T-1 不一定及时，沿用 T-1→T-3 回退）。entity_rank_field 仅接受 1=销量 / 2=GMV。
+
+export interface EntityRanklistParams {
+  region: Region;
+  rank_type: RankType;
+  rank_field: EntityRankField;
+  date?: string;
+  page_num?: number;
+  page_size?: number;
+  category_id?: string;
+  category_l2_id?: string;
+  category_l3_id?: string;
+}
+
+async function getEntityRanklist<T>(
+  endpoint: string,
+  fieldParam: string,
+  params: EntityRanklistParams,
+): Promise<T[]> {
+  const desired = params.page_size ?? 20;
+  const pageSize = Math.min(desired, MAX_PAGE_SIZE);
+  const startPage = params.page_num ?? 1;
+  const pagesNeeded = Math.ceil(desired / pageSize);
+  const candidates = params.date ? [params.date] : [yesterday(), daysAgo(2), daysAgo(3)];
+
+  for (const date of candidates) {
+    const common = {
+      region: params.region,
+      rank_type: params.rank_type,
+      [fieldParam]: params.rank_field,
+      date,
+      page_size: pageSize,
+      category_id: params.category_id,
+      category_l2_id: params.category_l2_id,
+      category_l3_id: params.category_l3_id,
+    };
+    const pages = await Promise.all(
+      Array.from({ length: pagesNeeded }, (_, i) =>
+        call<T[]>(
+          endpoint,
+          { ...common, page_num: startPage + i },
+          { revalidate: 1800, tags: [`${endpoint}:${params.region}:${date}`] },
+        ),
+      ),
+    );
+    const flat = pages.flat();
+    if (flat.length > 0) return flat.slice(0, desired);
+  }
+  return [];
+}
+
+export function getSellerRanklist(params: EntityRanklistParams) {
+  return getEntityRanklist<SellerListItem>('/echotik/seller/ranklist', 'seller_rank_field', params);
+}
+
+export function getInfluencerRanklist(params: EntityRanklistParams) {
+  return getEntityRanklist<InfluencerRankItem>('/echotik/influencer/ranklist', 'influencer_rank_field', params);
+}
+
+export function getVideoRanklist(params: EntityRanklistParams) {
+  return getEntityRanklist<VideoRankItem>('/echotik/video/ranklist', 'video_rank_field', params);
 }
 
 export async function getProductDetail(productId: string, region: Region = 'US') {

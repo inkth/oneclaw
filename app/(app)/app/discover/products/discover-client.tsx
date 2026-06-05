@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -9,20 +9,24 @@ import {
   Sparkles,
   Plus,
   Loader2,
-  Flame,
-  TrendingUp,
   Star,
-  Globe,
   Database,
   AlertTriangle,
   ArrowUpRight,
   Check,
   CheckCircle2,
 } from "lucide-react";
+import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
+import { fmt, fmtMoney, stringToGradient } from "@/lib/echotik/format";
 
-type Region = "US" | "GB" | "ID" | "TH" | "VN" | "MY";
 type RankType = 1 | 2 | 3;
 type Field = 1 | 2 | 3;
+
+const FIELDS = [
+  { v: 1, cn: "销量" },
+  { v: 2, cn: "GMV" },
+  { v: 3, cn: "增长" },
+];
 
 type AnalysisInfo = {
   taskId: string;
@@ -53,48 +57,6 @@ type DiscoverProduct = {
   interaction: Interaction | null;
 };
 
-const REGIONS: Array<{ code: Region; cn: string; flag: string }> = [
-  { code: "US", cn: "美国", flag: "🇺🇸" },
-  { code: "GB", cn: "英国", flag: "🇬🇧" },
-  { code: "ID", cn: "印尼", flag: "🇮🇩" },
-  { code: "TH", cn: "泰国", flag: "🇹🇭" },
-  { code: "VN", cn: "越南", flag: "🇻🇳" },
-  { code: "MY", cn: "马来", flag: "🇲🇾" },
-];
-
-const RANK_TYPES: Array<{ v: RankType; cn: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = [
-  { v: 1, cn: "热销", icon: Flame, tone: "from-orange-500 to-rose-500" },
-  { v: 2, cn: "上升", icon: TrendingUp, tone: "from-indigo-500 to-violet-500" },
-  { v: 3, cn: "新品", icon: Star, tone: "from-emerald-500 to-teal-500" },
-];
-
-const FIELDS: Array<{ v: Field; cn: string }> = [
-  { v: 1, cn: "销量" },
-  { v: 2, cn: "GMV" },
-  { v: 3, cn: "增长" },
-];
-
-// 把字符串映射成确定的渐变色（同名产品颜色稳定）—— 给商品 cell 当占位封面
-function stringToGradient(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  const hue1 = h % 360;
-  const hue2 = (hue1 + 40) % 360;
-  return `linear-gradient(135deg, hsl(${hue1} 70% 55%), hsl(${hue2} 70% 65%))`;
-}
-
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-function fmtMoney(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-  return `$${n.toFixed(2)}`;
-}
-
 type DiscoverState = "live" | "cached" | "empty" | "mock" | "error";
 
 export function DiscoverClient({
@@ -102,6 +64,8 @@ export function DiscoverClient({
   region,
   rankType,
   field,
+  categoryId,
+  categories,
   state,
   fetchedAt,
   products,
@@ -111,13 +75,14 @@ export function DiscoverClient({
   region: Region;
   rankType: RankType;
   field: Field;
+  categoryId: string | null;
+  categories: CategoryOption[];
   state: DiscoverState;
   fetchedAt: string | null;
   products: DiscoverProduct[];
   isGuest?: boolean;
 }) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState<Set<string>>(new Set());
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
@@ -127,15 +92,6 @@ export function DiscoverClient({
     if (!isGuest) return false;
     setLoginPromptOpen(true);
     return true;
-  }
-
-  function navigate(patch: { region?: Region; rank_type?: RankType; field?: Field }) {
-    const p = new URLSearchParams({
-      region: patch.region ?? region,
-      rank_type: String(patch.rank_type ?? rankType),
-      field: String(patch.field ?? field),
-    });
-    startTransition(() => router.push(`/app/discover/products?${p.toString()}`));
   }
 
   async function importProduct(p: DiscoverProduct) {
@@ -302,62 +258,15 @@ export function DiscoverClient({
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 flex flex-wrap items-center gap-3">
-        <FilterGroup label={<><Globe className="h-3 w-3" />区域</>}>
-          {REGIONS.map((r) => (
-            <button
-              key={r.code}
-              onClick={() => navigate({ region: r.code })}
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                region === r.code
-                  ? "bg-zinc-900 text-white"
-                  : "text-zinc-600 hover:bg-zinc-100"
-              }`}
-            >
-              <span>{r.flag}</span>
-              {r.cn}
-            </button>
-          ))}
-        </FilterGroup>
-
-        <FilterGroup label="榜单">
-          {RANK_TYPES.map((rt) => {
-            const Icon = rt.icon;
-            const active = rankType === rt.v;
-            return (
-              <button
-                key={rt.v}
-                onClick={() => navigate({ rank_type: rt.v })}
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                  active
-                    ? `bg-gradient-to-br ${rt.tone} text-white`
-                    : "text-zinc-600 hover:bg-zinc-100"
-                }`}
-              >
-                <Icon className="h-3 w-3" />
-                {rt.cn}
-              </button>
-            );
-          })}
-        </FilterGroup>
-
-        <FilterGroup label="按">
-          {FIELDS.map((f) => {
-            const active = field === f.v;
-            return (
-              <button
-                key={f.v}
-                onClick={() => navigate({ field: f.v })}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                  active ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
-                }`}
-              >
-                {f.cn}
-              </button>
-            );
-          })}
-        </FilterGroup>
-      </div>
+      <FilterBar
+        basePath="/app/discover/products"
+        region={region}
+        rankType={rankType}
+        field={field}
+        categoryId={categoryId}
+        categories={categories}
+        fields={FIELDS}
+      />
 
       {state === "empty" && (
         <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center">
@@ -562,23 +471,6 @@ export function DiscoverClient({
           查看分析师 Agent 历史 <ArrowUpRight className="h-3 w-3" />
         </Link>
       </div>
-    </div>
-  );
-}
-
-function FilterGroup({
-  label,
-  children,
-}: {
-  label: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
-        {label}
-      </span>
-      <div className="flex flex-wrap items-center gap-1">{children}</div>
     </div>
   );
 }

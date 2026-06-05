@@ -33,6 +33,16 @@ export const RankField = {
 } as const;
 export type RankField = typeof RankField[keyof typeof RankField];
 
+/**
+ * seller / influencer / video ranklist 的排序字段。探测确认服务端只接受 1 和 2
+ * （> 2 报 "must be less than or equal to 2"），分别是 销量 / GMV。
+ */
+export const EntityRankField = {
+  SALES: 1,
+  GMV: 2,
+} as const;
+export type EntityRankField = typeof EntityRankField[keyof typeof EntityRankField];
+
 // ── Category ───────────────────────────────────────────────────────────────
 export interface Category {
   category_id: string;
@@ -144,6 +154,79 @@ export interface ProductVideo {
   total_favorites_cnt: number;
   total_video_sale_cnt: number;
   total_video_sale_gmv_amt: number;
+}
+
+// ── Seller (店铺 ranklist row) ──────────────────────────────────────────────
+export interface SellerListItem {
+  seller_id: string;
+  seller_name: string;
+  user_id: string;
+  region: string;
+  cover_url: string;          // 防盗链原始 URL，需签名
+  rating: number;             // 0..5
+  from_flag: number;
+  category_id: string;
+  category_l2_id: string;
+  category_l3_id: string;
+  most_product_category_list: string;  // stringified JSON array of {category_name, category_id}
+  total_product_cnt: number;
+  total_sale_cnt: number;
+  total_sale_gmv_amt: number;
+  total_ifl_cnt: number;      // # 带货达人
+  total_video_cnt: number;
+  total_live_cnt: number;
+}
+
+// ── Influencer (达人 ranklist row) ──────────────────────────────────────────
+export interface InfluencerRankItem {
+  user_id: string;
+  unique_id: string;          // @handle
+  nick_name: string;
+  avatar: string;             // 防盗链原始 URL，需签名
+  category: string;
+  region: string;
+  ec_score: number;           // 带货评分 0..10
+  sales_flag: number;
+  most_category_id: string;
+  most_category_l2_id: string;
+  most_category_l3_id: string;
+  product_category_list: string;
+  total_followers_cnt: number;
+  total_digg_cnt: number;
+  total_product_cnt: number;
+  total_post_video_cnt: number;
+  total_live_cnt: number;
+  total_sale_cnt: number;
+  total_sale_gmv_amt: number;
+  // 同名 *_history_cnt 字段为生涯累计，按需取用
+  [key: string]: unknown;
+}
+
+// ── Video (视频 ranklist row) ───────────────────────────────────────────────
+export interface VideoRankItem {
+  video_id: string;
+  user_id: string;
+  unique_id: string;
+  nick_name: string;
+  avatar: string;             // 防盗链原始 URL，需签名
+  reflow_cover: string;       // 视频封面，防盗链原始 URL，需签名
+  video_desc: string;
+  category: string;
+  region: string;
+  create_time: string;        // unix seconds, as string
+  duration: number;           // seconds
+  created_by_ai: string;      // "true" | "false"
+  sales_flag: number;
+  product_category_list: string;
+  video_products: string;     // stringified JSON array
+  total_views_cnt: number;
+  total_digg_cnt: number;
+  total_comments_cnt: number;
+  total_shares_cnt: number;
+  total_favorites_cnt: number;
+  total_video_sale_cnt: number;
+  total_video_sale_gmv_amt: number;
+  [key: string]: unknown;
 }
 
 // ── Trend (daily snapshot) ─────────────────────────────────────────────────

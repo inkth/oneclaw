@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
-import { safeRanklist } from "@/lib/echotik/safe";
+import { safeRanklist, safeCategoriesL1 } from "@/lib/echotik/safe";
 import type { Region, RankType, RankField } from "@/lib/echotik/types";
 import { DiscoverClient } from "./discover-client";
 
@@ -27,13 +27,18 @@ export default async function DiscoverProductsPage({
     : "US") as Region;
   const rankType = (Number(sp.rank_type) || 1) as RankType;
   const field = (Number(sp.field) || 1) as RankField;
+  const categoryId = sp.category_id || null;
 
-  const result = await safeRanklist({
-    region,
-    rank_type: rankType,
-    product_rank_field: field,
-    page_size: 16,
-  });
+  const [result, categories] = await Promise.all([
+    safeRanklist({
+      region,
+      rank_type: rankType,
+      product_rank_field: field,
+      category_id: categoryId ?? undefined,
+      page_size: 16,
+    }),
+    safeCategoriesL1(region),
+  ]);
 
   // 计算交集：这批 EchoTik 商品里，哪些已经被 import / 分析 / 收藏
   const externalIds = result.products.map((p) => p.product_id);
@@ -125,6 +130,8 @@ export default async function DiscoverProductsPage({
       region={region}
       rankType={rankType}
       field={field}
+      categoryId={categoryId}
+      categories={categories}
       state={result.state}
       fetchedAt={result.fetchedAt?.toISOString() ?? null}
       products={result.products.map((p) => ({

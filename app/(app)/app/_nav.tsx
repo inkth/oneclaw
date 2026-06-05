@@ -43,7 +43,12 @@ const BOARDS: Board[] = [
     icon: Compass,
     href: "/app/discover/products",
     paths: ["/app/discover"],
-    tabs: [{ label: "TikTok 爆品", href: "/app/discover/products" }],
+    tabs: [
+      { label: "商品", href: "/app/discover/products" },
+      { label: "店铺", href: "/app/discover/sellers" },
+      { label: "达人", href: "/app/discover/influencers" },
+      { label: "视频", href: "/app/discover/videos" },
+    ],
   },
   {
     key: "create",
