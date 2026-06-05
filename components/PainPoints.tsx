@@ -1,4 +1,4 @@
-import { Layers, FlameKindling, ShuffleIcon } from "lucide-react";
+import { Layers, FlameKindling, ShuffleIcon, ArrowRight } from "lucide-react";
 
 const points = [
   {
@@ -53,8 +53,9 @@ export function PainPoints() {
               </div>
               <h3 className="mt-5 text-lg font-semibold">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-zinc-600">{desc}</p>
-              <div className="mt-6 inline-flex items-center text-xs text-brand-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                OneClaw 的解法 →
+              <div className="mt-6 inline-flex items-center gap-1 text-xs text-brand-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                OneClaw 的解法
+                <ArrowRight className="h-3.5 w-3.5" />
               </div>
             </div>
           ))}

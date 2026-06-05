@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, ArrowRight } from "lucide-react";
 
 const navItems: Array<{ label: string; href: string; badge?: string }> = [
   { label: "数据洞察", href: "/#insights" },
@@ -51,12 +51,10 @@ export function Header() {
             </a>
             <a
               href="/app/create"
-              className="group relative inline-flex items-center gap-1 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 transition-all shadow-sm hover:shadow-md"
+              className="group relative inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 transition-all shadow-sm hover:shadow-md"
             >
               开始体验
-              <span className="ml-1 transition-transform group-hover:translate-x-0.5">
-                →
-              </span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
 

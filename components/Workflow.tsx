@@ -1,4 +1,4 @@
-import { Clock, Zap, Check, X } from "lucide-react";
+import { Clock, Zap, Check, X, ChevronRight } from "lucide-react";
 
 const beforeSteps = [
   "手动浏览各大榜单、TikTok Creative Center 选品",
@@ -25,7 +25,17 @@ export function Workflow() {
             <span className="gradient-text">10 分钟</span>
           </h2>
           <p className="mt-4 text-zinc-600">
-            同样一个选品 → 内容 → 发布 → 回收的循环，OneClaw 让单人即可跑通完整链路。
+            同样一个
+            <span className="mx-1 inline-flex items-center gap-1 align-middle font-medium text-zinc-800">
+              选品
+              <ChevronRight className="h-3.5 w-3.5 text-brand-400" />
+              内容
+              <ChevronRight className="h-3.5 w-3.5 text-brand-400" />
+              发布
+              <ChevronRight className="h-3.5 w-3.5 text-brand-400" />
+              回收
+            </span>
+            的循环，OneClaw 让单人即可跑通完整链路。
           </p>
         </div>
 

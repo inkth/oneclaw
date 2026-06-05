@@ -1,4 +1,4 @@
-import { TrendingUp, Sparkles } from "lucide-react";
+import { TrendingUp, Sparkles, CupSoda, ArrowUp, ArrowRight } from "lucide-react";
 
 export function ProductDiscovery() {
   return (
@@ -55,8 +55,8 @@ function ProductCard() {
 
       <div className="p-5">
         <div className="flex gap-4">
-          <div className="relative h-24 w-24 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-100 via-amber-100 to-rose-100 flex items-center justify-center text-3xl">
-            🥤
+          <div className="relative h-24 w-24 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-100 via-amber-100 to-rose-100 flex items-center justify-center">
+            <CupSoda className="h-9 w-9 text-orange-500/80" strokeWidth={1.75} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
@@ -90,13 +90,16 @@ function ProductCard() {
           <div className="flex items-center gap-1 text-zinc-500">
             <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
             <span>趋势热度</span>
-            <span className="font-semibold text-emerald-600">↑ 218%</span>
+            <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-600">
+              <ArrowUp className="h-3 w-3" strokeWidth={2.5} />218%
+            </span>
           </div>
           <a
             href="#"
-            className="rounded-full bg-zinc-900 px-3 py-1.5 text-2xs font-medium text-white hover:bg-zinc-800 transition-colors"
+            className="inline-flex items-center gap-1 rounded-full bg-zinc-900 px-3 py-1.5 text-2xs font-medium text-white hover:bg-zinc-800 transition-colors"
           >
-            查看完整分析 →
+            查看完整分析
+            <ArrowRight className="h-3 w-3" />
           </a>
         </div>
       </div>

@@ -1,11 +1,11 @@
-import { Play, Eye, Heart, MessageCircle, Bookmark, Video } from "lucide-react";
+import { Play, Eye, Heart, Video, Package, Scale, Leaf, Sparkles, type LucideIcon } from "lucide-react";
 
 const videos = [
   {
     id: "01",
     title: "Unboxing 风",
     gradient: "from-rose-400 via-pink-500 to-fuchsia-500",
-    emoji: "📦",
+    icon: Package,
     views: "98.3K",
     likes: "12.1K",
   },
@@ -13,7 +13,7 @@ const videos = [
     id: "02",
     title: "对比测评",
     gradient: "from-amber-400 via-orange-500 to-rose-500",
-    emoji: "⚖️",
+    icon: Scale,
     views: "62.4K",
     likes: "7.8K",
   },
@@ -21,7 +21,7 @@ const videos = [
     id: "03",
     title: "生活场景",
     gradient: "from-emerald-400 via-teal-500 to-cyan-500",
-    emoji: "🌿",
+    icon: Leaf,
     views: "44.7K",
     likes: "5.2K",
   },
@@ -29,7 +29,7 @@ const videos = [
     id: "04",
     title: "Before/After",
     gradient: "from-brand-400 via-violet-500 to-purple-500",
-    emoji: "✨",
+    icon: Sparkles,
     views: "31.0K",
     likes: "4.4K",
   },
@@ -88,14 +88,14 @@ function VideoTile({
   id,
   title,
   gradient,
-  emoji,
+  icon: Icon,
   views,
   likes,
 }: {
   id: string;
   title: string;
   gradient: string;
-  emoji: string;
+  icon: LucideIcon;
   views: string;
   likes: string;
 }) {
@@ -112,8 +112,8 @@ function VideoTile({
         9:16 · 15s
       </div>
 
-      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-90 group-hover:scale-110 transition-transform">
-        {emoji}
+      <div className="absolute inset-0 flex items-center justify-center text-white/90 group-hover:scale-110 transition-transform">
+        <Icon className="h-14 w-14" strokeWidth={1.5} />
       </div>
 
       <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 text-white">
