@@ -108,18 +108,18 @@ const faqs = [
 
 const toneClass: Record<string, { ring: string; icon: string; cta: string }> = {
   zinc: {
-    ring: "ring-zinc-200",
+    ring: "ring-zinc-200/80",
     icon: "bg-zinc-900",
     cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
   },
   indigo: {
-    ring: "ring-2 ring-indigo-500 shadow-xl shadow-indigo-500/10",
-    icon: "bg-gradient-to-br from-indigo-500 to-violet-500",
-    cta: "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white",
+    ring: "ring-2 ring-indigo-600 shadow-sm",
+    icon: "bg-indigo-600",
+    cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
   },
   fuchsia: {
-    ring: "ring-zinc-200",
-    icon: "bg-gradient-to-br from-fuchsia-500 to-pink-500",
+    ring: "ring-zinc-200/80",
+    icon: "bg-zinc-900",
     cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
   },
 };
@@ -160,7 +160,7 @@ export default function PricingPage() {
                     } transition-transform`}
                   >
                     {t.highlight && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
                         <Zap className="h-3 w-3" />
                         最受欢迎
                       </div>
@@ -171,7 +171,7 @@ export default function PricingPage() {
                     </div>
 
                     <div className="mt-5">
-                      <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                      <div className="text-2xs font-mono uppercase tracking-wider text-zinc-400">
                         {t.name}
                       </div>
                       <h3 className="mt-0.5 text-xl font-bold">{t.cn}</h3>
@@ -191,7 +191,7 @@ export default function PricingPage() {
                     />
 
                     <div className="mt-6 border-t border-zinc-100 pt-5">
-                      <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+                      <div className="text-2xs font-medium uppercase tracking-wider text-zinc-400">
                         包含
                       </div>
                       <ul className="mt-3 space-y-2">
@@ -204,7 +204,7 @@ export default function PricingPage() {
                       </ul>
                       {t.notIncluded.length > 0 && (
                         <>
-                          <div className="mt-4 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+                          <div className="mt-4 text-2xs font-medium uppercase tracking-wider text-zinc-400">
                             不含
                           </div>
                           <ul className="mt-3 space-y-2">
@@ -239,7 +239,7 @@ export default function PricingPage() {
               {faqs.map((f) => (
                 <details
                   key={f.q}
-                  className="group rounded-2xl border border-zinc-200 bg-white px-5 py-4 [&_summary::-webkit-details-marker]:hidden"
+                  className="group rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 [&_summary::-webkit-details-marker]:hidden"
                 >
                   <summary className="flex cursor-pointer items-center justify-between text-sm font-medium">
                     {f.q}

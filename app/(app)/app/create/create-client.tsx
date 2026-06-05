@@ -462,14 +462,14 @@ export function CreateClient({
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">创作工坊</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">创作工坊</h1>
           <p className="mt-1 text-sm text-zinc-500">
             把商品 / 素材 / 模特拼成提示词，挑个引擎，让 AI 帮你做带货短视频。
           </p>
         </div>
 
         {isGuest && (
-          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3 flex items-start gap-3">
+          <div className="rounded-xl border border-indigo-200/80 bg-indigo-50/50 p-3 flex items-start gap-3">
             <Sparkles className="h-4 w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-indigo-900 leading-relaxed">
               <span className="font-semibold">试用模式</span>
@@ -480,7 +480,7 @@ export function CreateClient({
         )}
 
         {!falReady && !isGuest && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 flex items-start gap-3">
+          <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 flex items-start gap-3">
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-amber-800 leading-relaxed">
               <div className="font-semibold">FAL_KEY 未配置</div>
@@ -490,11 +490,11 @@ export function CreateClient({
         )}
 
         {/* 贴链接一键出片 */}
-        <section className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-violet-50/40 p-4">
+        <section className="rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-4">
           <div className="inline-flex items-center gap-1.5 text-sm font-semibold mb-2.5">
             <Link2 className="h-4 w-4 text-indigo-600" />
             贴商品链接，一键出片
-            <span className="text-[10px] text-zinc-400 font-normal">
+            <span className="text-2xs text-zinc-400 font-normal">
               自动识别商品 + 写好提示词
             </span>
           </div>
@@ -507,12 +507,12 @@ export function CreateClient({
                 if (e.key === "Enter" && !parsingLink) parseLink();
               }}
               placeholder="粘贴 TikTok Shop / 亚马逊 / 独立站等商品页链接…"
-              className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="flex-1 rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
             />
             <button
               onClick={parseLink}
               disabled={parsingLink || !linkUrl.trim()}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors whitespace-nowrap"
             >
               {parsingLink ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -523,7 +523,7 @@ export function CreateClient({
             </button>
           </div>
           {linkPreview && (
-            <div className="mt-3 flex items-start gap-3 rounded-xl border border-zinc-200 bg-white p-2.5">
+            <div className="mt-3 flex items-start gap-3 rounded-xl border border-zinc-200/80 bg-white p-2.5">
               {linkPreview.ogImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -545,14 +545,14 @@ export function CreateClient({
                     {linkPreview.sellingPoints.map((s, i) => (
                       <span
                         key={i}
-                        className="inline-flex rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-700"
+                        className="inline-flex rounded-full bg-indigo-50 px-1.5 py-0.5 text-2xs text-indigo-700"
                       >
                         {s}
                       </span>
                     ))}
                   </div>
                 )}
-                <p className="mt-1 text-[10px] text-zinc-400">
+                <p className="mt-1 text-2xs text-zinc-400">
                   提示词与标题已填入下方，可微调后点「生成视频」。
                 </p>
               </div>
@@ -561,12 +561,12 @@ export function CreateClient({
         </section>
 
         {/* 模板库横滑 */}
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4">
+        <section className="rounded-xl border border-zinc-200/80 bg-white p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="inline-flex items-center gap-1.5 text-sm font-semibold">
               <Library className="h-4 w-4 text-indigo-600" />
               模板库
-              <span className="text-[10px] text-zinc-400 font-normal">
+              <span className="text-2xs text-zinc-400 font-normal">
                 {customs.length} 个自定义 · {starterTemplates.length} 个起步模板
               </span>
             </div>
@@ -576,13 +576,13 @@ export function CreateClient({
                   if (gateGuest()) return;
                   setOptimizerOpen(true);
                 }}
-                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2.5 py-1 text-[11px] font-medium text-white hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-indigo-700 transition-colors"
                 title="基于历史使用 + 视频成绩，AI 推荐高效模板"
               >
                 <Sparkles className="h-3 w-3" />
                 AI 推荐
               </button>
-              <span className="text-[10px] text-zinc-400">点击套用</span>
+              <span className="text-2xs text-zinc-400">点击套用</span>
             </div>
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
@@ -594,7 +594,7 @@ export function CreateClient({
                   className={`relative flex-shrink-0 w-44 rounded-xl border p-2.5 cursor-pointer transition-all ${
                     applied
                       ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/30"
-                      : "border-zinc-200 bg-zinc-50/40 hover:border-zinc-300 hover:bg-white"
+                      : "border-zinc-200/80 bg-zinc-50/40 hover:border-zinc-300 hover:bg-white"
                   }`}
                   onClick={() => applyTemplate(t)}
                 >
@@ -602,7 +602,7 @@ export function CreateClient({
                     <div className="text-lg leading-none">{t.emoji}</div>
                     <div className="flex items-center gap-0.5">
                       {t.kind === "starter" ? (
-                        <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] text-zinc-500">
+                        <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-2xs text-zinc-500">
                           官方
                         </span>
                       ) : (
@@ -636,10 +636,10 @@ export function CreateClient({
                     </div>
                   </div>
                   <div className="mt-1.5 text-xs font-medium truncate">{t.name}</div>
-                  <p className="mt-0.5 text-[10px] text-zinc-500 line-clamp-2 min-h-[1.6em]">
+                  <p className="mt-0.5 text-2xs text-zinc-500 line-clamp-2 min-h-[1.6em]">
                     {t.description || t.promptTemplate}
                   </p>
-                  <div className="mt-2 flex items-center gap-1 text-[9px] text-zinc-400">
+                  <div className="mt-2 flex items-center gap-1 text-2xs text-zinc-400">
                     <span className="rounded bg-zinc-100 px-1 py-px font-mono">
                       {engines.find((e) => e.key === t.engine)?.cn ?? t.engine}
                     </span>
@@ -668,10 +668,10 @@ export function CreateClient({
                 <button
                   key={e.key}
                   onClick={() => setEngineKey(e.key)}
-                  className={`text-left rounded-2xl border p-4 transition-all ${
+                  className={`text-left rounded-xl border p-4 transition-all ${
                     active
                       ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50/40"
-                      : "border-zinc-200 bg-white hover:border-zinc-300"
+                      : "border-zinc-200/80 bg-white hover:border-zinc-300"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1">
@@ -679,7 +679,7 @@ export function CreateClient({
                     <div className="flex items-center gap-1">
                       {e.supportsImageInput && (
                         <span
-                          className="inline-flex items-center gap-0.5 rounded-full bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700"
+                          className="inline-flex items-center gap-0.5 rounded-full bg-sky-50 px-1.5 py-0.5 text-2xs font-medium text-sky-700"
                           title="支持把图片当作首帧"
                         >
                           <ImageIcon className="h-2.5 w-2.5" />
@@ -687,27 +687,27 @@ export function CreateClient({
                         </span>
                       )}
                       {e.recommended && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-2xs font-medium text-amber-700">
                           <Crown className="h-2.5 w-2.5" />
                           推荐
                         </span>
                       )}
                     </div>
                   </div>
-                  <p className="mt-1.5 text-[11px] text-zinc-500 line-clamp-2 min-h-[2.4em]">
+                  <p className="mt-1.5 text-2xs text-zinc-500 line-clamp-2 min-h-[2.4em]">
                     {e.tagline}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-1">
                     {e.tags.map((t) => (
                       <span
                         key={t}
-                        className="inline-flex rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600"
+                        className="inline-flex rounded-full bg-zinc-100 px-1.5 py-0.5 text-2xs text-zinc-600"
                       >
                         {t}
                       </span>
                     ))}
                   </div>
-                  <div className="mt-2.5 text-[10px] text-zinc-400 font-mono">
+                  <div className="mt-2.5 text-2xs text-zinc-400 font-mono">
                     {e.priceHint}
                   </div>
                 </button>
@@ -728,7 +728,7 @@ export function CreateClient({
                     className={`rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
                       style === s.v
                         ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
-                        : "border-zinc-200 hover:border-zinc-300"
+                        : "border-zinc-200/80 hover:border-zinc-300"
                     }`}
                   >
                     {s.emoji} {s.cn}
@@ -745,7 +745,7 @@ export function CreateClient({
                     className={`rounded-lg border px-3 py-1.5 text-xs transition-all ${
                       duration === d
                         ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
-                        : "border-zinc-200 hover:border-zinc-300"
+                        : "border-zinc-200/80 hover:border-zinc-300"
                     }`}
                   >
                     {d}s
@@ -762,7 +762,7 @@ export function CreateClient({
                     className={`rounded-lg border px-3 py-1.5 text-xs transition-all ${
                       aspect === a
                         ? "border-indigo-500 bg-indigo-50/40 text-indigo-700 font-medium"
-                        : "border-zinc-200 hover:border-zinc-300"
+                        : "border-zinc-200/80 hover:border-zinc-300"
                     }`}
                   >
                     {a}
@@ -802,7 +802,7 @@ export function CreateClient({
                     >
                       <span className="text-base">{p.emoji ?? "📦"}</span>
                       <span className="flex-1 truncate">{p.title}</span>
-                      <span className="text-[10px] text-zinc-400 font-mono">
+                      <span className="text-2xs text-zinc-400 font-mono">
                         R{p.roiScore}
                       </span>
                       {productId === p.id && <Check className="h-3 w-3 text-indigo-600" />}
@@ -824,7 +824,7 @@ export function CreateClient({
               emptyHref="/app/assets/materials"
             >
               {engine.requiresImage && materialIds.length === 0 && (
-                <div className="mb-2 rounded-md bg-amber-50 px-2 py-1.5 text-[10px] text-amber-800 border border-amber-200">
+                <div className="mb-2 rounded-md bg-amber-50 px-2 py-1.5 text-2xs text-amber-800 border border-amber-200/80">
                   ⚠️ {engine.cn} 必须选一张图，否则无法提交
                 </div>
               )}
@@ -847,7 +847,7 @@ export function CreateClient({
                         key={m.id}
                         onClick={() => toggleMaterial(m.id)}
                         className={`relative aspect-square rounded-md overflow-hidden border ${
-                          sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200"
+                          sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200/80"
                         }`}
                         title={m.originalName}
                       >
@@ -858,7 +858,7 @@ export function CreateClient({
                           <video src={m.url} className="h-full w-full object-cover" muted />
                         )}
                         {isI2vFirstFrame && (
-                          <span className="absolute left-0.5 top-0.5 rounded bg-sky-500 px-1 py-px text-[8px] font-medium text-white">
+                          <span className="absolute left-0.5 top-0.5 rounded bg-sky-500 px-1 py-px text-2xs font-medium text-white">
                             首帧
                           </span>
                         )}
@@ -890,8 +890,8 @@ export function CreateClient({
                       <button
                         key={m.id}
                         onClick={() => setModelId(sel ? null : m.id)}
-                        className={`relative aspect-[3/4] rounded-md overflow-hidden border bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center ${
-                          sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200"
+                        className={`relative aspect-[3/4] rounded-md overflow-hidden border bg-zinc-100 flex items-center justify-center ${
+                          sel ? "border-indigo-500 ring-2 ring-indigo-200" : "border-zinc-200/80"
                         }`}
                         title={m.name}
                       >
@@ -901,7 +901,7 @@ export function CreateClient({
                         ) : (
                           <UserSquare2 className="h-5 w-5 text-zinc-400" />
                         )}
-                        <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[9px] py-0.5 truncate px-1 text-center">
+                        <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-2xs py-0.5 truncate px-1 text-center">
                           {m.name}
                         </div>
                         {m.isFavorite && (
@@ -934,7 +934,7 @@ export function CreateClient({
               onChange={(e) => setTitle(e.target.value)}
               maxLength={120}
               placeholder="视频标题（可选，默认取提示词前 60 字）"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
             />
             <textarea
               value={prompt}
@@ -942,7 +942,7 @@ export function CreateClient({
               rows={5}
               maxLength={2000}
               placeholder="例：USB 充电便携榨汁杯，9:16 竖屏，金色 hour 户外公园场景，年轻女生倒入草莓和牛奶按下开关，特写气泡上涌，3 秒打通..."
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
             />
             <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
               <div className="flex items-center gap-3">
@@ -976,7 +976,7 @@ export function CreateClient({
 
         {/* 提交 */}
         <div className="sticky bottom-4 z-10">
-          <div className="rounded-2xl border border-zinc-200 bg-white/90 backdrop-blur p-4 shadow-lg flex items-center justify-between flex-wrap gap-3">
+          <div className="rounded-xl border border-zinc-200/80 bg-white/90 backdrop-blur p-4 shadow-sm flex items-center justify-between flex-wrap gap-3">
             <div className="text-xs text-zinc-500">
               <span className="font-medium text-zinc-900">{engine.cn}</span>
               {" · "}
@@ -990,7 +990,7 @@ export function CreateClient({
               {modelId && (
                 <>
                   {" · "}
-                  <span className="text-fuchsia-600">+模特</span>
+                  <span className="text-zinc-700">+模特</span>
                 </>
               )}
               {materialIds.length > 0 && (
@@ -1007,7 +1007,7 @@ export function CreateClient({
                   setSaveOpen(true);
                 }}
                 disabled={!prompt.trim()}
-                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3.5 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3.5 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
                 title="把当前组合保存为模板"
               >
                 <Bookmark className="h-3.5 w-3.5" />
@@ -1016,7 +1016,7 @@ export function CreateClient({
               <button
                 onClick={submit}
                 disabled={submitting || !prompt.trim() || (!falReady && !isGuest)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-5 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-5 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors"
               >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1053,7 +1053,7 @@ export function CreateClient({
           最近生成
         </h2>
         {history.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-4 text-xs text-zinc-500 text-center">
+          <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-4 text-xs text-zinc-500 text-center">
             还没生成过；提交后会在这里显示
           </div>
         ) : (
@@ -1062,7 +1062,7 @@ export function CreateClient({
               <button
                 key={v.id}
                 onClick={() => setDrawerVideoId(v.id)}
-                className="block w-full text-left rounded-2xl border border-zinc-200 bg-white overflow-hidden hover:shadow-md transition-shadow"
+                className="block w-full text-left rounded-xl border border-zinc-200/80 bg-white overflow-hidden hover:shadow-sm transition-shadow"
               >
                 <div className="relative aspect-[9/14] bg-zinc-100">
                   {v.thumbnailUrl ? (
@@ -1082,13 +1082,13 @@ export function CreateClient({
                       <Loader2 className="h-6 w-6 text-white animate-spin" />
                     )}
                   </div>
-                  <div className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-zinc-900">
+                  <div className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 text-2xs font-medium text-zinc-900">
                     {v.aspectRatio} · {v.durationSec}s
                   </div>
                 </div>
                 <div className="p-2.5">
                   <div className="text-xs font-medium truncate">{v.title}</div>
-                  <div className="mt-0.5 text-[10px] text-zinc-500 truncate">
+                  <div className="mt-0.5 text-2xs text-zinc-500 truncate">
                     {v.engine ?? "—"} · {new Date(v.createdAt).toLocaleString("zh-CN")}
                   </div>
                 </div>
@@ -1136,13 +1136,13 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+    <section className="rounded-xl border border-zinc-200/80 bg-white p-5">
       <div className="flex items-baseline gap-2.5 mb-4">
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-white text-[10px] font-mono">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-white text-2xs font-mono">
           {step}
         </div>
         <h2 className="text-sm font-semibold">{title}</h2>
-        {subtitle && <span className="text-[11px] text-zinc-500">— {subtitle}</span>}
+        {subtitle && <span className="text-2xs text-zinc-500">— {subtitle}</span>}
       </div>
       {children}
     </section>
@@ -1152,7 +1152,7 @@ function Section({
 function ParamGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+      <div className="mb-1.5 text-2xs font-medium text-zinc-500 uppercase tracking-wider">
         {label}
       </div>
       {children}
@@ -1175,14 +1175,14 @@ function PickerCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50/30 p-3">
+    <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/30 p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="inline-flex items-center gap-1.5 text-xs font-medium">
           <Icon className="h-3.5 w-3.5 text-zinc-600" />
           {label}
-          <span className="text-[10px] text-zinc-400">({count})</span>
+          <span className="text-2xs text-zinc-400">({count})</span>
         </div>
-        {hint && <span className="text-[10px] text-zinc-400">{hint}</span>}
+        {hint && <span className="text-2xs text-zinc-400">{hint}</span>}
       </div>
       {children}
     </div>
@@ -1207,7 +1207,7 @@ function LoginPromptModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-sm rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-sm rounded-xl bg-white shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -1217,18 +1217,18 @@ function LoginPromptModal({ onClose }: { onClose: () => void }) {
           <X className="h-4 w-4" />
         </button>
         <div className="p-6 space-y-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600">
             <Sparkles className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold tracking-tight">登录后继续</h2>
+            <h2 className="text-lg font-semibold tracking-tight">登录后继续</h2>
             <p className="mt-1 text-xs text-zinc-500 leading-relaxed">
               你刚才填写的内容已经帮你保存好了，登录回来会自动恢复，不用重填。
             </p>
           </div>
           <Link
             href="/login?callbackUrl=/app/create"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
           >
             登录 / 注册
             <ArrowRight className="h-4 w-4" />
@@ -1276,7 +1276,7 @@ function SaveTemplateModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-md rounded-xl bg-white shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -1286,7 +1286,7 @@ function SaveTemplateModal({
           <X className="h-4 w-4" />
         </button>
         <div className="p-6 space-y-4">
-          <h2 className="text-lg font-bold tracking-tight">存为模板</h2>
+          <h2 className="text-lg font-semibold tracking-tight">存为模板</h2>
           <p className="-mt-2 text-xs text-zinc-500">
             把当前的「引擎 / 风格 / prompt / 默认素材」组合保存下来，下次一键套用。
           </p>
@@ -1320,7 +1320,7 @@ function SaveTemplateModal({
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：3C 数码 9:16 开箱模板"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
               autoFocus
             />
           </div>
@@ -1335,7 +1335,7 @@ function SaveTemplateModal({
               maxLength={800}
               rows={2}
               placeholder="什么时候用、有什么诀窍…"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
             />
           </div>
 

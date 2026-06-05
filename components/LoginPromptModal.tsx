@@ -21,7 +21,7 @@ export function LoginPromptModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-sm rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -31,8 +31,8 @@ export function LoginPromptModal({
           <X className="h-4 w-4" />
         </button>
         <div className="p-6 space-y-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
-            <Sparkles className="h-6 w-6 text-white" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+            <Sparkles className="h-6 w-6" />
           </div>
           <div>
             <h2 className="text-lg font-bold tracking-tight">{title}</h2>
@@ -40,7 +40,7 @@ export function LoginPromptModal({
           </div>
           <Link
             href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors"
           >
             登录 / 注册
             <ArrowRight className="h-4 w-4" />

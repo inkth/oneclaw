@@ -3,6 +3,8 @@
 import { Users, Award } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { StateBadge, MockNotice, EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { fmt, fmtMoney } from "@/lib/echotik/format";
 
 type Influencer = {
@@ -48,16 +50,16 @@ export function InfluencersClient({
 }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight inline-flex items-center gap-2">
-          <Users className="h-5 w-5 text-indigo-500" />
-          选品 · 达人榜
-          <StateBadge state={state} fetchedAt={fetchedAt} />
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          各国带货达人榜单 · 看粉丝量、带货 GMV、商品与内容产出 · 找对的人合作
-        </p>
-      </div>
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Users className="h-5 w-5 text-indigo-500" />
+            选品 · 达人榜
+          </span>
+        }
+        badge={<StateBadge state={state} fetchedAt={fetchedAt} />}
+        description="各国带货达人榜单 · 看粉丝量、带货 GMV、商品与内容产出 · 找对的人合作"
+      />
 
       {state === "mock" && <MockNotice />}
 
@@ -74,60 +76,58 @@ export function InfluencersClient({
       {state === "empty" ? (
         <EmptyState />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
-          <table className="w-full text-sm min-w-[940px]">
-            <thead className="bg-zinc-50/60 text-xs text-zinc-500">
-              <tr>
-                <th className="text-left font-medium px-4 py-3">#</th>
-                <th className="text-left font-medium px-4 py-3">达人</th>
-                <th className="text-right font-medium px-4 py-3">带货分</th>
-                <th className="text-right font-medium px-4 py-3">粉丝</th>
-                <th className="text-right font-medium px-4 py-3">带货销量</th>
-                <th className="text-right font-medium px-4 py-3">带货 GMV</th>
-                <th className="text-right font-medium px-4 py-3">商品</th>
-                <th className="text-right font-medium px-4 py-3">视频</th>
-                <th className="text-right font-medium px-4 py-3">直播</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {influencers.map((i, idx) => (
-                <tr key={i.userId} className="hover:bg-zinc-50/50">
-                  <td className="px-4 py-3 text-zinc-400 tabular-nums">{idx + 1}</td>
-                  <td className="px-4 py-3 max-w-[320px]">
-                    <div className="flex items-center gap-2.5">
-                      <Thumb src={i.avatarUrl} name={i.nickName} rounded />
-                      <div className="min-w-0">
-                        <div className="font-medium truncate" title={i.nickName}>
-                          {i.nickName}
-                        </div>
-                        <div className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-500">
-                          {i.uniqueId && <span className="font-mono truncate">@{i.uniqueId}</span>}
-                          {i.category && <span className="truncate">· {i.category}</span>}
-                        </div>
+        <TableWrap minWidth={940}>
+          <THead>
+            <tr>
+              <Th>#</Th>
+              <Th>达人</Th>
+              <Th align="right">带货分</Th>
+              <Th align="right">粉丝</Th>
+              <Th align="right">带货销量</Th>
+              <Th align="right">带货 GMV</Th>
+              <Th align="right">商品</Th>
+              <Th align="right">视频</Th>
+              <Th align="right">直播</Th>
+            </tr>
+          </THead>
+          <tbody>
+            {influencers.map((i, idx) => (
+              <Tr key={i.userId}>
+                <Td className="text-zinc-400 tabular-nums">{idx + 1}</Td>
+                <Td className="max-w-[320px]">
+                  <div className="flex items-center gap-2.5">
+                    <Thumb src={i.avatarUrl} name={i.nickName} rounded />
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-zinc-900" title={i.nickName}>
+                        {i.nickName}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1 text-2xs text-zinc-500">
+                        {i.uniqueId && <span className="truncate font-mono">@{i.uniqueId}</span>}
+                        {i.category && <span className="truncate">· {i.category}</span>}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {i.ecScore > 0 ? (
-                      <span className="inline-flex items-center gap-0.5 text-indigo-600 font-medium">
-                        <Award className="h-3 w-3" />
-                        {i.ecScore.toFixed(1)}
-                      </span>
-                    ) : (
-                      <span className="text-zinc-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{fmt(i.totalFollowersCnt)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmt(i.totalSaleCnt)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(i.totalSaleGmvAmt)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{fmt(i.totalProductCnt)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{fmt(i.totalPostVideoCnt)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{fmt(i.totalLiveCnt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </Td>
+                <Td align="right">
+                  {i.ecScore > 0 ? (
+                    <span className="inline-flex items-center gap-0.5 font-medium text-indigo-600">
+                      <Award className="h-3 w-3" />
+                      {i.ecScore.toFixed(1)}
+                    </span>
+                  ) : (
+                    <span className="text-zinc-300">—</span>
+                  )}
+                </Td>
+                <Td align="right">{fmt(i.totalFollowersCnt)}</Td>
+                <Td align="right" className="font-semibold text-zinc-900">{fmt(i.totalSaleCnt)}</Td>
+                <Td align="right">{fmtMoney(i.totalSaleGmvAmt)}</Td>
+                <Td align="right">{fmt(i.totalProductCnt)}</Td>
+                <Td align="right">{fmt(i.totalPostVideoCnt)}</Td>
+                <Td align="right">{fmt(i.totalLiveCnt)}</Td>
+              </Tr>
+            ))}
+          </tbody>
+        </TableWrap>
       )}
     </div>
   );

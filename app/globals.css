@@ -3,9 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #0a0a1a;
+  /* 单一自信主色 = indigo-600，全站链接/激活/选中/focus 统一用它 */
   --brand: #4f46e5;
   --brand-dark: #3730a3;
-  --accent: #10b981;
+  --accent: #4f46e5;
 }
 
 @theme inline {
@@ -16,6 +17,10 @@
   --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* 精炼极简的固定阶梯：补一档 11px 辅助字号，清除全站随手 text-[10px/11px] */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
 }
 
 html,
@@ -27,52 +32,33 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-float { animation: float 4s ease-in-out infinite; }
-.animate-fade-up { animation: fadeUp 0.6s ease-out forwards; }
+.animate-fade-up { animation: fadeUp 0.5s ease-out forwards; }
 
+/* 唯一保留的品牌强调：仅用于关键词，收敛为单色 indigo（极简，不再三段彩虹） */
 .gradient-text {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent);
 }
 
+/* 极克制的顶部光晕，仅营销页 hero 使用 */
 .gradient-bg {
   background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(99, 102, 241, 0.15),
+    ellipse 70% 45% at 50% -10%,
+    rgba(79, 70, 229, 0.06),
     transparent
   );
 }
 
-.grid-pattern {
-  background-image:
-    linear-gradient(rgba(99, 102, 241, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 102, 241, 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
 .glass {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 ::selection {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(79, 70, 229, 0.16);
 }

@@ -12,6 +12,8 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
 
 type Kind = "DIGITAL_HUMAN" | "REAL_PERSON";
 type Gender = "FEMALE" | "MALE" | "NEUTRAL";
@@ -129,27 +131,25 @@ export function ModelsClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">模特</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            为视频生成准备的人设。可选 AI 数字人或绑定的真人合作模特。
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            if (gateGuest()) return;
-            setModalOpen(true);
-          }}
-          className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-        >
-          <Plus className="h-4 w-4" />
-          创建模特
-        </button>
-      </div>
+      <PageHeader
+        title="模特"
+        description="为视频生成准备的人设。可选 AI 数字人或绑定的真人合作模特。"
+        actions={
+          <Button
+            variant="primary"
+            onClick={() => {
+              if (gateGuest()) return;
+              setModalOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            创建模特
+          </Button>
+        }
+      />
 
       {models.length === 0 && (
-        <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-white via-indigo-50/40 to-violet-50/40 p-6">
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-6">
           <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700 mb-3">
             <Sparkles className="h-3.5 w-3.5" />
             一键添加预设人设
@@ -159,13 +159,13 @@ export function ModelsClient({
               <button
                 key={p.name}
                 onClick={() => createFromPreset(p)}
-                className="group rounded-2xl border border-zinc-200 bg-white p-3 hover:border-indigo-300 hover:shadow-md transition-all text-left"
+                className="group rounded-xl border border-zinc-200/80 bg-white p-3 hover:border-indigo-200 hover:shadow-sm transition-all text-left"
               >
-                <div className="aspect-square rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-4xl">
+                <div className="aspect-square rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-4xl">
                   {p.emoji}
                 </div>
                 <div className="mt-2 text-sm font-medium">{p.name}</div>
-                <div className="mt-0.5 text-[10px] text-zinc-500 truncate">
+                <div className="mt-0.5 text-2xs text-zinc-500 truncate">
                   {p.style}
                 </div>
               </button>
@@ -179,7 +179,7 @@ export function ModelsClient({
           {models.map((m) => {
             const g = genderMeta[m.gender];
             return (
-              <div key={m.id} className="group rounded-2xl border border-zinc-200 bg-white overflow-hidden">
+              <div key={m.id} className="group rounded-xl border border-zinc-200/80 bg-white overflow-hidden">
                 <div className="aspect-[3/4] bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center relative">
                   {m.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -188,11 +188,11 @@ export function ModelsClient({
                     <UserSquare2 className="h-10 w-10 text-zinc-400" />
                   )}
                   <div className="absolute left-2 top-2 flex gap-1">
-                    <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${g.cls}`}>
+                    <span className={`inline-flex rounded-full px-1.5 py-0.5 text-2xs font-medium ${g.cls}`}>
                       {g.cn}
                     </span>
                     {m.kind === "DIGITAL_HUMAN" && (
-                      <span className="inline-flex rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+                      <span className="inline-flex rounded-full bg-indigo-50 px-1.5 py-0.5 text-2xs font-medium text-indigo-700">
                         AI
                       </span>
                     )}
@@ -220,11 +220,11 @@ export function ModelsClient({
                 </div>
                 <div className="p-3">
                   <div className="text-sm font-medium truncate">{m.name}</div>
-                  <div className="mt-0.5 text-[11px] text-zinc-500 truncate">
+                  <div className="mt-0.5 text-2xs text-zinc-500 truncate">
                     {m.style ?? "—"}
                   </div>
                   {m.usageCount > 0 && (
-                    <div className="mt-1.5 text-[10px] text-zinc-400">
+                    <div className="mt-1.5 text-2xs text-zinc-400">
                       已使用 {m.usageCount} 次
                     </div>
                   )}
@@ -235,7 +235,7 @@ export function ModelsClient({
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 text-xs text-zinc-600 leading-relaxed">
+      <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-4 text-xs text-zinc-600 leading-relaxed">
         💡 真实数字人 / 真人对接（HeyGen、D-ID、阿里云灵境）正在开发中。
         当前模特是「人设档案」，给创意总监 Agent 写脚本时作为风格输入。
       </div>
@@ -305,7 +305,7 @@ function CreateModelModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-md rounded-xl bg-white shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -315,7 +315,7 @@ function CreateModelModal({
           <X className="h-4 w-4" />
         </button>
         <div className="p-6 space-y-4">
-          <h2 className="text-lg font-bold tracking-tight">创建模特</h2>
+          <h2 className="text-lg font-semibold tracking-tight">创建模特</h2>
 
           <div>
             <label className="block text-xs font-medium text-zinc-700 mb-1.5">名称</label>
@@ -325,7 +325,7 @@ function CreateModelModal({
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：户外探险家"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
             />
           </div>
 
@@ -338,8 +338,8 @@ function CreateModelModal({
                   onClick={() => setGender(g)}
                   className={`rounded-lg border px-3 py-2 text-sm transition-all ${
                     gender === g
-                      ? "border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-200"
-                      : "border-zinc-200 hover:border-zinc-300"
+                      ? "border-indigo-300 bg-indigo-50/40 ring-2 ring-indigo-200"
+                      : "border-zinc-200/80 hover:border-zinc-300"
                   }`}
                 >
                   {genderMeta[g].cn}
@@ -356,7 +356,7 @@ function CreateModelModal({
               onChange={(e) => setStyle(e.target.value)}
               maxLength={80}
               placeholder="例：阳光 / 商务 / 治愈"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
             />
           </div>
 
@@ -368,7 +368,7 @@ function CreateModelModal({
               maxLength={800}
               rows={3}
               placeholder="人设、年龄段、典型场景、口播语气…"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 resize-none"
             />
           </div>
 
@@ -378,14 +378,15 @@ function CreateModelModal({
             </div>
           )}
 
-          <button
+          <Button
+            variant="primary"
             onClick={submit}
             disabled={submitting}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+            className="w-full"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             创建
-          </button>
+          </Button>
         </div>
       </div>
     </div>

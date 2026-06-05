@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   Settings,
 } from "lucide-react";
+import { Tabs } from "@/components/ui/Tabs";
 
 type Tab = { label: string; href: string };
 
@@ -111,6 +112,8 @@ function activeBoard(pathname: string): Board | undefined {
 
 const itemBase =
   "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors";
+const itemActive = " bg-indigo-50 text-indigo-700 font-medium";
+const itemIdle = " text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900";
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -126,17 +129,12 @@ export function SidebarNav() {
             <Link
               key={board.key}
               href={board.href}
-              className={
-                itemBase +
-                (isActive
-                  ? " bg-indigo-50 text-indigo-600 font-medium"
-                  : " text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600")
-              }
+              className={itemBase + (isActive ? itemActive : itemIdle)}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={"h-4 w-4 " + (isActive ? "text-indigo-600" : "text-zinc-400")} />
               <span className="flex-1">{board.label}</span>
               {board.soon && (
-                <span className="rounded px-1.5 py-0.5 text-[9px] font-medium text-zinc-400 bg-zinc-100">
+                <span className="rounded px-1.5 py-0.5 text-2xs font-medium text-zinc-400 bg-zinc-100">
                   即将上线
                 </span>
               )}
@@ -149,13 +147,15 @@ export function SidebarNav() {
         <Link
           href={settingsItem.href}
           className={
-            itemBase +
-            (matchPath(settingsItem.href, pathname)
-              ? " bg-indigo-50 text-indigo-600 font-medium"
-              : " text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600")
+            itemBase + (matchPath(settingsItem.href, pathname) ? itemActive : itemIdle)
           }
         >
-          <settingsItem.icon className="h-4 w-4" />
+          <settingsItem.icon
+            className={
+              "h-4 w-4 " +
+              (matchPath(settingsItem.href, pathname) ? "text-indigo-600" : "text-zinc-400")
+            }
+          />
           {settingsItem.label}
         </Link>
       </div>
@@ -175,25 +175,5 @@ export function BoardTabs() {
     .filter((t) => matchPath(t.href, pathname))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
-  return (
-    <div className="mb-6 flex items-center gap-1 border-b border-zinc-200">
-      {board.tabs.map((tab) => {
-        const isActive = tab.href === activeTabHref;
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={
-              "px-3 py-2 text-sm -mb-px border-b-2 transition-colors " +
-              (isActive
-                ? "border-indigo-500 text-indigo-600 font-medium"
-                : "border-transparent text-zinc-500 hover:text-zinc-800")
-            }
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
-    </div>
-  );
+  return <Tabs items={board.tabs} activeHref={activeTabHref} className="mb-6" />;
 }

@@ -34,7 +34,6 @@ export function ProductDiscovery() {
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-indigo-100 to-violet-100 blur-2xl opacity-50" />
             <ProductCard />
           </div>
         </div>
@@ -45,10 +44,10 @@ export function ProductDiscovery() {
 
 function ProductCard() {
   return (
-    <div className="relative rounded-2xl border border-zinc-200/80 bg-white shadow-xl shadow-indigo-900/5 overflow-hidden">
+    <div className="relative rounded-2xl border border-zinc-200/80 bg-white shadow-sm overflow-hidden">
       <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3 bg-zinc-50/60">
         <div className="text-xs font-medium text-zinc-500">本周高潜爆品 · TOP 1</div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-2xs font-semibold text-emerald-700">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
           推荐
         </span>
@@ -60,7 +59,7 @@ function ProductCard() {
             🥤
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-indigo-600">
+            <div className="text-2xs font-medium uppercase tracking-wider text-indigo-600">
               便携家电 · 厨房小电
             </div>
             <h3 className="mt-1 text-base font-semibold text-zinc-900 truncate">
@@ -95,7 +94,7 @@ function ProductCard() {
           </div>
           <a
             href="#"
-            className="rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-zinc-800 transition-colors"
+            className="rounded-full bg-zinc-900 px-3 py-1.5 text-2xs font-medium text-white hover:bg-zinc-800 transition-colors"
           >
             查看完整分析 →
           </a>
@@ -124,10 +123,10 @@ function Metric({
 }) {
   return (
     <div className={`rounded-xl px-3 py-2.5 ${toneClasses[tone]}`}>
-      <div className="text-[10px] font-medium opacity-70">{label}</div>
+      <div className="text-2xs font-medium opacity-70">{label}</div>
       <div className="mt-0.5 flex items-baseline gap-0.5">
         <span className="text-lg font-bold tabular-nums">{value}</span>
-        <span className="text-[10px] opacity-70">{suffix}</span>
+        <span className="text-2xs opacity-70">{suffix}</span>
       </div>
     </div>
   );

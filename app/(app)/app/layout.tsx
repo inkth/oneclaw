@@ -4,6 +4,7 @@ import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
 import { Copilot } from "@/components/ai/copilot";
 import { Sparkles, LogOut } from "lucide-react";
 import { SidebarNav, BoardTabs } from "./_nav";
+import { Button, ButtonLink } from "@/components/ui/Button";
 
 export default async function AppLayout({
   children,
@@ -31,13 +32,13 @@ export default async function AppLayout({
 
         <div className="px-3 py-3 border-b border-zinc-100">
           <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-400">
+            <div className="text-2xs uppercase tracking-wider text-zinc-400">
               {workspace ? "当前工作台" : "试用模式"}
             </div>
             <div className="mt-0.5 text-sm font-medium truncate">
               {workspace ? workspace.name : "未登录"}
             </div>
-            <div className="mt-0.5 text-[10px] text-zinc-500">
+            <div className="mt-0.5 text-2xs text-zinc-500">
               {workspace ? `方案 · ${workspace.plan}` : "登录后解锁全部功能"}
             </div>
           </div>
@@ -49,14 +50,14 @@ export default async function AppLayout({
           {session?.user ? (
             <>
               <div className="flex items-center gap-2 mb-3 px-2">
-                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
+                <div className="h-7 w-7 rounded-full bg-zinc-900 text-white text-xs font-semibold flex items-center justify-center">
                   {(session.user.name || session.user.phone || session.user.email || "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-medium truncate">
                     {session.user.name || session.user.phone || session.user.email}
                   </div>
-                  <div className="text-[10px] text-zinc-500 truncate font-mono">
+                  <div className="text-2xs text-zinc-500 truncate font-mono">
                     {session.user.phone
                       ? `+86 ${session.user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
                       : session.user.email}
@@ -69,22 +70,21 @@ export default async function AppLayout({
                   await signOut({ redirectTo: "/" });
                 }}
               >
-                <button
-                  type="submit"
-                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50"
-                >
+                <Button type="submit" variant="secondary" size="sm" className="w-full">
                   <LogOut className="h-3.5 w-3.5" />
                   退出登录
-                </button>
+                </Button>
               </form>
             </>
           ) : (
-            <Link
+            <ButtonLink
               href="/login?callbackUrl=/app/create"
-              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-2 text-xs font-medium text-white hover:opacity-90"
+              variant="primary"
+              size="sm"
+              className="w-full"
             >
               登录 / 注册
-            </Link>
+            </ButtonLink>
           )}
         </div>
       </aside>

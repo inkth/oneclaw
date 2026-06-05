@@ -4,7 +4,6 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden pt-16 pb-24 sm:pt-24 sm:pb-32">
       <div className="absolute inset-0 gradient-bg" aria-hidden />
-      <div className="absolute inset-0 grid-pattern opacity-60" aria-hidden />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
@@ -28,7 +27,7 @@ export function Hero() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="/app/create"
-              className="group inline-flex items-center gap-2 rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800 hover:shadow-xl transition-all"
+              className="group inline-flex items-center gap-2 rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 transition-all"
             >
               免费开始体验
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -63,8 +62,7 @@ export function Hero() {
 function HeroPreview() {
   return (
     <div className="relative">
-      <div className="absolute -inset-x-4 -inset-y-4 rounded-3xl bg-gradient-to-br from-indigo-100 via-violet-100 to-fuchsia-100 blur-2xl opacity-60" />
-      <div className="relative rounded-2xl border border-zinc-200/80 bg-white/80 backdrop-blur shadow-2xl shadow-indigo-900/10 overflow-hidden">
+      <div className="relative rounded-2xl border border-zinc-200/80 bg-white/80 backdrop-blur shadow-xl overflow-hidden">
         <div className="flex items-center gap-1.5 border-b border-zinc-100 px-4 py-3 bg-zinc-50/60">
           <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
           <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
@@ -156,7 +154,7 @@ function PreviewCard({
         <div className={`h-1 flex-1 overflow-hidden rounded-full ${p.bar}`}>
           <div className={`h-full w-3/4 rounded-full bg-gradient-to-r ${p.grad}`} />
         </div>
-        <span className={`text-[10px] font-medium ${p.text}`}>已完成</span>
+        <span className={`text-2xs font-medium ${p.text}`}>已完成</span>
       </div>
     </div>
   );

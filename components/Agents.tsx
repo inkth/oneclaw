@@ -32,19 +32,16 @@ const toneMap = {
     badge: "bg-indigo-50 text-indigo-700",
     icon: "from-indigo-500 to-indigo-600",
     ring: "ring-indigo-100",
-    glow: "from-indigo-200/40",
   },
   violet: {
     badge: "bg-violet-50 text-violet-700",
     icon: "from-violet-500 to-violet-600",
     ring: "ring-violet-100",
-    glow: "from-violet-200/40",
   },
   fuchsia: {
     badge: "bg-fuchsia-50 text-fuchsia-700",
     icon: "from-fuchsia-500 to-fuchsia-600",
     ring: "ring-fuchsia-100",
-    glow: "from-fuchsia-200/40",
   },
 } as const;
 
@@ -70,12 +67,8 @@ export function Agents() {
             return (
               <div
                 key={name}
-                className={`group relative rounded-2xl border border-zinc-200 bg-white p-6 hover:shadow-xl hover:-translate-y-0.5 transition-all ring-1 ${t.ring}`}
+                className={`group relative rounded-2xl border border-zinc-200/80 bg-white p-6 hover:shadow-sm hover:-translate-y-0.5 transition-all ring-1 ${t.ring}`}
               >
-                <div
-                  className={`absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gradient-to-br ${t.glow} to-transparent blur-2xl opacity-70`}
-                />
-
                 <div
                   className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${t.icon} text-white shadow-sm`}
                 >
@@ -84,7 +77,7 @@ export function Agents() {
 
                 <div className="mt-5">
                   <div
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${t.badge}`}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${t.badge}`}
                   >
                     Agent
                   </div>
@@ -97,7 +90,7 @@ export function Agents() {
                 </p>
 
                 <div className="mt-5 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/60 p-3">
-                  <div className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                  <div className="text-2xs font-medium uppercase tracking-wider text-zinc-400">
                     场景示例
                   </div>
                   <div className="mt-1.5 text-xs text-zinc-700 leading-relaxed">

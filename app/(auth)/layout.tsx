@@ -10,7 +10,7 @@ export default function AuthLayout({
     <div className="min-h-screen flex flex-col">
       <header className="px-6 py-5">
         <Link href="/" className="inline-flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900">
             <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
           <span className="text-lg font-semibold tracking-tight">

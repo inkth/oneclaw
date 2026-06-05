@@ -3,6 +3,7 @@
 import { Clapperboard, Play, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { StateBadge, MockNotice, EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, stringToGradient, initial } from "@/lib/echotik/format";
 
 type Video = {
@@ -50,16 +51,16 @@ export function VideosClient({
 }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight inline-flex items-center gap-2">
-          <Clapperboard className="h-5 w-5 text-indigo-500" />
-          选品 · 带货视频榜
-          <StateBadge state={state} fetchedAt={fetchedAt} />
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          各国带货短视频榜单 · 看播放、互动与转化 · 拆解爆款脚本和带货玩法
-        </p>
-      </div>
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Clapperboard className="h-5 w-5 text-indigo-500" />
+            选品 · 带货视频榜
+          </span>
+        }
+        badge={<StateBadge state={state} fetchedAt={fetchedAt} />}
+        description="各国带货短视频榜单 · 看播放、互动与转化 · 拆解爆款脚本和带货玩法"
+      />
 
       {state === "mock" && <MockNotice />}
 
@@ -88,58 +89,58 @@ export function VideosClient({
 
 function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
   return (
-    <div className="group rounded-2xl border border-zinc-200 bg-white overflow-hidden flex flex-col">
+    <div className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-indigo-200 hover:shadow-sm">
       <div className="relative aspect-[3/4] w-full bg-zinc-100">
         {v.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={v.coverUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
         ) : (
           <div
-            className="h-full w-full flex items-center justify-center text-3xl font-bold text-white"
+            className="flex h-full w-full items-center justify-center text-3xl font-bold text-white"
             style={{ background: stringToGradient(v.desc || v.nickName) }}
           >
             {initial(v.nickName)}
           </div>
         )}
-        <span className="absolute top-2 left-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/60 px-1.5 text-[11px] font-semibold text-white tabular-nums">
+        <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/60 px-1.5 text-2xs font-semibold tabular-nums text-white">
           {rank}
         </span>
-        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white">
           <Play className="h-2.5 w-2.5 fill-white" />
           {fmtDuration(v.duration)}
         </span>
-        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white">
           <Eye className="h-2.5 w-2.5" />
           {fmt(v.totalViewsCnt)}
         </span>
       </div>
 
-      <div className="p-3 flex flex-col gap-2 flex-1">
-        <p className="text-xs leading-snug line-clamp-2 min-h-[2.4em]" title={v.desc}>
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        <p className="line-clamp-2 min-h-[2.4em] text-xs leading-snug text-zinc-800" title={v.desc}>
           {v.desc || "（无描述）"}
         </p>
-        <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 min-w-0">
+        <div className="flex min-w-0 items-center gap-1.5 text-2xs text-zinc-500">
           <Thumb src={v.avatarUrl} name={v.nickName} className="h-5 w-5 rounded-full" rounded />
           <span className="truncate" title={v.nickName}>{v.nickName}</span>
         </div>
 
-        <div className="mt-auto grid grid-cols-3 gap-1 text-[10px] text-zinc-500">
+        <div className="mt-auto grid grid-cols-3 gap-1 text-2xs text-zinc-500">
           <Metric icon={<Heart className="h-2.5 w-2.5" />} value={fmt(v.totalDiggCnt)} />
           <Metric icon={<MessageCircle className="h-2.5 w-2.5" />} value={fmt(v.totalCommentsCnt)} />
           <Metric icon={<Share2 className="h-2.5 w-2.5" />} value={fmt(v.totalSharesCnt)} />
         </div>
 
-        <div className="flex items-center justify-between rounded-lg bg-zinc-50 px-2 py-1.5 text-[11px]">
+        <div className="flex items-center justify-between rounded-lg bg-zinc-50 px-2 py-1.5">
           <div>
-            <div className="text-[9px] uppercase tracking-wider text-zinc-400">带货销量</div>
-            <div className="font-semibold tabular-nums">{fmt(v.totalVideoSaleCnt)}</div>
+            <div className="text-2xs uppercase tracking-wider text-zinc-400">带货销量</div>
+            <div className="text-xs font-semibold tabular-nums text-zinc-900">{fmt(v.totalVideoSaleCnt)}</div>
           </div>
           <div className="text-right">
-            <div className="text-[9px] uppercase tracking-wider text-zinc-400">带货 GMV</div>
-            <div className="font-semibold tabular-nums text-emerald-700">{fmtMoney(v.totalVideoSaleGmvAmt)}</div>
+            <div className="text-2xs uppercase tracking-wider text-zinc-400">带货 GMV</div>
+            <div className="text-xs font-semibold tabular-nums text-emerald-700">{fmtMoney(v.totalVideoSaleGmvAmt)}</div>
           </div>
         </div>
-        <div className="text-[10px] text-zinc-400">{fmtUnixDate(v.createTime)} · {v.region}</div>
+        <div className="text-2xs text-zinc-400">{fmtUnixDate(v.createTime)} · {v.region}</div>
       </div>
     </div>
   );

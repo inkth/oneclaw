@@ -166,17 +166,17 @@ export function TemplateOptimizerModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
+        className="relative w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl bg-white shadow-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
               <Sparkles className="h-3.5 w-3.5" />
             </div>
             <div>
               <h2 className="text-sm font-bold">AI 模板优化器</h2>
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-2xs text-zinc-500">
                 基于历史模板使用 + 视频成绩，让 LLM 推荐高效组合
               </p>
             </div>
@@ -200,7 +200,7 @@ export function TemplateOptimizerModal({
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
               <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
               <div className="text-sm font-medium">DeepSeek 正在分析…</div>
-              <div className="text-[11px] text-zinc-500">
+              <div className="text-2xs text-zinc-500">
                 {task?.status === "QUEUED" ? "排队中" : "运行中"} · 通常 10-20 秒
               </div>
             </div>
@@ -212,7 +212,7 @@ export function TemplateOptimizerModal({
                 <AlertTriangle className="h-4 w-4" />
                 分析失败
               </div>
-              <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono">
+              <pre className="mt-2 text-2xs whitespace-pre-wrap font-mono">
                 {task?.errorMessage ?? task?.output ?? "未知错误"}
               </pre>
             </div>
@@ -220,14 +220,14 @@ export function TemplateOptimizerModal({
 
           {done && data && (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-white via-indigo-50/30 to-violet-50/30 p-4">
-                <div className="text-[10px] uppercase tracking-wider text-indigo-600 font-semibold">
+              <div className="rounded-2xl border border-indigo-200/80 bg-indigo-50/40 p-4">
+                <div className="text-2xs uppercase tracking-wider text-indigo-600 font-semibold">
                   📌 总览
                 </div>
                 <p className="mt-1.5 text-sm text-zinc-800 leading-relaxed">
                   {data.summary}
                 </p>
-                <div className="mt-2 text-[11px] text-zinc-500">
+                <div className="mt-2 text-2xs text-zinc-500">
                   分析了 {data.templatesAnalyzed} 个模板 · {data.videosAnalyzed} 条视频
                   {task?.costCents != null && task.costCents > 0 && (
                     <> · 本次消耗 ¢{task.costCents}</>
@@ -272,14 +272,14 @@ export function TemplateOptimizerModal({
                     data.newProposals.map((p, i) => (
                       <div
                         key={i}
-                        className="rounded-2xl border border-zinc-200 bg-white p-4 hover:border-indigo-200 transition-colors"
+                        className="rounded-2xl border border-zinc-200/80 bg-white p-4 hover:border-indigo-200 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2.5 min-w-0">
                             <div className="text-2xl leading-none flex-shrink-0">{p.emoji}</div>
                             <div className="min-w-0">
                               <div className="text-sm font-semibold truncate">{p.name}</div>
-                              <div className="mt-0.5 text-[10px] text-zinc-500 flex flex-wrap gap-1">
+                              <div className="mt-0.5 text-2xs text-zinc-500 flex flex-wrap gap-1">
                                 <span className="rounded bg-zinc-100 px-1 font-mono">{p.engine}</span>
                                 <span>{p.durationSec}s</span>
                                 <span>{p.aspectRatio}</span>
@@ -290,7 +290,7 @@ export function TemplateOptimizerModal({
                           <button
                             onClick={() => createFromProposal(p, i)}
                             disabled={creatingProposalIdx === i}
-                            className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-indigo-700 disabled:opacity-50 flex-shrink-0"
+                            className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1 text-2xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 flex-shrink-0"
                           >
                             {creatingProposalIdx === i ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
@@ -300,10 +300,10 @@ export function TemplateOptimizerModal({
                             一键创建
                           </button>
                         </div>
-                        <pre className="mt-3 rounded-lg bg-zinc-50 border border-zinc-100 px-3 py-2 text-[11px] text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">
+                        <pre className="mt-3 rounded-lg bg-zinc-50 border border-zinc-100 px-3 py-2 text-2xs text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed">
                           {p.promptTemplate}
                         </pre>
-                        <p className="mt-2 text-[10px] text-zinc-500 leading-relaxed">
+                        <p className="mt-2 text-2xs text-zinc-500 leading-relaxed">
                           💡 {p.rationale}
                         </p>
                       </div>
@@ -328,21 +328,21 @@ export function TemplateOptimizerModal({
                           </div>
                           <button
                             onClick={() => copyPrompt(imp.suggestedPrompt)}
-                            className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-200"
+                            className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-2xs font-medium text-amber-800 hover:bg-amber-200"
                           >
                             <Copy className="h-3 w-3" />
                             复制新 prompt
                           </button>
                         </div>
-                        <div className="mt-2 text-[11px] text-zinc-700">
+                        <div className="mt-2 text-2xs text-zinc-700">
                           <span className="font-medium text-amber-800">问题：</span>
                           {imp.issue}
                         </div>
-                        <pre className="mt-2 rounded-lg bg-white border border-amber-200 px-3 py-2 text-[11px] text-zinc-800 whitespace-pre-wrap font-sans leading-relaxed">
+                        <pre className="mt-2 rounded-lg bg-white border border-amber-200 px-3 py-2 text-2xs text-zinc-800 whitespace-pre-wrap font-sans leading-relaxed">
                           {imp.suggestedPrompt}
                         </pre>
                         {imp.rationale && (
-                          <p className="mt-2 text-[10px] text-zinc-500">
+                          <p className="mt-2 text-2xs text-zinc-500">
                             💡 {imp.rationale}
                           </p>
                         )}
@@ -362,14 +362,14 @@ export function TemplateOptimizerModal({
                         key={p.templateId}
                         className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 flex items-start gap-3"
                       >
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold text-sm flex-shrink-0">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 font-bold text-sm flex-shrink-0">
                           {p.score}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold">
                             {templateName(p.templateId)}
                           </div>
-                          <p className="mt-0.5 text-[11px] text-zinc-600 leading-relaxed">
+                          <p className="mt-0.5 text-2xs text-zinc-600 leading-relaxed">
                             {p.reason}
                           </p>
                         </div>
@@ -427,7 +427,7 @@ function TabBtn({
     >
       <Icon className="h-3.5 w-3.5" />
       {label}
-      <span className="rounded-full bg-zinc-100 px-1.5 text-[10px] text-zinc-600">
+      <span className="rounded-full bg-zinc-100 px-1.5 text-2xs text-zinc-600">
         {count}
       </span>
     </button>
@@ -436,7 +436,7 @@ function TabBtn({
 
 function EmptyTab({ text }: { text: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-zinc-200 bg-white px-4 py-8 text-center text-xs text-zinc-500">
+    <div className="rounded-2xl border border-dashed border-zinc-200/80 bg-white px-4 py-8 text-center text-xs text-zinc-500">
       {text}
     </div>
   );

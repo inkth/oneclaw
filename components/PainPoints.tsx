@@ -41,13 +41,13 @@ export function PainPoints() {
           {points.map(({ icon: Icon, title, desc, tag }) => (
             <div
               key={title}
-              className="group relative rounded-2xl border border-zinc-200/80 bg-white p-6 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-900/5 transition-all"
+              className="group relative rounded-2xl border border-zinc-200/80 bg-white p-6 hover:border-indigo-200 hover:shadow-sm transition-all"
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-white">
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                <span className="text-2xs font-medium uppercase tracking-wider text-zinc-400">
                   {tag}
                 </span>
               </div>

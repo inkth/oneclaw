@@ -34,7 +34,7 @@ export function Header() {
               >
                 {item.label}
                 {item.badge && (
-                  <span className="absolute -top-0.5 -right-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 px-1.5 py-0.5 text-[9px] font-semibold text-white leading-none">
+                  <span className="absolute -top-0.5 -right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-2xs font-semibold text-white leading-none">
                     {item.badge}
                   </span>
                 )}
@@ -79,7 +79,7 @@ export function Header() {
               >
                 {item.label}
                 {item.badge && (
-                  <span className="ml-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                  <span className="ml-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-2xs font-semibold text-white">
                     {item.badge}
                   </span>
                 )}

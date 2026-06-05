@@ -10,14 +10,15 @@ import {
   Plus,
   Loader2,
   Star,
-  Database,
-  AlertTriangle,
   ArrowUpRight,
   Check,
   CheckCircle2,
 } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
-import { fmt, fmtMoney, stringToGradient } from "@/lib/echotik/format";
+import { StateBadge, MockNotice, EmptyState, Thumb } from "../_components/shared";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { fmt, fmtMoney } from "@/lib/echotik/format";
 
 type RankType = 1 | 2 | 3;
 type Field = 1 | 2 | 3;
@@ -200,63 +201,22 @@ export function DiscoverClient({
       )}
 
       {isGuest && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3 flex items-start gap-3">
-          <Sparkles className="h-4 w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-indigo-900 leading-relaxed">
+        <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+          <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
+          <div className="text-xs leading-relaxed text-indigo-900">
             <span className="font-semibold">试用模式</span>
             ：TikTok 实时爆品榜随便逛、随便看数据。导入选品 / AI 分析 / 收藏需要登录。
           </div>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight inline-flex items-center gap-2">
-            发现 · TikTok 爆品
-            {state === "mock" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-200">
-                <Database className="h-2.5 w-2.5" />
-                Mock 数据
-              </span>
-            )}
-            {state === "live" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200">
-                <Database className="h-2.5 w-2.5" />
-                EchoTik 实时
-              </span>
-            )}
-            {state === "cached" && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 border border-sky-200"
-                title={fetchedAt ? `缓存于 ${new Date(fetchedAt).toLocaleString("zh-CN")}` : undefined}
-              >
-                <Database className="h-2.5 w-2.5" />
-                本地缓存
-              </span>
-            )}
-            {state === "error" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 border border-rose-200">
-                <AlertTriangle className="h-2.5 w-2.5" />
-                EchoTik 异常 · 已降级
-              </span>
-            )}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            来自 EchoTik 的 TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="发现 · TikTok 爆品"
+        badge={<StateBadge state={state} fetchedAt={fetchedAt} />}
+        description="来自 EchoTik 的 TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断"
+      />
 
-      {state === "mock" && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 flex items-start gap-3">
-          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-amber-800 leading-relaxed">
-            当前是 mock 数据。在 <code className="rounded bg-amber-100 px-1">.env.local</code> 填上
-            <code className="ml-1 rounded bg-amber-100 px-1">ECHOTIK_USERNAME</code> +
-            <code className="ml-1 rounded bg-amber-100 px-1">ECHOTIK_PASSWORD</code>，刷新即可拉真实榜单。
-          </div>
-        </div>
-      )}
+      {state === "mock" && <MockNotice />}
 
       <FilterBar
         basePath="/app/discover/products"
@@ -269,13 +229,7 @@ export function DiscoverClient({
       />
 
       {state === "empty" && (
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center">
-          <div className="text-base font-semibold">该榜单暂无数据</div>
-          <p className="mt-1.5 text-sm text-zinc-500 max-w-md mx-auto">
-            EchoTik 这个区域 / 榜单组合下还没有可用数据（可能 T-1 数据未生成，或当前账号订阅未覆盖此榜单）。
-            试试切换到「热销」榜或者换个区域。
-          </p>
-        </div>
+        <EmptyState hint="EchoTik 这个区域 / 榜单组合下还没有可用数据（可能 T-1 数据未生成，或当前账号订阅未覆盖此榜单）。试试切换到「热销」榜或者换个区域。" />
       )}
 
       {/* Top 3 highlight cards */}
@@ -296,171 +250,150 @@ export function DiscoverClient({
       )}
 
       {/* Main table */}
-      <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
-        <table className="w-full text-sm min-w-[920px]">
-          <thead className="bg-zinc-50/60 text-xs text-zinc-500">
-            <tr>
-              <th className="text-left font-medium px-4 py-3">#</th>
-              <th className="text-left font-medium px-4 py-3">商品</th>
-              <th className="text-right font-medium px-4 py-3">均价</th>
-              <th className="text-right font-medium px-4 py-3">佣金</th>
-              <th className="text-right font-medium px-4 py-3">总销量</th>
-              <th className="text-right font-medium px-4 py-3">总 GMV</th>
-              <th className="text-right font-medium px-4 py-3">达人</th>
-              <th className="text-right font-medium px-4 py-3">视频</th>
-              <th className="text-right font-medium px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100">
-            {products.map((p, idx) => (
-              <tr key={p.productId} className="hover:bg-zinc-50/50">
-                <td className="px-4 py-3 text-zinc-400 tabular-nums">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => toggleStar(p)}
-                      disabled={starring.has(p.productId)}
-                      className="flex h-5 w-5 items-center justify-center rounded text-zinc-300 hover:text-amber-400 transition-colors"
-                      title={stars[p.productId] ? "取消收藏" : "收藏"}
-                    >
-                      <Star
-                        className={`h-3.5 w-3.5 ${
-                          stars[p.productId] ? "fill-amber-400 text-amber-400" : ""
-                        }`}
-                      />
-                    </button>
-                    <span>{idx + 1}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 max-w-[360px]">
-                  <div className="flex items-start gap-2.5">
-                    {p.coverUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.coverUrl}
-                        alt=""
-                        className="h-10 w-10 flex-shrink-0 rounded-md object-cover bg-zinc-100"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div
-                        className="h-10 w-10 flex-shrink-0 rounded-md flex items-center justify-center text-sm font-semibold text-white shadow-sm"
-                        style={{ background: stringToGradient(p.productName) }}
-                      >
-                        {p.productName
-                          .replace(/\[.*?\]/g, "")
-                          .trim()
-                          .charAt(0)
-                          .toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                  <div className="font-medium truncate" title={p.productName}>
-                    {p.productName}
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono">
-                    <span>{p.region} · {p.productId.slice(0, 12)}</span>
-                    {p.importedProductId && (
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 font-sans">
-                        <Check className="h-2 w-2" />
-                        已加入
-                      </span>
-                    )}
-                    {p.analysis && (
-                      <span
-                        className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium font-sans ${
-                          p.analysis.verdict === "RECOMMENDED"
-                            ? "bg-emerald-50 text-emerald-700"
+      <TableWrap>
+        <THead>
+          <tr>
+            <Th>#</Th>
+            <Th>商品</Th>
+            <Th align="right">均价</Th>
+            <Th align="right">佣金</Th>
+            <Th align="right">总销量</Th>
+            <Th align="right">总 GMV</Th>
+            <Th align="right">达人</Th>
+            <Th align="right">视频</Th>
+            <Th align="right">操作</Th>
+          </tr>
+        </THead>
+        <tbody>
+          {products.map((p, idx) => (
+            <Tr key={p.productId}>
+              <Td className="text-zinc-400 tabular-nums">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => toggleStar(p)}
+                    disabled={starring.has(p.productId)}
+                    className="flex h-5 w-5 items-center justify-center rounded text-zinc-300 transition-colors hover:text-amber-400"
+                    title={stars[p.productId] ? "取消收藏" : "收藏"}
+                  >
+                    <Star
+                      className={`h-3.5 w-3.5 ${
+                        stars[p.productId] ? "fill-amber-400 text-amber-400" : ""
+                      }`}
+                    />
+                  </button>
+                  <span>{idx + 1}</span>
+                </div>
+              </Td>
+              <Td className="max-w-[360px]">
+                <div className="flex items-start gap-2.5">
+                  <Thumb src={p.coverUrl} name={p.productName} />
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-zinc-900" title={p.productName}>
+                      {p.productName}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1.5 font-mono text-2xs text-zinc-500">
+                      <span>{p.region} · {p.productId.slice(0, 12)}</span>
+                      {p.importedProductId && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 font-sans text-2xs font-medium text-emerald-700">
+                          <Check className="h-2 w-2" />
+                          已加入
+                        </span>
+                      )}
+                      {p.analysis && (
+                        <span
+                          className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-sans text-2xs font-medium ${
+                            p.analysis.verdict === "RECOMMENDED"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : p.analysis.verdict === "AVOID"
+                                ? "bg-rose-50 text-rose-700"
+                                : "bg-amber-50 text-amber-700"
+                          }`}
+                          title={`分析于 ${new Date(p.analysis.createdAt).toLocaleString("zh-CN")}`}
+                        >
+                          <Sparkles className="h-2 w-2" />
+                          {p.analysis.verdict === "RECOMMENDED"
+                            ? "推荐"
                             : p.analysis.verdict === "AVOID"
-                              ? "bg-rose-50 text-rose-700"
-                              : "bg-amber-50 text-amber-700"
-                        }`}
-                        title={`分析于 ${new Date(p.analysis.createdAt).toLocaleString("zh-CN")}`}
-                      >
-                        <Sparkles className="h-2 w-2" />
-                        {p.analysis.verdict === "RECOMMENDED"
-                          ? "推荐"
-                          : p.analysis.verdict === "AVOID"
-                            ? "避开"
-                            : "已分析"}
-                      </span>
-                    )}
-                  </div>
+                              ? "避开"
+                              : "已分析"}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                  ${p.avgPrice.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-emerald-700">
-                  {(p.commissionRate * 100).toFixed(0)}%
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  <div className="inline-flex items-baseline gap-1.5">
-                    <span>{fmt(p.totalSaleCnt)}</span>
-                    {p.trend7dPct != null && p.trend7dPct !== 0 && (
-                      <span
-                        className={`text-[10px] font-medium ${
-                          p.trend7dPct > 0 ? "text-emerald-600" : "text-rose-600"
-                        }`}
-                        title="近 7 天变化"
-                      >
-                        {p.trend7dPct > 0 ? "↑" : "↓"}
-                        {Math.abs(p.trend7dPct).toFixed(1)}%
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(p.totalSaleGmvAmt)}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{fmt(p.totalIflCnt)}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{fmt(p.totalVideoCnt)}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <button
-                      onClick={() => analyzeProduct(p)}
-                      disabled={analyzing.has(p.productId)}
-                      className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
-                      title="让分析师 Agent 基于真实数据做深度分析"
+                </div>
+              </Td>
+              <Td align="right" className="font-semibold text-zinc-900">
+                ${p.avgPrice.toFixed(2)}
+              </Td>
+              <Td align="right" className="text-emerald-700">
+                {(p.commissionRate * 100).toFixed(0)}%
+              </Td>
+              <Td align="right">
+                <div className="inline-flex items-baseline gap-1.5">
+                  <span>{fmt(p.totalSaleCnt)}</span>
+                  {p.trend7dPct != null && p.trend7dPct !== 0 && (
+                    <span
+                      className={`text-2xs font-medium ${
+                        p.trend7dPct > 0 ? "text-emerald-600" : "text-rose-600"
+                      }`}
+                      title="近 7 天变化"
                     >
-                      {analyzing.has(p.productId) ? (
+                      {p.trend7dPct > 0 ? "↑" : "↓"}
+                      {Math.abs(p.trend7dPct).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              </Td>
+              <Td align="right">{fmtMoney(p.totalSaleGmvAmt)}</Td>
+              <Td align="right">{fmt(p.totalIflCnt)}</Td>
+              <Td align="right">{fmt(p.totalVideoCnt)}</Td>
+              <Td>
+                <div className="flex items-center justify-end gap-1.5">
+                  <button
+                    onClick={() => analyzeProduct(p)}
+                    disabled={analyzing.has(p.productId)}
+                    className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-2xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                    title="让分析师 Agent 基于真实数据做深度分析"
+                  >
+                    {analyzing.has(p.productId) ? (
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-2.5 w-2.5" />
+                    )}
+                    AI 分析
+                  </button>
+                  {p.importedProductId ? (
+                    <Link
+                      href={`/app/assets/products`}
+                      className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-medium text-emerald-700 hover:bg-emerald-100"
+                      title="已在选品库中，点击查看"
+                    >
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                      已加入
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => importProduct(p)}
+                      disabled={importing.has(p.productId)}
+                      className="inline-flex items-center gap-1 rounded-full bg-zinc-900 px-2.5 py-1 text-2xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                      title="加入到我的选品库"
+                    >
+                      {importing.has(p.productId) ? (
                         <Loader2 className="h-2.5 w-2.5 animate-spin" />
                       ) : (
-                        <Sparkles className="h-2.5 w-2.5" />
+                        <Plus className="h-2.5 w-2.5" />
                       )}
-                      AI 分析
+                      加入
                     </button>
-                    {p.importedProductId ? (
-                      <Link
-                        href={`/app/assets/products`}
-                        className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100"
-                        title="已在选品库中，点击查看"
-                      >
-                        <CheckCircle2 className="h-2.5 w-2.5" />
-                        已加入
-                      </Link>
-                    ) : (
-                      <button
-                        onClick={() => importProduct(p)}
-                        disabled={importing.has(p.productId)}
-                        className="inline-flex items-center gap-1 rounded-full bg-zinc-900 px-2 py-1 text-[11px] font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
-                        title="加入到我的选品库"
-                      >
-                        {importing.has(p.productId) ? (
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                        ) : (
-                          <Plus className="h-2.5 w-2.5" />
-                        )}
-                        加入
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  )}
+                </div>
+              </Td>
+            </Tr>
+          ))}
+        </tbody>
+      </TableWrap>
 
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-xs text-zinc-600 flex items-center justify-between flex-wrap gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3 text-xs text-zinc-600">
         <span>
           💡 想看到趋势线 / Top 达人 / 关联视频？点行可展开详情（敬请期待）。
         </span>
@@ -492,26 +425,26 @@ function HighlightCard({
 }) {
   const trophy = rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
   return (
-    <div className="relative rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-4 flex flex-col">
-      <div className="absolute -top-2 -left-2 flex h-7 w-7 items-center justify-center rounded-full bg-white border border-zinc-200 text-base shadow-sm">
+    <div className="relative flex flex-col rounded-xl border border-zinc-200/80 bg-white p-4">
+      <div className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-white text-base shadow-sm">
         {trophy}
       </div>
-      <div className="mt-1 text-sm font-semibold leading-snug line-clamp-2 min-h-[2.6em]" title={p.productName}>
+      <div className="mt-1 line-clamp-2 min-h-[2.6em] text-sm font-semibold leading-snug text-zinc-900" title={p.productName}>
         {p.productName}
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <Stat label="均价" value={`$${p.avgPrice.toFixed(0)}`} />
-        <Stat label="销量" value={fmt(p.totalSaleCnt)} />
-        <Stat label="GMV" value={fmtMoney(p.totalSaleGmvAmt)} />
+        <MiniStat label="均价" value={`$${p.avgPrice.toFixed(0)}`} />
+        <MiniStat label="销量" value={fmt(p.totalSaleCnt)} />
+        <MiniStat label="GMV" value={fmtMoney(p.totalSaleGmvAmt)} />
       </div>
-      <div className="mt-3 text-[11px] text-zinc-500">
+      <div className="mt-3 text-2xs text-zinc-500">
         {fmt(p.totalIflCnt)} 个达人在带 · {fmt(p.totalVideoCnt)} 条挂车视频 · 佣金 {(p.commissionRate * 100).toFixed(0)}%
       </div>
       <div className="mt-3 flex items-center gap-1.5">
         <button
           onClick={onAnalyze}
           disabled={busyAnalyze}
-          className="flex-1 inline-flex items-center justify-center gap-1 rounded-full bg-indigo-50 px-2 py-1.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-full bg-indigo-50 px-2 py-1.5 text-2xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
         >
           {busyAnalyze ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />}
           AI 分析
@@ -519,7 +452,7 @@ function HighlightCard({
         <button
           onClick={onImport}
           disabled={busyImport}
-          className="flex-1 inline-flex items-center justify-center gap-1 rounded-full bg-zinc-900 px-2 py-1.5 text-[11px] font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-full bg-zinc-900 px-2 py-1.5 text-2xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
         >
           {busyImport ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Plus className="h-2.5 w-2.5" />}
           加入选品
@@ -529,11 +462,11 @@ function HighlightCard({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white border border-zinc-200 px-2 py-1.5">
-      <div className="text-[9px] text-zinc-400 uppercase tracking-wider">{label}</div>
-      <div className="mt-0.5 text-xs font-bold tabular-nums">{value}</div>
+    <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/60 px-2 py-1.5">
+      <div className="text-2xs uppercase tracking-wider text-zinc-400">{label}</div>
+      <div className="mt-0.5 text-xs font-semibold tabular-nums text-zinc-900">{value}</div>
     </div>
   );
 }

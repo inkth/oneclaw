@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2 } from "lucide-react";
 import { VideoDetailDrawer } from "@/components/VideoDetailDrawer";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Processing = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
 
@@ -115,12 +116,10 @@ export function VideosClient({
 
   if (videos.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-        <div className="text-base font-semibold">还没有视频</div>
-        <p className="mt-1.5 text-sm text-zinc-500">
-          去 Agent 工作流里调用「创意总监」即可一键生成 4 套短视频。
-        </p>
-      </div>
+      <EmptyState
+        title="还没有视频"
+        description="去 Agent 工作流里调用「创意总监」即可一键生成 4 套短视频。"
+      />
     );
   }
 
@@ -133,7 +132,7 @@ export function VideosClient({
         return (
           <div
             key={v.id}
-            className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white flex flex-col"
+            className="group overflow-hidden rounded-xl border border-zinc-200/80 bg-white flex flex-col"
           >
             <div className={`relative aspect-[9/14]`}>
               {v.thumbnailUrl ? (
@@ -159,17 +158,17 @@ export function VideosClient({
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   {isGenerating ? (
-                    <div className="rounded-full bg-black/50 backdrop-blur px-3 py-1.5 text-[11px] font-medium text-white inline-flex items-center gap-1.5">
+                    <div className="rounded-full bg-black/50 backdrop-blur px-3 py-1.5 text-2xs font-medium text-white inline-flex items-center gap-1.5">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       生成中…
                     </div>
                   ) : isFailed ? (
-                    <div className="rounded-full bg-rose-500/80 backdrop-blur px-3 py-1.5 text-[11px] font-medium text-white inline-flex items-center gap-1.5">
+                    <div className="rounded-full bg-rose-500/80 backdrop-blur px-3 py-1.5 text-2xs font-medium text-white inline-flex items-center gap-1.5">
                       <XCircle className="h-3.5 w-3.5" />
                       生成失败
                     </div>
                   ) : v.thumbnailUrl ? (
-                    <div className="rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-medium text-zinc-900 inline-flex items-center gap-1">
+                    <div className="rounded-full bg-white/90 px-3 py-1.5 text-2xs font-medium text-zinc-900 inline-flex items-center gap-1">
                       <Play className="h-3 w-3 fill-current" />
                       仅封面
                     </div>
@@ -179,11 +178,11 @@ export function VideosClient({
                 </div>
               )}
 
-              <div className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-zinc-900">
+              <div className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-2xs font-medium text-zinc-900">
                 9:16 · {v.durationSec}s
               </div>
               {v.processing === "COMPLETED" && v.videoUrl && (
-                <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-medium text-white">
+                <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-2xs font-medium text-white">
                   <CheckCircle2 className="h-2.5 w-2.5" />
                   fal 完成
                 </div>
@@ -191,13 +190,13 @@ export function VideosClient({
 
               <div className="absolute inset-x-0 bottom-0 p-3 text-white pointer-events-none">
                 <div className="text-xs font-semibold truncate">{v.title}</div>
-                <div className="mt-0.5 text-[10px] opacity-90">
+                <div className="mt-0.5 text-2xs opacity-90">
                   {v.views.toLocaleString()} 播放 · {v.likes.toLocaleString()} 赞
                 </div>
               </div>
             </div>
 
-            <div className="px-3 py-2.5 flex items-center justify-between text-[11px] text-zinc-500 border-t border-zinc-100">
+            <div className="px-3 py-2.5 flex items-center justify-between text-2xs text-zinc-500 border-t border-zinc-100">
               <button
                 onClick={() => setDrawerVideoId(v.id)}
                 className="truncate text-left hover:text-indigo-600 transition-colors"
@@ -247,10 +246,10 @@ export function VideosClient({
 
             {v.script && (
               <details className="border-t border-zinc-100">
-                <summary className="cursor-pointer px-3 py-2 text-[11px] text-zinc-500 hover:bg-zinc-50">
+                <summary className="cursor-pointer px-3 py-2 text-2xs text-zinc-500 hover:bg-zinc-50">
                   查看脚本
                 </summary>
-                <pre className="px-3 py-2 text-[11px] text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed bg-zinc-50/60">
+                <pre className="px-3 py-2 text-2xs text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed bg-zinc-50/60">
                   {v.script}
                 </pre>
               </details>

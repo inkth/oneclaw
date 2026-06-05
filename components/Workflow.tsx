@@ -30,7 +30,7 @@ export function Workflow() {
         </div>
 
         <div className="mt-14 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 sm:p-8">
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 sm:p-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100">
@@ -56,14 +56,14 @@ export function Workflow() {
             </ul>
           </div>
 
-          <div className="relative rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/40 p-6 sm:p-8 shadow-lg shadow-indigo-900/5">
-            <div className="absolute -top-3 right-6 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
+          <div className="relative rounded-2xl border border-indigo-200 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="absolute -top-3 right-6 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
               <Zap className="h-3 w-3" />
               推荐
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
                   <Zap className="h-4 w-4" />
                 </div>
                 <h3 className="text-base font-semibold text-zinc-900">
@@ -77,19 +77,19 @@ export function Workflow() {
             <ul className="mt-6 space-y-3">
               {afterSteps.map((s, i) => (
                 <li key={s} className="flex items-start gap-3 text-sm">
-                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white">
                     <Check className="h-3 w-3" strokeWidth={3} />
                   </span>
                   <span className="text-zinc-700">{s}</span>
                   {i === 1 && (
-                    <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                    <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-2xs font-medium text-violet-700">
                       省 8h
                     </span>
                   )}
                 </li>
               ))}
             </ul>
-            <div className="mt-6 flex items-center justify-between rounded-xl bg-white/80 border border-indigo-100/80 p-3">
+            <div className="mt-6 flex items-center justify-between rounded-xl bg-zinc-50/60 border border-zinc-200/80 p-3">
               <div className="text-xs text-zinc-500">本周节省时间</div>
               <div className="text-lg font-bold gradient-text">28.5 小时</div>
             </div>

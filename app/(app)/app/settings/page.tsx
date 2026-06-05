@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
 import { getWorkspaceQuota } from "@/lib/quota";
 import { Crown, Zap } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ButtonLink } from "@/components/ui/Button";
 
 export const metadata = { title: "设置 · OneClaw" };
 
@@ -22,24 +24,20 @@ export default async function SettingsPage() {
   if (!workspace || !session?.user?.id) {
     return (
       <div className="max-w-3xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">设置</h1>
-          <p className="mt-1 text-sm text-zinc-500">账号、工作台与用量。</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
+        <PageHeader title="设置" description="账号、工作台与用量。" />
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900">
             <Crown className="h-6 w-6 text-white" />
           </div>
           <h2 className="mt-4 text-base font-semibold">登录后管理账号</h2>
           <p className="mx-auto mt-1 max-w-sm text-sm text-zinc-500">
             登录后即可查看账号信息、工作台与本月用量，并管理订阅方案。
           </p>
-          <Link
-            href="/login?callbackUrl=/app/settings"
-            className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
-          >
-            登录 / 注册
-          </Link>
+          <div className="mt-5 flex justify-center">
+            <ButtonLink href="/login?callbackUrl=/app/settings" variant="primary">
+              登录 / 注册
+            </ButtonLink>
+          </div>
         </div>
       </div>
     );
@@ -55,12 +53,9 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">设置</h1>
-        <p className="mt-1 text-sm text-zinc-500">账号、工作台与用量。</p>
-      </div>
+      <PageHeader title="设置" description="账号、工作台与用量。" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white">
+      <section className="rounded-xl border border-zinc-200/80 bg-white">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
           <div className="flex items-center gap-2">
             {quota.plan === "FREE" ? (
@@ -73,7 +68,7 @@ export default async function SettingsPage() {
           {quota.plan === "FREE" && (
             <Link
               href="/pricing"
-              className="rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-1 text-[11px] font-semibold text-white hover:opacity-90"
+              className="rounded-full bg-zinc-900 px-3 py-1 text-2xs font-semibold text-white hover:bg-zinc-800"
             >
               升级 →
             </Link>
@@ -92,14 +87,14 @@ export default async function SettingsPage() {
             limit={quota.videos.limit}
             color="violet"
           />
-          <div className="text-[11px] text-zinc-400">
+          <div className="text-2xs text-zinc-400">
             周期：{quota.period.start.toLocaleDateString("zh-CN")} —{" "}
             {new Date(quota.period.end.getTime() - 1).toLocaleDateString("zh-CN")}
           </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white">
+      <section className="rounded-xl border border-zinc-200/80 bg-white">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="text-sm font-semibold">账号</h2>
         </div>
@@ -114,7 +109,7 @@ export default async function SettingsPage() {
         </dl>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white">
+      <section className="rounded-xl border border-zinc-200/80 bg-white">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="text-sm font-semibold">工作台</h2>
         </div>
@@ -156,8 +151,8 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const colorMap = {
-  indigo: { fill: "bg-gradient-to-r from-indigo-500 to-indigo-600", track: "bg-indigo-100" },
-  violet: { fill: "bg-gradient-to-r from-violet-500 to-violet-600", track: "bg-violet-100" },
+  indigo: { fill: "bg-indigo-600", track: "bg-indigo-100" },
+  violet: { fill: "bg-violet-600", track: "bg-violet-100" },
 } as const;
 
 function UsageBar({
@@ -192,7 +187,7 @@ function UsageBar({
       <div className={`mt-2 h-2 rounded-full overflow-hidden ${c.track}`}>
         {!unlimited && (
           <div
-            className={`h-full ${warn ? "bg-gradient-to-r from-rose-500 to-orange-500" : c.fill}`}
+            className={`h-full ${warn ? "bg-rose-500" : c.fill}`}
             style={{ width: `${pct}%` }}
           />
         )}

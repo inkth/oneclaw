@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { Pill } from "@/components/ui/Pill";
 
 export type Region = "US" | "GB" | "ID" | "TH" | "VN" | "MY";
 export type CategoryOption = { id: string; name: string };
@@ -72,7 +73,7 @@ export function FilterBar({
 
   return (
     <div
-      className={`rounded-2xl border border-zinc-200 bg-white px-5 py-4 divide-y divide-zinc-100 transition-opacity ${
+      className={`rounded-xl border border-zinc-200/80 bg-white px-5 py-4 divide-y divide-zinc-100 transition-opacity ${
         pending ? "opacity-60" : ""
       }`}
     >
@@ -132,27 +133,16 @@ function PillRow({
         {label}：
       </span>
       <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">
-        {visible.map((it) => {
-          const isActive = active === it.value;
-          return (
-            <button
-              key={it.value}
-              onClick={() => onSelect(it.value)}
-              className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-rose-500 text-white"
-                  : "text-zinc-600 hover:bg-rose-50 hover:text-rose-600"
-              }`}
-            >
-              {it.label}
-            </button>
-          );
-        })}
+        {visible.map((it) => (
+          <Pill key={it.value} active={active === it.value} onClick={() => onSelect(it.value)}>
+            {it.label}
+          </Pill>
+        ))}
       </div>
       {overflow && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-rose-50 px-3 py-1 text-sm font-medium text-rose-500 hover:bg-rose-100"
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-100"
         >
           {expanded ? "收起" : "展开"}
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

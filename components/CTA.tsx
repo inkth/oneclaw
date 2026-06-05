@@ -12,14 +12,7 @@ export function CTA() {
   return (
     <section className="relative py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-indigo-900 px-6 py-16 sm:px-16 sm:py-20 text-center">
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 30% 20%, rgba(139,92,246,0.4), transparent 50%), radial-gradient(circle at 70% 60%, rgba(236,72,153,0.3), transparent 50%)",
-            }}
-          />
+        <div className="relative overflow-hidden rounded-2xl bg-zinc-900 px-6 py-16 sm:px-16 sm:py-20 text-center">
           <div className="relative">
             <div className="flex justify-center -space-x-2 mb-6">
               {avatars.map((a, i) => (

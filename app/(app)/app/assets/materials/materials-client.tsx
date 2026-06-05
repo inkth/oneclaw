@@ -13,6 +13,8 @@ import {
   Tag,
   CloudOff,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type MaterialType = "IMAGE" | "VIDEO" | "AUDIO" | "LOGO" | "WATERMARK" | "FONT";
 
@@ -134,42 +136,44 @@ export function MaterialsClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">素材库</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+      <PageHeader
+        title="素材库"
+        description={
+          <>
             上传你自己的图片 / 视频 / 音频，OneClaw 会在视频生成时优先用作底料。
             {storageReady ? (
-              <span className="ml-2 text-[11px] text-emerald-600">
+              <span className="ml-2 text-2xs text-emerald-600">
                 · 存储：{storageDriver}
               </span>
             ) : null}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                filter === f.key
-                  ? "bg-white text-zinc-900 shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
-            >
-              {f.label}
-              <span className="ml-1 text-[10px] text-zinc-400">
-                {f.key === "ALL"
-                  ? materials.length
-                  : materials.filter((m) => m.type === f.key).length}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
+            {filters.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  filter === f.key
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-600 hover:bg-indigo-50 hover:text-indigo-700"
+                }`}
+              >
+                {f.label}
+                <span className="ml-1 text-2xs text-zinc-400">
+                  {f.key === "ALL"
+                    ? materials.length
+                    : materials.filter((m) => m.type === f.key).length}
+                </span>
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {!storageReady && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 flex items-start gap-3">
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 flex items-start gap-3">
           <CloudOff className="h-4 w-4 mt-0.5 text-amber-600 flex-shrink-0" />
           <div className="text-sm text-amber-800 leading-relaxed">
             <div className="font-semibold">存储未配置</div>
@@ -195,9 +199,9 @@ export function MaterialsClient({
           if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
         }}
         onClick={() => fileRef.current?.click()}
-        className={`rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
+        className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
           dragOver
-            ? "border-indigo-500 bg-indigo-50/40"
+            ? "border-indigo-300 bg-indigo-50/40"
             : "border-zinc-300 bg-white hover:border-zinc-400"
         } ${!storageReady ? "opacity-50 pointer-events-none" : ""}`}
       >
@@ -233,18 +237,20 @@ export function MaterialsClient({
       )}
 
       {visible.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
-          {filter === "ALL"
-            ? "还没上传素材，拖一个文件到上方区域开始。"
-            : "这个分类下还没有素材"}
-        </div>
+        <EmptyState
+          title={
+            filter === "ALL"
+              ? "还没上传素材，拖一个文件到上方区域开始。"
+              : "这个分类下还没有素材"
+          }
+        />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {visible.map((m) => {
             const tm = typeMeta[m.type];
             const Icon = tm.icon;
             return (
-              <div key={m.id} className="group relative rounded-2xl border border-zinc-200 bg-white overflow-hidden">
+              <div key={m.id} className="group relative rounded-xl border border-zinc-200/80 bg-white overflow-hidden">
                 <div className="aspect-square bg-zinc-50 flex items-center justify-center relative">
                   {m.type === "IMAGE" || m.type === "LOGO" || m.type === "WATERMARK" ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -254,7 +260,7 @@ export function MaterialsClient({
                   ) : (
                     <Icon className="h-8 w-8 text-zinc-400" />
                   )}
-                  <span className={`absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${tm.tone}`}>
+                  <span className={`absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-medium ${tm.tone}`}>
                     <Icon className="h-2.5 w-2.5" />
                     {tm.cn}
                   </span>
@@ -266,7 +272,7 @@ export function MaterialsClient({
                     <Trash2 className="h-2.5 w-2.5" />
                   </button>
                 </div>
-                <div className="p-2.5 text-[11px]">
+                <div className="p-2.5 text-2xs">
                   <div className="font-medium truncate" title={m.originalName}>
                     {m.originalName}
                   </div>

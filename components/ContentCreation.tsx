@@ -79,7 +79,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-xl border border-zinc-200/80 bg-white px-3 py-3">
       <div className="text-lg font-bold tracking-tight">{value}</div>
-      <div className="mt-0.5 text-[11px] text-zinc-500">{label}</div>
+      <div className="mt-0.5 text-2xs text-zinc-500">{label}</div>
     </div>
   );
 }
@@ -104,11 +104,11 @@ function VideoTile({
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
       <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/60" />
 
-      <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-[10px] font-mono font-semibold text-white">
+      <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-2xs font-mono font-semibold text-white">
         {id}
       </div>
 
-      <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 backdrop-blur px-2 py-0.5 text-[10px] font-medium text-zinc-900">
+      <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 backdrop-blur px-2 py-0.5 text-2xs font-medium text-zinc-900">
         9:16 · 15s
       </div>
 
@@ -118,7 +118,7 @@ function VideoTile({
 
       <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 text-white">
         <div className="text-sm font-semibold">{title}</div>
-        <div className="mt-2 flex items-center gap-3 text-[10px]">
+        <div className="mt-2 flex items-center gap-3 text-2xs">
           <div className="flex items-center gap-1">
             <Eye className="h-3 w-3" />
             {views}

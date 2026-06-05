@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Truck, Headphones, Users } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 type Service = {
   label: string;
@@ -29,21 +30,16 @@ const services: Service[] = [
 export default function ServicesPage() {
   return (
     <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">服务</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          把经营全链路要用到的外部能力聚合到一处，开箱即用。
-        </p>
-      </div>
+      <PageHeader title="服务" description="把经营全链路要用到的外部能力聚合到一处，开箱即用。" />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {services.map(({ label, desc, icon: Icon, href }) => {
           const card = (
             <div
               className={
-                "h-full rounded-xl border p-4 transition-colors " +
+                "h-full rounded-xl border p-5 transition-colors " +
                 (href
-                  ? "border-zinc-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/30"
+                  ? "border-zinc-200/80 bg-white hover:border-indigo-200 hover:bg-indigo-50/30"
                   : "border-zinc-100 bg-zinc-50/60")
               }
             >
@@ -58,7 +54,7 @@ export default function ServicesPage() {
                 </div>
                 <span className="font-medium">{label}</span>
                 {!href && (
-                  <span className="ml-auto rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-400">
+                  <span className="ml-auto rounded-full bg-zinc-100 px-2 py-0.5 text-2xs text-zinc-400">
                     即将上线
                   </span>
                 )}

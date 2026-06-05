@@ -46,14 +46,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/40 to-violet-50/40 p-6 sm:p-10">
-        <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 90% 10%, rgba(139,92,246,0.18), transparent 50%), radial-gradient(circle at 10% 90%, rgba(99,102,241,0.18), transparent 50%)",
-          }}
-        />
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 sm:p-10">
         <div className="relative">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-indigo-700 shadow-sm">
             <Sparkles className="h-3 w-3" />
@@ -73,7 +66,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
                 key={p.label}
                 onClick={() => quickStart(p.prompt, p.label)}
                 disabled={!!dispatching}
-                className="group inline-flex items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-medium text-zinc-800 hover:border-indigo-300 hover:bg-indigo-50/50 disabled:opacity-50 transition-all text-left"
+                className="group inline-flex items-center justify-between gap-2 rounded-xl border border-zinc-200/80 bg-white px-3.5 py-2.5 text-sm font-medium text-zinc-800 hover:border-indigo-300 hover:bg-indigo-50/50 disabled:opacity-50 transition-all text-left"
               >
                 <span>{p.label}</span>
                 {dispatching === p.label ? (
@@ -128,9 +121,9 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
 }
 
 const toneMap = {
-  indigo: "from-indigo-500 to-indigo-600",
-  violet: "from-violet-500 to-violet-600",
-  fuchsia: "from-fuchsia-500 to-fuchsia-600",
+  indigo: "bg-indigo-50 text-indigo-600",
+  violet: "bg-violet-50 text-violet-600",
+  fuchsia: "bg-fuchsia-50 text-fuchsia-600",
 } as const;
 
 function Step({
@@ -147,14 +140,14 @@ function Step({
   desc: string;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+    <div className="rounded-2xl border border-zinc-200/80 bg-white p-5">
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${toneMap[tone]} text-white`}
+          className={`flex h-9 w-9 items-center justify-center rounded-lg ${toneMap[tone]}`}
         >
           <Icon className="h-4 w-4" />
         </div>
-        <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+        <div className="text-2xs font-mono uppercase tracking-wider text-zinc-400">
           STEP {n}
         </div>
       </div>

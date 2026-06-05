@@ -52,10 +52,11 @@ const agents = [
   },
 ];
 
+// 三 Agent 身份：选中态用扁平实色（非渐变），任务卡用浅底小 chip。
 const toneMap = {
-  indigo: { btn: "from-indigo-500 to-indigo-600", chip: "bg-indigo-50 text-indigo-700" },
-  violet: { btn: "from-violet-500 to-violet-600", chip: "bg-violet-50 text-violet-700" },
-  fuchsia: { btn: "from-fuchsia-500 to-fuchsia-600", chip: "bg-fuchsia-50 text-fuchsia-700" },
+  indigo: { solid: "bg-indigo-600", chip: "bg-indigo-50 text-indigo-700" },
+  violet: { solid: "bg-violet-600", chip: "bg-violet-50 text-violet-700" },
+  fuchsia: { solid: "bg-fuchsia-600", chip: "bg-fuchsia-50 text-fuchsia-700" },
 } as const;
 
 export function AgentRunner({
@@ -151,11 +152,10 @@ export function AgentRunner({
   }
 
   const activeMeta = agents.find((a) => a.kind === activeAgent)!;
-  const tone = toneMap[activeMeta.tone as keyof typeof toneMap];
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+      <div className="rounded-xl border border-zinc-200/80 bg-white p-5">
         <div className="flex flex-wrap gap-2">
           {agents.map((a) => {
             const t = toneMap[a.tone as keyof typeof toneMap];
@@ -164,10 +164,10 @@ export function AgentRunner({
               <button
                 key={a.kind}
                 onClick={() => setActiveAgent(a.kind)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   active
-                    ? `bg-gradient-to-br ${t.btn} text-white shadow-sm`
-                    : "bg-zinc-50 text-zinc-700 hover:bg-zinc-100"
+                    ? `${t.solid} text-white`
+                    : "bg-zinc-50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                 }`}
               >
                 <a.icon className="h-3.5 w-3.5" />
@@ -183,7 +183,7 @@ export function AgentRunner({
             onChange={(e) => setInput(e.target.value)}
             rows={2}
             placeholder={activeMeta.placeholder}
-            className="flex-1 resize-none rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+            className="flex-1 resize-none rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
             }}
@@ -191,7 +191,7 @@ export function AgentRunner({
           <button
             onClick={submit}
             disabled={submitting || !input.trim()}
-            className={`inline-flex flex-shrink-0 items-center gap-1.5 self-start rounded-lg bg-gradient-to-br ${tone.btn} px-4 py-2 text-sm font-medium text-white disabled:opacity-50 transition-opacity`}
+            className="inline-flex flex-shrink-0 items-center gap-1.5 self-start rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -201,11 +201,11 @@ export function AgentRunner({
             派发
           </button>
         </div>
-        <div className="mt-2 text-[11px] text-zinc-400">
+        <div className="mt-2 text-2xs text-zinc-400">
           按 ⌘/Ctrl + Enter 直接派发 · 真实 LLM / fal 调用约 5-60s，期间自动轮询
         </div>
         {error && (
-          <div className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-100">
+          <div className="mt-3 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {error}
           </div>
         )}
@@ -213,7 +213,7 @@ export function AgentRunner({
 
       <div className="space-y-3">
         {tasks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center text-sm text-zinc-500">
+          <div className="rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center text-sm text-zinc-500">
             还没有任务，试试上面的输入框吧。
           </div>
         ) : (
@@ -221,13 +221,13 @@ export function AgentRunner({
             const meta = agents.find((a) => a.kind === t.agent)!;
             const tone = toneMap[meta.tone as keyof typeof toneMap];
             return (
-              <div key={t.id} className="rounded-2xl border border-zinc-200 bg-white p-5">
+              <div key={t.id} className="rounded-xl border border-zinc-200/80 bg-white p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${tone.chip}`}>
+                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-2xs font-medium ${tone.chip}`}>
                     <meta.icon className="h-3 w-3" />
                     {meta.name}
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-zinc-400">
+                  <div className="flex items-center gap-3 text-2xs text-zinc-400">
                     <StatusChip status={t.status} />
                     {t.costCents != null && t.costCents > 0 && (
                       <span title={t.model ?? undefined}>
@@ -244,7 +244,7 @@ export function AgentRunner({
                     {t.status === "QUEUED" ? "等待调度…" : "Agent 正在工作，自动轮询中…"}
                   </div>
                 ) : t.output ? (
-                  <pre className="mt-3 rounded-lg bg-zinc-50/80 px-3 py-3 text-xs text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed">
+                  <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-zinc-50/80 px-3 py-3 font-mono text-xs leading-relaxed text-zinc-700">
                     {t.output}
                   </pre>
                 ) : null}
@@ -268,7 +268,7 @@ function StatusChip({ status }: { status: TaskStatus }) {
   const Icon = it.icon;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${it.cls}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${it.cls}`}
     >
       <Icon
         className={`h-3 w-3 ${status === "RUNNING" ? "animate-spin" : ""}`}
