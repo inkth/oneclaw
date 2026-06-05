@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
-import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
 import { Copilot } from "@/components/ai/copilot";
 import { Sparkles, LogOut } from "lucide-react";
 import { SidebarNav, BoardTabs } from "./_nav";
@@ -14,9 +13,6 @@ export default async function AppLayout({
   // 不再无条件拦截：游客也能进来逛功能页（如创作工坊），
   // 真正需要账号的页面/动作各自提示登录。
   const session = await auth();
-  const workspace = session?.user?.id
-    ? await getOrCreateDefaultWorkspace(session.user.id)
-    : null;
 
   return (
     <div className="grain relative min-h-screen flex bg-zinc-50/50">
@@ -29,20 +25,6 @@ export default async function AppLayout({
             One<span className="text-brand-600">Claw</span>
           </span>
         </Link>
-
-        <div className="px-3 py-3 border-b border-zinc-100">
-          <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
-            <div className="text-2xs uppercase tracking-wider text-zinc-400">
-              {workspace ? "当前工作台" : "账户"}
-            </div>
-            <div className="mt-0.5 text-sm font-medium truncate">
-              {workspace ? workspace.name : "未登录"}
-            </div>
-            <div className="mt-0.5 text-2xs text-zinc-500">
-              {workspace ? `方案 · ${workspace.plan}` : "登录后解锁全部功能"}
-            </div>
-          </div>
-        </div>
 
         <SidebarNav />
 
