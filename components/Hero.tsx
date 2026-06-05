@@ -1,4 +1,4 @@
-import { ArrowRight, Play, Sparkles, TrendingUp, Video, Globe } from "lucide-react";
+import { ArrowRight, Sparkles, TrendingUp, Video, Globe } from "lucide-react";
 
 export function Hero() {
   return (
@@ -35,13 +35,6 @@ export function Hero() {
             >
               免费开始体验
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </a>
-            <a
-              href="#demo"
-              className="lift group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-200 hover:ring-zinc-300"
-            >
-              <Play className="h-4 w-4 fill-current" />
-              观看 90 秒演示
             </a>
           </div>
 
