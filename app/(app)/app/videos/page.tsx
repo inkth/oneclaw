@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -7,15 +6,19 @@ import { VideosClient } from "./videos-client";
 export const metadata = { title: "短视频 · OneClaw" };
 
 export default async function VideosPage() {
+  // 游客也能看（空态）；动手的动作再提示登录
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
 
-  const videos = await prisma.video.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: { createdAt: "desc" },
-    include: { product: { select: { title: true, emoji: true } } },
-  });
+  const videos = workspace
+    ? await prisma.video.findMany({
+        where: { workspaceId: workspace.id },
+        orderBy: { createdAt: "desc" },
+        include: { product: { select: { title: true, emoji: true } } },
+      })
+    : [];
 
   return (
     <div className="space-y-6">
@@ -27,7 +30,7 @@ export default async function VideosPage() {
       </div>
 
       <VideosClient
-        workspaceId={workspace.id}
+        workspaceId={workspace?.id ?? ""}
         initialVideos={videos.map((v) => ({
           id: v.id,
           title: v.title,

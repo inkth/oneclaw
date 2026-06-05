@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -7,15 +6,19 @@ import { AgentRunner } from "./agent-runner";
 export const metadata = { title: "Agent 工作流 · OneClaw" };
 
 export default async function AgentsPage() {
+  // 游客也能看（空态）；动手的动作再提示登录
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
 
-  const tasks = await prisma.agentTask.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  });
+  const tasks = workspace
+    ? await prisma.agentTask.findMany({
+        where: { workspaceId: workspace.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      })
+    : [];
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -27,7 +30,8 @@ export default async function AgentsPage() {
       </div>
 
       <AgentRunner
-        workspaceId={workspace.id}
+        isGuest={!workspace}
+      workspaceId={workspace?.id ?? ""}
         initialTasks={tasks.map((t) => ({
           id: t.id,
           agent: t.agent,

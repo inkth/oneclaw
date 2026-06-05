@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -10,19 +9,22 @@ export const metadata = { title: "工作台 · OneClaw" };
 
 export default async function DashboardPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
 
-  const [productCount, videoCount, taskCount, recentTasks] = await Promise.all([
-    prisma.product.count({ where: { workspaceId: workspace.id } }),
-    prisma.video.count({ where: { workspaceId: workspace.id } }),
-    prisma.agentTask.count({ where: { workspaceId: workspace.id } }),
-    prisma.agentTask.findMany({
-      where: { workspaceId: workspace.id },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-  ]);
+  const [productCount, videoCount, taskCount, recentTasks] = workspace
+    ? await Promise.all([
+        prisma.product.count({ where: { workspaceId: workspace.id } }),
+        prisma.video.count({ where: { workspaceId: workspace.id } }),
+        prisma.agentTask.count({ where: { workspaceId: workspace.id } }),
+        prisma.agentTask.findMany({
+          where: { workspaceId: workspace.id },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
+      ])
+    : [0, 0, 0, [] as Awaited<ReturnType<typeof prisma.agentTask.findMany>>];
 
   const isFresh = productCount === 0 && videoCount === 0 && taskCount === 0;
 
@@ -30,16 +32,33 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          你好，{session.user.name || session.user.phone?.slice(-4) || session.user.email?.split("@")[0] || "你"} 👋
+          你好，{session?.user?.name || session?.user?.phone?.slice(-4) || session?.user?.email?.split("@")[0] || "访客"} 👋
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          {isFresh
-            ? `欢迎来到 ${workspace.name} —— 先跑通你的第一条出海链路吧。`
-            : `这是 ${workspace.name} 的今日概览。`}
+          {!workspace
+            ? "这是 OneClaw 概览。登录后即可拥有自己的工作台、选品库与数据。"
+            : isFresh
+              ? `欢迎来到 ${workspace.name} —— 先跑通你的第一条出海链路吧。`
+              : `这是 ${workspace.name} 的今日概览。`}
         </p>
       </div>
 
-      {isFresh && <OnboardingCard workspaceId={workspace.id} />}
+      {!workspace && (
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-sm text-indigo-900">
+            <span className="font-semibold">试用模式</span>
+            ：可逛全部页面与 TikTok 爆品。登录后解锁选品库、生成视频与数据看板。
+          </div>
+          <Link
+            href="/login?callbackUrl=/app"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 whitespace-nowrap"
+          >
+            登录 / 注册
+          </Link>
+        </div>
+      )}
+
+      {workspace && isFresh && <OnboardingCard workspaceId={workspace.id} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard

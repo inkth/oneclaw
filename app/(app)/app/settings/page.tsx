@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -15,8 +14,37 @@ function maskPhone(p?: string | null) {
 
 export default async function SettingsPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
+
+  // 游客：设置页绑账号，无意义可展示，给一个清晰的登录占位
+  if (!workspace || !session?.user?.id) {
+    return (
+      <div className="max-w-3xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">设置</h1>
+          <p className="mt-1 text-sm text-zinc-500">账号、工作台与用量。</p>
+        </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
+            <Crown className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="mt-4 text-base font-semibold">登录后管理账号</h2>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-zinc-500">
+            登录后即可查看账号信息、工作台与本月用量，并管理订阅方案。
+          </p>
+          <Link
+            href="/login?callbackUrl=/app/settings"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+          >
+            登录 / 注册
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const [user, quota] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },

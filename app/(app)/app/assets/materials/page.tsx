@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -8,18 +7,23 @@ import { MaterialsClient } from "./materials-client";
 export const metadata = { title: "素材库 · OneClaw" };
 
 export default async function MaterialsPage() {
+  // 游客也能看（空态）；动手的动作再提示登录
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
 
-  const materials = await prisma.material.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const materials = workspace
+    ? await prisma.material.findMany({
+        where: { workspaceId: workspace.id },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
 
   return (
     <MaterialsClient
-      workspaceId={workspace.id}
+      isGuest={!workspace}
+      workspaceId={workspace?.id ?? ""}
       storageReady={isStorageConfigured()}
       storageDriver={getStorageName()}
       initialMaterials={materials.map((m) => ({

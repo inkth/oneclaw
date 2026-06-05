@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
@@ -7,18 +6,23 @@ import { ModelsClient } from "./models-client";
 export const metadata = { title: "模特 · OneClaw" };
 
 export default async function ModelsPage() {
+  // 游客也能看（空态）；动手的动作再提示登录
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/app");
-  const workspace = await getOrCreateDefaultWorkspace(session.user.id);
+  const workspace = session?.user?.id
+    ? await getOrCreateDefaultWorkspace(session.user.id)
+    : null;
 
-  const models = await prisma.modelAsset.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: [{ isFavorite: "desc" }, { createdAt: "desc" }],
-  });
+  const models = workspace
+    ? await prisma.modelAsset.findMany({
+        where: { workspaceId: workspace.id },
+        orderBy: [{ isFavorite: "desc" }, { createdAt: "desc" }],
+      })
+    : [];
 
   return (
     <ModelsClient
-      workspaceId={workspace.id}
+      isGuest={!workspace}
+      workspaceId={workspace?.id ?? ""}
       initialModels={models.map((m) => ({
         id: m.id,
         name: m.name,

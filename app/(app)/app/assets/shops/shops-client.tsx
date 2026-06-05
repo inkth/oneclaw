@@ -62,14 +62,29 @@ export function ShopsClient({
   workspaceId,
   initialShops,
   totals,
+  isGuest = false,
 }: {
   workspaceId: string;
   initialShops: Shop[];
   totals: { revenueCents: number; orders: number; itemsSold: number; visitors: number };
+  isGuest?: boolean;
 }) {
   const router = useRouter();
   const [shops, setShops] = useState(initialShops);
   const [modalOpen, setModalOpen] = useState(false);
+
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    toast("登录后即可操作", {
+      action: {
+        label: "去登录",
+        onClick: () => {
+          window.location.href = "/login?callbackUrl=/app";
+        },
+      },
+    });
+    return true;
+  }
 
   async function deleteShop(id: string) {
     if (!confirm("删除该店铺？相关商品会保留但解绑。")) return;
@@ -95,7 +110,10 @@ export function ShopsClient({
           </p>
         </div>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            if (gateGuest()) return;
+            setModalOpen(true);
+          }}
           className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
         >
           <Plus className="h-4 w-4" />

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Loader2,
   Send,
@@ -60,11 +61,26 @@ const toneMap = {
 export function AgentRunner({
   workspaceId,
   initialTasks,
+  isGuest = false,
 }: {
   workspaceId: string;
   initialTasks: Task[];
+  isGuest?: boolean;
 }) {
   const router = useRouter();
+
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    toast("登录后即可操作", {
+      action: {
+        label: "去登录",
+        onClick: () => {
+          window.location.href = "/login?callbackUrl=/app";
+        },
+      },
+    });
+    return true;
+  }
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeAgent, setActiveAgent] = useState<AgentKind>("ANALYST");
   const [input, setInput] = useState("");
@@ -116,6 +132,7 @@ export function AgentRunner({
 
   async function submit() {
     if (!input.trim() || submitting) return;
+    if (gateGuest()) return;
     setSubmitting(true);
     setError(null);
     const res = await fetch(`/api/workspaces/${workspaceId}/agent-tasks`, {

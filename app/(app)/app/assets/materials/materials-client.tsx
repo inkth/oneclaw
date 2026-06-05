@@ -54,13 +54,28 @@ export function MaterialsClient({
   storageReady,
   storageDriver,
   initialMaterials,
+  isGuest = false,
 }: {
   workspaceId: string;
   storageReady: boolean;
   storageDriver: string;
   initialMaterials: Material[];
+  isGuest?: boolean;
 }) {
   const router = useRouter();
+
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    toast("登录后即可操作", {
+      action: {
+        label: "去登录",
+        onClick: () => {
+          window.location.href = "/login?callbackUrl=/app";
+        },
+      },
+    });
+    return true;
+  }
   const [materials, setMaterials] = useState(initialMaterials);
   const [filter, setFilter] = useState<"ALL" | MaterialType>("ALL");
   const [uploading, setUploading] = useState<string[]>([]); // 文件名列表，UI 显示 progress
@@ -71,6 +86,7 @@ export function MaterialsClient({
     filter === "ALL" ? materials : materials.filter((m) => m.type === filter);
 
   async function uploadFiles(files: FileList | File[]) {
+    if (gateGuest()) return;
     if (!storageReady) {
       toast.error("存储未配置：请先在 .env 填 TENCENT_COS_BUCKET/REGION");
       return;

@@ -55,15 +55,31 @@ const genderMeta: Record<Gender, { cn: string; cls: string }> = {
 export function ModelsClient({
   workspaceId,
   initialModels,
+  isGuest = false,
 }: {
   workspaceId: string;
   initialModels: ModelAsset[];
+  isGuest?: boolean;
 }) {
   const router = useRouter();
   const [models, setModels] = useState(initialModels);
   const [modalOpen, setModalOpen] = useState(false);
 
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    toast("登录后即可操作", {
+      action: {
+        label: "去登录",
+        onClick: () => {
+          window.location.href = "/login?callbackUrl=/app";
+        },
+      },
+    });
+    return true;
+  }
+
   async function createFromPreset(p: (typeof PRESETS)[number]) {
+    if (gateGuest()) return;
     const res = await fetch(`/api/workspaces/${workspaceId}/models`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,7 +137,10 @@ export function ModelsClient({
           </p>
         </div>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            if (gateGuest()) return;
+            setModalOpen(true);
+          }}
           className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
         >
           <Plus className="h-4 w-4" />
