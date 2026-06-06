@@ -14,10 +14,35 @@ import (
 type DiscoverHandler struct {
 	discover *service.DiscoverService
 	ws       *service.WorkspaceService
+	agents   *service.AgentService
 }
 
-func NewDiscoverHandler(d *service.DiscoverService, ws *service.WorkspaceService) *DiscoverHandler {
-	return &DiscoverHandler{discover: d, ws: ws}
+func NewDiscoverHandler(d *service.DiscoverService, ws *service.WorkspaceService, agents *service.AgentService) *DiscoverHandler {
+	return &DiscoverHandler{discover: d, ws: ws, agents: agents}
+}
+
+type analyzeReq struct {
+	ProductID string `json:"productId" binding:"required"`
+	Region    string `json:"region" binding:"required"`
+}
+
+// Analyze POST /workspaces/:wid/discover/analyze —— 对一个 discover 商品发起 AI 可行性分析。
+func (h *DiscoverHandler) Analyze(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	var in analyzeReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数缺失:需要 productId 和 region"))
+		return
+	}
+	t, err := h.agents.DispatchDiscoverAnalyze(c.Request.Context(), wid, in.ProductID, in.Region)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	Created(c, gin.H{"task": t})
 }
 
 // Ranklist GET /workspaces/:wid/discover/ranklist?region&rank_type&product_rank_field&page_size

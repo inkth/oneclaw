@@ -203,10 +203,44 @@ export function DiscoverClient({
     }
   }
 
-  // Phase 1:AI 选品分析(ANALYST agent)迁移中,先占位。
-  async function analyzeProduct(_p: DiscoverProduct) {
+  // AI 可行性分析:派发 ANALYST 任务 → 轮询 → 弹出判定结果。
+  async function analyzeProduct(p: DiscoverProduct) {
+    if (analyzing.has(p.productId)) return;
     if (gateGuest()) return;
-    toast.message("AI 选品分析迁移中", { description: "Agent 工作流将在后续阶段上线" });
+    setAnalyzing((prev) => new Set(prev).add(p.productId));
+    try {
+      const start = await apiBrowser<{ task: { id: string } }>(
+        `/workspaces/${workspaceId}/discover/analyze`,
+        { method: "POST", body: JSON.stringify({ productId: p.productId, region: p.region }) },
+      );
+      const taskId = start.task.id;
+      for (let i = 0; i < 24; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const cur = await apiBrowser<{ task: { status: string; output: string | null } }>(
+          `/workspaces/${workspaceId}/agent-tasks/${taskId}`,
+        );
+        if (cur.task.status === "DONE") {
+          toast.success(`分析完成：${p.productName.slice(0, 20)}…`, {
+            description: cur.task.output ?? undefined,
+            duration: 12000,
+          });
+          return;
+        }
+        if (cur.task.status === "FAILED") {
+          toast.error("分析失败", { description: cur.task.output ?? "请稍后重试" });
+          return;
+        }
+      }
+      toast.message("分析仍在进行", { description: "稍后可在工作台查看结果" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "分析失败");
+    } finally {
+      setAnalyzing((prev) => {
+        const n = new Set(prev);
+        n.delete(p.productId);
+        return n;
+      });
+    }
   }
 
   const top = useMemo(() => products.slice(0, 3), [products]);

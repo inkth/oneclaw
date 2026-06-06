@@ -41,7 +41,7 @@ func New(d Deps) *gin.Engine {
 	authH := handler.NewAuthHandler(d.Auth, d.Workspace, d.Cfg.Cookie)
 	wsH := handler.NewWorkspaceHandler(d.Workspace)
 	prodH := handler.NewProductHandler(d.Product, d.Workspace)
-	discH := handler.NewDiscoverHandler(d.Discover, d.Workspace)
+	discH := handler.NewDiscoverHandler(d.Discover, d.Workspace, d.Agent)
 	mktH := handler.NewMarketingHandler(d.Marketing)
 	shopH := handler.NewShopHandler(d.Shop, d.Workspace)
 	modelH := handler.NewModelHandler(d.Model, d.Workspace)
@@ -85,6 +85,7 @@ func New(d Deps) *gin.Engine {
 		priv.GET("/workspaces/:wid/discover/ranklist", discH.Ranklist)
 		priv.POST("/workspaces/:wid/discover/interactions", discH.Interaction)
 		priv.POST("/workspaces/:wid/discover/import-product", discH.Import)
+		priv.POST("/workspaces/:wid/discover/analyze", discH.Analyze)
 
 		priv.GET("/workspaces/:wid/shops", shopH.List)
 		priv.POST("/workspaces/:wid/shops", shopH.Create)
