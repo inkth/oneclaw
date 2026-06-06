@@ -1,0 +1,5 @@
+# go-api 镜像不需要证书/二进制/env；certs/ 含 certbot 的 root-owned 目录，
+# 留在构建上下文会因 permission denied 让 build 失败。nginx 通过 bind-mount 读证书。
+certs
+bin
+.env

@@ -7,3 +7,4 @@ backups
 .env*
 server/bin
 server/.env
+server/certs
