@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	apperr "github.com/oneclaw/server/internal/errors"
 	"github.com/oneclaw/server/internal/service"
@@ -33,6 +34,23 @@ func (h *DiscoverHandler) Ranklist(c *gin.Context) {
 		Date:      c.Query("date"),
 	}
 	res, err := h.discover.Ranklist(c.Request.Context(), wid, p)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, res)
+}
+
+// RanklistPublic GET /discover/ranklist —— 公共爆品榜,游客可访问(无个性化浮层)。
+func (h *DiscoverHandler) RanklistPublic(c *gin.Context) {
+	p := echotik.RanklistParams{
+		Region:    defaultStr(c.Query("region"), "US"),
+		RankType:  defaultInt(c.Query("rank_type"), echotik.RankHot),
+		RankField: defaultInt(c.Query("product_rank_field"), echotik.FieldSales),
+		PageSize:  defaultInt(c.Query("page_size"), 12),
+		Date:      c.Query("date"),
+	}
+	res, err := h.discover.Ranklist(c.Request.Context(), uuid.Nil, p)
 	if err != nil {
 		_ = c.Error(err)
 		return

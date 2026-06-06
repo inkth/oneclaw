@@ -216,24 +216,27 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 		ids = append(ids, d.ID)
 	}
 
+	// 游客(wsID == Nil)没有工作台,跳过「已导入/已收藏」个性化浮层,只回公共榜单。
 	importedBy := map[uuid.UUID]string{}
-	var prods []model.Product
-	s.db.WithContext(ctx).
-		Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
-		Find(&prods)
-	for _, p := range prods {
-		if p.DiscoverProductID != nil {
-			importedBy[*p.DiscoverProductID] = p.ID.String()
-		}
-	}
-
 	interBy := map[uuid.UUID]model.WorkspaceDiscoverInteraction{}
-	var inters []model.WorkspaceDiscoverInteraction
-	s.db.WithContext(ctx).
-		Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
-		Find(&inters)
-	for _, it := range inters {
-		interBy[it.DiscoverProductID] = it
+	if wsID != uuid.Nil {
+		var prods []model.Product
+		s.db.WithContext(ctx).
+			Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
+			Find(&prods)
+		for _, p := range prods {
+			if p.DiscoverProductID != nil {
+				importedBy[*p.DiscoverProductID] = p.ID.String()
+			}
+		}
+
+		var inters []model.WorkspaceDiscoverInteraction
+		s.db.WithContext(ctx).
+			Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
+			Find(&inters)
+		for _, it := range inters {
+			interBy[it.DiscoverProductID] = it
+		}
 	}
 
 	out := make([]DecoratedProduct, 0, len(dps))

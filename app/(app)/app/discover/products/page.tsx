@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getMe, apiServer } from "@/lib/api-client";
 import { DiscoverClient } from "./discover-client";
 
@@ -34,19 +33,22 @@ export default async function DiscoverProductsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  // 游客可逛公共爆品榜;登录后走带个性化浮层的工作台端点。
   const me = await getMe();
-  if (!me) redirect("/login?callbackUrl=/app/discover/products");
-  const workspace = me.workspace;
+  const workspace = me?.workspace ?? null;
 
   const sp = await searchParams;
   const region = VALID_REGIONS.includes(sp.region ?? "") ? sp.region! : "US";
   const rankType = Number(sp.rank_type) || 1;
   const field = Number(sp.field) || 1;
+  const query = `region=${region}&rank_type=${rankType}&product_rank_field=${field}&page_size=16`;
 
   let result: RanklistResult = { state: "empty", products: [] };
   try {
     result = await apiServer<RanklistResult>(
-      `/workspaces/${workspace.id}/discover/ranklist?region=${region}&rank_type=${rankType}&product_rank_field=${field}&page_size=16`,
+      workspace
+        ? `/workspaces/${workspace.id}/discover/ranklist?${query}`
+        : `/discover/ranklist?${query}`,
     );
   } catch {
     result = { state: "error", products: [] };
@@ -54,7 +56,8 @@ export default async function DiscoverProductsPage({
 
   return (
     <DiscoverClient
-      workspaceId={workspace.id}
+      isGuest={!workspace}
+      workspaceId={workspace?.id ?? ""}
       region={region as "US" | "GB" | "ID" | "TH" | "VN" | "MY"}
       rankType={rankType as 1 | 2 | 3}
       field={field as 1 | 2 | 3}

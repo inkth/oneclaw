@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getMe, apiServer } from "@/lib/api-client";
 import { ProductsClient } from "./products-client";
 
@@ -20,16 +19,18 @@ type GoProduct = {
 };
 
 export default async function ProductsPage() {
+  // 游客可见(空选品库);登录后拉真实数据。
   const me = await getMe();
-  if (!me) redirect("/login?callbackUrl=/app/assets/products");
-  const workspace = me.workspace;
+  const workspace = me?.workspace ?? null;
 
   let products: GoProduct[] = [];
-  try {
-    const data = await apiServer<{ products: GoProduct[] }>(`/workspaces/${workspace.id}/products`);
-    products = data.products ?? [];
-  } catch {
-    products = [];
+  if (workspace) {
+    try {
+      const data = await apiServer<{ products: GoProduct[] }>(`/workspaces/${workspace.id}/products`);
+      products = data.products ?? [];
+    } catch {
+      products = [];
+    }
   }
 
   return (

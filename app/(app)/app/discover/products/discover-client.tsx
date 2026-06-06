@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
+import { LoginPromptModal } from "@/components/LoginPromptModal";
 import {
   Sparkles,
   Plus,
@@ -105,6 +106,7 @@ export function DiscoverClient({
   state,
   fetchedAt,
   products,
+  isGuest = false,
 }: {
   workspaceId: string;
   region: Region;
@@ -113,11 +115,20 @@ export function DiscoverClient({
   state: DiscoverState;
   fetchedAt: string | null;
   products: DiscoverProduct[];
+  isGuest?: boolean;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState<Set<string>>(new Set());
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  // 游客触发「导入/收藏/分析」时拦下来弹登录浮层。返回 true 表示已拦截。
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    setLoginOpen(true);
+    return true;
+  }
 
   function navigate(patch: { region?: Region; rank_type?: RankType; field?: Field }) {
     const p = new URLSearchParams({
@@ -130,6 +141,7 @@ export function DiscoverClient({
 
   async function importProduct(p: DiscoverProduct) {
     if (importing.has(p.productId)) return;
+    if (gateGuest()) return;
     setImporting((prev) => new Set(prev).add(p.productId));
     try {
       const data = await apiBrowser<{ alreadyExists: boolean }>(
@@ -169,6 +181,7 @@ export function DiscoverClient({
 
   async function toggleStar(p: DiscoverProduct) {
     if (starring.has(p.productId)) return;
+    if (gateGuest()) return;
     const next = !stars[p.productId];
     setStarring((prev) => new Set(prev).add(p.productId));
     setStars((prev) => ({ ...prev, [p.productId]: next }));
@@ -192,6 +205,7 @@ export function DiscoverClient({
 
   // Phase 1:AI 选品分析(ANALYST agent)迁移中,先占位。
   async function analyzeProduct(_p: DiscoverProduct) {
+    if (gateGuest()) return;
     toast.message("AI 选品分析迁移中", { description: "Agent 工作流将在后续阶段上线" });
   }
 
@@ -199,6 +213,14 @@ export function DiscoverClient({
 
   return (
     <div className="space-y-6">
+      {loginOpen && (
+        <LoginPromptModal
+          onClose={() => setLoginOpen(false)}
+          callbackUrl="/app/discover/products"
+          title="登录后即可操作"
+          desc="导入选品、收藏、AI 分析都需要账号。趋势榜随便逛,登录后一键操作。"
+        />
+      )}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight inline-flex items-center gap-2">

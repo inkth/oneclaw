@@ -64,6 +64,10 @@ func New(d Deps) *gin.Engine {
 	api.POST("/subscribe", mktH.Subscribe)
 	api.POST("/demo", mktH.Demo)
 
+	// 公共:游客可逛的爆品榜 + 商品详情(无个性化浮层)
+	api.GET("/discover/ranklist", discH.RanklistPublic)
+	api.GET("/discover/products/:externalId", discH.Detail)
+
 	// 需登录
 	priv := api.Group("")
 	priv.Use(middleware.Auth(d.Auth, d.Cfg.Cookie.Name))
@@ -79,8 +83,6 @@ func New(d Deps) *gin.Engine {
 		priv.GET("/workspaces/:wid/discover/ranklist", discH.Ranklist)
 		priv.POST("/workspaces/:wid/discover/interactions", discH.Interaction)
 		priv.POST("/workspaces/:wid/discover/import-product", discH.Import)
-
-		priv.GET("/discover/products/:externalId", discH.Detail)
 
 		priv.GET("/workspaces/:wid/shops", shopH.List)
 		priv.POST("/workspaces/:wid/shops", shopH.Create)

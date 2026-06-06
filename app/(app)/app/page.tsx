@@ -1,34 +1,39 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getMe, apiServer } from "@/lib/api-client";
 import { TrendingUp, Compass, ArrowRight } from "lucide-react";
 
 export const metadata = { title: "工作台 · OneClaw" };
 
 export default async function DashboardPage() {
+  // 游客可浏览;无工作台时跳过选品库统计。
   const me = await getMe();
-  if (!me) redirect("/login?callbackUrl=/app");
-  const { user, workspace } = me;
+  const user = me?.user ?? null;
+  const workspace = me?.workspace ?? null;
 
   let productCount = 0;
-  try {
-    const data = await apiServer<{ products: unknown[] }>(`/workspaces/${workspace.id}/products`);
-    productCount = data.products?.length ?? 0;
-  } catch {
-    productCount = 0;
+  if (workspace) {
+    try {
+      const data = await apiServer<{ products: unknown[] }>(`/workspaces/${workspace.id}/products`);
+      productCount = data.products?.length ?? 0;
+    } catch {
+      productCount = 0;
+    }
   }
 
   const isFresh = productCount === 0;
-  const greeting = user.name || user.phone?.slice(-4) || user.email?.split("@")[0] || "你";
+  const greeting = user?.name || user?.phone?.slice(-4) || user?.email?.split("@")[0] || "你";
+  const wsName = workspace?.name ?? "OneClaw";
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">你好，{greeting} 👋</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          {isFresh
-            ? `欢迎来到 ${workspace.name} —— 先去「发现」挑一个 TikTok 爆品吧。`
-            : `这是 ${workspace.name} 的今日概览。`}
+          {!workspace
+            ? "随便逛 —— 看 TikTok 爆品榜、店铺、达人。要导入选品 / AI 分析时再登录即可。"
+            : isFresh
+            ? `欢迎来到 ${wsName} —— 先去「发现」挑一个 TikTok 爆品吧。`
+            : `这是 ${wsName} 的今日概览。`}
         </p>
       </div>
 

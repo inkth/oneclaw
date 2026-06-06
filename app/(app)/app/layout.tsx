@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getMe } from "@/lib/api-client";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -29,10 +28,11 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // 游客可浏览;无会话时 user/workspace 为 null,侧栏显示登录入口。
   const me = await getMe();
-  if (!me) redirect("/login?callbackUrl=/app");
-  const { user, workspace } = me;
-  const display = user.name || user.phone || user.email || "?";
+  const user = me?.user ?? null;
+  const workspace = me?.workspace ?? null;
+  const display = user?.name || user?.phone || user?.email || "游客";
 
   return (
     <div className="min-h-screen flex bg-zinc-50/50">
@@ -49,8 +49,14 @@ export default async function AppLayout({
         <div className="px-3 py-3 border-b border-zinc-100">
           <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
             <div className="text-[10px] uppercase tracking-wider text-zinc-400">当前工作台</div>
-            <div className="mt-0.5 text-sm font-medium truncate">{workspace.name}</div>
-            <div className="mt-0.5 text-[10px] text-zinc-500">方案 · {workspace.plan}</div>
+            {workspace ? (
+              <>
+                <div className="mt-0.5 text-sm font-medium truncate">{workspace.name}</div>
+                <div className="mt-0.5 text-[10px] text-zinc-500">方案 · {workspace.plan}</div>
+              </>
+            ) : (
+              <div className="mt-0.5 text-sm font-medium text-zinc-500">游客浏览中</div>
+            )}
           </div>
         </div>
 
@@ -79,20 +85,31 @@ export default async function AppLayout({
         </nav>
 
         <div className="border-t border-zinc-100 p-3">
-          <div className="flex items-center gap-2 mb-3 px-2">
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
-              {display.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-medium truncate">{display}</div>
-              <div className="text-[10px] text-zinc-500 truncate font-mono">
-                {user.phone
-                  ? `+86 ${user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
-                  : user.email}
+          {user ? (
+            <>
+              <div className="flex items-center gap-2 mb-3 px-2">
+                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
+                  {display.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-medium truncate">{display}</div>
+                  <div className="text-[10px] text-zinc-500 truncate font-mono">
+                    {user.phone
+                      ? `+86 ${user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
+                      : user.email}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <LogoutButton />
+              <LogoutButton />
+            </>
+          ) : (
+            <Link
+              href="/login?callbackUrl=/app"
+              className="block w-full rounded-lg bg-indigo-600 px-3 py-2 text-center text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+            >
+              登录 / 注册
+            </Link>
+          )}
         </div>
       </aside>
 
