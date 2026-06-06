@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getMe } from "@/lib/api-client";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -34,14 +35,14 @@ export default async function AppLayout({
   const display = user.name || user.phone || user.email || "?";
 
   return (
-    <div className="grain relative min-h-screen flex bg-zinc-50/50">
+    <div className="min-h-screen flex bg-zinc-50/50">
       <aside className="hidden md:flex w-60 flex-col border-r border-zinc-200 bg-white">
         <Link href="/" className="flex items-center gap-2 px-5 h-16 border-b border-zinc-100">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500">
             <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
           <span className="text-base font-semibold tracking-tight">
-            One<span className="text-brand-600">Claw</span>
+            One<span className="text-indigo-600">Claw</span>
           </span>
         </Link>
 
@@ -98,16 +99,13 @@ export default async function AppLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-zinc-200 bg-white">
           <Link href="/app" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 to-fuchsia-500">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500">
               <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-sm font-semibold">OneClaw</span>
           </Link>
         </header>
-        <main className="flex-1 p-4 sm:p-8">
-          <BoardTabs />
-          {children}
-        </main>
+        <main className="flex-1 p-4 sm:p-8">{children}</main>
       </div>
     </div>
   );
