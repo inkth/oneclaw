@@ -206,7 +206,10 @@ async function getEntityRanklist<T>(
       [fieldParam]: params.rank_field,
       date,
       page_size: pageSize,
-      category_id: params.category_id,
+      // ⚠️ 实体榜（视频/店铺/达人）的类目筛选参数是 product_category_id，
+      // 不是商品榜的 category_id —— 传 category_id 会被 EchoTik 静默忽略，
+      // 表现为「切换分类无效」。L2/L3 实体 UI 未使用，保持不动。
+      product_category_id: params.category_id,
       category_l2_id: params.category_l2_id,
       category_l3_id: params.category_l3_id,
     };
