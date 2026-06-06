@@ -16,6 +16,7 @@ type Deps struct {
 	Workspace *service.WorkspaceService
 	Product   *service.ProductService
 	Discover  *service.DiscoverService
+	Marketing *service.MarketingService
 }
 
 func New(d Deps) *gin.Engine {
@@ -37,6 +38,7 @@ func New(d Deps) *gin.Engine {
 	wsH := handler.NewWorkspaceHandler(d.Workspace)
 	prodH := handler.NewProductHandler(d.Product, d.Workspace)
 	discH := handler.NewDiscoverHandler(d.Discover, d.Workspace)
+	mktH := handler.NewMarketingHandler(d.Marketing)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready())
@@ -51,6 +53,10 @@ func New(d Deps) *gin.Engine {
 		auth.POST("/login", authH.Login)
 		auth.POST("/logout", authH.Logout)
 	}
+
+	// 公共:落地页表单
+	api.POST("/subscribe", mktH.Subscribe)
+	api.POST("/demo", mktH.Demo)
 
 	// 需登录
 	priv := api.Group("")
