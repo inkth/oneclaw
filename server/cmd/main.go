@@ -55,6 +55,8 @@ func main() {
 		&model.WorkspaceDiscoverInteraction{},
 		&model.NewsletterSubscription{},
 		&model.DemoRequest{},
+		&model.Shop{},
+		&model.ModelAsset{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -67,6 +69,8 @@ func main() {
 	echoClient := echotik.New(cfg.EchoTik)
 	discSvc := service.NewDiscoverService(db, echoClient)
 	mktSvc := service.NewMarketingService(db)
+	shopSvc := service.NewShopService(db)
+	modelSvc := service.NewModelAssetService(db)
 
 	if echoClient.Configured() {
 		logger.Info("[echotik] 已配置凭证,走实时数据")
@@ -81,6 +85,8 @@ func main() {
 		Product:   prodSvc,
 		Discover:  discSvc,
 		Marketing: mktSvc,
+		Shop:      shopSvc,
+		Model:     modelSvc,
 	})
 
 	srv := &http.Server{

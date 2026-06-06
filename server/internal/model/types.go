@@ -19,6 +19,17 @@ const (
 	ProductRecommended = "RECOMMENDED"
 	ProductEvaluating  = "EVALUATING"
 	ProductArchived    = "ARCHIVED"
+
+	ShopStatusConnected    = "CONNECTED"
+	ShopStatusPending      = "PENDING"
+	ShopStatusDisconnected = "DISCONNECTED"
+	ShopStatusError        = "ERROR"
+
+	ModelKindDigitalHuman = "DIGITAL_HUMAN"
+	ModelKindRealPerson   = "REAL_PERSON"
+	ModelGenderFemale     = "FEMALE"
+	ModelGenderMale       = "MALE"
+	ModelGenderNeutral    = "NEUTRAL"
 )
 
 // JSONB 是存进 Postgres jsonb 列的原始 JSON。

@@ -18,13 +18,18 @@ Go API 已覆盖:auth(send-code/login/logout)、me、workspaces/default、produc
 
 | 阶段 | 内容 | 难度 | 状态 |
 |---|---|---|---|
-| P0 纯 CRUD | subscribe · demo · shops · models · quota | 低 | 🚧 subscribe+demo 已完成 |
+| P0 纯 CRUD | subscribe · demo · shops · models | 低 | ✅ 完成(subscribe/demo/shops/models) |
 | P1 存储+素材 | storage→Go;materials | 中 | ⬜ |
 | P2 AI 核心 | openrouter + agent-tasks 异步 + analyst/director/operator/copilot + discover/analyze + templates/optimize | 高 | ⬜ |
 | P3 fal 媒体 | fal submit/poll + videos(create/refresh)+ director 图/视频 | 高 | ⬜ |
 | P4 计费 | PaymentOrder + checkout + alipay/wechat webhooks | 高 | ⬜ |
 | P5 定时 | cron/echotik-refresh → Go 定时任务 | 低 | ⬜ |
 | P6 前端切换 + 清 Prisma | 剩余 SSR/客户端全切 Go API;删 app/api/*、prisma/、lib/db、lib/agents、lib/fal、lib/openrouter、@prisma/client 依赖、db:* 脚本、Auth.js 表;调整 docker/部署 | 中 | ⬜ |
+
+## 待迁 / 顺序调整
+
+- **quota** 原计划在 P0,但它聚合 videos / agent-tasks 等用量计数,而这些表要到 P2/P3 才有 → **推迟到 P3 之后**再做。
+- shops 的 `_count.products` 形状改为 Go 侧的 `productCount` 字段(P6 前端适配)。
 
 ## 决策记录
 
