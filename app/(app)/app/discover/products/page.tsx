@@ -88,6 +88,21 @@ async function loadOverlay(
   region: Region,
   externalIds: string[],
 ): Promise<DiscoverOverlayMap> {
+  try {
+    return await loadOverlayInner(workspaceId, region, externalIds);
+  } catch (e) {
+    // 浮层是锦上添花：任何查询出错都降级成空浮层，绝不让这个流式 promise reject
+    // （reject 会变成客户端的 unhandled rejection）。
+    console.error("[discover] loadOverlay failed (non-fatal)", e);
+    return {};
+  }
+}
+
+async function loadOverlayInner(
+  workspaceId: string,
+  region: Region,
+  externalIds: string[],
+): Promise<DiscoverOverlayMap> {
   const [importedProducts, recentAnalyses, interactions] = await Promise.all([
     prisma.product.findMany({
       where: {

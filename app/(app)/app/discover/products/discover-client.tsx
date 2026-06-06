@@ -89,10 +89,21 @@ export function DiscoverClient({
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
 
   // 浮层异步到达：不阻塞表格渲染，resolve 后徽标/收藏态自然补入。
+  // 注意：从 Server Component 传来的 promise 在客户端是 React Flight 的 thenable，
+  // 它的 .then() 不返回可链式调用的 Promise——所以不能 .then().catch()（会在
+  // undefined 上读 catch 而抛错）。用 Promise.resolve 归一化，并把 reject 处理直接
+  // 作为 .then 的第二个参数传入。
   const [overlayMap, setOverlayMap] = useState<DiscoverOverlayMap | null>(null);
   useEffect(() => {
     let alive = true;
-    overlay.then((m) => alive && setOverlayMap(m)).catch(() => {});
+    Promise.resolve(overlay).then(
+      (m) => {
+        if (alive) setOverlayMap(m);
+      },
+      () => {
+        if (alive) setOverlayMap({});
+      },
+    );
     return () => {
       alive = false;
     };
