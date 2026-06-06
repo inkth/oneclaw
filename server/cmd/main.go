@@ -19,6 +19,7 @@ import (
 	"github.com/oneclaw/server/internal/router"
 	"github.com/oneclaw/server/internal/service"
 	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/oneclaw/server/internal/service/llm"
 	"github.com/oneclaw/server/internal/storage"
 )
 
@@ -59,6 +60,7 @@ func main() {
 		&model.Shop{},
 		&model.ModelAsset{},
 		&model.Material{},
+		&model.AgentTask{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -75,6 +77,13 @@ func main() {
 	modelSvc := service.NewModelAssetService(db)
 	store := storage.New(cfg.Storage)
 	matSvc := service.NewMaterialService(db, store)
+	llmClient := llm.New(cfg.OpenRouter)
+	agentSvc := service.NewAgentService(db, llmClient)
+	if llmClient.Configured() {
+		logger.Info("[llm] OpenRouter 已配置", logger.String("model", llmClient.Model()))
+	} else {
+		logger.Warn("[llm] OPENROUTER_API_KEY 未配置,Agent 走未配置降级")
+	}
 	if store.Configured() {
 		logger.Info("[storage] 腾讯云 COS 已配置")
 	} else {
@@ -97,6 +106,7 @@ func main() {
 		Shop:      shopSvc,
 		Model:     modelSvc,
 		Material:  matSvc,
+		Agent:     agentSvc,
 	})
 
 	srv := &http.Server{

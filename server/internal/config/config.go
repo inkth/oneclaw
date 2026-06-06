@@ -21,10 +21,11 @@ type Config struct {
 	Cookie    CookieConfig
 	RateLimit RateLimitConfig
 	SMS       SMSConfig
-	EchoTik   EchoTikConfig
-	Storage   StorageConfig
-	CORS      CORSConfig
-	Log       LogConfig
+	EchoTik    EchoTikConfig
+	Storage    StorageConfig
+	OpenRouter OpenRouterConfig
+	CORS       CORSConfig
+	Log        LogConfig
 }
 
 type ServerConfig struct {
@@ -101,6 +102,15 @@ func (s StorageConfig) Configured() bool {
 	return s.COSBucket != "" && s.COSRegion != "" && s.COSSecretID != "" && s.COSSecretKey != ""
 }
 
+// OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
+type OpenRouterConfig struct {
+	APIKey  string
+	Model   string // 默认 deepseek/deepseek-chat
+	Referer string // HTTP-Referer 头
+}
+
+func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
+
 // CORSConfig 带凭证跨域:本地开发 Next(:3000)调 Go(:8082)需显式白名单(不能用 *)。
 type CORSConfig struct {
 	Origins []string
@@ -162,6 +172,11 @@ func Load() *Config {
 			COSSecretID:  getEnv("TENCENT_SECRET_ID", ""),
 			COSSecretKey: getEnv("TENCENT_SECRET_KEY", ""),
 			COSDomain:    getEnv("TENCENT_COS_DOMAIN", ""),
+		},
+		OpenRouter: OpenRouterConfig{
+			APIKey:  getEnv("OPENROUTER_API_KEY", ""),
+			Model:   getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
+			Referer: getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

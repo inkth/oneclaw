@@ -30,6 +30,15 @@ const (
 	ModelGenderFemale     = "FEMALE"
 	ModelGenderMale       = "MALE"
 	ModelGenderNeutral    = "NEUTRAL"
+
+	AgentAnalyst  = "ANALYST"
+	AgentDirector = "DIRECTOR"
+	AgentOperator = "OPERATOR"
+
+	TaskQueued  = "QUEUED"
+	TaskRunning = "RUNNING"
+	TaskDone    = "DONE"
+	TaskFailed  = "FAILED"
 )
 
 // JSONB 是存进 Postgres jsonb 列的原始 JSON。

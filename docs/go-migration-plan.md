@@ -20,7 +20,7 @@ Go API 已覆盖:auth(send-code/login/logout)、me、workspaces/default、produc
 |---|---|---|---|
 | P0 纯 CRUD | subscribe · demo · shops · models | 低 | ✅ 完成(subscribe/demo/shops/models) |
 | P1 存储+素材 | storage→Go;materials | 中 | ✅ 完成(COS storage + materials 上传/列表/删除) |
-| P2 AI 核心 | openrouter + agent-tasks 异步 + analyst/director/operator/copilot + discover/analyze + templates/optimize | 高 | ⬜ |
+| P2 AI 核心 | openrouter + agent-tasks 异步 + analyst/director/operator/copilot + discover/analyze + templates/optimize | 高 | 🚧 P2a 完成:LLM 客户端 + AgentTask + goroutine 异步执行器 + analyst + agent-tasks 端点(需 OPENROUTER_API_KEY)。待:operator/copilot/discover-analyze/templates |
 | P3 fal 媒体 | fal submit/poll + videos(create/refresh)+ director 图/视频 | 高 | ⬜ |
 | P4 计费 | PaymentOrder + checkout + alipay/wechat webhooks | 高 | ⬜ |
 | P5 定时 | cron/echotik-refresh → Go 定时任务 | 低 | ⬜ |
