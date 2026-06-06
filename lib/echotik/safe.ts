@@ -55,6 +55,36 @@ function asEnriched(p: ReturnType<typeof mockRanklist>[number]): EnrichedProduct
   return p as EnrichedProduct;
 }
 
+// 指定类目时绕过 DB 快照缓存（按 region/rankType/rankField 建键，不含类目，
+// 否则会与"全量"榜串键）。改用 unstable_cache 给实时 EchoTik 调用加一层短 TTL
+// 缓存——否则每次切类目都实时打 EchoTik（~4s）。unstable_cache 不受渲染位置影响，
+// 按入参（含 category_id）建键，30 分钟刷新一次。
+// miss 时顺手把商品 upsert 入库（不写榜单缓存、不串榜），让封面 enrich 有 DB 行可更新；
+// 命中时则跳过这步，避免每次请求都白白重复 upsert。
+const CATEGORY_RANKLIST_TTL = 30 * 60; // 秒
+const getCachedCategoryRanklist = unstable_cache(
+  async (params: RanklistParams) => {
+    const list = await getProductRanklist(params);
+    if (list.length > 0) {
+      try {
+        await persistRanklist({
+          region: params.region,
+          rankType: params.rank_type,
+          rankField: params.product_rank_field,
+          date: new Date().toISOString().slice(0, 10),
+          products: list,
+          writeCacheEntry: false,
+        });
+      } catch (e) {
+        console.error("[echotik] persist category ranklist failed (non-fatal)", e);
+      }
+    }
+    return list;
+  },
+  ["echotik-category-ranklist"],
+  { revalidate: CATEGORY_RANKLIST_TTL, tags: ["echotik:ranklist"] },
+);
+
 export async function safeRanklist(params: RanklistParams): Promise<SafeRanklistResult> {
   if (!isEchoTikConfigured()) {
     return {
@@ -96,35 +126,26 @@ export async function safeRanklist(params: RanklistParams): Promise<SafeRanklist
   }
 
   try {
-    const list = await getProductRanklist(params);
+    // 指定类目：走短 TTL 缓存（命中则免去 ~4s 实时调用，并已在 miss 时入库）。
+    // 无类目缓存 miss：实时拉取后写 6h DB 快照缓存。
+    const list = hasCategory
+      ? await getCachedCategoryRanklist(params)
+      : await getProductRanklist(params);
     if (list.length === 0) {
       return { products: [], state: "empty" };
     }
-    const date = new Date().toISOString().slice(0, 10);
     if (!hasCategory) {
       await persistRanklist({
         region: params.region,
         rankType: params.rank_type,
         rankField: params.product_rank_field,
-        date,
+        date: new Date().toISOString().slice(0, 10),
         products: list,
       });
     }
     // 榜单接口不含封面，贴回 DB 里已 enrich 的封面（热门商品多半已有）。
     const enriched = await attachExistingCovers(list, params.region);
     after(async () => {
-      // 指定类目的实时结果也入库（不写榜单缓存，避免串榜），
-      // 好让 enrich 能给从没见过的新商品补封面，下次打开即有图。
-      if (hasCategory) {
-        await persistRanklist({
-          region: params.region,
-          rankType: params.rank_type,
-          rankField: params.product_rank_field,
-          date,
-          products: list,
-          writeCacheEntry: false,
-        });
-      }
       await enrichCoversIfMissing(
         list.map((p) => p.product_id),
         params.region,
