@@ -19,6 +19,7 @@ import (
 	"github.com/oneclaw/server/internal/router"
 	"github.com/oneclaw/server/internal/service"
 	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/oneclaw/server/internal/storage"
 )
 
 func main() {
@@ -57,6 +58,7 @@ func main() {
 		&model.DemoRequest{},
 		&model.Shop{},
 		&model.ModelAsset{},
+		&model.Material{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -71,6 +73,13 @@ func main() {
 	mktSvc := service.NewMarketingService(db)
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
+	store := storage.New(cfg.Storage)
+	matSvc := service.NewMaterialService(db, store)
+	if store.Configured() {
+		logger.Info("[storage] 腾讯云 COS 已配置")
+	} else {
+		logger.Warn("[storage] COS 未配置,素材上传不可用")
+	}
 
 	if echoClient.Configured() {
 		logger.Info("[echotik] 已配置凭证,走实时数据")
@@ -87,6 +96,7 @@ func main() {
 		Marketing: mktSvc,
 		Shop:      shopSvc,
 		Model:     modelSvc,
+		Material:  matSvc,
 	})
 
 	srv := &http.Server{

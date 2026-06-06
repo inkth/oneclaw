@@ -22,6 +22,7 @@ type Config struct {
 	RateLimit RateLimitConfig
 	SMS       SMSConfig
 	EchoTik   EchoTikConfig
+	Storage   StorageConfig
 	CORS      CORSConfig
 	Log       LogConfig
 }
@@ -87,6 +88,19 @@ type EchoTikConfig struct {
 
 func (e EchoTikConfig) Configured() bool { return e.Username != "" && e.Password != "" }
 
+// StorageConfig 腾讯云 COS 对象存储(素材 / 视频转存)。
+type StorageConfig struct {
+	COSBucket    string // TENCENT_COS_BUCKET
+	COSRegion    string // TENCENT_COS_REGION
+	COSSecretID  string // TENCENT_SECRET_ID
+	COSSecretKey string // TENCENT_SECRET_KEY
+	COSDomain    string // TENCENT_COS_DOMAIN(可选 CDN 域名)
+}
+
+func (s StorageConfig) Configured() bool {
+	return s.COSBucket != "" && s.COSRegion != "" && s.COSSecretID != "" && s.COSSecretKey != ""
+}
+
 // CORSConfig 带凭证跨域:本地开发 Next(:3000)调 Go(:8082)需显式白名单(不能用 *)。
 type CORSConfig struct {
 	Origins []string
@@ -141,6 +155,13 @@ func Load() *Config {
 			BaseURL:  getEnv("ECHOTIK_BASE_URL", "https://open.echotik.live/api/v3"),
 			Username: getEnv("ECHOTIK_USERNAME", ""),
 			Password: getEnv("ECHOTIK_PASSWORD", ""),
+		},
+		Storage: StorageConfig{
+			COSBucket:    getEnv("TENCENT_COS_BUCKET", ""),
+			COSRegion:    getEnv("TENCENT_COS_REGION", ""),
+			COSSecretID:  getEnv("TENCENT_SECRET_ID", ""),
+			COSSecretKey: getEnv("TENCENT_SECRET_KEY", ""),
+			COSDomain:    getEnv("TENCENT_COS_DOMAIN", ""),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

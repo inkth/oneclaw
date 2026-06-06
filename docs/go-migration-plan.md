@@ -19,7 +19,7 @@ Go API 已覆盖:auth(send-code/login/logout)、me、workspaces/default、produc
 | 阶段 | 内容 | 难度 | 状态 |
 |---|---|---|---|
 | P0 纯 CRUD | subscribe · demo · shops · models | 低 | ✅ 完成(subscribe/demo/shops/models) |
-| P1 存储+素材 | storage→Go;materials | 中 | ⬜ |
+| P1 存储+素材 | storage→Go;materials | 中 | ✅ 完成(COS storage + materials 上传/列表/删除) |
 | P2 AI 核心 | openrouter + agent-tasks 异步 + analyst/director/operator/copilot + discover/analyze + templates/optimize | 高 | ⬜ |
 | P3 fal 媒体 | fal submit/poll + videos(create/refresh)+ director 图/视频 | 高 | ⬜ |
 | P4 计费 | PaymentOrder + checkout + alipay/wechat webhooks | 高 | ⬜ |

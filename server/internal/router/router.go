@@ -19,6 +19,7 @@ type Deps struct {
 	Marketing *service.MarketingService
 	Shop      *service.ShopService
 	Model     *service.ModelAssetService
+	Material  *service.MaterialService
 }
 
 func New(d Deps) *gin.Engine {
@@ -43,6 +44,7 @@ func New(d Deps) *gin.Engine {
 	mktH := handler.NewMarketingHandler(d.Marketing)
 	shopH := handler.NewShopHandler(d.Shop, d.Workspace)
 	modelH := handler.NewModelHandler(d.Model, d.Workspace)
+	matH := handler.NewMaterialHandler(d.Material, d.Workspace)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready())
@@ -89,6 +91,10 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/models", modelH.Create)
 		priv.PATCH("/workspaces/:wid/models/:mid", modelH.Update)
 		priv.DELETE("/workspaces/:wid/models/:mid", modelH.Delete)
+
+		priv.GET("/workspaces/:wid/materials", matH.List)
+		priv.POST("/workspaces/:wid/materials", matH.Upload)
+		priv.DELETE("/workspaces/:wid/materials/:mid", matH.Delete)
 	}
 
 	return r
