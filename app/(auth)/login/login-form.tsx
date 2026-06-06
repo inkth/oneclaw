@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { apiBrowser } from "@/lib/api-browser";
 
 const PHONE_RE = /^1[3-9]\d{9}$/;
 
@@ -34,26 +34,25 @@ export function LoginForm() {
     }
     setSending(true);
     setError(null);
-    const res = await fetch("/api/auth/send-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
-    });
-    const json = await res.json();
-    setSending(false);
-    if (!res.ok || !json.ok) {
-      setError(json?.error?.message || "发送失败");
-      return;
-    }
-    setStep("code");
-    setSecondsLeft(60);
-    if (json.data.devCode) {
-      toast.message("dev 模式验证码", {
-        description: `${json.data.devCode} （已打印到 dev terminal）`,
-        duration: 8000,
+    try {
+      const data = await apiBrowser<{ devCode?: string }>("/auth/send-code", {
+        method: "POST",
+        body: JSON.stringify({ phone }),
       });
-    } else {
-      toast.success("验证码已发送");
+      setStep("code");
+      setSecondsLeft(60);
+      if (data.devCode) {
+        toast.message("dev 模式验证码", {
+          description: `${data.devCode}（也已打印到服务端日志）`,
+          duration: 8000,
+        });
+      } else {
+        toast.success("验证码已发送");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "发送失败");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -64,22 +63,18 @@ export function LoginForm() {
     }
     setVerifying(true);
     setError(null);
-    const res = await signIn("phone-otp", {
-      phone,
-      code,
-      redirect: false,
-    });
-    setVerifying(false);
-    if (!res?.ok) {
-      setError(
-        res?.error === "CredentialsSignin"
-          ? "验证码不正确或已过期"
-          : "登录失败，请稍后再试",
-      );
-      return;
+    try {
+      await apiBrowser("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ phone, code }),
+      });
+      router.push(callbackUrl);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "登录失败，请稍后再试");
+    } finally {
+      setVerifying(false);
     }
-    router.push(callbackUrl);
-    router.refresh();
   }
 
   return (

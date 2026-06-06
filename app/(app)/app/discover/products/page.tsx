@@ -1,79 +1,83 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/db";
-import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
-import { safeRanklist, safeCategoriesL1 } from "@/lib/echotik/safe";
-import { REGION_CODES, type Region, type RankType, type RankField } from "@/lib/echotik/types";
-import { DiscoverClient, type DiscoverOverlayMap } from "./discover-client";
+import { redirect } from "next/navigation";
+import { getMe, apiServer } from "@/lib/api-client";
+import { DiscoverClient } from "./discover-client";
 
 export const metadata = { title: "发现 · TikTok 爆品 · OneClaw" };
+
+const VALID_REGIONS = ["US", "GB", "ID", "TH", "VN", "MY"];
+
+type DecoratedProduct = {
+  productId: string;
+  name: string;
+  region: string;
+  avgPriceCents: number;
+  minPriceCents: number;
+  maxPriceCents: number;
+  commissionRate: number;
+  totalSaleCnt: number;
+  totalSaleGmvCents: number;
+  totalIflCnt: number;
+  totalVideoCnt: number;
+  coverUrls: string[];
+  importedProductId: string | null;
+  interaction: { isStarred: boolean; tags: string[] } | null;
+};
+
+type RanklistResult = {
+  state: string;
+  fetchedAt?: string | null;
+  products: DecoratedProduct[];
+};
 
 export default async function DiscoverProductsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  // 游客也能逛公共趋势榜；「我的导入/分析/收藏」浮层无 workspace 时留空，
-  // 导入/分析/收藏等动作再提示登录。
-  const session = await auth();
-  const workspace = session?.user?.id
-    ? await getOrCreateDefaultWorkspace(session.user.id)
-    : null;
+  const me = await getMe();
+  if (!me) redirect("/login?callbackUrl=/app/discover/products");
+  const workspace = me.workspace;
 
   const sp = await searchParams;
-  const region = (REGION_CODES.includes(sp.region as Region)
-    ? sp.region
-    : "US") as Region;
-  const rankType = (Number(sp.rank_type) || 1) as RankType;
-  const field = (Number(sp.field) || 1) as RankField;
-  const categoryId = sp.category_id || null;
+  const region = VALID_REGIONS.includes(sp.region ?? "") ? sp.region! : "US";
+  const rankType = Number(sp.rank_type) || 1;
+  const field = Number(sp.field) || 1;
 
-  const [result, categories] = await Promise.all([
-    safeRanklist({
-      region,
-      rank_type: rankType,
-      product_rank_field: field,
-      category_id: categoryId ?? undefined,
-      page_size: 16,
-    }),
-    safeCategoriesL1(region),
-  ]);
-
-  // 个性化浮层（已导入 / 已分析 / 已收藏）不阻塞首屏：把这 3 个查询包成一个 Promise
-  // 流式传给 client（含那条按 metadata jsonb 过滤、随分析数据增长而变慢的 ANALYST 查询）。
-  // 榜单 + 类目就绪即可渲染表格，徽标随后补入。游客无 workspace → 空浮层。
-  const externalIds = result.products.map((p) => p.product_id);
-  const overlayPromise: Promise<DiscoverOverlayMap> =
-    workspace && externalIds.length
-      ? loadOverlay(workspace.id, region, externalIds)
-      : Promise.resolve({});
+  let result: RanklistResult = { state: "empty", products: [] };
+  try {
+    result = await apiServer<RanklistResult>(
+      `/workspaces/${workspace.id}/discover/ranklist?region=${region}&rank_type=${rankType}&product_rank_field=${field}&page_size=16`,
+    );
+  } catch {
+    result = { state: "error", products: [] };
+  }
 
   return (
     <DiscoverClient
-      isGuest={!workspace}
-      workspaceId={workspace?.id ?? ""}
-      region={region}
-      rankType={rankType}
-      field={field}
-      categoryId={categoryId}
-      categories={categories}
-      state={result.state}
-      fetchedAt={result.fetchedAt?.toISOString() ?? null}
-      overlay={overlayPromise}
+      workspaceId={workspace.id}
+      region={region as "US" | "GB" | "ID" | "TH" | "VN" | "MY"}
+      rankType={rankType as 1 | 2 | 3}
+      field={field as 1 | 2 | 3}
+      state={result.state as "live" | "cached" | "empty" | "mock" | "error"}
+      fetchedAt={result.fetchedAt ?? null}
       products={result.products.map((p) => ({
-        productId: p.product_id,
-        productName: p.product_name,
+        productId: p.productId,
+        productName: p.name,
         region: p.region,
-        minPrice: p.min_price,
-        maxPrice: p.max_price,
-        avgPrice: p.spu_avg_price,
-        commissionRate: p.product_commission_rate,
-        totalSaleCnt: p.total_sale_cnt,
-        totalSaleGmvAmt: p.total_sale_gmv_amt,
-        totalIflCnt: p.total_ifl_cnt,
-        totalVideoCnt: p.total_video_cnt,
-        totalLiveCnt: p.total_live_cnt,
-        coverUrl: p.coverUrls?.[0]?.url ?? null,
-        trend7dPct: p.trend7dPct ?? null,
+        minPrice: p.minPriceCents / 100,
+        maxPrice: p.maxPriceCents / 100,
+        avgPrice: p.avgPriceCents / 100,
+        commissionRate: p.commissionRate,
+        totalSaleCnt: p.totalSaleCnt,
+        totalSaleGmvAmt: p.totalSaleGmvCents / 100,
+        totalIflCnt: p.totalIflCnt,
+        totalVideoCnt: p.totalVideoCnt,
+        totalLiveCnt: 0,
+        coverUrl: p.coverUrls?.[0] ?? null,
+        trend7dPct: null,
+        importedProductId: p.importedProductId,
+        analysis: null,
+        interaction: p.interaction,
       }))}
     />
   );

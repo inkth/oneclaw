@@ -1,0 +1,31 @@
+# OneClaw 前端(Next.js standalone)。在仓库根作为 build context。
+# —— 依赖 ——————————————————————————————————————————————
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# —— 构建 ——————————————————————————————————————————————
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# next.config.ts 已设 output: "standalone"。客户端走同域(nginx),NEXT_PUBLIC_API_BASE 留空。
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+# —— 运行 ——————————————————————————————————————————————
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN addgroup -g 1001 nodejs && adduser -u 1001 -G nodejs -D nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000 HOSTNAME=0.0.0.0
+CMD ["node", "server.js"]

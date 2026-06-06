@@ -1,18 +1,37 @@
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
-import { Copilot } from "@/components/ai/copilot";
-import { Sparkles, LogOut } from "lucide-react";
-import { SidebarNav, BoardTabs } from "./_nav";
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { getMe } from "@/lib/api-client";
+import { LogoutButton } from "@/components/LogoutButton";
+import {
+  LayoutDashboard,
+  Package,
+  Sparkles,
+  Compass,
+} from "lucide-react";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+type NavGroup = { label: string; items: NavItem[] };
+
+// Phase 1:仅核心域(概览 / 发现 / 商品)。其余模块迁移完成后再放开。
+const navGroups: NavGroup[] = [
+  { label: "", items: [{ href: "/app", label: "概览", icon: LayoutDashboard }] },
+  { label: "发现", items: [{ href: "/app/discover/products", label: "TikTok 爆品", icon: Compass }] },
+  { label: "资产", items: [{ href: "/app/assets/products", label: "商品", icon: Package }] },
+];
 
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // 不再无条件拦截：游客也能进来逛功能页（如创作工坊），
-  // 真正需要账号的页面/动作各自提示登录。
-  const session = await auth();
+  const me = await getMe();
+  if (!me) redirect("/login?callbackUrl=/app");
+  const { user, workspace } = me;
+  const display = user.name || user.phone || user.email || "?";
 
   return (
     <div className="grain relative min-h-screen flex bg-zinc-50/50">
@@ -26,48 +45,53 @@ export default async function AppLayout({
           </span>
         </Link>
 
-        <SidebarNav />
+        <div className="px-3 py-3 border-b border-zinc-100">
+          <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
+            <div className="text-[10px] uppercase tracking-wider text-zinc-400">当前工作台</div>
+            <div className="mt-0.5 text-sm font-medium truncate">{workspace.name}</div>
+            <div className="mt-0.5 text-[10px] text-zinc-500">方案 · {workspace.plan}</div>
+          </div>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-3">
+          {navGroups.map((group, gi) => (
+            <div key={gi}>
+              {group.label && (
+                <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  {group.label}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600 transition-colors"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
 
         <div className="border-t border-zinc-100 p-3">
-          {session?.user ? (
-            <>
-              <div className="flex items-center gap-2 mb-3 px-2">
-                <div className="h-7 w-7 rounded-full bg-zinc-900 text-white text-xs font-semibold flex items-center justify-center">
-                  {(session.user.name || session.user.phone || session.user.email || "?").charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-medium truncate">
-                    {session.user.name || session.user.phone || session.user.email}
-                  </div>
-                  <div className="text-2xs text-zinc-500 truncate font-mono">
-                    {session.user.phone
-                      ? `+86 ${session.user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
-                      : session.user.email}
-                  </div>
-                </div>
+          <div className="flex items-center gap-2 mb-3 px-2">
+            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
+              {display.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-medium truncate">{display}</div>
+              <div className="text-[10px] text-zinc-500 truncate font-mono">
+                {user.phone
+                  ? `+86 ${user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
+                  : user.email}
               </div>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/" });
-                }}
-              >
-                <Button type="submit" variant="secondary" size="sm" className="w-full">
-                  <LogOut className="h-3.5 w-3.5" />
-                  退出登录
-                </Button>
-              </form>
-            </>
-          ) : (
-            <ButtonLink
-              href="/login?callbackUrl=/app/create"
-              variant="primary"
-              size="sm"
-              className="w-full"
-            >
-              登录 / 注册
-            </ButtonLink>
-          )}
+            </div>
+          </div>
+          <LogoutButton />
         </div>
       </aside>
 
@@ -85,8 +109,6 @@ export default async function AppLayout({
           {children}
         </main>
       </div>
-
-      {session?.user && <Copilot />}
     </div>
   );
 }

@@ -1,0 +1,90 @@
+# OneClaw 生产编排:Next + Go API + 自托管 Postgres + nginx 同域反代。
+# 与 jifou(:8081)/ deepclaw(:8080)同主机共存,使用独立端口/库/网络。
+# nginx 占 80,作为统一入口(/ → next,/api → go-api),实现同域 Cookie。
+services:
+  go-api:
+    build:
+      context: ./server
+    container_name: oneclaw-go-api
+    restart: always
+    ports:
+      - "8082:8080" # 调试直连;正式流量走 nginx
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+      DB_NAME: ${DB_NAME:?DB_NAME required}
+      DB_USER: ${DB_USER:?DB_USER required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      GIN_MODE: release
+      GOMEMLIMIT: 400MiB
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [oneclaw-net]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  next:
+    build:
+      context: .
+      dockerfile: Dockerfile.next
+    container_name: oneclaw-next
+    restart: always
+    ports:
+      - "3001:3000" # 调试直连;正式流量走 nginx
+    environment:
+      NODE_ENV: production
+      GO_API_INTERNAL_URL: http://go-api:8080 # SSR 走容器内网
+    depends_on:
+      - go-api
+    networks: [oneclaw-net]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: oneclaw-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME required}
+      POSTGRES_USER: ${DB_USER:?DB_USER required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+    volumes:
+      - oneclaw-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [oneclaw-net]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: oneclaw-nginx
+    restart: always
+    ports:
+      - "80:80"
+      # - "443:443"   # 证书就绪后启用
+    volumes:
+      - ./server/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./server/certs:/etc/nginx/certs:ro
+    depends_on:
+      - next
+      - go-api
+    networks: [oneclaw-net]
+
+volumes:
+  oneclaw-pg-data:
+
+networks:
+  oneclaw-net:
+    driver: bridge

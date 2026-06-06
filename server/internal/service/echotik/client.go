@@ -1,0 +1,139 @@
+package echotik
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+
+	"golang.org/x/sync/errgroup"
+
+	"github.com/oneclaw/server/internal/config"
+)
+
+// 服务端单页最多 10 条;要更多就多页并发拉。
+const maxPageSize = 10
+
+type Client struct {
+	cfg  config.EchoTikConfig
+	http *http.Client
+}
+
+func New(cfg config.EchoTikConfig) *Client {
+	return &Client{cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
+}
+
+func (c *Client) Configured() bool { return c.cfg.Configured() }
+
+func (c *Client) authHeader() string {
+	raw := c.cfg.Username + ":" + c.cfg.Password
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(raw))
+}
+
+func (c *Client) call(ctx context.Context, endpoint string, params map[string]string, out any) error {
+	u, err := url.Parse(c.cfg.BaseURL + endpoint)
+	if err != nil {
+		return err
+	}
+	q := u.Query()
+	for k, v := range params {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", c.authHeader())
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("echotik HTTP %d on %s", resp.StatusCode, endpoint)
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+// GetProductRanklist 拉榜单。处理单页上限 + 多页并发 + 日期回退。
+func (c *Client) GetProductRanklist(ctx context.Context, p RanklistParams) ([]ProductListItem, error) {
+	desired := p.PageSize
+	if desired <= 0 {
+		desired = 20
+	}
+	pageSize := desired
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+	startPage := p.PageNum
+	if startPage <= 0 {
+		startPage = 1
+	}
+	pagesNeeded := (desired + pageSize - 1) / pageSize
+
+	dates := []string{p.Date}
+	if p.Date == "" {
+		// 服务端为 T-1 数据,逐天回退兜底。
+		dates = []string{daysAgo(1), daysAgo(2), daysAgo(3)}
+	}
+
+	var lastErr error
+	for _, date := range dates {
+		results := make([][]ProductListItem, pagesNeeded)
+		g, gctx := errgroup.WithContext(ctx)
+		for i := 0; i < pagesNeeded; i++ {
+			i := i
+			g.Go(func() error {
+				params := map[string]string{
+					"region":             p.Region,
+					"rank_type":          strconv.Itoa(p.RankType),
+					"product_rank_field": strconv.Itoa(p.RankField),
+					"date":               date,
+					"page_size":          strconv.Itoa(pageSize),
+					"page_num":           strconv.Itoa(startPage + i),
+				}
+				var env Envelope[[]ProductListItem]
+				if err := c.call(gctx, "/echotik/product/ranklist", params, &env); err != nil {
+					return err
+				}
+				if env.Code != 0 && env.Code != 200 {
+					return fmt.Errorf("echotik code %d: %s", env.Code, env.Message)
+				}
+				results[i] = env.Data
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			lastErr = err
+			continue
+		}
+		var all []ProductListItem
+		for _, page := range results {
+			all = append(all, page...)
+		}
+		if len(all) > desired {
+			all = all[:desired]
+		}
+		if len(all) > 0 {
+			return all, nil
+		}
+	}
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return []ProductListItem{}, nil
+}
+
+func daysAgo(n int) string {
+	return time.Now().AddDate(0, 0, -n).Format("2006-01-02")
+}
