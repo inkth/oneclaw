@@ -1,10 +1,8 @@
 import { safeInfluencerRanklist, safeCategoriesL1 } from "@/lib/echotik/safe";
-import type { Region, RankType, EntityRankField } from "@/lib/echotik/types";
+import { REGION_CODES, type Region, type RankType, type EntityRankField } from "@/lib/echotik/types";
 import { InfluencersClient } from "./influencers-client";
 
 export const metadata = { title: "选品 · 达人榜 · OneClaw" };
-
-const VALID_REGIONS: Region[] = ["US", "GB", "ID", "TH", "VN", "MY"];
 
 export default async function DiscoverInfluencersPage({
   searchParams,
@@ -12,7 +10,7 @@ export default async function DiscoverInfluencersPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
-  const region = (VALID_REGIONS.includes(sp.region as Region) ? sp.region : "US") as Region;
+  const region = (REGION_CODES.includes(sp.region as Region) ? sp.region : "US") as Region;
   const rankType = (Number(sp.rank_type) || 1) as RankType;
   const field = (Number(sp.field) === 2 ? 2 : 1) as EntityRankField;
   const categoryId = sp.category_id || null;

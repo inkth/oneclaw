@@ -14,7 +14,32 @@ export interface EchoTikEnvelope<T> {
   requestId?: string | null;
 }
 
-export type Region = 'US' | 'GB' | 'ID' | 'TH' | 'VN' | 'MY';
+export type Region =
+  | 'US' | 'ID' | 'GB' | 'VN' | 'TH' | 'MY' | 'PH' | 'ES'
+  | 'MX' | 'DE' | 'FR' | 'IT' | 'BR' | 'JP' | 'SG' | 'IE';
+
+/** 支持的地区码 + 中文名 + 展示顺序（唯一来源；FilterBar/各页都从这里取）。 */
+export const REGIONS: ReadonlyArray<{ code: Region; cn: string }> = [
+  { code: 'US', cn: '美国' },
+  { code: 'ID', cn: '印度尼西亚' },
+  { code: 'GB', cn: '英国' },
+  { code: 'VN', cn: '越南' },
+  { code: 'TH', cn: '泰国' },
+  { code: 'MY', cn: '马来西亚' },
+  { code: 'PH', cn: '菲律宾' },
+  { code: 'ES', cn: '西班牙' },
+  { code: 'MX', cn: '墨西哥' },
+  { code: 'DE', cn: '德国' },
+  { code: 'FR', cn: '法国' },
+  { code: 'IT', cn: '意大利' },
+  { code: 'BR', cn: '巴西' },
+  { code: 'JP', cn: '日本' },
+  { code: 'SG', cn: '新加坡' },
+  { code: 'IE', cn: '爱尔兰' },
+];
+
+export const REGION_CODES: Region[] = REGIONS.map((r) => r.code);
+
 export type Language = 'en-US' | 'th-TH' | 'id-ID' | 'zh-CN' | 'ms-MY' | 'vi-VN';
 
 /** rank_type enum (numeric per API). Mapping inferred from smoke-test. */

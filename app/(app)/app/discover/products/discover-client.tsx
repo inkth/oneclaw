@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -31,6 +31,14 @@ type AnalysisInfo = {
 
 type Interaction = { isStarred: boolean; tags: string[] };
 
+/** 单个商品的个性化浮层（已导入 / 已分析 / 已收藏），流式补入。 */
+export type DiscoverOverlayEntry = {
+  importedProductId: string | null;
+  analysis: AnalysisInfo | null;
+  interaction: Interaction | null;
+};
+export type DiscoverOverlayMap = Record<string, DiscoverOverlayEntry>;
+
 type DiscoverProduct = {
   productId: string;
   productName: string;
@@ -46,9 +54,6 @@ type DiscoverProduct = {
   totalLiveCnt: number;
   coverUrl: string | null;
   trend7dPct: number | null;
-  importedProductId: string | null;
-  analysis: AnalysisInfo | null;
-  interaction: Interaction | null;
 };
 
 type DiscoverState = "live" | "cached" | "empty" | "mock" | "error";
@@ -62,6 +67,7 @@ export function DiscoverClient({
   categories,
   state,
   products,
+  overlay,
   isGuest = false,
 }: {
   workspaceId: string;
@@ -73,12 +79,24 @@ export function DiscoverClient({
   state: DiscoverState;
   fetchedAt: string | null;
   products: DiscoverProduct[];
+  /** 个性化浮层 Promise：服务端流式补入，首屏先渲染榜单，徽标随后到。 */
+  overlay: Promise<DiscoverOverlayMap>;
   isGuest?: boolean;
 }) {
   const router = useRouter();
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState<Set<string>>(new Set());
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+
+  // 浮层异步到达：不阻塞表格渲染，resolve 后徽标/收藏态自然补入。
+  const [overlayMap, setOverlayMap] = useState<DiscoverOverlayMap | null>(null);
+  useEffect(() => {
+    let alive = true;
+    overlay.then((m) => alive && setOverlayMap(m)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [overlay]);
 
   // 游客触发绑账号的动作（导入/分析/收藏）时拦下来提示登录。返回 true 表示已拦截。
   function gateGuest(): boolean {
@@ -122,18 +140,17 @@ export function DiscoverClient({
   }
 
   const [starring, setStarring] = useState<Set<string>>(new Set());
-  const [stars, setStars] = useState<Record<string, boolean>>(() => {
-    const m: Record<string, boolean> = {};
-    for (const p of products) m[p.productId] = p.interaction?.isStarred ?? false;
-    return m;
-  });
+  // 用户本地操作覆盖在浮层收藏态之上：有 override 用 override，否则取流式到达的浮层值。
+  const [starOverrides, setStarOverrides] = useState<Record<string, boolean>>({});
+  const isStarred = (id: string) =>
+    starOverrides[id] ?? overlayMap?.[id]?.interaction?.isStarred ?? false;
 
   async function toggleStar(p: DiscoverProduct) {
     if (starring.has(p.productId)) return;
     if (gateGuest()) return;
-    const next = !stars[p.productId];
+    const next = !isStarred(p.productId);
     setStarring((prev) => new Set(prev).add(p.productId));
-    setStars((prev) => ({ ...prev, [p.productId]: next }));
+    setStarOverrides((prev) => ({ ...prev, [p.productId]: next }));
     const res = await fetch(`/api/workspaces/${workspaceId}/discover/interactions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -145,7 +162,7 @@ export function DiscoverClient({
       return n;
     });
     if (!res.ok) {
-      setStars((prev) => ({ ...prev, [p.productId]: !next }));
+      setStarOverrides((prev) => ({ ...prev, [p.productId]: !next }));
       toast.error("收藏失败");
     } else if (next) {
       toast.success("已收藏");
@@ -225,7 +242,12 @@ export function DiscoverClient({
           </tr>
         </THead>
         <tbody>
-          {products.map((p, idx) => (
+          {products.map((p, idx) => {
+            const ov = overlayMap?.[p.productId];
+            const importedProductId = ov?.importedProductId ?? null;
+            const analysis = ov?.analysis ?? null;
+            const starred = isStarred(p.productId);
+            return (
             <Tr key={p.productId}>
               <Td className="text-zinc-400 tabular-nums">
                 <div className="flex items-center gap-1.5">
@@ -233,11 +255,11 @@ export function DiscoverClient({
                     onClick={() => toggleStar(p)}
                     disabled={starring.has(p.productId)}
                     className="flex h-5 w-5 items-center justify-center rounded text-zinc-300 transition-colors hover:text-amber-400"
-                    title={stars[p.productId] ? "取消收藏" : "收藏"}
+                    title={starred ? "取消收藏" : "收藏"}
                   >
                     <Star
                       className={`h-3.5 w-3.5 ${
-                        stars[p.productId] ? "fill-amber-400 text-amber-400" : ""
+                        starred ? "fill-amber-400 text-amber-400" : ""
                       }`}
                     />
                   </button>
@@ -253,27 +275,27 @@ export function DiscoverClient({
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5 font-mono text-2xs text-zinc-500">
                       <span>{p.region} · {p.productId.slice(0, 12)}</span>
-                      {p.importedProductId && (
+                      {importedProductId && (
                         <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 font-sans text-2xs font-medium text-emerald-700">
                           <Check className="h-2 w-2" />
                           已加入
                         </span>
                       )}
-                      {p.analysis && (
+                      {analysis && (
                         <span
                           className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-sans text-2xs font-medium ${
-                            p.analysis.verdict === "RECOMMENDED"
+                            analysis.verdict === "RECOMMENDED"
                               ? "bg-emerald-50 text-emerald-700"
-                              : p.analysis.verdict === "AVOID"
+                              : analysis.verdict === "AVOID"
                                 ? "bg-rose-50 text-rose-700"
                                 : "bg-amber-50 text-amber-700"
                           }`}
-                          title={`分析于 ${new Date(p.analysis.createdAt).toLocaleString("zh-CN")}`}
+                          title={`分析于 ${new Date(analysis.createdAt).toLocaleString("zh-CN")}`}
                         >
                           <Sparkles className="h-2 w-2" />
-                          {p.analysis.verdict === "RECOMMENDED"
+                          {analysis.verdict === "RECOMMENDED"
                             ? "推荐"
-                            : p.analysis.verdict === "AVOID"
+                            : analysis.verdict === "AVOID"
                               ? "避开"
                               : "已分析"}
                         </span>
@@ -322,7 +344,7 @@ export function DiscoverClient({
                     )}
                     AI 分析
                   </button>
-                  {p.importedProductId ? (
+                  {importedProductId ? (
                     <Link
                       href={`/app/assets/products`}
                       className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-medium text-emerald-700 hover:bg-emerald-100"
@@ -349,7 +371,8 @@ export function DiscoverClient({
                 </div>
               </Td>
             </Tr>
-          ))}
+            );
+          })}
         </tbody>
       </TableWrap>
     </div>

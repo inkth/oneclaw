@@ -520,6 +520,9 @@ model AgentTask {
   workspace     Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, createdAt])
+  // discover 页每次打开都按 (workspace, ANALYST) + metadata 过滤来查「哪些商品已分析」，
+  // 没有这条索引会退化成扫该 workspace 的全部任务；加上 agent 让扫描只覆盖 ANALYST 任务。
+  @@index([workspaceId, agent, createdAt])
 }
 
 model NewsletterSubscription {

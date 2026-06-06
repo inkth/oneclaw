@@ -4,19 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
+import { REGIONS, type Region } from "@/lib/echotik/types";
 
-export type Region = "US" | "GB" | "ID" | "TH" | "VN" | "MY";
+export type { Region };
+export { REGIONS };
 export type CategoryOption = { id: string; name: string };
 export type FieldOption = { v: number; cn: string };
-
-export const REGIONS: Array<{ code: Region; cn: string }> = [
-  { code: "US", cn: "美国" },
-  { code: "ID", cn: "印度尼西亚" },
-  { code: "GB", cn: "英国" },
-  { code: "VN", cn: "越南" },
-  { code: "TH", cn: "泰国" },
-  { code: "MY", cn: "马来西亚" },
-];
 
 // 行内单个可选项
 type Item = { value: string; label: string };

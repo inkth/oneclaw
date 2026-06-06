@@ -132,7 +132,43 @@ export async function lookupRanklistCache(opts: {
 }
 
 /**
+ * 把一批榜单项贴上 DB 里已有的封面（实时路径用）。
+ *
+ * 榜单接口（ProductListItem）不含封面，封面靠 enrichCoversIfMissing 异步落库到
+ * DiscoverProduct.coverUrls。指定类目时绕过了缓存、返回的是裸榜单项 → 无图。
+ * 这里按 externalId 查一次 DB，把已 enrich 过的封面贴回去（热门商品多半已有），
+ * 没有的留空由 after() 的 enrich 补、下次再显示。
+ */
+export async function attachExistingCovers(
+  products: ProductListItem[],
+  region: string,
+): Promise<EnrichedProduct[]> {
+  if (products.length === 0) return [];
+  const rows = await prisma.discoverProduct.findMany({
+    where: {
+      provider: PROVIDER,
+      region,
+      externalId: { in: products.map((p) => p.product_id) },
+    },
+    select: { externalId: true, coverUrls: true },
+  });
+  const coversById = new Map<string, Array<{ url: string; index: number }>>();
+  for (const r of rows) {
+    if (Array.isArray(r.coverUrls) && r.coverUrls.length > 0) {
+      coversById.set(
+        r.externalId,
+        r.coverUrls as Array<{ url: string; index: number }>,
+      );
+    }
+  }
+  return products.map((p) => ({ ...p, coverUrls: coversById.get(p.product_id) }));
+}
+
+/**
  * Upsert 一批 EchoTik 商品 + 当天 snapshot + 刷新 ranklist 缓存。
+ *
+ * writeCacheEntry=false：只 upsert 商品 + snapshot，不写 ranklistCacheEntry。
+ * 指定类目的实时结果用此模式——让商品入库（便于 enrich 补封面）但不污染默认榜单缓存。
  */
 export async function persistRanklist(opts: {
   region: string;
@@ -140,8 +176,10 @@ export async function persistRanklist(opts: {
   rankField: number;
   date: string;
   products: ProductListItem[];
+  writeCacheEntry?: boolean;
 }): Promise<void> {
   if (opts.products.length === 0) return;
+  const writeCacheEntry = opts.writeCacheEntry ?? true;
 
   // 1) Upsert products
   const upsertOps: Prisma.PrismaPromise<unknown>[] = [];
@@ -194,31 +232,33 @@ export async function persistRanklist(opts: {
       }),
     );
   }
-  upsertOps.push(
-    prisma.ranklistCacheEntry.upsert({
-      where: {
-        provider_region_rankType_rankField: {
+  if (writeCacheEntry) {
+    upsertOps.push(
+      prisma.ranklistCacheEntry.upsert({
+        where: {
+          provider_region_rankType_rankField: {
+            provider: PROVIDER,
+            region: opts.region,
+            rankType: opts.rankType,
+            rankField: opts.rankField,
+          },
+        },
+        create: {
           provider: PROVIDER,
           region: opts.region,
           rankType: opts.rankType,
           rankField: opts.rankField,
+          date: opts.date,
+          externalIds: opts.products.map((p) => p.product_id),
         },
-      },
-      create: {
-        provider: PROVIDER,
-        region: opts.region,
-        rankType: opts.rankType,
-        rankField: opts.rankField,
-        date: opts.date,
-        externalIds: opts.products.map((p) => p.product_id),
-      },
-      update: {
-        date: opts.date,
-        externalIds: opts.products.map((p) => p.product_id),
-        fetchedAt: new Date(),
-      },
-    }),
-  );
+        update: {
+          date: opts.date,
+          externalIds: opts.products.map((p) => p.product_id),
+          fetchedAt: new Date(),
+        },
+      }),
+    );
+  }
   await prisma.$transaction(upsertOps);
 
   // 2) Snapshot 今天的指标（独立事务以拿到刚 upsert 后的 dp.id）

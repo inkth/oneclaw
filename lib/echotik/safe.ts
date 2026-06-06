@@ -33,6 +33,7 @@ import {
   lookupRanklistCache,
   persistRanklist,
   enrichCoversIfMissing,
+  attachExistingCovers,
   type EnrichedProduct,
 } from "./cache";
 
@@ -99,23 +100,37 @@ export async function safeRanklist(params: RanklistParams): Promise<SafeRanklist
     if (list.length === 0) {
       return { products: [], state: "empty" };
     }
+    const date = new Date().toISOString().slice(0, 10);
     if (!hasCategory) {
       await persistRanklist({
         region: params.region,
         rankType: params.rank_type,
         rankField: params.product_rank_field,
-        date: new Date().toISOString().slice(0, 10),
+        date,
         products: list,
       });
     }
-    // 触发异步 cover 补全
+    // 榜单接口不含封面，贴回 DB 里已 enrich 的封面（热门商品多半已有）。
+    const enriched = await attachExistingCovers(list, params.region);
     after(async () => {
+      // 指定类目的实时结果也入库（不写榜单缓存，避免串榜），
+      // 好让 enrich 能给从没见过的新商品补封面，下次打开即有图。
+      if (hasCategory) {
+        await persistRanklist({
+          region: params.region,
+          rankType: params.rank_type,
+          rankField: params.product_rank_field,
+          date,
+          products: list,
+          writeCacheEntry: false,
+        });
+      }
       await enrichCoversIfMissing(
         list.map((p) => p.product_id),
         params.region,
       );
     });
-    return { products: list.map(asEnriched), state: "live", fetchedAt: new Date() };
+    return { products: enriched, state: "live", fetchedAt: new Date() };
   } catch (e) {
     console.error("[echotik] safeRanklist failed, falling back to mock", e);
     return {
@@ -217,13 +232,51 @@ export type CategoryOption = { id: string; name: string };
  * next.revalidate 形同虚设、每次打开页面都实时打 EchoTik（~4s）。
  * unstable_cache 的缓存不受渲染位置影响，按 region 建键，6h 刷新一次。
  */
+// 一级类目的展示顺序（产品指定，非字母序）。不在表里的新类目排到最后、按拼音兜底。
+const CATEGORY_ORDER = [
+  "美妆个护",
+  "女装与女士内衣",
+  "保健",
+  "时尚配件",
+  "运动与户外",
+  "手机与数码",
+  "居家日用",
+  "食品饮料",
+  "汽车与摩托车",
+  "男装与男士内衣",
+  "收藏品",
+  "玩具和爱好",
+  "厨房用品",
+  "家装建材",
+  "电脑办公",
+  "箱包",
+  "鞋靴",
+  "五金工具",
+  "家纺布艺",
+  "家电",
+  "宠物用品",
+  "珠宝与衍生品",
+  "图书&杂志&音频",
+  "母婴用品",
+  "家具",
+  "儿童时尚",
+  "穆斯林时尚",
+  "二手",
+  "虚拟商品",
+];
+const categoryRank = new Map(CATEGORY_ORDER.map((name, i) => [name, i]));
+
 const getCachedCategoriesL1 = unstable_cache(
   async (region: Region): Promise<CategoryOption[]> => {
     const cats = await listCategoriesL1("zh-CN", region);
     return cats
       .filter((c) => c.category_id && c.category_id !== "0")
       .map((c) => ({ id: c.category_id, name: c.category_name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        const ra = categoryRank.get(a.name) ?? Number.MAX_SAFE_INTEGER;
+        const rb = categoryRank.get(b.name) ?? Number.MAX_SAFE_INTEGER;
+        return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
+      });
   },
   ["echotik-categories-l1"],
   { revalidate: 6 * 60 * 60, tags: ["echotik:categories"] },
