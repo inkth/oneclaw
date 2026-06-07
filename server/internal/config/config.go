@@ -72,12 +72,18 @@ type RateLimitConfig struct {
 }
 
 type SMSConfig struct {
-	Provider          string // mock | tencent(tencent 在后续阶段接入)
+	Provider          string // mock | tencent
 	TencentSecretID   string
 	TencentSecretKey  string
 	TencentSDKAppID   string
 	TencentSignName   string
 	TencentTemplateID string
+	TencentRegion     string // 如 ap-guangzhou
+}
+
+func (s SMSConfig) TencentConfigured() bool {
+	return s.TencentSecretID != "" && s.TencentSecretKey != "" && s.TencentSDKAppID != "" &&
+		s.TencentSignName != "" && s.TencentTemplateID != ""
 }
 
 // EchoTikConfig EchoTik 开放 API(TikTok Shop 选品数据源)。HTTP Basic Auth。
@@ -161,6 +167,7 @@ func Load() *Config {
 			TencentSDKAppID:   getEnv("SMS_TENCENT_SDK_APP_ID", ""),
 			TencentSignName:   getEnv("SMS_TENCENT_SIGN_NAME", ""),
 			TencentTemplateID: getEnv("SMS_TENCENT_TEMPLATE_ID", ""),
+			TencentRegion:     getEnv("SMS_TENCENT_REGION", "ap-guangzhou"),
 		},
 		EchoTik: EchoTikConfig{
 			BaseURL:  getEnv("ECHOTIK_BASE_URL", "https://open.echotik.live/api/v3"),
