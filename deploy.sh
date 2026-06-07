@@ -65,6 +65,8 @@ RSYNC_EXCLUDES=(
   --exclude='.git' --exclude='.env' --exclude='.deploy.env'
   --exclude='node_modules' --exclude='.next' --exclude='server/bin'
   --exclude='backups/' --exclude='*.log' --exclude='.DS_Store'
+  # 证书只在远端(certbot 生成),本地没有;--delete 会误删,必须排除
+  --exclude='server/certs'
 )
 
 print_help() { sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; }
