@@ -24,7 +24,7 @@ Go API 已覆盖:auth(send-code/login/logout)、me、workspaces/default、produc
 | P3 视频(OpenRouter,非 fal)| /api/v1/videos 提交+轮询 + videos(create/list/refresh)+ director/templates/operator | 高 | 🚧 P3a 完成:video 客户端(seedance)+ Video 模型 + 异步轮询 + videos 端点。✅ director(脚本→视频)/operator/templates 完成 + 视频转存 COS。✅ 封面图改用 fal flux(OpenRouter 图像模型对国内区域屏蔽)→ COS。P3 完成 |
 | P4 计费 | PaymentOrder + checkout + alipay/wechat webhooks | 高 | ⬜ |
 | P5 定时 | cron/echotik-refresh → Go 定时任务 | 低 | ⬜ |
-| P6 前端切换 + 清 Prisma | 剩余 SSR/客户端全切 Go API;删 app/api/*、prisma/、lib/db、lib/agents、lib/fal、lib/openrouter、@prisma/client 依赖、db:* 脚本、Auth.js 表;调整 docker/部署 | 中 | ⬜ |
+| P6 前端切换 + 清 Prisma | 剩余 SSR/客户端全切 Go API;删 app/api/*、prisma/、lib/db、lib/agents、lib/fal、lib/openrouter、@prisma/client 依赖、db:* 脚本、Auth.js 表;调整 docker/部署 | 中 | ✅ Prisma 全删(105 文件)+ 前端全切 /api/v1;next build 零 Prisma;已部署。遗留 billing/copilot/creation 无 Go 后端(P4/暂缓)|
 
 ## 待迁 / 顺序调整
 
