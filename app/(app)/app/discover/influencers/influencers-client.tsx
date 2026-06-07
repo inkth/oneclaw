@@ -2,7 +2,7 @@
 
 import { Users, Award } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
-import { EmptyState, StateBadge, Thumb, type DiscoverState } from "../_components/shared";
+import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { fmt, fmtMoney } from "../_components/format";
@@ -48,7 +48,6 @@ export function InfluencersClient({
           <span className="inline-flex items-center gap-2">
             <Users className="h-5 w-5 text-brand-500" />
             选品 · 达人榜
-            <StateBadge state={state} />
           </span>
         }
         description="各国带货达人榜单 · 看粉丝量、带货 GMV、商品与内容产出 · 找对的人合作"

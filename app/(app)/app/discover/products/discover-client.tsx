@@ -12,8 +12,6 @@ import {
   Plus,
   Loader2,
   Star,
-  Database,
-  AlertTriangle,
   ArrowUpRight,
   Check,
   CheckCircle2,
@@ -90,7 +88,6 @@ export function DiscoverClient({
   categoryId,
   categories,
   state,
-  fetchedAt,
   products,
   isGuest = false,
 }: {
@@ -233,52 +230,12 @@ export function DiscoverClient({
       )}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight inline-flex items-center gap-2">
-            发现 · TikTok 爆品
-            {state === "mock" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-200">
-                <Database className="h-2.5 w-2.5" />
-                Mock 数据
-              </span>
-            )}
-            {state === "live" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200">
-                <Database className="h-2.5 w-2.5" />
-                EchoTik 实时
-              </span>
-            )}
-            {state === "cached" && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 border border-sky-200"
-                title={fetchedAt ? `缓存于 ${new Date(fetchedAt).toLocaleString("zh-CN")}` : undefined}
-              >
-                <Database className="h-2.5 w-2.5" />
-                本地缓存
-              </span>
-            )}
-            {state === "error" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 border border-rose-200">
-                <AlertTriangle className="h-2.5 w-2.5" />
-                EchoTik 异常 · 已降级
-              </span>
-            )}
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight">发现 · TikTok 爆品</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            来自 EchoTik 的 TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断
+            TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断
           </p>
         </div>
       </div>
-
-      {state === "mock" && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 flex items-start gap-3">
-          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-amber-800 leading-relaxed">
-            当前是 mock 数据。在 <code className="rounded bg-amber-100 px-1">.env.local</code> 填上
-            <code className="ml-1 rounded bg-amber-100 px-1">ECHOTIK_USERNAME</code> +
-            <code className="ml-1 rounded bg-amber-100 px-1">ECHOTIK_PASSWORD</code>，刷新即可拉真实榜单。
-          </div>
-        </div>
-      )}
 
       <FilterBar
         basePath="/app/discover/products"
@@ -294,8 +251,7 @@ export function DiscoverClient({
         <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center">
           <div className="text-base font-semibold">该榜单暂无数据</div>
           <p className="mt-1.5 text-sm text-zinc-500 max-w-md mx-auto">
-            EchoTik 这个区域 / 榜单组合下还没有可用数据（可能 T-1 数据未生成，或当前账号订阅未覆盖此榜单）。
-            试试切换到「热销」榜或者换个区域。
+            这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜或者换个区域。
           </p>
         </div>
       )}
