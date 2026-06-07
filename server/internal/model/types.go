@@ -39,6 +39,16 @@ const (
 	TaskRunning = "RUNNING"
 	TaskDone    = "DONE"
 	TaskFailed  = "FAILED"
+
+	VideoPending    = "PENDING"
+	VideoGenerating = "GENERATING"
+	VideoCompleted  = "COMPLETED"
+	VideoFailed     = "FAILED"
+
+	VideoStyleUnboxing    = "UNBOXING"
+	VideoStyleComparison  = "COMPARISON"
+	VideoStyleScene       = "SCENE"
+	VideoStyleBeforeAfter = "BEFORE_AFTER"
 )
 
 // JSONB 是存进 Postgres jsonb 列的原始 JSON。

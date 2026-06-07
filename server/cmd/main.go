@@ -61,6 +61,7 @@ func main() {
 		&model.ModelAsset{},
 		&model.Material{},
 		&model.AgentTask{},
+		&model.Video{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -79,6 +80,7 @@ func main() {
 	matSvc := service.NewMaterialService(db, store)
 	llmClient := llm.New(cfg.OpenRouter)
 	agentSvc := service.NewAgentService(db, llmClient)
+	videoSvc := service.NewVideoService(db, llmClient)
 	if llmClient.Configured() {
 		logger.Info("[llm] OpenRouter 已配置", logger.String("model", llmClient.Model()))
 	} else {
@@ -107,6 +109,7 @@ func main() {
 		Model:     modelSvc,
 		Material:  matSvc,
 		Agent:     agentSvc,
+		Video:     videoSvc,
 	})
 
 	srv := &http.Server{

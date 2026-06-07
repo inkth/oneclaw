@@ -104,9 +104,10 @@ func (s StorageConfig) Configured() bool {
 
 // OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
 type OpenRouterConfig struct {
-	APIKey  string
-	Model   string // 默认 deepseek/deepseek-chat
-	Referer string // HTTP-Referer 头
+	APIKey     string
+	Model      string // 文本默认 deepseek/deepseek-chat
+	VideoModel string // 视频默认 bytedance/seedance-2.0-fast
+	Referer    string // HTTP-Referer 头
 }
 
 func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
@@ -174,9 +175,10 @@ func Load() *Config {
 			COSDomain:    getEnv("TENCENT_COS_DOMAIN", ""),
 		},
 		OpenRouter: OpenRouterConfig{
-			APIKey:  getEnv("OPENROUTER_API_KEY", ""),
-			Model:   getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
-			Referer: getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
+			APIKey:     getEnv("OPENROUTER_API_KEY", ""),
+			Model:      getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
+			VideoModel: getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
+			Referer:    getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

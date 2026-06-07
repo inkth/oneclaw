@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 )
 
 const endpoint = "https://openrouter.ai/api/v1/chat/completions"
+const videoEndpoint = "https://openrouter.ai/api/v1/videos"
 
 type Client struct {
 	cfg  config.OpenRouterConfig
@@ -27,6 +29,9 @@ func New(cfg config.OpenRouterConfig) *Client {
 
 func (c *Client) Configured() bool { return c.cfg.Configured() }
 func (c *Client) Model() string    { return c.cfg.Model }
+func (c *Client) VideoModel() string {
+	return c.cfg.VideoModel
+}
 
 type Usage struct {
 	Model     string `json:"model"`
@@ -170,3 +175,92 @@ func estimateCostCents(model string, tokensIn, tokensOut int) int {
 	usd := (float64(tokensIn)*p[0] + float64(tokensOut)*p[1]) / 1_000_000
 	return int(usd*100 + 0.5)
 }
+
+// ── 视频生成(OpenRouter /api/v1/videos,异步:提交 → 轮询 polling_url)──────
+
+type VideoJob struct {
+	ID           string   `json:"id"`
+	PollingURL   string   `json:"polling_url"`
+	Status       string   `json:"status"` // pending|in_progress|completed|failed|cancelled|expired
+	GenerationID string   `json:"generation_id"`
+	UnsignedURLs []string `json:"unsigned_urls"`
+	Error        string   `json:"error"`
+	Usage        struct {
+		Cost float64 `json:"cost"`
+	} `json:"usage"`
+}
+
+type VideoParams struct {
+	Model       string
+	Prompt      string
+	DurationSec int
+	AspectRatio string
+	Resolution  string
+}
+
+// SubmitVideo 提交一次视频生成,返回 job(含 polling_url)。
+func (c *Client) SubmitVideo(ctx context.Context, p VideoParams) (*VideoJob, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("llm/video: OPENROUTER_API_KEY 未配置")
+	}
+	model := p.Model
+	if model == "" {
+		model = c.cfg.VideoModel
+	}
+	body := map[string]any{"model": model, "prompt": p.Prompt}
+	if p.DurationSec > 0 {
+		body["duration"] = p.DurationSec
+	}
+	if p.AspectRatio != "" {
+		body["aspect_ratio"] = p.AspectRatio
+	}
+	if p.Resolution != "" {
+		body["resolution"] = p.Resolution
+	}
+	return c.videoCall(ctx, http.MethodPost, videoEndpoint, body)
+}
+
+// PollVideo 查询一个视频任务的状态(GET 提交时返回的 polling_url)。
+func (c *Client) PollVideo(ctx context.Context, pollingURL string) (*VideoJob, error) {
+	if pollingURL == "" {
+		return nil, fmt.Errorf("llm/video: 缺少 polling_url")
+	}
+	return c.videoCall(ctx, http.MethodGet, pollingURL, nil)
+}
+
+func (c *Client) videoCall(ctx context.Context, method, url string, body any) (*VideoJob, error) {
+	var rd io.Reader
+	if body != nil {
+		b, _ := json.Marshal(body)
+		rd = bytes.NewReader(b)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, url, rd)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("HTTP-Referer", c.cfg.Referer)
+	req.Header.Set("X-Title", "OneClaw")
+
+	res, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("llm/video: 请求失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	var job VideoJob
+	if err := json.NewDecoder(res.Body).Decode(&job); err != nil {
+		return nil, fmt.Errorf("llm/video: 解析失败: %w", err)
+	}
+	if res.StatusCode >= 400 {
+		if job.Error != "" {
+			return nil, fmt.Errorf("llm/video: %s", job.Error)
+		}
+		return nil, fmt.Errorf("llm/video: HTTP %d", res.StatusCode)
+	}
+	return &job, nil
+}
+
+// VideoCostCents 把 usage.cost(美元)换成美分。
+func VideoCostCents(usd float64) int { return int(usd*100 + 0.5) }

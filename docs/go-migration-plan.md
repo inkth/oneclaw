@@ -21,7 +21,7 @@ Go API 已覆盖:auth(send-code/login/logout)、me、workspaces/default、produc
 | P0 纯 CRUD | subscribe · demo · shops · models | 低 | ✅ 完成(subscribe/demo/shops/models) |
 | P1 存储+素材 | storage→Go;materials | 中 | ✅ 完成(COS storage + materials 上传/列表/删除) |
 | P2 AI 核心 | openrouter + agent-tasks 异步 + analyst/director/operator/copilot + discover/analyze + templates/optimize | 高 | 🚧 P2a 完成:LLM 客户端 + AgentTask + goroutine 异步执行器 + analyst + agent-tasks 端点(需 OPENROUTER_API_KEY)。discover-analyze 也已端到端打通。待:operator(依赖 P3 videos)/copilot/templates |
-| P3 fal 媒体 | fal submit/poll + videos(create/refresh)+ director 图/视频 | 高 | ⬜ |
+| P3 视频(OpenRouter,非 fal)| /api/v1/videos 提交+轮询 + videos(create/list/refresh)+ director/templates/operator | 高 | 🚧 P3a 完成:video 客户端(seedance)+ Video 模型 + 异步轮询 + videos 端点。待:director/templates/operator/封面图 |
 | P4 计费 | PaymentOrder + checkout + alipay/wechat webhooks | 高 | ⬜ |
 | P5 定时 | cron/echotik-refresh → Go 定时任务 | 低 | ⬜ |
 | P6 前端切换 + 清 Prisma | 剩余 SSR/客户端全切 Go API;删 app/api/*、prisma/、lib/db、lib/agents、lib/fal、lib/openrouter、@prisma/client 依赖、db:* 脚本、Auth.js 表;调整 docker/部署 | 中 | ⬜ |
