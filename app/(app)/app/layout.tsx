@@ -6,6 +6,12 @@ import {
   Package,
   Sparkles,
   Compass,
+  Store,
+  Users,
+  Image as ImageIcon,
+  Video,
+  Bot,
+  Settings,
 } from "lucide-react";
 
 type NavItem = {
@@ -18,9 +24,25 @@ type NavGroup = { label: string; items: NavItem[] };
 
 // Phase 1:仅核心域(概览 / 发现 / 商品)。其余模块迁移完成后再放开。
 const navGroups: NavGroup[] = [
-  { label: "", items: [{ href: "/app", label: "概览", icon: LayoutDashboard }] },
-  { label: "发现", items: [{ href: "/app/discover/products", label: "TikTok 爆品", icon: Compass }] },
-  { label: "资产", items: [{ href: "/app/assets/products", label: "商品", icon: Package }] },
+  { label: "", items: [{ href: "/app", label: "工作台", icon: LayoutDashboard }] },
+  { label: "选品", items: [{ href: "/app/discover/products", label: "TikTok 爆品", icon: Compass }] },
+  {
+    label: "资产",
+    items: [
+      { href: "/app/assets/products", label: "商品", icon: Package },
+      { href: "/app/assets/shops", label: "店铺", icon: Store },
+      { href: "/app/assets/models", label: "模特", icon: Users },
+      { href: "/app/assets/materials", label: "素材库", icon: ImageIcon },
+    ],
+  },
+  {
+    label: "创作",
+    items: [
+      { href: "/app/videos", label: "短视频", icon: Video },
+      { href: "/app/agents", label: "Agent 派发", icon: Bot },
+    ],
+  },
+  { label: "账户", items: [{ href: "/app/settings", label: "设置", icon: Settings }] },
 ];
 
 export default async function AppLayout({
