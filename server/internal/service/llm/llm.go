@@ -5,6 +5,7 @@ package llm
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -264,6 +265,84 @@ func (c *Client) videoCall(ctx context.Context, method, url string, body any) (*
 
 // VideoCostCents 把 usage.cost(美元)换成美分。
 func VideoCostCents(usd float64) int { return int(usd*100 + 0.5) }
+
+// GenerateImage 用图像模型生成一张图(chat/completions + modalities)。
+// 返回解码后的字节 + content-type。响应里图为 base64 data URL。
+func (c *Client) GenerateImage(ctx context.Context, prompt, aspectRatio string) ([]byte, string, error) {
+	if !c.Configured() {
+		return nil, "", fmt.Errorf("llm/image: OPENROUTER_API_KEY 未配置")
+	}
+	model := c.cfg.ImageModel
+	body := map[string]any{
+		"model":      model,
+		"messages":   []chatMsg{{Role: "user", Content: prompt}},
+		"modalities": []string{"image", "text"},
+	}
+	if aspectRatio != "" {
+		body["image_config"] = map[string]any{"aspect_ratio": aspectRatio}
+	}
+	buf, _ := json.Marshal(body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(buf))
+	if err != nil {
+		return nil, "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("HTTP-Referer", c.cfg.Referer)
+	req.Header.Set("X-Title", "OneClaw")
+
+	res, err := c.http.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("llm/image: 请求失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	var parsed struct {
+		Choices []struct {
+			Message struct {
+				Images []struct {
+					ImageURL struct {
+						URL string `json:"url"`
+					} `json:"image_url"`
+				} `json:"images"`
+			} `json:"message"`
+		} `json:"choices"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&parsed); err != nil {
+		return nil, "", fmt.Errorf("llm/image: 解析失败: %w", err)
+	}
+	if parsed.Error != nil {
+		return nil, "", fmt.Errorf("llm/image: 上游错误: %s", parsed.Error.Message)
+	}
+	if len(parsed.Choices) == 0 || len(parsed.Choices[0].Message.Images) == 0 {
+		return nil, "", fmt.Errorf("llm/image: 未返回图像(HTTP %d)", res.StatusCode)
+	}
+	return decodeDataURL(parsed.Choices[0].Message.Images[0].ImageURL.URL)
+}
+
+// decodeDataURL 解析 "data:image/png;base64,XXXX" → (字节, content-type)。
+func decodeDataURL(u string) ([]byte, string, error) {
+	if !strings.HasPrefix(u, "data:") {
+		return nil, "", fmt.Errorf("llm/image: 非 data URL")
+	}
+	comma := strings.IndexByte(u, ',')
+	if comma < 0 {
+		return nil, "", fmt.Errorf("llm/image: data URL 格式错误")
+	}
+	meta, payload := u[5:comma], u[comma+1:]
+	ct := "image/png"
+	if i := strings.IndexByte(meta, ';'); i >= 0 {
+		ct = meta[:i]
+	}
+	data, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		return nil, "", fmt.Errorf("llm/image: base64 解码失败: %w", err)
+	}
+	return data, ct, nil
+}
 
 // Download 用 key GET 一个受保护 URL(如 OpenRouter 视频 content),返回字节 + content-type。
 func (c *Client) Download(ctx context.Context, url string) ([]byte, string, error) {

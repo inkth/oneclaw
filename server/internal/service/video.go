@@ -199,6 +199,28 @@ func (s *VideoService) applyJob(ctx context.Context, videoID uuid.UUID, job *llm
 	}
 }
 
+// GenerateCover 用图像模型生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
+func (s *VideoService) GenerateCover(ctx context.Context, videoID uuid.UUID, prompt, aspectRatio string) {
+	if !s.llm.Configured() || !s.storage.Configured() {
+		return
+	}
+	data, ct, err := s.llm.GenerateImage(ctx, "竖屏短视频封面海报,无文字:"+prompt, aspectRatio)
+	if err != nil {
+		logger.Warn("[video] 封面生成失败", logger.String("video", videoID.String()), logger.Err(err))
+		return
+	}
+	ext := ".png"
+	if strings.Contains(ct, "jpeg") || strings.Contains(ct, "jpg") {
+		ext = ".jpg"
+	}
+	url, err := s.storage.Put(ctx, "thumbnails/"+videoID.String()+ext, data, ct)
+	if err != nil {
+		logger.Warn("[video] 封面上传失败", logger.String("video", videoID.String()), logger.Err(err))
+		return
+	}
+	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", videoID).Update("thumbnail_url", url)
+}
+
 // rehostToCOS 拉取 OpenRouter 视频字节(带 key)→ 上传 COS,返回永久 URL。
 func (s *VideoService) rehostToCOS(ctx context.Context, videoID uuid.UUID, srcURL string) (string, error) {
 	data, ct, err := s.llm.Download(ctx, srcURL)

@@ -113,6 +113,7 @@ type OpenRouterConfig struct {
 	APIKey     string
 	Model      string // 文本默认 deepseek/deepseek-chat
 	VideoModel string // 视频默认 bytedance/seedance-2.0-fast
+	ImageModel string // 图像默认 google/gemini-3.1-flash-image-preview
 	Referer    string // HTTP-Referer 头
 }
 
@@ -185,6 +186,7 @@ func Load() *Config {
 			APIKey:     getEnv("OPENROUTER_API_KEY", ""),
 			Model:      getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
 			VideoModel: getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
+			ImageModel: getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
 			Referer:    getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
 		},
 		CORS: CORSConfig{

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -76,6 +77,13 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 			meta["videoId"] = v.ID.String()
 			sc := out.Script
 			s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", v.ID).Update("script", sc)
+			// 异步生成封面(best-effort,独立 context)
+			vid, prompt, ar := v.ID, out.VideoPrompt, out.AspectRatio
+			go func() {
+				cctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+				defer cancel()
+				s.videos.GenerateCover(cctx, vid, prompt, ar)
+			}()
 			b.WriteString("\n✅ 已提交视频生成(见短视频墙),约 1-2 分钟出片。")
 		}
 	}
