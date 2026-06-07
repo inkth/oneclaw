@@ -80,6 +80,7 @@ const BOARDS: Board[] = [
     href: "/app/analytics",
     paths: ["/app/analytics"],
     tabs: [],
+    soon: true,
   },
   {
     key: "services",

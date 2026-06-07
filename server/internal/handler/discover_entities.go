@@ -1,0 +1,42 @@
+package handler
+
+import (
+	"github.com/gin-gonic/gin"
+
+	"github.com/oneclaw/server/internal/service/echotik"
+)
+
+// 店铺/达人/视频三榜:公开只读,无需工作台上下文。query: region & rank_type & field & page_size & date。
+// field 仅 1=销量 / 2=GMV。服务层始终返回结果(失败降级 mock),故 handler 不返回错误。
+
+func entityParams(c *gin.Context) echotik.RanklistParams {
+	return echotik.RanklistParams{
+		Region:    defaultStr(c.Query("region"), "US"),
+		RankType:  defaultInt(c.Query("rank_type"), echotik.RankHot),
+		RankField: entityField(c.Query("field")),
+		PageSize:  defaultInt(c.Query("page_size"), 20),
+		Date:      c.Query("date"),
+	}
+}
+
+func entityField(v string) int {
+	if v == "2" {
+		return echotik.EntityFieldGMV
+	}
+	return echotik.EntityFieldSales
+}
+
+// SellerRanklist GET /discover/seller-ranklist
+func (h *DiscoverHandler) SellerRanklist(c *gin.Context) {
+	OK(c, h.discover.SellerRanklist(c.Request.Context(), entityParams(c)))
+}
+
+// InfluencerRanklist GET /discover/influencer-ranklist
+func (h *DiscoverHandler) InfluencerRanklist(c *gin.Context) {
+	OK(c, h.discover.InfluencerRanklist(c.Request.Context(), entityParams(c)))
+}
+
+// VideoRanklist GET /discover/video-ranklist
+func (h *DiscoverHandler) VideoRanklist(c *gin.Context) {
+	OK(c, h.discover.VideoRanklist(c.Request.Context(), entityParams(c)))
+}

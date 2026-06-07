@@ -1,49 +1,8 @@
 import Link from "next/link";
 import { getMe } from "@/lib/api-client";
 import { LogoutButton } from "@/components/LogoutButton";
-import {
-  LayoutDashboard,
-  Package,
-  Sparkles,
-  Compass,
-  Store,
-  Users,
-  Image as ImageIcon,
-  Video,
-  Bot,
-  Settings,
-} from "lucide-react";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
-type NavGroup = { label: string; items: NavItem[] };
-
-// Phase 1:仅核心域(概览 / 发现 / 商品)。其余模块迁移完成后再放开。
-const navGroups: NavGroup[] = [
-  { label: "", items: [{ href: "/app", label: "工作台", icon: LayoutDashboard }] },
-  { label: "选品", items: [{ href: "/app/discover/products", label: "TikTok 爆品", icon: Compass }] },
-  {
-    label: "资产",
-    items: [
-      { href: "/app/assets/products", label: "商品", icon: Package },
-      { href: "/app/assets/shops", label: "店铺", icon: Store },
-      { href: "/app/assets/models", label: "模特", icon: Users },
-      { href: "/app/assets/materials", label: "素材库", icon: ImageIcon },
-    ],
-  },
-  {
-    label: "创作",
-    items: [
-      { href: "/app/videos", label: "短视频", icon: Video },
-      { href: "/app/agents", label: "Agent 派发", icon: Bot },
-    ],
-  },
-  { label: "账户", items: [{ href: "/app/settings", label: "设置", icon: Settings }] },
-];
+import { Sparkles } from "lucide-react";
+import { SidebarNav, BoardTabs } from "./_nav";
 
 export default async function AppLayout({
   children,
@@ -82,29 +41,7 @@ export default async function AppLayout({
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-3">
-          {navGroups.map((group, gi) => (
-            <div key={gi}>
-              {group.label && (
-                <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                  {group.label}
-                </div>
-              )}
-              <div className="space-y-0.5">
-                {group.items.map(({ href, label, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600 transition-colors"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
+        <SidebarNav />
 
         <div className="border-t border-zinc-100 p-3">
           {user ? (
@@ -144,7 +81,10 @@ export default async function AppLayout({
             <span className="text-sm font-semibold">OneClaw</span>
           </Link>
         </header>
-        <main className="flex-1 p-4 sm:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-8">
+          <BoardTabs />
+          {children}
+        </main>
       </div>
     </div>
   );

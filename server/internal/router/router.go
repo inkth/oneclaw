@@ -74,6 +74,11 @@ func New(d Deps) *gin.Engine {
 	api.GET("/discover/ranklist", discH.RanklistPublic)
 	api.GET("/discover/products/:externalId", discH.Detail)
 
+	// 公共:店铺 / 达人 / 带货视频榜(只读,无个性化)
+	api.GET("/discover/seller-ranklist", discH.SellerRanklist)
+	api.GET("/discover/influencer-ranklist", discH.InfluencerRanklist)
+	api.GET("/discover/video-ranklist", discH.VideoRanklist)
+
 	// 需登录
 	priv := api.Group("")
 	priv.Use(middleware.Auth(d.Auth, d.Cfg.Cookie.Name))
