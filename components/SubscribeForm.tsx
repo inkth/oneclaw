@@ -16,7 +16,7 @@ export function SubscribeForm({ source = "landing-footer" }: { source?: string }
     const email = String(fd.get("email") || "");
     setState("loading");
     setMessage(null);
-    const res = await fetch("/api/subscribe", {
+    const res = await fetch("/api/v1/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, source }),

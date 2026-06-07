@@ -83,7 +83,7 @@ export function TemplateOptimizerModal({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const r = await fetch(`/api/workspaces/${workspaceId}/templates/optimize`, {
+      const r = await fetch(`/api/v1/workspaces/${workspaceId}/templates/optimize`, {
         method: "POST",
       });
       const j = await r.json();
@@ -104,7 +104,7 @@ export function TemplateOptimizerModal({
     if (!task || task.status === "DONE" || task.status === "FAILED") return;
     const t = setInterval(async () => {
       const r = await fetch(
-        `/api/workspaces/${workspaceId}/agent-tasks/${task.id}`,
+        `/api/v1/workspaces/${workspaceId}/agent-tasks/${task.id}`,
         { cache: "no-store" },
       );
       const j = await r.json();
@@ -129,7 +129,7 @@ export function TemplateOptimizerModal({
 
   async function createFromProposal(p: Proposal, idx: number) {
     setCreatingProposalIdx(idx);
-    const res = await fetch(`/api/workspaces/${workspaceId}/templates`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/templates`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

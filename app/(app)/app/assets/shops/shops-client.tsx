@@ -92,7 +92,7 @@ export function ShopsClient({
 
   async function deleteShop(id: string) {
     if (!confirm("删除该店铺？相关商品会保留但解绑。")) return;
-    const res = await fetch(`/api/workspaces/${workspaceId}/shops/${id}`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/shops/${id}`, {
       method: "DELETE",
     });
     if (res.ok) {
@@ -283,7 +283,7 @@ function AddShopModal({
     }
     setSubmitting(true);
     setError(null);
-    const res = await fetch(`/api/workspaces/${workspaceId}/shops`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/shops`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -121,7 +121,7 @@ export function VideoDetailDrawer({
     let alive = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/workspaces/${workspaceId}/videos/${videoId}`, { cache: "no-store" })
+    fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;
@@ -155,7 +155,7 @@ export function VideoDetailDrawer({
     if (!video?.falRequestId) return;
     setBusy(true);
     const r = await fetch(
-      `/api/workspaces/${workspaceId}/videos/${videoId}/refresh`,
+      `/api/v1/workspaces/${workspaceId}/videos/${videoId}/refresh`,
       { method: "POST" },
     );
     const j = await r.json();
@@ -172,7 +172,7 @@ export function VideoDetailDrawer({
     if (!video) return;
     if (!confirm(`删除视频「${video.title}」？`)) return;
     setBusy(true);
-    const r = await fetch(`/api/workspaces/${workspaceId}/videos/${videoId}`, {
+    const r = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, {
       method: "DELETE",
     });
     setBusy(false);

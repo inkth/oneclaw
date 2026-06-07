@@ -82,7 +82,7 @@ export function ModelsClient({
 
   async function createFromPreset(p: (typeof PRESETS)[number]) {
     if (gateGuest()) return;
-    const res = await fetch(`/api/workspaces/${workspaceId}/models`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/models`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -104,7 +104,7 @@ export function ModelsClient({
   }
 
   async function toggleFavorite(m: ModelAsset) {
-    const res = await fetch(`/api/workspaces/${workspaceId}/models/${m.id}`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/models/${m.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isFavorite: !m.isFavorite }),
@@ -119,7 +119,7 @@ export function ModelsClient({
 
   async function deleteModel(id: string) {
     if (!confirm("确定删除该模特？")) return;
-    const res = await fetch(`/api/workspaces/${workspaceId}/models/${id}`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/models/${id}`, {
       method: "DELETE",
     });
     if (res.ok) {
@@ -277,7 +277,7 @@ function CreateModelModal({
     }
     setSubmitting(true);
     setError(null);
-    const res = await fetch(`/api/workspaces/${workspaceId}/models`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/models`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

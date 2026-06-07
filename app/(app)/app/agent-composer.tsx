@@ -66,7 +66,7 @@ export function AgentComposer({
     if (!input.trim() || submitting) return;
     if (gateGuest()) return;
     setSubmitting(true);
-    const res = await fetch(`/api/workspaces/${workspaceId}/agent-tasks`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ agent: activeAgent, input: input.trim() }),

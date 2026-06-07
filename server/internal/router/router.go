@@ -112,6 +112,7 @@ func New(d Deps) *gin.Engine {
 		priv.GET("/workspaces/:wid/videos", videoH.List)
 		priv.POST("/workspaces/:wid/videos", videoH.Create)
 		priv.POST("/workspaces/:wid/videos/:vid/refresh", videoH.Refresh)
+		priv.DELETE("/workspaces/:wid/videos/:vid", videoH.Delete)
 
 		priv.GET("/workspaces/:wid/templates", tplH.List)
 		priv.POST("/workspaces/:wid/templates", tplH.Create)

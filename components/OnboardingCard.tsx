@@ -30,7 +30,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
     if (dispatching) return;
     setDispatching(label);
     setError(null);
-    const res = await fetch(`/api/workspaces/${workspaceId}/agent-tasks`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ agent: "ANALYST", input: prompt }),

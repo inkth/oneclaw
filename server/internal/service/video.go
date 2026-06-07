@@ -51,6 +51,17 @@ func (s *VideoService) List(ctx context.Context, wsID uuid.UUID) ([]model.Video,
 	return items, nil
 }
 
+func (s *VideoService) Delete(ctx context.Context, wsID, vid uuid.UUID) error {
+	res := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", vid, wsID).Delete(&model.Video{})
+	if res.Error != nil {
+		return apperr.Wrap(apperr.CodeInternal, "删除视频失败", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return apperr.NotFound("视频不存在")
+	}
+	return nil
+}
+
 func (s *VideoService) Get(ctx context.Context, wsID, vid uuid.UUID) (*model.Video, error) {
 	var v model.Video
 	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", vid, wsID).First(&v).Error

@@ -221,7 +221,7 @@ export function CreateClient({
     if (t.defaultMaterialIds.length > 0) setMaterialIds(t.defaultMaterialIds);
     if (t.kind === "custom") {
       // 增加 usageCount（不阻塞）
-      fetch(`/api/workspaces/${workspaceId}/templates/${t.id}`, {
+      fetch(`/api/v1/workspaces/${workspaceId}/templates/${t.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bumpUsage: true }),
@@ -242,7 +242,7 @@ export function CreateClient({
     setCustoms((prev) =>
       prev.map((x) => (x.id === t.id ? { ...x, isFavorite: next } : x)),
     );
-    const res = await fetch(`/api/workspaces/${workspaceId}/templates/${t.id}`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/templates/${t.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isFavorite: next }),
@@ -258,7 +258,7 @@ export function CreateClient({
   async function deleteTemplate(t: Template) {
     if (t.kind !== "custom") return;
     if (!confirm(`删除模板「${t.name}」？`)) return;
-    const res = await fetch(`/api/workspaces/${workspaceId}/templates/${t.id}`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/templates/${t.id}`, {
       method: "DELETE",
     });
     if (res.ok) {
@@ -274,7 +274,7 @@ export function CreateClient({
       toast.error("先写完 prompt 再保存");
       return false;
     }
-    const res = await fetch(`/api/workspaces/${workspaceId}/templates`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/templates`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -412,7 +412,7 @@ export function CreateClient({
     }
     if (gateGuest()) return;
     setSubmitting(true);
-    const res = await fetch(`/api/workspaces/${workspaceId}/videos/create`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/videos/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

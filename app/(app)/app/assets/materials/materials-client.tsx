@@ -99,7 +99,7 @@ export function MaterialsClient({
       const form = new FormData();
       form.append("file", file);
       try {
-        const res = await fetch(`/api/workspaces/${workspaceId}/materials`, {
+        const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, {
           method: "POST",
           body: form,
         });
@@ -121,7 +121,7 @@ export function MaterialsClient({
 
   async function deleteMaterial(id: string) {
     if (!confirm("确定删除该素材？")) return;
-    const res = await fetch(`/api/workspaces/${workspaceId}/materials/${id}`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials/${id}`, {
       method: "DELETE",
     });
     if (res.ok) {

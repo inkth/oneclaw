@@ -48,6 +48,23 @@ func (h *VideoHandler) Create(c *gin.Context) {
 	Created(c, gin.H{"video": v})
 }
 
+func (h *VideoHandler) Delete(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	vid, err := uuid.Parse(c.Param("vid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("视频 ID 无效"))
+		return
+	}
+	if err := h.videos.Delete(c.Request.Context(), wid, vid); err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"deleted": true})
+}
+
 func (h *VideoHandler) Refresh(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {
