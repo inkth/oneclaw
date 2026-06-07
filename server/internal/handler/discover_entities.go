@@ -11,11 +11,12 @@ import (
 
 func entityParams(c *gin.Context) echotik.RanklistParams {
 	return echotik.RanklistParams{
-		Region:    defaultStr(c.Query("region"), "US"),
-		RankType:  defaultInt(c.Query("rank_type"), echotik.RankHot),
-		RankField: entityField(c.Query("field")),
-		PageSize:  defaultInt(c.Query("page_size"), 20),
-		Date:      c.Query("date"),
+		Region:     defaultStr(c.Query("region"), "US"),
+		RankType:   defaultInt(c.Query("rank_type"), echotik.RankHot),
+		RankField:  entityField(c.Query("field")),
+		CategoryID: c.Query("category_id"),
+		PageSize:   defaultInt(c.Query("page_size"), 20),
+		Date:       c.Query("date"),
 	}
 }
 
@@ -39,4 +40,10 @@ func (h *DiscoverHandler) InfluencerRanklist(c *gin.Context) {
 // VideoRanklist GET /discover/video-ranklist
 func (h *DiscoverHandler) VideoRanklist(c *gin.Context) {
 	OK(c, h.discover.VideoRanklist(c.Request.Context(), entityParams(c)))
+}
+
+// Categories GET /discover/categories?region=US —— 一级类目筛选项。
+func (h *DiscoverHandler) Categories(c *gin.Context) {
+	region := defaultStr(c.Query("region"), "US")
+	OK(c, gin.H{"categories": h.discover.Categories(c.Request.Context(), region)})
 }

@@ -1,4 +1,5 @@
 import { getMe, apiServer } from "@/lib/api-client";
+import { fetchCategories } from "../_components/categories";
 import { DiscoverClient } from "./discover-client";
 
 export const metadata = { title: "发现 · TikTok 爆品 · OneClaw" };
@@ -41,18 +42,17 @@ export default async function DiscoverProductsPage({
   const region = VALID_REGIONS.includes(sp.region ?? "") ? sp.region! : "US";
   const rankType = Number(sp.rank_type) || 1;
   const field = Number(sp.field) || 1;
-  const query = `region=${region}&rank_type=${rankType}&product_rank_field=${field}&page_size=16`;
+  const categoryId = sp.category_id || null;
+  const query = `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16`;
 
-  let result: RanklistResult = { state: "empty", products: [] };
-  try {
-    result = await apiServer<RanklistResult>(
+  const [result, categories] = await Promise.all([
+    apiServer<RanklistResult>(
       workspace
         ? `/workspaces/${workspace.id}/discover/ranklist?${query}`
         : `/discover/ranklist?${query}`,
-    );
-  } catch {
-    result = { state: "error", products: [] };
-  }
+    ).catch((): RanklistResult => ({ state: "error", products: [] })),
+    fetchCategories(region),
+  ]);
 
   return (
     <DiscoverClient
@@ -61,6 +61,8 @@ export default async function DiscoverProductsPage({
       region={region as "US" | "GB" | "ID" | "TH" | "VN" | "MY"}
       rankType={rankType as 1 | 2 | 3}
       field={field as 1 | 2 | 3}
+      categoryId={categoryId}
+      categories={categories}
       state={result.state as "live" | "cached" | "empty" | "mock" | "error"}
       fetchedAt={result.fetchedAt ?? null}
       products={result.products.map((p) => ({

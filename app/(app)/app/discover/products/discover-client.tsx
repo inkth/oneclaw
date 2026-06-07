@@ -1,19 +1,17 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
 import { LoginPromptModal } from "@/components/LoginPromptModal";
+import { FilterBar, type CategoryOption, type FieldOption } from "../_components/FilterBar";
 import {
   Sparkles,
   Plus,
   Loader2,
-  Flame,
-  TrendingUp,
   Star,
-  Globe,
   Database,
   AlertTriangle,
   ArrowUpRight,
@@ -54,22 +52,8 @@ type DiscoverProduct = {
   interaction: Interaction | null;
 };
 
-const REGIONS: Array<{ code: Region; cn: string; flag: string }> = [
-  { code: "US", cn: "美国", flag: "🇺🇸" },
-  { code: "GB", cn: "英国", flag: "🇬🇧" },
-  { code: "ID", cn: "印尼", flag: "🇮🇩" },
-  { code: "TH", cn: "泰国", flag: "🇹🇭" },
-  { code: "VN", cn: "越南", flag: "🇻🇳" },
-  { code: "MY", cn: "马来", flag: "🇲🇾" },
-];
-
-const RANK_TYPES: Array<{ v: RankType; cn: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = [
-  { v: 1, cn: "热销", icon: Flame, tone: "from-orange-500 to-rose-500" },
-  { v: 2, cn: "上升", icon: TrendingUp, tone: "from-indigo-500 to-violet-500" },
-  { v: 3, cn: "新品", icon: Star, tone: "from-emerald-500 to-teal-500" },
-];
-
-const FIELDS: Array<{ v: Field; cn: string }> = [
+// 商品榜排序支持 3 项(店铺/达人/视频只有销量/GMV)。
+const PRODUCT_FIELDS: FieldOption[] = [
   { v: 1, cn: "销量" },
   { v: 2, cn: "GMV" },
   { v: 3, cn: "增长" },
@@ -103,6 +87,8 @@ export function DiscoverClient({
   region,
   rankType,
   field,
+  categoryId,
+  categories,
   state,
   fetchedAt,
   products,
@@ -112,13 +98,14 @@ export function DiscoverClient({
   region: Region;
   rankType: RankType;
   field: Field;
+  categoryId: string | null;
+  categories: CategoryOption[];
   state: DiscoverState;
   fetchedAt: string | null;
   products: DiscoverProduct[];
   isGuest?: boolean;
 }) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState<Set<string>>(new Set());
   const [loginOpen, setLoginOpen] = useState(false);
@@ -128,15 +115,6 @@ export function DiscoverClient({
     if (!isGuest) return false;
     setLoginOpen(true);
     return true;
-  }
-
-  function navigate(patch: { region?: Region; rank_type?: RankType; field?: Field }) {
-    const p = new URLSearchParams({
-      region: patch.region ?? region,
-      rank_type: String(patch.rank_type ?? rankType),
-      field: String(patch.field ?? field),
-    });
-    startTransition(() => router.push(`/app/discover/products?${p.toString()}`));
   }
 
   async function importProduct(p: DiscoverProduct) {
@@ -243,8 +221,6 @@ export function DiscoverClient({
     }
   }
 
-  const top = useMemo(() => products.slice(0, 3), [products]);
-
   return (
     <div className="space-y-6">
       {loginOpen && (
@@ -304,62 +280,15 @@ export function DiscoverClient({
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 flex flex-wrap items-center gap-3">
-        <FilterGroup label={<><Globe className="h-3 w-3" />区域</>}>
-          {REGIONS.map((r) => (
-            <button
-              key={r.code}
-              onClick={() => navigate({ region: r.code })}
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                region === r.code
-                  ? "bg-zinc-900 text-white"
-                  : "text-zinc-600 hover:bg-zinc-100"
-              }`}
-            >
-              <span>{r.flag}</span>
-              {r.cn}
-            </button>
-          ))}
-        </FilterGroup>
-
-        <FilterGroup label="榜单">
-          {RANK_TYPES.map((rt) => {
-            const Icon = rt.icon;
-            const active = rankType === rt.v;
-            return (
-              <button
-                key={rt.v}
-                onClick={() => navigate({ rank_type: rt.v })}
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                  active
-                    ? `bg-gradient-to-br ${rt.tone} text-white`
-                    : "text-zinc-600 hover:bg-zinc-100"
-                }`}
-              >
-                <Icon className="h-3 w-3" />
-                {rt.cn}
-              </button>
-            );
-          })}
-        </FilterGroup>
-
-        <FilterGroup label="按">
-          {FIELDS.map((f) => {
-            const active = field === f.v;
-            return (
-              <button
-                key={f.v}
-                onClick={() => navigate({ field: f.v })}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                  active ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
-                }`}
-              >
-                {f.cn}
-              </button>
-            );
-          })}
-        </FilterGroup>
-      </div>
+      <FilterBar
+        basePath="/app/discover/products"
+        region={region}
+        rankType={rankType}
+        field={field}
+        fields={PRODUCT_FIELDS}
+        categoryId={categoryId}
+        categories={categories}
+      />
 
       {state === "empty" && (
         <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center">
@@ -368,23 +297,6 @@ export function DiscoverClient({
             EchoTik 这个区域 / 榜单组合下还没有可用数据（可能 T-1 数据未生成，或当前账号订阅未覆盖此榜单）。
             试试切换到「热销」榜或者换个区域。
           </p>
-        </div>
-      )}
-
-      {/* Top 3 highlight cards */}
-      {top.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {top.map((p, idx) => (
-            <HighlightCard
-              key={p.productId}
-              rank={idx + 1}
-              product={p}
-              busyImport={importing.has(p.productId)}
-              busyAnalyze={analyzing.has(p.productId)}
-              onImport={() => importProduct(p)}
-              onAnalyze={() => analyzeProduct(p)}
-            />
-          ))}
         </div>
       )}
 
@@ -568,82 +480,3 @@ export function DiscoverClient({
   );
 }
 
-function FilterGroup({
-  label,
-  children,
-}: {
-  label: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
-        {label}
-      </span>
-      <div className="flex flex-wrap items-center gap-1">{children}</div>
-    </div>
-  );
-}
-
-function HighlightCard({
-  rank,
-  product: p,
-  busyImport,
-  busyAnalyze,
-  onImport,
-  onAnalyze,
-}: {
-  rank: number;
-  product: DiscoverProduct;
-  busyImport: boolean;
-  busyAnalyze: boolean;
-  onImport: () => void;
-  onAnalyze: () => void;
-}) {
-  const trophy = rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
-  return (
-    <div className="relative rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-4 flex flex-col">
-      <div className="absolute -top-2 -left-2 flex h-7 w-7 items-center justify-center rounded-full bg-white border border-zinc-200 text-base shadow-sm">
-        {trophy}
-      </div>
-      <div className="mt-1 text-sm font-semibold leading-snug line-clamp-2 min-h-[2.6em]" title={p.productName}>
-        {p.productName}
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <Stat label="均价" value={`$${p.avgPrice.toFixed(0)}`} />
-        <Stat label="销量" value={fmt(p.totalSaleCnt)} />
-        <Stat label="GMV" value={fmtMoney(p.totalSaleGmvAmt)} />
-      </div>
-      <div className="mt-3 text-[11px] text-zinc-500">
-        {fmt(p.totalIflCnt)} 个达人在带 · {fmt(p.totalVideoCnt)} 条挂车视频 · 佣金 {(p.commissionRate * 100).toFixed(0)}%
-      </div>
-      <div className="mt-3 flex items-center gap-1.5">
-        <button
-          onClick={onAnalyze}
-          disabled={busyAnalyze}
-          className="flex-1 inline-flex items-center justify-center gap-1 rounded-full bg-indigo-50 px-2 py-1.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
-        >
-          {busyAnalyze ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />}
-          AI 分析
-        </button>
-        <button
-          onClick={onImport}
-          disabled={busyImport}
-          className="flex-1 inline-flex items-center justify-center gap-1 rounded-full bg-zinc-900 px-2 py-1.5 text-[11px] font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
-        >
-          {busyImport ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Plus className="h-2.5 w-2.5" />}
-          加入选品
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-white border border-zinc-200 px-2 py-1.5">
-      <div className="text-[9px] text-zinc-400 uppercase tracking-wider">{label}</div>
-      <div className="mt-0.5 text-xs font-bold tabular-nums">{value}</div>
-    </div>
-  );
-}

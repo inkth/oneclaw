@@ -59,12 +59,20 @@ type ProductListItem struct {
 
 // RanklistParams 榜单查询参数。
 type RanklistParams struct {
-	Region    string
-	RankType  int
-	RankField int
-	Date      string // YYYY-MM-DD,空则自动回退到昨天
-	PageNum   int
-	PageSize  int
+	Region     string
+	RankType   int
+	RankField  int
+	CategoryID string // 一级类目 id,空=全部
+	Date       string // YYYY-MM-DD,空则自动回退到昨天
+	PageNum    int
+	PageSize   int
+}
+
+// Category 一级类目行。
+type Category struct {
+	CategoryID   string `json:"category_id"`
+	CategoryName string `json:"category_name"`
+	ParentID     string `json:"parent_id"`
 }
 
 // SellerListItem 店铺榜行。

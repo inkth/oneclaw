@@ -1,7 +1,7 @@
 "use client";
 
 import { Users, Award } from "lucide-react";
-import { FilterBar, type Region } from "../_components/FilterBar";
+import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, StateBadge, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
@@ -28,12 +28,16 @@ export function InfluencersClient({
   region,
   rankType,
   field,
+  categoryId,
+  categories,
   state,
   influencers,
 }: {
   region: Region;
   rankType: number;
   field: number;
+  categoryId: string | null;
+  categories: CategoryOption[];
   state: DiscoverState;
   influencers: Influencer[];
 }) {
@@ -50,7 +54,14 @@ export function InfluencersClient({
         description="各国带货达人榜单 · 看粉丝量、带货 GMV、商品与内容产出 · 找对的人合作"
       />
 
-      <FilterBar basePath="/app/discover/influencers" region={region} rankType={rankType} field={field} />
+      <FilterBar
+        basePath="/app/discover/influencers"
+        region={region}
+        rankType={rankType}
+        field={field}
+        categoryId={categoryId}
+        categories={categories}
+      />
 
       {state === "empty" || influencers.length === 0 ? (
         <EmptyState />

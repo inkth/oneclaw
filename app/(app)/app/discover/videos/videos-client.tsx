@@ -1,7 +1,7 @@
 "use client";
 
 import { Clapperboard, Play, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
-import { FilterBar, type Region } from "../_components/FilterBar";
+import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, StateBadge, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, stringToGradient, initial } from "../_components/format";
@@ -29,12 +29,16 @@ export function VideosClient({
   region,
   rankType,
   field,
+  categoryId,
+  categories,
   state,
   videos,
 }: {
   region: Region;
   rankType: number;
   field: number;
+  categoryId: string | null;
+  categories: CategoryOption[];
   state: DiscoverState;
   videos: Video[];
 }) {
@@ -51,7 +55,14 @@ export function VideosClient({
         description="各国带货短视频榜单 · 看播放、互动与转化 · 拆解爆款脚本和带货玩法"
       />
 
-      <FilterBar basePath="/app/discover/videos" region={region} rankType={rankType} field={field} />
+      <FilterBar
+        basePath="/app/discover/videos"
+        region={region}
+        rankType={rankType}
+        field={field}
+        categoryId={categoryId}
+        categories={categories}
+      />
 
       {state === "empty" || videos.length === 0 ? (
         <EmptyState />

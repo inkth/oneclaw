@@ -40,12 +40,13 @@ func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldPar
 			i := i
 			g.Go(func() error {
 				params := map[string]string{
-					"region":    p.Region,
-					"rank_type": strconv.Itoa(p.RankType),
-					fieldParam:  strconv.Itoa(p.RankField),
-					"date":      date,
-					"page_size": strconv.Itoa(pageSize),
-					"page_num":  strconv.Itoa(startPage + i),
+					"region":      p.Region,
+					"rank_type":   strconv.Itoa(p.RankType),
+					fieldParam:    strconv.Itoa(p.RankField),
+					"category_id": p.CategoryID,
+					"date":        date,
+					"page_size":   strconv.Itoa(pageSize),
+					"page_num":    strconv.Itoa(startPage + i),
 				}
 				var env Envelope[[]T]
 				if err := c.call(gctx, endpoint, params, &env); err != nil {

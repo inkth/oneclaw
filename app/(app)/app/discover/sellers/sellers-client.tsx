@@ -1,7 +1,7 @@
 "use client";
 
 import { Store, Star } from "lucide-react";
-import { FilterBar, type Region } from "../_components/FilterBar";
+import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, StateBadge, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
@@ -26,12 +26,16 @@ export function SellersClient({
   region,
   rankType,
   field,
+  categoryId,
+  categories,
   state,
   sellers,
 }: {
   region: Region;
   rankType: number;
   field: number;
+  categoryId: string | null;
+  categories: CategoryOption[];
   state: DiscoverState;
   sellers: Seller[];
 }) {
@@ -48,7 +52,14 @@ export function SellersClient({
         description="TikTok Shop 各国热销店铺榜单 · 按销量 / GMV 排序 · 看店铺规模、达人覆盖与内容矩阵"
       />
 
-      <FilterBar basePath="/app/discover/sellers" region={region} rankType={rankType} field={field} />
+      <FilterBar
+        basePath="/app/discover/sellers"
+        region={region}
+        rankType={rankType}
+        field={field}
+        categoryId={categoryId}
+        categories={categories}
+      />
 
       {state === "empty" || sellers.length === 0 ? (
         <EmptyState />

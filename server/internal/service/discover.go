@@ -64,9 +64,14 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		p.PageSize = 10
 	}
 
+	// 全局榜单缓存键不含 category,按类目筛选时绕过缓存(实时拉、不写缓存)。
+	useCache := p.CategoryID == ""
+
 	// 1. 缓存命中?
-	if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
-		return &RanklistResult{State: "cached", FetchedAt: &fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
+	if useCache {
+		if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
+			return &RanklistResult{State: "cached", FetchedAt: &fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
+		}
 	}
 
 	// 2. 取数据源(live / mock)。
@@ -79,8 +84,8 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		state = "mock"
 	}
 
-	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live)。
-	dps := s.persist(ctx, p, raw, state == "live")
+	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live 且非类目筛选)。
+	dps := s.persist(ctx, p, raw, state == "live" && useCache)
 	var fetchedAt *time.Time
 	if state == "live" {
 		now := time.Now()
