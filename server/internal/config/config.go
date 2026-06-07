@@ -24,6 +24,7 @@ type Config struct {
 	EchoTik    EchoTikConfig
 	Storage    StorageConfig
 	OpenRouter OpenRouterConfig
+	Fal        FalConfig
 	CORS       CORSConfig
 	Log        LogConfig
 }
@@ -119,6 +120,15 @@ type OpenRouterConfig struct {
 
 func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
 
+// FalConfig fal.ai(图像生成,国内可达,区域不受限)。
+type FalConfig struct {
+	APIKey     string
+	BaseURL    string // 默认 https://fal.run
+	ImageModel string // 默认 fal-ai/flux/schnell
+}
+
+func (f FalConfig) Configured() bool { return f.APIKey != "" }
+
 // CORSConfig 带凭证跨域:本地开发 Next(:3000)调 Go(:8082)需显式白名单(不能用 *)。
 type CORSConfig struct {
 	Origins []string
@@ -188,6 +198,11 @@ func Load() *Config {
 			VideoModel: getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
 			ImageModel: getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
 			Referer:    getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
+		},
+		Fal: FalConfig{
+			APIKey:     getEnv("FALAI_API_KEY", ""),
+			BaseURL:    getEnv("FALAI_BASE_URL", "https://fal.run"),
+			ImageModel: getEnv("FALAI_DEFAULT_IMAGE_MODEL", "fal-ai/flux/schnell"),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

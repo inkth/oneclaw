@@ -19,6 +19,7 @@ import (
 	"github.com/oneclaw/server/internal/router"
 	"github.com/oneclaw/server/internal/service"
 	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/oneclaw/server/internal/service/fal"
 	"github.com/oneclaw/server/internal/service/llm"
 	"github.com/oneclaw/server/internal/storage"
 )
@@ -80,7 +81,13 @@ func main() {
 	store := storage.New(cfg.Storage)
 	matSvc := service.NewMaterialService(db, store)
 	llmClient := llm.New(cfg.OpenRouter)
-	videoSvc := service.NewVideoService(db, llmClient, store)
+	falClient := fal.New(cfg.Fal)
+	videoSvc := service.NewVideoService(db, llmClient, store, falClient)
+	if falClient.Configured() {
+		logger.Info("[fal] 已配置(封面图)")
+	} else {
+		logger.Warn("[fal] FALAI_API_KEY 未配置,封面图不可用")
+	}
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc)
 	tplSvc := service.NewTemplateService(db, llmClient)
 	if llmClient.Configured() {

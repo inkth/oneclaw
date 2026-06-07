@@ -12,6 +12,7 @@ import (
 	apperr "github.com/oneclaw/server/internal/errors"
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
+	"github.com/oneclaw/server/internal/service/fal"
 	"github.com/oneclaw/server/internal/service/llm"
 	"github.com/oneclaw/server/internal/storage"
 )
@@ -22,10 +23,11 @@ type VideoService struct {
 	db      *gorm.DB
 	llm     *llm.Client
 	storage *storage.Storage
+	fal     *fal.Client
 }
 
-func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage) *VideoService {
-	return &VideoService{db: db, llm: l, storage: st}
+func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage, f *fal.Client) *VideoService {
+	return &VideoService{db: db, llm: l, storage: st, fal: f}
 }
 
 type VideoInput struct {
@@ -199,12 +201,13 @@ func (s *VideoService) applyJob(ctx context.Context, videoID uuid.UUID, job *llm
 	}
 }
 
-// GenerateCover 用图像模型生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
+// GenerateCover 用 fal flux 生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
+// 用 fal 而非 OpenRouter 图像模型:后者(OpenAI/Google)对国内服务器区域屏蔽。
 func (s *VideoService) GenerateCover(ctx context.Context, videoID uuid.UUID, prompt, aspectRatio string) {
-	if !s.llm.Configured() || !s.storage.Configured() {
+	if !s.fal.Configured() || !s.storage.Configured() {
 		return
 	}
-	data, ct, err := s.llm.GenerateImage(ctx, "竖屏短视频封面海报,无文字:"+prompt, aspectRatio)
+	data, ct, err := s.fal.GenerateImage(ctx, "vertical short-video cover poster, no text, "+prompt, fal.ImageSizeForAspect(aspectRatio))
 	if err != nil {
 		logger.Warn("[video] 封面生成失败", logger.String("video", videoID.String()), logger.Err(err))
 		return
