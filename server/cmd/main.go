@@ -55,6 +55,7 @@ func main() {
 		&model.DiscoverProduct{},
 		&model.RanklistCacheEntry{},
 		&model.DiscoverSnapshot{},
+		&model.DiscoverCache{},
 		&model.WorkspaceDiscoverInteraction{},
 		&model.NewsletterSubscription{},
 		&model.DemoRequest{},

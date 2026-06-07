@@ -69,130 +69,100 @@ type VideoDTO struct {
 	TotalVideoSaleGmvAmt float64 `json:"totalVideoSaleGmvAmt"`
 }
 
-// SellerRanklist 店铺榜。
+// SellerRanklist 店铺榜(缓存优先)。
 func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[SellerDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
-	res := &EntityRanklistResult[SellerDTO]{Rows: []SellerDTO{}}
-
-	if !s.echo.Configured() {
-		res.State = "mock"
-		for _, it := range echotik.MockSellers(p.Region, p.PageSize) {
-			res.Rows = append(res.Rows, mapSeller(it, nil))
-		}
-		return res
-	}
-
-	raw, err := s.echo.GetSellerRanklist(ctx, p)
-	if err != nil {
-		res.State = "error"
-		for _, it := range echotik.MockSellers(p.Region, p.PageSize) {
-			res.Rows = append(res.Rows, mapSeller(it, nil))
-		}
-		return res
-	}
-
-	imgs := make([]string, 0, len(raw))
-	for _, it := range raw {
-		imgs = append(imgs, it.CoverURL)
-	}
-	signed := s.echo.SignCovers(ctx, imgs)
-	for _, it := range raw {
-		res.Rows = append(res.Rows, mapSeller(it, signed))
-	}
-	if len(res.Rows) == 0 {
-		res.State = "empty"
-		return res
-	}
-	now := time.Now()
-	res.State = "live"
-	res.FetchedAt = &now
-	return res
+	return cachedEntity(s, ctx, entityCacheKey("seller", p), s.echo.Configured(),
+		func() []SellerDTO {
+			rows := make([]SellerDTO, 0)
+			for _, it := range echotik.MockSellers(p.Region, p.PageSize) {
+				rows = append(rows, mapSeller(it, nil))
+			}
+			return rows
+		},
+		func() ([]SellerDTO, error) {
+			raw, err := s.echo.GetSellerRanklist(ctx, p)
+			if err != nil {
+				return nil, err
+			}
+			imgs := make([]string, 0, len(raw))
+			for _, it := range raw {
+				imgs = append(imgs, it.CoverURL)
+			}
+			signed := s.echo.SignCovers(ctx, imgs)
+			rows := make([]SellerDTO, 0, len(raw))
+			for _, it := range raw {
+				rows = append(rows, mapSeller(it, signed))
+			}
+			return rows, nil
+		},
+	)
 }
 
-// InfluencerRanklist 达人榜。
+// InfluencerRanklist 达人榜(缓存优先)。
 func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[InfluencerDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
-	res := &EntityRanklistResult[InfluencerDTO]{Rows: []InfluencerDTO{}}
-
-	if !s.echo.Configured() {
-		res.State = "mock"
-		for _, it := range echotik.MockInfluencers(p.Region, p.PageSize) {
-			res.Rows = append(res.Rows, mapInfluencer(it, nil))
-		}
-		return res
-	}
-
-	raw, err := s.echo.GetInfluencerRanklist(ctx, p)
-	if err != nil {
-		res.State = "error"
-		for _, it := range echotik.MockInfluencers(p.Region, p.PageSize) {
-			res.Rows = append(res.Rows, mapInfluencer(it, nil))
-		}
-		return res
-	}
-
-	imgs := make([]string, 0, len(raw))
-	for _, it := range raw {
-		imgs = append(imgs, it.Avatar)
-	}
-	signed := s.echo.SignCovers(ctx, imgs)
-	for _, it := range raw {
-		res.Rows = append(res.Rows, mapInfluencer(it, signed))
-	}
-	if len(res.Rows) == 0 {
-		res.State = "empty"
-		return res
-	}
-	now := time.Now()
-	res.State = "live"
-	res.FetchedAt = &now
-	return res
+	return cachedEntity(s, ctx, entityCacheKey("influencer", p), s.echo.Configured(),
+		func() []InfluencerDTO {
+			rows := make([]InfluencerDTO, 0)
+			for _, it := range echotik.MockInfluencers(p.Region, p.PageSize) {
+				rows = append(rows, mapInfluencer(it, nil))
+			}
+			return rows
+		},
+		func() ([]InfluencerDTO, error) {
+			raw, err := s.echo.GetInfluencerRanklist(ctx, p)
+			if err != nil {
+				return nil, err
+			}
+			imgs := make([]string, 0, len(raw))
+			for _, it := range raw {
+				imgs = append(imgs, it.Avatar)
+			}
+			signed := s.echo.SignCovers(ctx, imgs)
+			rows := make([]InfluencerDTO, 0, len(raw))
+			for _, it := range raw {
+				rows = append(rows, mapInfluencer(it, signed))
+			}
+			return rows, nil
+		},
+	)
 }
 
-// VideoRanklist 带货视频榜。
+// VideoRanklist 带货视频榜(缓存优先)。
 func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
-	res := &EntityRanklistResult[VideoDTO]{Rows: []VideoDTO{}}
-
-	if !s.echo.Configured() {
-		res.State = "mock"
-		for _, it := range echotik.MockVideos(p.Region, p.PageSize) {
-			res.Rows = append(res.Rows, mapVideo(it, nil))
-		}
-		return res
-	}
-
-	raw, err := s.echo.GetVideoRanklist(ctx, p)
-	if err != nil {
-		res.State = "error"
-		for _, it := range echotik.MockVideos(p.Region, p.PageSize) {
-			res.Rows = append(res.Rows, mapVideo(it, nil))
-		}
-		return res
-	}
-
-	imgs := make([]string, 0, len(raw)*2)
-	for _, it := range raw {
-		imgs = append(imgs, it.ReflowCover, it.Avatar)
-	}
-	signed := s.echo.SignCovers(ctx, imgs)
-	for _, it := range raw {
-		res.Rows = append(res.Rows, mapVideo(it, signed))
-	}
-	if len(res.Rows) == 0 {
-		res.State = "empty"
-		return res
-	}
-	now := time.Now()
-	res.State = "live"
-	res.FetchedAt = &now
-	return res
+	return cachedEntity(s, ctx, entityCacheKey("video", p), s.echo.Configured(),
+		func() []VideoDTO {
+			rows := make([]VideoDTO, 0)
+			for _, it := range echotik.MockVideos(p.Region, p.PageSize) {
+				rows = append(rows, mapVideo(it, nil))
+			}
+			return rows
+		},
+		func() ([]VideoDTO, error) {
+			raw, err := s.echo.GetVideoRanklist(ctx, p)
+			if err != nil {
+				return nil, err
+			}
+			imgs := make([]string, 0, len(raw)*2)
+			for _, it := range raw {
+				imgs = append(imgs, it.ReflowCover, it.Avatar)
+			}
+			signed := s.echo.SignCovers(ctx, imgs)
+			rows := make([]VideoDTO, 0, len(raw))
+			for _, it := range raw {
+				rows = append(rows, mapVideo(it, signed))
+			}
+			return rows, nil
+		},
+	)
 }
 
 func mapSeller(it echotik.SellerListItem, signed map[string]string) SellerDTO {

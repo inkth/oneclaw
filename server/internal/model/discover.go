@@ -64,6 +64,22 @@ func (r *RanklistCacheEntry) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
+// DiscoverCache 通用 JSON 缓存:店铺/达人/视频榜 + 类目下拉的整段响应按 cache_key 缓存。
+// 这些数据无工作台个性化,可全局复用;按 TTL 失效。
+type DiscoverCache struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	CacheKey  string    `gorm:"column:cache_key;not null;uniqueIndex:uq_dc_key" json:"cacheKey"`
+	Payload   JSONB     `gorm:"type:jsonb" json:"payload"`
+	FetchedAt time.Time `gorm:"column:fetched_at" json:"fetchedAt"`
+}
+
+func (c *DiscoverCache) BeforeCreate(*gorm.DB) error {
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+	return nil
+}
+
 // DiscoverSnapshot 每日商品指标快照。(discover_product_id, dt) 唯一。
 type DiscoverSnapshot struct {
 	ID                uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`

@@ -31,10 +31,21 @@ var categoryRank = func() map[string]int {
 	return m
 }()
 
-// Categories 一级类目列表(按固定顺序)。未配置 EchoTik 凭证时返回占位类目,失败返回空。
+// Categories 一级类目列表(按固定顺序,缓存优先)。未配置 EchoTik 凭证时返回占位类目,失败返回空。
 func (s *DiscoverService) Categories(ctx context.Context, region string) []CategoryOption {
+	configured := s.echo.Configured()
+	key := "categories:" + region
+
+	// 缓存命中(仅 live 模式才写缓存,所以未配置时不会命中)。
+	if configured {
+		var cached []CategoryOption
+		if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
+			return cached
+		}
+	}
+
 	var raw []echotik.Category
-	if !s.echo.Configured() {
+	if !configured {
 		raw = echotik.MockCategoriesL1()
 	} else {
 		fetched, err := s.echo.GetCategoriesL1(ctx, region)
@@ -65,5 +76,9 @@ func (s *DiscoverService) Categories(ctx context.Context, region string) []Categ
 		}
 		return out[i].Name < out[j].Name
 	})
+
+	if configured {
+		s.cacheSetJSON(ctx, key, out)
+	}
 	return out
 }
