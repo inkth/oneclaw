@@ -19,12 +19,13 @@ import (
 
 // AgentService 派发并异步执行 Agent 任务(QUEUED→RUNNING→DONE/FAILED)。
 type AgentService struct {
-	db  *gorm.DB
-	llm *llm.Client
+	db     *gorm.DB
+	llm    *llm.Client
+	videos *VideoService // director 用来下发视频
 }
 
-func NewAgentService(db *gorm.DB, l *llm.Client) *AgentService {
-	return &AgentService{db: db, llm: l}
+func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService) *AgentService {
+	return &AgentService{db: db, llm: l, videos: videos}
 }
 
 var validAgents = map[string]bool{
@@ -98,6 +99,10 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
 	switch agent {
 	case model.AgentAnalyst:
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input)
+	case model.AgentDirector:
+		output, meta, usage, err = s.runDirector(ctx, wsID, input)
+	case model.AgentOperator:
+		output, meta, usage, err = s.runOperator(ctx, wsID, input)
 	default:
 		err = fmt.Errorf("agent %s 尚未在 Go 端实现", agent)
 	}

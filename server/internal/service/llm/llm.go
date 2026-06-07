@@ -264,3 +264,25 @@ func (c *Client) videoCall(ctx context.Context, method, url string, body any) (*
 
 // VideoCostCents 把 usage.cost(美元)换成美分。
 func VideoCostCents(usd float64) int { return int(usd*100 + 0.5) }
+
+// Download 用 key GET 一个受保护 URL(如 OpenRouter 视频 content),返回字节 + content-type。
+func (c *Client) Download(ctx context.Context, url string) ([]byte, string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		return nil, "", fmt.Errorf("download HTTP %d", res.StatusCode)
+	}
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, "", err
+	}
+	return b, res.Header.Get("Content-Type"), nil
+}

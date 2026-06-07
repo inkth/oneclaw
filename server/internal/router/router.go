@@ -22,6 +22,7 @@ type Deps struct {
 	Material  *service.MaterialService
 	Agent     *service.AgentService
 	Video     *service.VideoService
+	Template  *service.TemplateService
 }
 
 func New(d Deps) *gin.Engine {
@@ -49,6 +50,7 @@ func New(d Deps) *gin.Engine {
 	matH := handler.NewMaterialHandler(d.Material, d.Workspace)
 	agentH := handler.NewAgentHandler(d.Agent, d.Workspace)
 	videoH := handler.NewVideoHandler(d.Video, d.Workspace)
+	tplH := handler.NewTemplateHandler(d.Template, d.Workspace)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready())
@@ -110,6 +112,12 @@ func New(d Deps) *gin.Engine {
 		priv.GET("/workspaces/:wid/videos", videoH.List)
 		priv.POST("/workspaces/:wid/videos", videoH.Create)
 		priv.POST("/workspaces/:wid/videos/:vid/refresh", videoH.Refresh)
+
+		priv.GET("/workspaces/:wid/templates", tplH.List)
+		priv.POST("/workspaces/:wid/templates", tplH.Create)
+		priv.POST("/workspaces/:wid/templates/optimize", tplH.Optimize)
+		priv.PATCH("/workspaces/:wid/templates/:tid", tplH.Update)
+		priv.DELETE("/workspaces/:wid/templates/:tid", tplH.Delete)
 	}
 
 	return r

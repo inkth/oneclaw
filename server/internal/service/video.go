@@ -13,16 +13,19 @@ import (
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/llm"
+	"github.com/oneclaw/server/internal/storage"
 )
 
 // VideoService 走 OpenRouter /api/v1/videos 异步生成视频(提交 → goroutine 轮询)。
+// 完成后若 COS 已配置,把视频转存到 COS 永久化(OpenRouter content URL 需 key 才能取)。
 type VideoService struct {
-	db  *gorm.DB
-	llm *llm.Client
+	db      *gorm.DB
+	llm     *llm.Client
+	storage *storage.Storage
 }
 
-func NewVideoService(db *gorm.DB, l *llm.Client) *VideoService {
-	return &VideoService{db: db, llm: l}
+func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage) *VideoService {
+	return &VideoService{db: db, llm: l, storage: st}
 }
 
 type VideoInput struct {
@@ -167,7 +170,16 @@ func (s *VideoService) applyJob(ctx context.Context, videoID uuid.UUID, job *llm
 	case "completed":
 		updates := map[string]any{"processing": model.VideoCompleted}
 		if len(job.UnsignedURLs) > 0 {
-			updates["video_url"] = job.UnsignedURLs[0]
+			url := job.UnsignedURLs[0]
+			// COS 已配置则转存永久化(否则原 URL 需带 key 才能播)。
+			if s.storage.Configured() {
+				if cosURL, err := s.rehostToCOS(ctx, videoID, url); err == nil {
+					url = cosURL
+				} else {
+					logger.Warn("[video] 转存 COS 失败,保留原 URL", logger.String("video", videoID.String()), logger.Err(err))
+				}
+			}
+			updates["video_url"] = url
 		}
 		if job.Usage.Cost > 0 {
 			updates["cost_cents"] = llm.VideoCostCents(job.Usage.Cost)
@@ -185,6 +197,23 @@ func (s *VideoService) applyJob(ctx context.Context, videoID uuid.UUID, job *llm
 	default:
 		return false // pending / in_progress
 	}
+}
+
+// rehostToCOS 拉取 OpenRouter 视频字节(带 key)→ 上传 COS,返回永久 URL。
+func (s *VideoService) rehostToCOS(ctx context.Context, videoID uuid.UUID, srcURL string) (string, error) {
+	data, ct, err := s.llm.Download(ctx, srcURL)
+	if err != nil {
+		return "", err
+	}
+	if ct == "" {
+		ct = "video/mp4"
+	}
+	ext := ".mp4"
+	if strings.Contains(ct, "webm") {
+		ext = ".webm"
+	}
+	key := "videos/" + videoID.String() + ext
+	return s.storage.Put(ctx, key, data, ct)
 }
 
 func (s *VideoService) markVideoFailed(ctx context.Context, videoID uuid.UUID, msg string) {
