@@ -3,8 +3,6 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-# postinstall 会跑 prisma generate，需要 schema 在场，故先拷 prisma/
-COPY prisma ./prisma
 RUN npm ci
 
 # —— 构建 ——————————————————————————————————————————————
