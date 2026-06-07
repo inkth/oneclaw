@@ -1,75 +1,112 @@
 import Link from "next/link";
 import { getMe, apiServer } from "@/lib/api-client";
-import { TrendingUp, Compass, ArrowRight } from "lucide-react";
+import { TrendingUp, Video, Bot, ArrowRight } from "lucide-react";
+import { OnboardingCard } from "@/components/OnboardingCard";
+import { Stat } from "@/components/ui/Stat";
+import { Badge } from "@/components/ui/Badge";
+import { AGENT_IDENTITY, TASK_STATUS_TONE, TASK_STATUS_LABEL, type AgentKey } from "@/lib/ui/tokens";
+import { AgentComposer } from "./agent-composer";
 
 export const metadata = { title: "工作台 · OneClaw" };
 
+type AgentTask = {
+  id: string;
+  agent: string;
+  status: string;
+  input: string;
+  createdAt: string;
+};
+
 export default async function DashboardPage() {
-  // 游客可浏览;无工作台时跳过选品库统计。
+  // 游客可浏览;无工作台时各项为空。
   const me = await getMe();
   const user = me?.user ?? null;
   const workspace = me?.workspace ?? null;
 
   let productCount = 0;
+  let videoCount = 0;
+  let tasks: AgentTask[] = [];
   if (workspace) {
-    try {
-      const data = await apiServer<{ products: unknown[] }>(`/workspaces/${workspace.id}/products`);
-      productCount = data.products?.length ?? 0;
-    } catch {
-      productCount = 0;
-    }
+    const [prod, vids, ts] = await Promise.all([
+      apiServer<{ products: unknown[] }>(`/workspaces/${workspace.id}/products`).catch(() => ({ products: [] })),
+      apiServer<{ videos: unknown[] }>(`/workspaces/${workspace.id}/videos`).catch(() => ({ videos: [] })),
+      apiServer<{ tasks: AgentTask[] }>(`/workspaces/${workspace.id}/agent-tasks`).catch(() => ({ tasks: [] })),
+    ]);
+    productCount = prod.products?.length ?? 0;
+    videoCount = vids.videos?.length ?? 0;
+    tasks = ts.tasks ?? [];
   }
 
-  const isFresh = productCount === 0;
-  const greeting = user?.name || user?.phone?.slice(-4) || user?.email?.split("@")[0] || "你";
-  const wsName = workspace?.name ?? "OneClaw";
+  const taskCount = tasks.length;
+  const recentTasks = tasks.slice(0, 5);
+  const isFresh = productCount === 0 && videoCount === 0 && taskCount === 0;
+  const greeting =
+    user?.name || user?.phone?.slice(-4) || user?.email?.split("@")[0] || "访客";
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">你好，{greeting} 👋</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">你好，{greeting}</h1>
+        <p className="mt-1.5 text-sm text-zinc-500">
           {!workspace
-            ? "随便逛 —— 看 TikTok 爆品榜、店铺、达人。要导入选品 / AI 分析时再登录即可。"
+            ? "这是 OneClaw 概览。给下面的 Agent 派个活,或登录后拥有自己的工作台。"
             : isFresh
-            ? `欢迎来到 ${wsName} —— 先去「发现」挑一个 TikTok 爆品吧。`
-            : `这是 ${wsName} 的今日概览。`}
+              ? `欢迎来到 ${workspace.name} —— 给 Agent 派个活,跑通你的第一条出海链路吧。`
+              : `这是 ${workspace.name} 的今日概览。给 Agent 派个活就从下面开始。`}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link
-          href="/app/assets/products"
-          className="group rounded-2xl border border-zinc-200 bg-white p-5 hover:border-indigo-200 hover:shadow-md transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-indigo-500 transition-colors" />
-          </div>
-          <div className="mt-5 text-2xl font-bold tabular-nums">{productCount}</div>
-          <div className="mt-0.5 text-xs text-zinc-500">选品库存</div>
-        </Link>
+      {/* 核心:给三位 Agent 派活的聊天框 */}
+      <AgentComposer workspaceId={workspace?.id ?? ""} isGuest={!workspace} />
 
-        <Link
-          href="/app/discover/products"
-          className="group rounded-2xl border border-zinc-200 bg-white p-5 hover:border-indigo-200 hover:shadow-md transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white">
-              <Compass className="h-4 w-4" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-indigo-500 transition-colors" />
-          </div>
-          <div className="mt-5 text-base font-semibold">去发现 TikTok 爆品</div>
-          <div className="mt-0.5 text-xs text-zinc-500">看榜单、收藏、一键导入选品库</div>
-        </Link>
+      {workspace && isFresh && <OnboardingCard workspaceId={workspace.id} />}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Stat icon={TrendingUp} label="选品库存" value={productCount} href="/app/assets/products" />
+        <Stat icon={Video} label="已生成视频" value={videoCount} href="/app/videos" />
+        <Stat icon={Bot} label="Agent 任务" value={taskCount} href="/app/agents" />
       </div>
 
-      <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-10 text-center text-sm text-zinc-500">
-        视频生成、Agent 工作流、店铺与计费等模块正在迁移中,敬请期待。
-      </div>
+      <section className="rounded-xl border border-zinc-200/80 bg-white">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+          <h2 className="text-sm font-semibold text-zinc-900">最近 Agent 任务</h2>
+          <Link
+            href="/app/agents"
+            className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
+          >
+            全部 <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        {recentTasks.length === 0 ? (
+          <div className="px-5 py-12 text-center text-sm text-zinc-500">
+            还没有任务。在上面的聊天框给 Agent 派个活试试。
+          </div>
+        ) : (
+          <ul className="divide-y divide-zinc-100">
+            {recentTasks.map((t) => {
+              const agent = AGENT_IDENTITY[t.agent as AgentKey];
+              return (
+                <li key={t.id} className="flex items-center gap-3 px-5 py-3.5 text-sm">
+                  {agent && (
+                    <Badge tone={agent.tone} outline={false}>
+                      {agent.label}
+                    </Badge>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-zinc-800">{t.input}</div>
+                    <div className="mt-0.5 text-2xs text-zinc-400">
+                      {new Date(t.createdAt).toLocaleString("zh-CN")}
+                    </div>
+                  </div>
+                  <Badge tone={TASK_STATUS_TONE[t.status] ?? "neutral"}>
+                    {TASK_STATUS_LABEL[t.status] ?? t.status}
+                  </Badge>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
