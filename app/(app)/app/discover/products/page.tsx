@@ -1,10 +1,9 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { fetchCategories } from "../_components/categories";
+import { REGION_CODES, type Region } from "../_components/regions";
 import { DiscoverClient } from "./discover-client";
 
 export const metadata = { title: "发现 · TikTok 爆品 · OneClaw" };
-
-const VALID_REGIONS = ["US", "GB", "ID", "TH", "VN", "MY"];
 
 type DecoratedProduct = {
   productId: string;
@@ -39,7 +38,9 @@ export default async function DiscoverProductsPage({
   const workspace = me?.workspace ?? null;
 
   const sp = await searchParams;
-  const region = VALID_REGIONS.includes(sp.region ?? "") ? sp.region! : "US";
+  const region = REGION_CODES.includes((sp.region ?? "") as Region)
+    ? (sp.region as Region)
+    : "US";
   const rankType = Number(sp.rank_type) || 1;
   const field = Number(sp.field) || 1;
   const categoryId = sp.category_id || null;
@@ -58,7 +59,7 @@ export default async function DiscoverProductsPage({
     <DiscoverClient
       isGuest={!workspace}
       workspaceId={workspace?.id ?? ""}
-      region={region as "US" | "GB" | "ID" | "TH" | "VN" | "MY"}
+      region={region}
       rankType={rankType as 1 | 2 | 3}
       field={field as 1 | 2 | 3}
       categoryId={categoryId}

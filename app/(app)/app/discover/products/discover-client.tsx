@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
 import { LoginPromptModal } from "@/components/LoginPromptModal";
 import { FilterBar, type CategoryOption, type FieldOption } from "../_components/FilterBar";
+import { type Region } from "../_components/regions";
 import {
   Sparkles,
   Plus,
@@ -17,7 +18,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-type Region = "US" | "GB" | "ID" | "TH" | "VN" | "MY";
 type RankType = 1 | 2 | 3;
 type Field = 1 | 2 | 3;
 
