@@ -95,6 +95,44 @@ func (c *Client) GetVideoRanklist(ctx context.Context, p RanklistParams) ([]Vide
 	return getEntityRanklist[VideoListItem](ctx, c, "/echotik/video/ranklist", "video_rank_field", p)
 }
 
+// GetProductCovers 按 product_ids 批量取详情,返回 productID -> 封面原始 URL 列表(按 index 升序)。
+// 商品榜(product/ranklist)不返回 cover,封面只能从 /echotik/product/detail 拿(防盗链原文,需再签名)。
+// 单次最多 detailBatch 个 id。
+func (c *Client) GetProductCovers(ctx context.Context, productIDs []string, region string) (map[string][]string, error) {
+	out := make(map[string][]string, len(productIDs))
+	const detailBatch = 10
+	for i := 0; i < len(productIDs); i += detailBatch {
+		end := i + detailBatch
+		if end > len(productIDs) {
+			end = len(productIDs)
+		}
+		chunk := productIDs[i:end]
+		params := map[string]string{
+			"product_ids": strings.Join(chunk, ","),
+			"region":      region,
+		}
+		var env Envelope[[]ProductDetail]
+		if err := c.call(ctx, "/echotik/product/detail", params, &env); err != nil {
+			return out, err
+		}
+		if env.Code != 0 && env.Code != 200 {
+			return out, fmt.Errorf("echotik code %d: %s", env.Code, env.Message)
+		}
+		for _, d := range env.Data {
+			covers := ParseCovers(d.CoverURL)
+			if len(covers) == 0 {
+				continue
+			}
+			urls := make([]string, 0, len(covers))
+			for _, cv := range covers {
+				urls = append(urls, cv.URL)
+			}
+			out[d.ProductID] = urls
+		}
+	}
+	return out, nil
+}
+
 // signHost 仅这个 TOS host 的防盗链图才支持批量签名。
 const signHost = "echosell-images.tos-ap-southeast-1.volces.com"
 

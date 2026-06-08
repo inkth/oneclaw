@@ -2,6 +2,11 @@
 // 移植自 Next 版 lib/echotik/*。Phase 1 聚焦榜单(ranklist)。
 package echotik
 
+import (
+	"encoding/json"
+	"sort"
+)
+
 // Envelope EchoTik 统一响应封套。code==0 或 200 视为成功。
 type Envelope[T any] struct {
 	Code      int    `json:"code"`
@@ -55,6 +60,31 @@ type ProductListItem struct {
 	TotalIflCnt           int     `json:"total_ifl_cnt"`
 	TotalVideoCnt         int     `json:"total_video_cnt"`
 	TotalLiveCnt          int     `json:"total_live_cnt"`
+}
+
+// ProductDetail 商品详情(榜单不带封面,需走 product/detail 取 cover_url)。当前只取封面。
+type ProductDetail struct {
+	ProductID string `json:"product_id"`
+	CoverURL  string `json:"cover_url"` // stringified JSON: [{"url":...,"index":N}, ...],防盗链原始 URL,需签名
+}
+
+// ProductCover cover_url 解析后的单项。
+type ProductCover struct {
+	URL   string `json:"url"`
+	Index int    `json:"index"`
+}
+
+// ParseCovers 解析 cover_url(stringified JSON 数组),按 index 升序返回。
+func ParseCovers(raw string) []ProductCover {
+	if raw == "" {
+		return nil
+	}
+	var arr []ProductCover
+	if err := json.Unmarshal([]byte(raw), &arr); err != nil {
+		return nil
+	}
+	sort.SliceStable(arr, func(i, j int) bool { return arr[i].Index < arr[j].Index })
+	return arr
 }
 
 // RanklistParams 榜单查询参数。
