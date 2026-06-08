@@ -8,6 +8,7 @@ import { apiBrowser } from "@/lib/api-browser";
 import { LoginPromptModal } from "@/components/LoginPromptModal";
 import { FilterBar, type CategoryOption, type FieldOption } from "../_components/FilterBar";
 import { type Region } from "../_components/regions";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   Sparkles,
   Plus,
@@ -16,6 +17,7 @@ import {
   ArrowUpRight,
   Check,
   CheckCircle2,
+  PackageSearch,
 } from "lucide-react";
 
 type RankType = 1 | 2 | 3;
@@ -87,7 +89,6 @@ export function DiscoverClient({
   field,
   categoryId,
   categories,
-  state,
   products,
   isGuest = false,
 }: {
@@ -247,16 +248,14 @@ export function DiscoverClient({
         categories={categories}
       />
 
-      {state === "empty" && (
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center">
-          <div className="text-base font-semibold">该榜单暂无数据</div>
-          <p className="mt-1.5 text-sm text-zinc-500 max-w-md mx-auto">
-            这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜或者换个区域。
-          </p>
-        </div>
-      )}
-
-      {/* Main table */}
+      {/* Main table — 无数据时不渲染裸表头，改用统一空态 */}
+      {products.length === 0 ? (
+        <EmptyState
+          icon={PackageSearch}
+          title="该榜单暂无数据"
+          description="这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜，或者换个国家 / 地区再看看。"
+        />
+      ) : (
       <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
         <table className="w-full text-sm min-w-[920px]">
           <thead className="bg-zinc-50/60 text-xs text-zinc-500">
@@ -379,7 +378,7 @@ export function DiscoverClient({
                     <button
                       onClick={() => analyzeProduct(p)}
                       disabled={analyzing.has(p.productId)}
-                      className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-50"
                       title="让分析师 Agent 基于真实数据做深度分析"
                     >
                       {analyzing.has(p.productId) ? (
@@ -420,6 +419,7 @@ export function DiscoverClient({
           </tbody>
         </table>
       </div>
+      )}
 
       <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-xs text-zinc-600 flex items-center justify-between flex-wrap gap-2">
         <span>
@@ -427,7 +427,7 @@ export function DiscoverClient({
         </span>
         <Link
           href="/app/agents"
-          className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium"
+          className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 font-medium"
         >
           查看分析师 Agent 历史 <ArrowUpRight className="h-3 w-3" />
         </Link>

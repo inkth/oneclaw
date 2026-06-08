@@ -35,7 +35,7 @@ export function CopyButton({
         "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
         copied
           ? "bg-emerald-50 text-emerald-700"
-          : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100",
+          : "bg-brand-50 text-brand-700 hover:bg-brand-100",
         className
       )}
     >

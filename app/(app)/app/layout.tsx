@@ -19,11 +19,11 @@ export default async function AppLayout({
     <div className="min-h-screen flex bg-zinc-50/50">
       <aside className="hidden md:flex w-60 flex-col border-r border-zinc-200 bg-white">
         <Link href="/" className="flex items-center gap-2 px-5 h-16 border-b border-zinc-100">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 via-violet-500 to-fuchsia-500">
             <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
           <span className="text-base font-semibold tracking-tight">
-            One<span className="text-indigo-600">Claw</span>
+            One<span className="text-brand-600">Claw</span>
           </span>
         </Link>
 
@@ -47,7 +47,7 @@ export default async function AppLayout({
           {user ? (
             <>
               <div className="flex items-center gap-2 mb-3 px-2">
-                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
+                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-brand-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
                   {display.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -64,7 +64,7 @@ export default async function AppLayout({
           ) : (
             <Link
               href="/login?callbackUrl=/app"
-              className="block w-full rounded-lg bg-indigo-600 px-3 py-2 text-center text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+              className="block w-full rounded-lg bg-brand-600 px-3 py-2 text-center text-sm font-medium text-white hover:bg-brand-700 transition-colors"
             >
               登录 / 注册
             </Link>
@@ -75,7 +75,7 @@ export default async function AppLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-zinc-200 bg-white">
           <Link href="/app" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-violet-500">
               <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-sm font-semibold">OneClaw</span>
