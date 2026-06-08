@@ -96,6 +96,13 @@ type detailExtras struct {
 	FreeShipping bool        `json:"freeShipping"`
 	Description  string      `json:"description"`
 	Windows      *WindowsDTO `json:"windows"`
+
+	// 累计总量(权威值,覆盖榜单行的窗口/排名口径)。
+	TotalSaleCnt  int `json:"totalSaleCnt"`
+	TotalGmvCents int `json:"totalGmvCents"`
+	TotalIflCnt   int `json:"totalIflCnt"`
+	TotalVideoCnt int `json:"totalVideoCnt"`
+	TotalLiveCnt  int `json:"totalLiveCnt"`
 }
 
 // ── 入口 ─────────────────────────────────────────────────────────────────────
@@ -138,6 +145,13 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 		dto.FreeShipping = extras.FreeShipping
 		dto.Description = extras.Description
 		dto.Windows = extras.Windows
+		// 用详情的累计口径覆盖榜单行的窗口/排名口径(后者与「近7天」窗口会自相矛盾)。
+		if extras.TotalVideoCnt > 0 || extras.TotalSaleCnt > 0 {
+			dto.TotalSaleCnt = extras.TotalSaleCnt
+			dto.TotalSaleGmvCents = extras.TotalGmvCents
+			dto.TotalIflCnt = extras.TotalIflCnt
+			dto.TotalVideoCnt = extras.TotalVideoCnt
+		}
 	}
 	dto.Influencers = infls
 	dto.Videos = vids
@@ -190,6 +204,11 @@ func (s *DiscoverService) fetchDetailExtras(ctx context.Context, id, region stri
 			Video7dCnt:  d.TotalVideo7dCnt.Int(),
 			Video30dCnt: d.TotalVideo30dCnt.Int(),
 		},
+		TotalSaleCnt:  d.TotalSaleCnt.Int(),
+		TotalGmvCents: echotik.DollarsToCents(d.TotalSaleGmvAmt.Float()),
+		TotalIflCnt:   d.TotalIflCnt.Int(),
+		TotalVideoCnt: d.TotalVideoCnt.Int(),
+		TotalLiveCnt:  d.TotalLiveCnt.Int(),
 	}
 	s.cacheSetJSON(ctx, key, ex)
 	return ex
@@ -312,8 +331,13 @@ func (s *DiscoverService) scoreProduct(dp *model.DiscoverProduct, ex *detailExtr
 		Hint:  "估算毛利率(成本按售价25%,已扣佣金 " + itoaPct(dp.CommissionRate*100) + ")",
 	})
 
-	// 3. 竞争饱和度 competition:用累计带货视频数当代理。
+	// 3. 竞争饱和度 competition:用累计带货视频数当代理(优先详情的权威口径)。
 	video := dp.TotalVideoCnt
+	ifl := dp.TotalIflCnt
+	if ex != nil && ex.TotalVideoCnt > 0 {
+		video = ex.TotalVideoCnt
+		ifl = ex.TotalIflCnt
+	}
 	var compSub float64
 	var compTone, compVal string
 	switch {
@@ -326,7 +350,7 @@ func (s *DiscoverService) scoreProduct(dp *model.DiscoverProduct, ex *detailExtr
 	}
 	signals = append(signals, SignalDTO{
 		Key: "competition", Label: "竞争饱和", Tone: compTone, Value: compVal,
-		Hint: "已有 " + humanInt(video) + " 条带货视频、" + humanInt(dp.TotalIflCnt) + " 个达人在带",
+		Hint: "已有 " + humanInt(video) + " 条带货视频、" + humanInt(ifl) + " 个达人在带",
 	})
 
 	// 4. 口碑 quality:评分 + 评价数。

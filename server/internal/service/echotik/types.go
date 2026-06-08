@@ -105,6 +105,13 @@ type ProductDetail struct {
 	FreeShipping  FlexFloat  `json:"free_shipping"`
 	SellerID      string     `json:"seller_id"`
 
+	// 累计总量(权威值,优于榜单行里的窗口/排名口径)。
+	TotalSaleCnt    FlexFloat `json:"total_sale_cnt"`
+	TotalSaleGmvAmt FlexFloat `json:"total_sale_gmv_amt"`
+	TotalIflCnt     FlexFloat `json:"total_ifl_cnt"`
+	TotalVideoCnt   FlexFloat `json:"total_video_cnt"`
+	TotalLiveCnt    FlexFloat `json:"total_live_cnt"`
+
 	// 多周期窗口(选品看「近 7/30 天」势头)。
 	TotalSale7dCnt  FlexFloat `json:"total_sale_7d_cnt"`
 	TotalSale30dCnt FlexFloat `json:"total_sale_30d_cnt"`
