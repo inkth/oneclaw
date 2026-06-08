@@ -94,6 +94,7 @@ func New(d Deps) *gin.Engine {
 		priv.DELETE("/workspaces/:wid/products/:pid", prodH.Delete)
 
 		priv.GET("/workspaces/:wid/discover/ranklist", discH.Ranklist)
+		priv.GET("/workspaces/:wid/discover/products/:externalId", discH.DetailFull)
 		priv.POST("/workspaces/:wid/discover/interactions", discH.Interaction)
 		priv.POST("/workspaces/:wid/discover/import-product", discH.Import)
 		priv.POST("/workspaces/:wid/discover/analyze", discH.Analyze)

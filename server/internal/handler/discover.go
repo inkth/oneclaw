@@ -131,15 +131,30 @@ func (h *DiscoverHandler) Import(c *gin.Context) {
 	Created(c, res)
 }
 
-// Detail GET /discover/products/:externalId?region=US (仅需登录)。
+// Detail GET /discover/products/:externalId?region=US —— 公共选品详情(游客可看,无个性化)。
 func (h *DiscoverHandler) Detail(c *gin.Context) {
 	region := defaultStr(c.Query("region"), "US")
-	dp, err := h.discover.GetDiscoverProduct(c.Request.Context(), c.Param("externalId"), region)
+	dto, err := h.discover.ProductDetailFull(c.Request.Context(), uuid.Nil, c.Param("externalId"), region)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
-	OK(c, gin.H{"product": dp})
+	OK(c, gin.H{"product": dto})
+}
+
+// DetailFull GET /workspaces/:wid/discover/products/:externalId?region=US —— 带工作台个性化(已导入/收藏)。
+func (h *DiscoverHandler) DetailFull(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	region := defaultStr(c.Query("region"), "US")
+	dto, err := h.discover.ProductDetailFull(c.Request.Context(), wid, c.Param("externalId"), region)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"product": dto})
 }
 
 func defaultStr(v, def string) string {

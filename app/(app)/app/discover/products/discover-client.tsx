@@ -292,7 +292,10 @@ export function DiscoverClient({
                   </div>
                 </td>
                 <td className="px-4 py-3 max-w-[360px]">
-                  <div className="flex items-start gap-2.5">
+                  <Link
+                    href={`/app/discover/products/${p.productId}?region=${p.region}`}
+                    className="flex items-start gap-2.5 group"
+                  >
                     {p.coverUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -314,7 +317,7 @@ export function DiscoverClient({
                       </div>
                     )}
                     <div className="min-w-0">
-                  <div className="font-medium truncate" title={p.productName}>
+                  <div className="font-medium truncate group-hover:text-brand-700 transition-colors" title={p.productName}>
                     {p.productName}
                   </div>
                   <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono">
@@ -346,7 +349,7 @@ export function DiscoverClient({
                     )}
                   </div>
                     </div>
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums font-semibold">
                   ${p.avgPrice.toFixed(2)}
@@ -423,7 +426,7 @@ export function DiscoverClient({
 
       <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-xs text-zinc-600 flex items-center justify-between flex-wrap gap-2">
         <span>
-          💡 想看到趋势线 / Top 达人 / 关联视频？点行可展开详情（敬请期待）。
+          💡 点商品查看详情：销量趋势、Top 带货达人、关联视频与选品诊断评分。
         </span>
         <Link
           href="/app/agents"

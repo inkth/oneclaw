@@ -5,6 +5,8 @@ package echotik
 import (
 	"encoding/json"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 // Envelope EchoTik 统一响应封套。code==0 或 200 视为成功。
@@ -43,6 +45,34 @@ func (f *FlexString) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// FlexFloat 兼容 EchoTik 数值字段时而是数字、时而是带引号字符串(甚至 "48%")。
+// 解析时剥引号、去掉末尾 %,失败则归零(不让单个脏字段整条 detail 解析失败)。
+type FlexFloat float64
+
+func (f *FlexFloat) UnmarshalJSON(b []byte) error {
+	s := strings.TrimSpace(string(b))
+	if s == "" || s == "null" {
+		*f = 0
+		return nil
+	}
+	s = strings.Trim(s, `"`)
+	s = strings.TrimSuffix(s, "%")
+	if s == "" {
+		*f = 0
+		return nil
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		*f = 0
+		return nil
+	}
+	*f = FlexFloat(v)
+	return nil
+}
+
+func (f FlexFloat) Float() float64 { return float64(f) }
+func (f FlexFloat) Int() int       { return int(f) }
+
 // ProductListItem 榜单行。
 type ProductListItem struct {
 	ProductID             string  `json:"product_id"`
@@ -62,10 +92,80 @@ type ProductListItem struct {
 	TotalLiveCnt          int     `json:"total_live_cnt"`
 }
 
-// ProductDetail 商品详情(榜单不带封面,需走 product/detail 取 cover_url)。当前只取封面。
+// ProductDetail 商品详情(/echotik/product/detail)。封面取 cover_url;其余字段供选品详情页/评分用。
+// 数值字段一律用 FlexFloat 容错(EchoTik 偶有字符串/百分号)。
 type ProductDetail struct {
 	ProductID string `json:"product_id"`
 	CoverURL  string `json:"cover_url"` // stringified JSON: [{"url":...,"index":N}, ...],防盗链原始 URL,需签名
+
+	ProductRating FlexFloat  `json:"product_rating"`
+	ReviewCount   FlexFloat  `json:"review_count"`
+	DescDetail    string     `json:"desc_detail"` // stringified JSON 富文本块
+	Discount      FlexString `json:"discount"`    // 形如 "48%"
+	FreeShipping  FlexFloat  `json:"free_shipping"`
+	SellerID      string     `json:"seller_id"`
+
+	// 多周期窗口(选品看「近 7/30 天」势头)。
+	TotalSale7dCnt  FlexFloat `json:"total_sale_7d_cnt"`
+	TotalSale30dCnt FlexFloat `json:"total_sale_30d_cnt"`
+	TotalSale90dCnt FlexFloat `json:"total_sale_90d_cnt"`
+
+	TotalSaleGmv7dAmt  FlexFloat `json:"total_sale_gmv_7d_amt"`
+	TotalSaleGmv30dAmt FlexFloat `json:"total_sale_gmv_30d_amt"`
+
+	TotalVideo7dCnt  FlexFloat `json:"total_video_7d_cnt"`
+	TotalVideo30dCnt FlexFloat `json:"total_video_30d_cnt"`
+	TotalLive7dCnt   FlexFloat `json:"total_live_7d_cnt"`
+}
+
+// ProductInfluencer 带货达人(/echotik/product/influencer/list)。
+type ProductInfluencer struct {
+	UserID            string    `json:"user_id"`
+	NickName          string    `json:"nick_name"`
+	Avatar            string    `json:"avatar"` // 防盗链,需签名
+	Category          string    `json:"category"`
+	Region            string    `json:"region"`
+	ProductID         string    `json:"product_id"`
+	PerProductGmvAmt  FlexFloat `json:"per_product_ifl_gmv_amt"`
+	PerProductSaleCnt FlexFloat `json:"per_product_ifl_sale_cnt"`
+	TotalFollowersCnt FlexFloat `json:"total_followers_cnt"`
+	TotalDiggCnt      FlexFloat `json:"total_digg_cnt"`
+	TotalPostVideoCnt FlexFloat `json:"total_post_video_cnt"`
+	TotalLiveCnt      FlexFloat `json:"total_live_cnt"`
+}
+
+// ProductVideo 关联带货视频(/echotik/product/video/list)。
+type ProductVideo struct {
+	VideoID           string     `json:"video_id"`
+	ProductID         string     `json:"product_id"`
+	UserID            string     `json:"user_id"`
+	Region            string     `json:"region"`
+	CreateTime        FlexString `json:"create_time"` // unix 秒
+	Duration          FlexFloat  `json:"duration"`
+	ReflowCover       string     `json:"reflow_cover"` // 防盗链,需签名
+	PlayAddr          string     `json:"play_addr"`
+	HashTag           string     `json:"hash_tag"`
+	VideoDesc         string     `json:"video_desc"`
+	TotalViewsCnt     FlexFloat  `json:"total_views_cnt"`
+	TotalDiggCnt      FlexFloat  `json:"total_digg_cnt"`
+	TotalCommentsCnt  FlexFloat  `json:"total_comments_cnt"`
+	TotalSharesCnt    FlexFloat  `json:"total_shares_cnt"`
+	TotalVideoSaleCnt FlexFloat  `json:"total_video_sale_cnt"`
+	TotalVideoSaleGmv FlexFloat  `json:"total_video_sale_gmv_amt"`
+}
+
+// ProductTrendPoint 每日趋势点(/echotik/product/trend)。
+type ProductTrendPoint struct {
+	Dt              string    `json:"dt"` // YYYY-MM-DD
+	ProductID       string    `json:"product_id"`
+	SpuAvgPrice     FlexFloat `json:"spu_avg_price"`
+	TotalSaleCnt    FlexFloat `json:"total_sale_cnt"`
+	TotalSaleGmvAmt FlexFloat `json:"total_sale_gmv_amt"`
+	Sale1dCnt       FlexFloat `json:"total_sale_1d_cnt"`
+	SaleGmv1dAmt    FlexFloat `json:"total_sale_gmv_1d_amt"`
+	TotalIflCnt     FlexFloat `json:"total_ifl_cnt"`
+	TotalVideoCnt   FlexFloat `json:"total_video_cnt"`
+	TotalLiveCnt    FlexFloat `json:"total_live_cnt"`
 }
 
 // ProductCover cover_url 解析后的单项。

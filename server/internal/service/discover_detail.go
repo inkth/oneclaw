@@ -1,0 +1,476 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"math"
+	"strconv"
+	"strings"
+
+	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/oneclaw/server/internal/logger"
+	"github.com/oneclaw/server/internal/model"
+	"github.com/oneclaw/server/internal/service/echotik"
+)
+
+// ── DTO ──────────────────────────────────────────────────────────────────────
+
+// ProductDetailDTO 选品详情页用:基础榜单字段 + 详情扩展 + 达人/视频/趋势 + 选品诊断评分。
+type ProductDetailDTO struct {
+	DecoratedProduct                        // 基础(已含 coverUrls/importedProductId/interaction)
+	Rating           float64                `json:"rating"`
+	ReviewCount      int                    `json:"reviewCount"`
+	Discount         string                 `json:"discount"`
+	FreeShipping     bool                   `json:"freeShipping"`
+	Description      string                 `json:"description"`
+	Windows          *WindowsDTO            `json:"windows"`
+	Influencers      []ProductInfluencerDTO `json:"influencers"`
+	Videos           []ProductVideoDTO      `json:"videos"`
+	Trend            []TrendPointDTO        `json:"trend"`
+	Score            *ScoreDTO              `json:"score"`
+}
+
+// WindowsDTO 近 7/30/90 天窗口指标(金额 cents)。
+type WindowsDTO struct {
+	Sale7dCnt   int `json:"sale7dCnt"`
+	Sale30dCnt  int `json:"sale30dCnt"`
+	Sale90dCnt  int `json:"sale90dCnt"`
+	Gmv7dCents  int `json:"gmv7dCents"`
+	Gmv30dCents int `json:"gmv30dCents"`
+	Video7dCnt  int `json:"video7dCnt"`
+	Video30dCnt int `json:"video30dCnt"`
+}
+
+type ProductInfluencerDTO struct {
+	UserID             string `json:"userId"`
+	NickName           string `json:"nickName"`
+	Avatar             string `json:"avatar"` // 已签名
+	Category           string `json:"category"`
+	Followers          int    `json:"followers"`
+	PerProductGmvCents int    `json:"perProductGmvCents"`
+	PerProductSaleCnt  int    `json:"perProductSaleCnt"`
+}
+
+type ProductVideoDTO struct {
+	VideoID      string `json:"videoId"`
+	Cover        string `json:"cover"` // 已签名
+	Desc         string `json:"desc"`
+	PlayAddr     string `json:"playAddr"`
+	CreateTime   string `json:"createTime"`
+	Views        int    `json:"views"`
+	Digg         int    `json:"digg"`
+	Comments     int    `json:"comments"`
+	Shares       int    `json:"shares"`
+	SaleCnt      int    `json:"saleCnt"`
+	SaleGmvCents int    `json:"saleGmvCents"`
+}
+
+type TrendPointDTO struct {
+	Dt       string `json:"dt"`
+	SaleCnt  int    `json:"saleCnt"`  // 当日增量
+	GmvCents int    `json:"gmvCents"` // 当日增量
+}
+
+type ScoreDTO struct {
+	Score   int         `json:"score"` // 0-100
+	Verdict string      `json:"verdict"`
+	Signals []SignalDTO `json:"signals"`
+}
+
+type SignalDTO struct {
+	Key   string `json:"key"` // momentum/margin/competition/quality
+	Label string `json:"label"`
+	Tone  string `json:"tone"` // success/info/warning/danger/neutral
+	Value string `json:"value"`
+	Hint  string `json:"hint"`
+}
+
+// detailExtras 是 pdetail 缓存的内容(详情扩展 + 签名图廊)。
+type detailExtras struct {
+	Gallery      []string    `json:"gallery"`
+	Rating       float64     `json:"rating"`
+	ReviewCount  int         `json:"reviewCount"`
+	Discount     string      `json:"discount"`
+	FreeShipping bool        `json:"freeShipping"`
+	Description  string      `json:"description"`
+	Windows      *WindowsDTO `json:"windows"`
+}
+
+// ── 入口 ─────────────────────────────────────────────────────────────────────
+
+// ProductDetailFull 组装选品详情:基础 + 详情扩展 + 达人/视频/趋势 + 评分。
+// 各子资源独立缓存(6h)与降级,任一失败不阻断整页。
+func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID, externalID, region string) (*ProductDetailDTO, error) {
+	dp, err := s.findDiscover(ctx, externalID, region)
+	if err != nil {
+		return nil, err
+	}
+	base := s.decorate(ctx, wsID, []model.DiscoverProduct{*dp})[0]
+	dto := &ProductDetailDTO{DecoratedProduct: base}
+
+	if !s.echo.Configured() {
+		dto.Score = s.scoreProduct(dp, nil, nil)
+		return dto, nil
+	}
+
+	var (
+		extras *detailExtras
+		infls  []ProductInfluencerDTO
+		vids   []ProductVideoDTO
+		trend  []TrendPointDTO
+	)
+	g, gctx := errgroup.WithContext(ctx)
+	g.Go(func() error { extras = s.fetchDetailExtras(gctx, externalID, region); return nil })
+	g.Go(func() error { infls = s.fetchInfluencers(gctx, externalID, region); return nil })
+	g.Go(func() error { vids = s.fetchVideos(gctx, externalID, region); return nil })
+	g.Go(func() error { trend = s.fetchTrend(gctx, externalID, region); return nil })
+	_ = g.Wait()
+
+	if extras != nil {
+		if len(extras.Gallery) > 0 {
+			dto.CoverUrls = extras.Gallery // 用完整图廊覆盖列表里的单图
+		}
+		dto.Rating = extras.Rating
+		dto.ReviewCount = extras.ReviewCount
+		dto.Discount = extras.Discount
+		dto.FreeShipping = extras.FreeShipping
+		dto.Description = extras.Description
+		dto.Windows = extras.Windows
+	}
+	dto.Influencers = infls
+	dto.Videos = vids
+	dto.Trend = trend
+	dto.Score = s.scoreProduct(dp, extras, trend)
+	return dto, nil
+}
+
+// ── 子资源(缓存 + 降级) ──────────────────────────────────────────────────────
+
+func (s *DiscoverService) fetchDetailExtras(ctx context.Context, id, region string) *detailExtras {
+	key := "pdetail:" + region + ":" + id
+	var cached detailExtras
+	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
+		return &cached
+	}
+	d, err := s.echo.GetProductDetail(ctx, id, region)
+	if err != nil || d == nil {
+		if err != nil {
+			logger.Warn("选品详情:取详情失败", logger.String("id", id), logger.Err(err))
+		}
+		return nil
+	}
+	// 图廊签名
+	covers := echotik.ParseCovers(d.CoverURL)
+	raws := make([]string, 0, len(covers))
+	for _, cv := range covers {
+		raws = append(raws, cv.URL)
+	}
+	signed := s.echo.SignCovers(ctx, raws)
+	gallery := make([]string, 0, len(raws))
+	for _, r := range raws {
+		if su, ok := signed[r]; ok {
+			gallery = append(gallery, su)
+		}
+	}
+	ex := &detailExtras{
+		Gallery:      gallery,
+		Rating:       d.ProductRating.Float(),
+		ReviewCount:  d.ReviewCount.Int(),
+		Discount:     string(d.Discount),
+		FreeShipping: d.FreeShipping.Int() == 1,
+		Description:  parseDescDetail(d.DescDetail),
+		Windows: &WindowsDTO{
+			Sale7dCnt:   d.TotalSale7dCnt.Int(),
+			Sale30dCnt:  d.TotalSale30dCnt.Int(),
+			Sale90dCnt:  d.TotalSale90dCnt.Int(),
+			Gmv7dCents:  echotik.DollarsToCents(d.TotalSaleGmv7dAmt.Float()),
+			Gmv30dCents: echotik.DollarsToCents(d.TotalSaleGmv30dAmt.Float()),
+			Video7dCnt:  d.TotalVideo7dCnt.Int(),
+			Video30dCnt: d.TotalVideo30dCnt.Int(),
+		},
+	}
+	s.cacheSetJSON(ctx, key, ex)
+	return ex
+}
+
+func (s *DiscoverService) fetchInfluencers(ctx context.Context, id, region string) []ProductInfluencerDTO {
+	key := "pinfl:" + region + ":" + id
+	var cached []ProductInfluencerDTO
+	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
+		return cached
+	}
+	rows, err := s.echo.GetProductInfluencers(ctx, id, region, 10)
+	if err != nil {
+		logger.Warn("选品详情:取达人失败", logger.String("id", id), logger.Err(err))
+		return nil
+	}
+	avatars := make([]string, 0, len(rows))
+	for _, r := range rows {
+		avatars = append(avatars, r.Avatar)
+	}
+	signed := s.echo.SignCovers(ctx, avatars)
+	out := make([]ProductInfluencerDTO, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, ProductInfluencerDTO{
+			UserID:             r.UserID,
+			NickName:           r.NickName,
+			Avatar:             signed[r.Avatar],
+			Category:           r.Category,
+			Followers:          r.TotalFollowersCnt.Int(),
+			PerProductGmvCents: echotik.DollarsToCents(r.PerProductGmvAmt.Float()),
+			PerProductSaleCnt:  r.PerProductSaleCnt.Int(),
+		})
+	}
+	s.cacheSetJSON(ctx, key, out)
+	return out
+}
+
+func (s *DiscoverService) fetchVideos(ctx context.Context, id, region string) []ProductVideoDTO {
+	key := "pvideo:" + region + ":" + id
+	var cached []ProductVideoDTO
+	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
+		return cached
+	}
+	rows, err := s.echo.GetProductVideos(ctx, id, region, 10)
+	if err != nil {
+		logger.Warn("选品详情:取视频失败", logger.String("id", id), logger.Err(err))
+		return nil
+	}
+	covers := make([]string, 0, len(rows))
+	for _, r := range rows {
+		covers = append(covers, r.ReflowCover)
+	}
+	signed := s.echo.SignCovers(ctx, covers)
+	out := make([]ProductVideoDTO, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, ProductVideoDTO{
+			VideoID:      r.VideoID,
+			Cover:        signed[r.ReflowCover],
+			Desc:         r.VideoDesc,
+			PlayAddr:     r.PlayAddr,
+			CreateTime:   string(r.CreateTime),
+			Views:        r.TotalViewsCnt.Int(),
+			Digg:         r.TotalDiggCnt.Int(),
+			Comments:     r.TotalCommentsCnt.Int(),
+			Shares:       r.TotalSharesCnt.Int(),
+			SaleCnt:      r.TotalVideoSaleCnt.Int(),
+			SaleGmvCents: echotik.DollarsToCents(r.TotalVideoSaleGmv.Float()),
+		})
+	}
+	s.cacheSetJSON(ctx, key, out)
+	return out
+}
+
+func (s *DiscoverService) fetchTrend(ctx context.Context, id, region string) []TrendPointDTO {
+	key := "ptrend:" + region + ":" + id
+	var cached []TrendPointDTO
+	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
+		return cached
+	}
+	rows, err := s.echo.GetProductTrend(ctx, id, region, 14)
+	if err != nil {
+		logger.Warn("选品详情:取趋势失败", logger.String("id", id), logger.Err(err))
+		return nil
+	}
+	out := make([]TrendPointDTO, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, TrendPointDTO{
+			Dt:       r.Dt,
+			SaleCnt:  r.Sale1dCnt.Int(),
+			GmvCents: echotik.DollarsToCents(r.SaleGmv1dAmt.Float()),
+		})
+	}
+	s.cacheSetJSON(ctx, key, out)
+	return out
+}
+
+// ── 选品诊断评分(规则化) ──────────────────────────────────────────────────────
+
+func (s *DiscoverService) scoreProduct(dp *model.DiscoverProduct, ex *detailExtras, trend []TrendPointDTO) *ScoreDTO {
+	signals := make([]SignalDTO, 0, 4)
+
+	// 1. 势头 momentum:看近 7 天日增量销量的前后段对比。
+	mSub, mSig := momentumSignal(trend)
+	signals = append(signals, mSig)
+
+	// 2. 利润 margin:估算毛利(成本默认 25%)再扣佣金。
+	cost := echotik.EstimateCostCents(dp.AvgPriceCents)
+	grossPct := echotik.EstimateMarginPct(dp.AvgPriceCents, cost) // ≈75
+	netPct := float64(grossPct) - dp.CommissionRate*100
+	marginSub := clamp01((netPct - 20) / 50) // 20%→0,70%→1
+	marginTone := "success"
+	if netPct < 35 {
+		marginTone = "danger"
+	} else if netPct < 50 {
+		marginTone = "warning"
+	}
+	signals = append(signals, SignalDTO{
+		Key: "margin", Label: "利润空间", Tone: marginTone,
+		Value: itoaPct(netPct),
+		Hint:  "估算毛利率(成本按售价25%,已扣佣金 " + itoaPct(dp.CommissionRate*100) + ")",
+	})
+
+	// 3. 竞争饱和度 competition:用累计带货视频数当代理。
+	video := dp.TotalVideoCnt
+	var compSub float64
+	var compTone, compVal string
+	switch {
+	case video < 2000:
+		compSub, compTone, compVal = 1.0, "success", "蓝海"
+	case video < 15000:
+		compSub, compTone, compVal = 0.6, "info", "适中"
+	default:
+		compSub, compTone, compVal = 0.3, "warning", "红海"
+	}
+	signals = append(signals, SignalDTO{
+		Key: "competition", Label: "竞争饱和", Tone: compTone, Value: compVal,
+		Hint: "已有 " + humanInt(video) + " 条带货视频、" + humanInt(dp.TotalIflCnt) + " 个达人在带",
+	})
+
+	// 4. 口碑 quality:评分 + 评价数。
+	rating := 0.0
+	reviews := 0
+	if ex != nil {
+		rating = ex.Rating
+		reviews = ex.ReviewCount
+	}
+	qSub := clamp01((rating - 3.0) / 1.8) // 3.0→0,4.8→1
+	qTone := "neutral"
+	qVal := "暂无"
+	if rating > 0 {
+		qVal = ftoa1(rating) + " 分"
+		switch {
+		case rating >= 4.5:
+			qTone = "success"
+		case rating >= 4.0:
+			qTone = "info"
+		case rating >= 3.5:
+			qTone = "warning"
+		default:
+			qTone = "danger"
+		}
+	} else {
+		qSub = 0.5 // 无数据按中性
+	}
+	signals = append(signals, SignalDTO{
+		Key: "quality", Label: "口碑评分", Tone: qTone, Value: qVal,
+		Hint: humanInt(reviews) + " 条评价",
+	})
+
+	score := int(math.Round(30*mSub + 25*marginSub + 20*compSub + 25*qSub))
+	if score > 100 {
+		score = 100
+	}
+	return &ScoreDTO{Score: score, Verdict: verdict(score, mSig.Value, compVal), Signals: signals}
+}
+
+func momentumSignal(trend []TrendPointDTO) (float64, SignalDTO) {
+	sig := SignalDTO{Key: "momentum", Label: "销量势头", Tone: "neutral", Value: "数据不足", Hint: "近 14 天日增量销量趋势"}
+	if len(trend) < 4 {
+		return 0.5, sig
+	}
+	n := len(trend)
+	half := n / 2
+	earlier := avgSale(trend[:half])
+	recent := avgSale(trend[half:])
+	if earlier <= 0 {
+		return 0.5, sig
+	}
+	ratio := recent / earlier
+	switch {
+	case ratio >= 1.15:
+		sig.Tone, sig.Value = "success", "上升"
+		return 1.0, sig
+	case ratio >= 0.9:
+		sig.Tone, sig.Value = "info", "平稳"
+		return 0.6, sig
+	case ratio >= 0.7:
+		sig.Tone, sig.Value = "warning", "放缓"
+		return 0.35, sig
+	default:
+		sig.Tone, sig.Value = "danger", "下滑"
+		return 0.2, sig
+	}
+}
+
+func avgSale(pts []TrendPointDTO) float64 {
+	if len(pts) == 0 {
+		return 0
+	}
+	sum := 0
+	for _, p := range pts {
+		sum += p.SaleCnt
+	}
+	return float64(sum) / float64(len(pts))
+}
+
+func verdict(score int, momentum, competition string) string {
+	switch {
+	case score >= 75:
+		return "值得一试 — 综合表现优秀(势头" + momentum + "、" + competition + "),建议尽快测款。"
+	case score >= 55:
+		return "可考虑 — 有机会但需注意" + competition + "竞争与利润,建议小批量测试。"
+	default:
+		return "谨慎 — 综合信号偏弱(势头" + momentum + "、" + competition + "),除非有差异化打法否则不建议跟。"
+	}
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+func clamp01(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+func itoaPct(v float64) string { return ftoa1(v) + "%" }
+
+// ftoa1 保留 1 位小数并去掉多余的 .0。
+func ftoa1(v float64) string {
+	return strconv.FormatFloat(math.Round(v*10)/10, 'f', -1, 64)
+}
+
+func humanInt(n int) string {
+	switch {
+	case n >= 1_000_000:
+		return ftoa1(float64(n)/1_000_000) + "M"
+	case n >= 1_000:
+		return ftoa1(float64(n)/1_000) + "K"
+	default:
+		return strconv.Itoa(n)
+	}
+}
+
+// 解析 desc_detail(stringified JSON 富文本块 [{type,text},...])为纯文本,截断 280 字。
+func parseDescDetail(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	var blocks []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	if err := json.Unmarshal([]byte(raw), &blocks); err != nil {
+		return ""
+	}
+	var sb strings.Builder
+	for _, b := range blocks {
+		if b.Type == "text" && b.Text != "" {
+			if sb.Len() > 0 {
+				sb.WriteString(" ")
+			}
+			sb.WriteString(strings.TrimSpace(b.Text))
+		}
+	}
+	out := strings.TrimSpace(sb.String())
+	if len([]rune(out)) > 280 {
+		out = string([]rune(out)[:280]) + "…"
+	}
+	return out
+}
