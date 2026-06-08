@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, Flame, TrendingUp, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { Globe, ChevronDown, ChevronUp } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
 import { REGIONS, type Region } from "./regions";
 
@@ -11,25 +11,13 @@ export { REGIONS };
 export type CategoryOption = { id: string; name: string };
 export type FieldOption = { v: number; cn: string };
 
-const RANK_TYPES: Array<{ v: number; cn: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { v: 1, cn: "热销", icon: Flame },
-  { v: 2, cn: "上升", icon: TrendingUp },
-  { v: 3, cn: "新品", icon: Star },
-];
-
-// 默认排序字段:店铺/达人/视频榜只接受 1=销量 / 2=GMV。商品榜可传 3 项(含增长)。
-const DEFAULT_FIELDS: FieldOption[] = [
-  { v: 1, cn: "销量" },
-  { v: 2, cn: "GMV" },
-];
-
-/** 选品各榜共用的筛选栏:地区 + 榜单类型 + 排序 + 一级类目。改 URL query 触发 SSR 重取。 */
+/** 选品各榜共用的筛选栏:地区 + 一级类目。改 URL query 触发 SSR 重取。
+ *  榜单类型 / 排序固定走默认值(由页面 query 决定),不在 UI 暴露。 */
 export function FilterBar({
   basePath,
   region,
   rankType,
   field,
-  fields = DEFAULT_FIELDS,
   categoryId = null,
   categories = [],
 }: {
@@ -37,6 +25,7 @@ export function FilterBar({
   region: Region;
   rankType: number;
   field: number;
+  /** 仍由调用方传入以兼容,但当前不在筛选栏渲染。 */
   fields?: FieldOption[];
   categoryId?: string | null;
   categories?: CategoryOption[];
@@ -76,25 +65,6 @@ export function FilterBar({
           onSelect={(id) => navigate({ category_id: id || null })}
         />
       )}
-
-      <PillRow label="榜单类型">
-        {RANK_TYPES.map((rt) => {
-          const Icon = rt.icon;
-          return (
-            <Pill key={rt.v} active={rankType === rt.v} onClick={() => navigate({ rank_type: rt.v })}>
-              <Icon className="mr-1 inline h-3.5 w-3.5 align-text-bottom" />
-              {rt.cn}
-            </Pill>
-          );
-        })}
-      </PillRow>
-      <PillRow label="排序">
-        {fields.map((f) => (
-          <Pill key={f.v} active={field === f.v} onClick={() => navigate({ field: f.v })}>
-            {f.cn}
-          </Pill>
-        ))}
-      </PillRow>
     </div>
   );
 }
