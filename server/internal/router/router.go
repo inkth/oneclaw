@@ -51,6 +51,7 @@ func New(d Deps) *gin.Engine {
 	agentH := handler.NewAgentHandler(d.Agent, d.Workspace)
 	videoH := handler.NewVideoHandler(d.Video, d.Workspace)
 	tplH := handler.NewTemplateHandler(d.Template, d.Workspace)
+	reviewH := handler.NewReviewHandler(d.Workspace)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready())
@@ -96,6 +97,8 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/discover/interactions", discH.Interaction)
 		priv.POST("/workspaces/:wid/discover/import-product", discH.Import)
 		priv.POST("/workspaces/:wid/discover/analyze", discH.Analyze)
+
+		priv.POST("/workspaces/:wid/review/analyze", reviewH.Analyze)
 
 		priv.GET("/workspaces/:wid/shops", shopH.List)
 		priv.POST("/workspaces/:wid/shops", shopH.Create)
