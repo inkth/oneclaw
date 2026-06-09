@@ -80,6 +80,8 @@ func New(d Deps) *gin.Engine {
 	api.GET("/discover/influencer-ranklist", discH.InfluencerRanklist)
 	api.GET("/discover/video-ranklist", discH.VideoRanklist)
 	api.GET("/discover/categories", discH.Categories)
+	api.GET("/discover/sellers/:sellerId", discH.SellerDetail)
+	api.GET("/discover/influencers/:userId", discH.InfluencerDetail)
 
 	// 需登录
 	priv := api.Group("")

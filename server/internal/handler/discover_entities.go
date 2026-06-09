@@ -47,3 +47,25 @@ func (h *DiscoverHandler) Categories(c *gin.Context) {
 	region := defaultStr(c.Query("region"), "US")
 	OK(c, gin.H{"categories": h.discover.Categories(c.Request.Context(), region)})
 }
+
+// SellerDetail GET /discover/sellers/:sellerId?region=US —— 店铺详情(公开只读)。
+func (h *DiscoverHandler) SellerDetail(c *gin.Context) {
+	region := defaultStr(c.Query("region"), "US")
+	dto, err := h.discover.SellerDetailFull(c.Request.Context(), c.Param("sellerId"), region)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"seller": dto})
+}
+
+// InfluencerDetail GET /discover/influencers/:userId?region=US —— 达人详情(公开只读)。
+func (h *DiscoverHandler) InfluencerDetail(c *gin.Context) {
+	region := defaultStr(c.Query("region"), "US")
+	dto, err := h.discover.InfluencerDetailFull(c.Request.Context(), c.Param("userId"), region)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"influencer": dto})
+}

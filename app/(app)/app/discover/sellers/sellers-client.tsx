@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Store, Star } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
@@ -82,10 +83,16 @@ export function SellersClient({
               <Tr key={s.sellerId}>
                 <Td className="text-zinc-400 tabular-nums">{idx + 1}</Td>
                 <Td className="max-w-[320px]">
-                  <div className="flex items-center gap-2.5">
+                  <Link
+                    href={`/app/discover/sellers/${s.sellerId}?region=${s.region}`}
+                    className="group flex items-center gap-2.5"
+                  >
                     <Thumb src={s.coverUrl} name={s.sellerName} />
                     <div className="min-w-0">
-                      <div className="truncate font-medium text-zinc-900" title={s.sellerName}>
+                      <div
+                        className="truncate font-medium text-zinc-900 group-hover:text-brand-600"
+                        title={s.sellerName}
+                      >
                         {s.sellerName}
                       </div>
                       <div className="mt-0.5 flex items-center gap-1 text-2xs text-zinc-500">
@@ -95,7 +102,7 @@ export function SellersClient({
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 </Td>
                 <Td align="right">
                   {s.rating > 0 ? (
