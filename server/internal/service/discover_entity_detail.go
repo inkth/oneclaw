@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
 	"golang.org/x/sync/errgroup"
@@ -295,7 +296,137 @@ func (s *DiscoverService) InfluencerDetailFull(ctx context.Context, userID, regi
 	return dto, nil
 }
 
+// ── 视频详情 DTO ──────────────────────────────────────────────────────────────
+
+type VideoDetailDTO struct {
+	VideoID      string             `json:"videoId"`
+	UserID       string             `json:"userId"`
+	UniqueID     string             `json:"uniqueId"`
+	Region       string             `json:"region"`
+	Desc         string             `json:"desc"`
+	Cover        string             `json:"cover"`  // 已签名
+	Avatar       string             `json:"avatar"` // 已签名
+	Duration     int                `json:"duration"`
+	CreateTime   string             `json:"createTime"`
+	IsAd         bool               `json:"isAd"`
+	CreatedByAI  bool               `json:"createdByAi"`
+	Views        int                `json:"views"`
+	Views7d      int                `json:"views7d"`
+	Views30d     int                `json:"views30d"`
+	Digg         int                `json:"digg"`
+	Comments     int                `json:"comments"`
+	Shares       int                `json:"shares"`
+	Favorites    int                `json:"favorites"`
+	SaleCnt      int                `json:"saleCnt"`
+	SaleGmvCents int                `json:"saleGmvCents"`
+	Products     []EntityProductDTO `json:"products"`
+}
+
+func (s *DiscoverService) VideoDetailFull(ctx context.Context, videoID, region string) (*VideoDetailDTO, error) {
+	if !s.echo.Configured() {
+		return nil, nil
+	}
+	key := "vdetail:" + region + ":" + videoID
+	var cached VideoDetailDTO
+	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
+		return &cached, nil
+	}
+
+	d, err := s.echo.GetVideoDetail(ctx, videoID, region)
+	if err != nil {
+		return nil, err
+	}
+	if d == nil {
+		return nil, nil
+	}
+
+	// 视频带货商品(video_products 是 productId 数组)→ 取详情补名称/封面/价格。
+	pids := parseIDList(d.VideoProducts)
+	var prods []echotik.ProductDetail
+	if len(pids) > 0 {
+		prods, _ = s.echo.GetProductDetails(ctx, pids, region)
+	}
+
+	toSign := []string{d.ReflowCover, d.Avatar}
+	prodRaw := make([]string, len(prods))
+	for i, pr := range prods {
+		prodRaw[i] = firstCoverURL(pr.CoverURL)
+		toSign = append(toSign, prodRaw[i])
+	}
+	signed := s.echo.SignCovers(ctx, toSign)
+	sign := func(raw string) string {
+		if raw == "" {
+			return ""
+		}
+		if su, ok := signed[raw]; ok {
+			return su
+		}
+		return raw
+	}
+
+	dto := &VideoDetailDTO{
+		VideoID:      d.VideoID,
+		UserID:       d.UserID,
+		UniqueID:     d.UniqueID,
+		Region:       d.Region,
+		Desc:         d.VideoDesc,
+		Cover:        sign(d.ReflowCover),
+		Avatar:       sign(d.Avatar),
+		Duration:     d.Duration.Int(),
+		CreateTime:   string(d.CreateTime),
+		IsAd:         d.IsAd.Int() == 1,
+		CreatedByAI:  string(d.CreatedByAI) == "true",
+		Views:        d.TotalViewsCnt.Int(),
+		Views7d:      d.TotalViews7dCnt.Int(),
+		Views30d:     d.TotalViews30dCnt.Int(),
+		Digg:         d.TotalDiggCnt.Int(),
+		Comments:     d.TotalCommentsCnt.Int(),
+		Shares:       d.TotalSharesCnt.Int(),
+		Favorites:    d.TotalFavoritesCnt.Int(),
+		SaleCnt:      d.TotalVideoSaleCnt.Int(),
+		SaleGmvCents: echotik.DollarsToCents(d.TotalVideoSaleGmv.Float()),
+		Products:     make([]EntityProductDTO, 0, len(prods)),
+	}
+	for i, pr := range prods {
+		dto.Products = append(dto.Products, EntityProductDTO{
+			ProductID:      pr.ProductID,
+			Name:           pr.ProductName,
+			Cover:          sign(prodRaw[i]),
+			AvgPriceCents:  echotik.DollarsToCents(pr.SpuAvgPrice.Float()),
+			CommissionRate: pr.ProductCommissionRate.Float(),
+			Rating:         pr.ProductRating.Float(),
+		})
+	}
+	s.cacheSetJSON(ctx, key, dto)
+	return dto, nil
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+// parseIDList 解析 stringified JSON 数组(元素可能是数字或字符串)→ 字符串 ID 列表。
+// 用 json.Number 避免大整数 ID 在 float64 下丢精度。
+func parseIDList(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return nil
+	}
+	var arr []json.Number
+	if err := json.Unmarshal([]byte(raw), &arr); err != nil {
+		// 兜底:尝试字符串数组。
+		var sarr []string
+		if json.Unmarshal([]byte(raw), &sarr) != nil {
+			return nil
+		}
+		return sarr
+	}
+	out := make([]string, 0, len(arr))
+	for _, n := range arr {
+		if s := n.String(); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
 
 // firstCoverURL 兼容 cover_url 为 stringified JSON 数组([{url,index}])或单个 URL。
 func firstCoverURL(raw string) string {

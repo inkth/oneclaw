@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -24,6 +25,27 @@ func (c *Client) GetProductDetail(ctx context.Context, productID, region string)
 		return nil, nil
 	}
 	return &env.Data[0], nil
+}
+
+// GetProductDetails 批量取商品详情(product_ids 逗号分隔,单批≤10)。用于视频带货商品等场景。
+func (c *Client) GetProductDetails(ctx context.Context, productIDs []string, region string) ([]ProductDetail, error) {
+	out := make([]ProductDetail, 0, len(productIDs))
+	for i := 0; i < len(productIDs); i += productDetailPageCap {
+		end := i + productDetailPageCap
+		if end > len(productIDs) {
+			end = len(productIDs)
+		}
+		params := map[string]string{"product_ids": strings.Join(productIDs[i:end], ","), "region": region}
+		var env Envelope[[]ProductDetail]
+		if err := c.call(ctx, "/echotik/product/detail", params, &env); err != nil {
+			return out, err
+		}
+		if env.Code != 0 && env.Code != 200 {
+			return out, fmt.Errorf("echotik code %d: %s", env.Code, env.Message)
+		}
+		out = append(out, env.Data...)
+	}
+	return out, nil
 }
 
 // GetProductInfluencers 取带货达人榜(page_num 必填,page_size≤10)。

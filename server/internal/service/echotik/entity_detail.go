@@ -106,6 +106,46 @@ type InfluencerTrendPoint struct {
 	SaleGmv1dAmt      FlexFloat `json:"total_sale_gmv_1d_amt"`
 }
 
+// VideoDetail 视频详情(/echotik/video/detail)。
+type VideoDetail struct {
+	VideoID       string     `json:"video_id"`
+	UserID        string     `json:"user_id"`
+	UniqueID      string     `json:"unique_id"`
+	Region        string     `json:"region"`
+	VideoDesc     string     `json:"video_desc"`
+	ReflowCover   string     `json:"reflow_cover"` // 防盗链
+	Avatar        string     `json:"avatar"`       // 防盗链
+	Duration      FlexFloat  `json:"duration"`
+	CreateTime    FlexString `json:"create_time"`
+	IsAd          FlexFloat  `json:"is_ad"`
+	CreatedByAI   FlexString `json:"created_by_ai"`
+	VideoProducts string     `json:"video_products"` // stringified JSON: [productId, ...]
+
+	TotalViewsCnt     FlexFloat `json:"total_views_cnt"`
+	TotalViews7dCnt   FlexFloat `json:"total_views_7d_cnt"`
+	TotalViews30dCnt  FlexFloat `json:"total_views_30d_cnt"`
+	TotalDiggCnt      FlexFloat `json:"total_digg_cnt"`
+	TotalCommentsCnt  FlexFloat `json:"total_comments_cnt"`
+	TotalSharesCnt    FlexFloat `json:"total_shares_cnt"`
+	TotalFavoritesCnt FlexFloat `json:"total_favorites_cnt"`
+	TotalVideoSaleCnt FlexFloat `json:"total_video_sale_cnt"`
+	TotalVideoSaleGmv FlexFloat `json:"total_video_sale_gmv_amt"`
+}
+
+func (c *Client) GetVideoDetail(ctx context.Context, videoID, region string) (*VideoDetail, error) {
+	var env Envelope[[]VideoDetail]
+	if err := c.call(ctx, "/echotik/video/detail", map[string]string{"video_ids": videoID, "region": region}, &env); err != nil {
+		return nil, err
+	}
+	if env.Code != 0 && env.Code != 200 {
+		return nil, fmt.Errorf("echotik code %d: %s", env.Code, env.Message)
+	}
+	if len(env.Data) == 0 {
+		return nil, nil
+	}
+	return &env.Data[0], nil
+}
+
 // ── 店铺 ─────────────────────────────────────────────────────────────────────
 
 func (c *Client) GetSellerDetail(ctx context.Context, sellerID, region string) (*SellerDetail, error) {

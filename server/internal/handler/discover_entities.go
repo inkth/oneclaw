@@ -69,3 +69,14 @@ func (h *DiscoverHandler) InfluencerDetail(c *gin.Context) {
 	}
 	OK(c, gin.H{"influencer": dto})
 }
+
+// VideoDetail GET /discover/videos/:videoId?region=US —— 视频详情(公开只读)。
+func (h *DiscoverHandler) VideoDetail(c *gin.Context) {
+	region := defaultStr(c.Query("region"), "US")
+	dto, err := h.discover.VideoDetailFull(c.Request.Context(), c.Param("videoId"), region)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"video": dto})
+}

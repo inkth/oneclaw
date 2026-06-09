@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Clapperboard, Play, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
@@ -77,12 +78,9 @@ export function VideosClient({
 }
 
 function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
-  const tiktokUrl = `https://www.tiktok.com/@${v.uniqueId}/video/${v.videoId}`;
   return (
-    <a
-      href={tiktokUrl}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-brand-200 hover:shadow-sm"
     >
       <div className="relative aspect-[3/4] w-full bg-zinc-100">
@@ -100,7 +98,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm">
             <Play className="h-3 w-3 fill-zinc-900" />
-            在 TikTok 查看
+            查看详情
           </span>
         </div>
         <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/60 px-1.5 text-2xs font-semibold tabular-nums text-white">
@@ -143,7 +141,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
         </div>
         <div className="text-2xs text-zinc-400">{fmtUnixDate(v.createTime)} · {v.region}</div>
       </div>
-    </a>
+    </Link>
   );
 }
 

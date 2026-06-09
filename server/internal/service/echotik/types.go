@@ -98,6 +98,12 @@ type ProductDetail struct {
 	ProductID string `json:"product_id"`
 	CoverURL  string `json:"cover_url"` // stringified JSON: [{"url":...,"index":N}, ...],防盗链原始 URL,需签名
 
+	ProductName           string    `json:"product_name"`
+	MinPrice              FlexFloat `json:"min_price"`
+	MaxPrice              FlexFloat `json:"max_price"`
+	SpuAvgPrice           FlexFloat `json:"spu_avg_price"`
+	ProductCommissionRate FlexFloat `json:"product_commission_rate"`
+
 	ProductRating FlexFloat  `json:"product_rating"`
 	ReviewCount   FlexFloat  `json:"review_count"`
 	DescDetail    string     `json:"desc_detail"` // stringified JSON 富文本块
