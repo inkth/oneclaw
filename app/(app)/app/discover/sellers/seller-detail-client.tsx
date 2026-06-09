@@ -8,6 +8,7 @@ import { Stat } from "@/components/ui/Stat";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TrendChart } from "../_components/TrendChart";
+import { FavoriteButton } from "../_components/FavoriteButton";
 import { fmt, fmtMoney, initial, stringToGradient } from "../_components/format";
 import {
   Store,
@@ -64,7 +65,13 @@ function Img({ src, seed, className }: { src: string; seed: string; className: s
   return <img src={src} alt="" className={className} loading="lazy" onError={() => setFailed(true)} />;
 }
 
-export function SellerDetailClient({ seller: s }: { seller: SellerDetail }) {
+export function SellerDetailClient({
+  seller: s,
+  fav,
+}: {
+  seller: SellerDetail;
+  fav: { workspaceId: string; isGuest: boolean; starred: boolean };
+}) {
   return (
     <div className="space-y-6">
       <Link
@@ -85,13 +92,30 @@ export function SellerDetailClient({ seller: s }: { seller: SellerDetail }) {
           )
         }
         actions={
-          s.sellerLink ? (
-            <a href={s.sellerLink} target="_blank" rel="noopener noreferrer">
-              <Button variant="primary" size="sm">
-                <ExternalLink className="h-3.5 w-3.5" /> 访问 TikTok 店铺
-              </Button>
-            </a>
-          ) : undefined
+          <>
+            <FavoriteButton
+              kind="seller"
+              externalId={s.sellerId}
+              region={s.region}
+              workspaceId={fav.workspaceId}
+              isGuest={fav.isGuest}
+              initialStarred={fav.starred}
+              callbackUrl={`/app/discover/sellers/${s.sellerId}?region=${s.region}`}
+              snapshot={{
+                name: s.sellerName,
+                cover: s.cover,
+                subtitle: s.categories.length > 0 ? s.categories.join(" / ") : s.region,
+                metric: s.totalSaleGmv > 0 ? `${fmtMoney(s.totalSaleGmv)} GMV` : "",
+              }}
+            />
+            {s.sellerLink && (
+              <a href={s.sellerLink} target="_blank" rel="noopener noreferrer">
+                <Button variant="primary" size="sm">
+                  <ExternalLink className="h-3.5 w-3.5" /> 访问 TikTok 店铺
+                </Button>
+              </a>
+            )}
+          </>
         }
       />
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { apiServer } from "@/lib/api-client";
+import { apiServer, getMe } from "@/lib/api-client";
 import { REGION_CODES, type Region } from "../../_components/regions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Users } from "lucide-react";
@@ -125,5 +125,21 @@ export default async function InfluencerDetailPage({
     })),
   };
 
-  return <InfluencerDetailClient influencer={influencer} />;
+  const me = await getMe();
+  const workspace = me?.workspace ?? null;
+  let starred = false;
+  if (workspace) {
+    starred = await apiServer<{ starred: boolean }>(
+      `/workspaces/${workspace.id}/discover/favorites/check?kind=influencer&externalId=${userId}&region=${region}`,
+    )
+      .then((r) => r.starred)
+      .catch(() => false);
+  }
+
+  return (
+    <InfluencerDetailClient
+      influencer={influencer}
+      fav={{ workspaceId: workspace?.id ?? "", isGuest: !workspace, starred }}
+    />
+  );
 }

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Stat } from "@/components/ui/Stat";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { FavoriteButton } from "../_components/FavoriteButton";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, initial, stringToGradient } from "../_components/format";
 import {
   ArrowLeft,
@@ -71,7 +72,13 @@ function Img({ src, seed, className }: { src: string; seed: string; className: s
   return <img src={src} alt="" className={className} loading="lazy" onError={() => setFailed(true)} />;
 }
 
-export function VideoDetailClient({ video: v }: { video: VideoDetail }) {
+export function VideoDetailClient({
+  video: v,
+  fav,
+}: {
+  video: VideoDetail;
+  fav: { workspaceId: string; isGuest: boolean; starred: boolean };
+}) {
   const tiktokUrl = v.uniqueId ? `https://www.tiktok.com/@${v.uniqueId}/video/${v.videoId}` : "";
 
   return (
@@ -93,13 +100,30 @@ export function VideoDetailClient({ video: v }: { video: VideoDetail }) {
           </span>
         }
         actions={
-          tiktokUrl ? (
-            <a href={tiktokUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="primary" size="sm">
-                <ExternalLink className="h-3.5 w-3.5" /> 在 TikTok 打开
-              </Button>
-            </a>
-          ) : undefined
+          <>
+            <FavoriteButton
+              kind="video"
+              externalId={v.videoId}
+              region={v.region}
+              workspaceId={fav.workspaceId}
+              isGuest={fav.isGuest}
+              initialStarred={fav.starred}
+              callbackUrl={`/app/discover/videos/${v.videoId}?region=${v.region}`}
+              snapshot={{
+                name: v.desc || "带货视频",
+                cover: v.cover,
+                subtitle: v.uniqueId ? `@${v.uniqueId}` : v.region,
+                metric: v.saleGmv > 0 ? `${fmtMoney(v.saleGmv)} GMV` : `${fmt(v.views)} 播放`,
+              }}
+            />
+            {tiktokUrl && (
+              <a href={tiktokUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="primary" size="sm">
+                  <ExternalLink className="h-3.5 w-3.5" /> 在 TikTok 打开
+                </Button>
+              </a>
+            )}
+          </>
         }
       />
 

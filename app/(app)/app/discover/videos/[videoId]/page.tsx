@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { apiServer } from "@/lib/api-client";
+import { apiServer, getMe } from "@/lib/api-client";
 import { REGION_CODES, type Region } from "../../_components/regions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Clapperboard } from "lucide-react";
@@ -94,5 +94,21 @@ export default async function VideoDetailPage({
     })),
   };
 
-  return <VideoDetailClient video={video} />;
+  const me = await getMe();
+  const workspace = me?.workspace ?? null;
+  let starred = false;
+  if (workspace) {
+    starred = await apiServer<{ starred: boolean }>(
+      `/workspaces/${workspace.id}/discover/favorites/check?kind=video&externalId=${videoId}&region=${region}`,
+    )
+      .then((r) => r.starred)
+      .catch(() => false);
+  }
+
+  return (
+    <VideoDetailClient
+      video={video}
+      fav={{ workspaceId: workspace?.id ?? "", isGuest: !workspace, starred }}
+    />
+  );
 }

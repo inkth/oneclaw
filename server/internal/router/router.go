@@ -101,6 +101,9 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/discover/interactions", discH.Interaction)
 		priv.POST("/workspaces/:wid/discover/import-product", discH.Import)
 		priv.POST("/workspaces/:wid/discover/analyze", discH.Analyze)
+		priv.GET("/workspaces/:wid/discover/favorites", discH.Favorites)
+		priv.POST("/workspaces/:wid/discover/favorites", discH.Favorite)
+		priv.GET("/workspaces/:wid/discover/favorites/check", discH.FavoriteCheck)
 
 		priv.POST("/workspaces/:wid/review/analyze", reviewH.Analyze)
 

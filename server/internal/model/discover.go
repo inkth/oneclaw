@@ -119,3 +119,22 @@ func (w *WorkspaceDiscoverInteraction) BeforeCreate(*gorm.DB) error {
 	}
 	return nil
 }
+
+// WorkspaceDiscoverFavorite 工作台对店铺/达人/视频的收藏(这些实体不落库,故另存快照供收藏页渲染)。
+// (workspace_id, kind, external_id, region) 唯一。kind = seller | influencer | video。
+type WorkspaceDiscoverFavorite struct {
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	WorkspaceID uuid.UUID `gorm:"column:workspace_id;type:uuid;not null;uniqueIndex:uq_wdf_key" json:"workspaceId"`
+	Kind        string    `gorm:"not null;uniqueIndex:uq_wdf_key" json:"kind"`
+	ExternalID  string    `gorm:"column:external_id;not null;uniqueIndex:uq_wdf_key" json:"externalId"`
+	Region      string    `gorm:"not null;uniqueIndex:uq_wdf_key" json:"region"`
+	Snapshot    JSONB     `gorm:"type:jsonb" json:"snapshot"` // {name, cover, subtitle, metric} 供收藏页渲染
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+func (w *WorkspaceDiscoverFavorite) BeforeCreate(*gorm.DB) error {
+	if w.ID == uuid.Nil {
+		w.ID = uuid.New()
+	}
+	return nil
+}

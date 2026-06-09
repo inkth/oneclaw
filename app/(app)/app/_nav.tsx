@@ -48,6 +48,7 @@ const BOARDS: Board[] = [
       { label: "店铺", href: "/app/discover/sellers" },
       { label: "达人", href: "/app/discover/influencers" },
       { label: "视频", href: "/app/discover/videos" },
+      { label: "收藏", href: "/app/discover/favorites" },
     ],
   },
   {

@@ -8,6 +8,7 @@ import { Stat } from "@/components/ui/Stat";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TrendChart, type TrendSeries } from "../_components/TrendChart";
+import { FavoriteButton } from "../_components/FavoriteButton";
 import { fmt, fmtMoney, initial, fmtUnixDate, stringToGradient } from "../_components/format";
 import {
   Award,
@@ -82,7 +83,13 @@ function Img({ src, seed, className }: { src: string; seed: string; className: s
   return <img src={src} alt="" className={className} loading="lazy" onError={() => setFailed(true)} />;
 }
 
-export function InfluencerDetailClient({ influencer: i }: { influencer: InfluencerDetail }) {
+export function InfluencerDetailClient({
+  influencer: i,
+  fav,
+}: {
+  influencer: InfluencerDetail;
+  fav: { workspaceId: string; isGuest: boolean; starred: boolean };
+}) {
   const profileUrl = i.uniqueId ? `https://www.tiktok.com/@${i.uniqueId}` : "";
 
   return (
@@ -104,13 +111,30 @@ export function InfluencerDetailClient({ influencer: i }: { influencer: Influenc
           </span>
         }
         actions={
-          profileUrl ? (
-            <a href={profileUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="primary" size="sm">
-                <ExternalLink className="h-3.5 w-3.5" /> 访问 TikTok 主页
-              </Button>
-            </a>
-          ) : undefined
+          <>
+            <FavoriteButton
+              kind="influencer"
+              externalId={i.userId}
+              region={i.region}
+              workspaceId={fav.workspaceId}
+              isGuest={fav.isGuest}
+              initialStarred={fav.starred}
+              callbackUrl={`/app/discover/influencers/${i.userId}?region=${i.region}`}
+              snapshot={{
+                name: i.nickName,
+                cover: i.avatar,
+                subtitle: i.uniqueId ? `@${i.uniqueId}${i.category ? ` · ${i.category}` : ""}` : i.category,
+                metric: `${fmt(i.followers)} 粉丝`,
+              }}
+            />
+            {profileUrl && (
+              <a href={profileUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="primary" size="sm">
+                  <ExternalLink className="h-3.5 w-3.5" /> 访问 TikTok 主页
+                </Button>
+              </a>
+            )}
+          </>
         }
       />
 

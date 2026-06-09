@@ -103,6 +103,49 @@ func (h *DiscoverHandler) Interaction(c *gin.Context) {
 	OK(c, gin.H{"interaction": rec})
 }
 
+// Favorite POST /workspaces/:wid/discover/favorites —— 收藏/取消店铺·达人·视频。
+func (h *DiscoverHandler) Favorite(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	var in service.FavoriteInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数不合法:" + err.Error()))
+		return
+	}
+	if err := h.discover.ToggleFavorite(c.Request.Context(), wid, in); err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"starred": in.Starred})
+}
+
+// Favorites GET /workspaces/:wid/discover/favorites —— 收藏列表(商品+店铺+达人+视频)。
+func (h *DiscoverHandler) Favorites(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	items, err := h.discover.ListFavorites(c.Request.Context(), wid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"items": items})
+}
+
+// FavoriteCheck GET /workspaces/:wid/discover/favorites/check?kind=&externalId=&region= —— 单条状态。
+func (h *DiscoverHandler) FavoriteCheck(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	starred := h.discover.IsFavorited(c.Request.Context(), wid,
+		c.Query("kind"), c.Query("externalId"), defaultStr(c.Query("region"), "US"))
+	OK(c, gin.H{"starred": starred})
+}
+
 type importReq struct {
 	ProductID     string `json:"productId" binding:"required"`
 	Region        string `json:"region" binding:"required"`

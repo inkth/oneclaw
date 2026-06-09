@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { apiServer } from "@/lib/api-client";
+import { apiServer, getMe } from "@/lib/api-client";
 import { REGION_CODES, type Region } from "../../_components/regions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Store } from "lucide-react";
@@ -102,5 +102,21 @@ export default async function SellerDetailPage({
     trend: (dto.trend ?? []).map((t) => ({ dt: t.dt, saleCnt: t.saleCnt, gmv: t.gmvCents / 100 })),
   };
 
-  return <SellerDetailClient seller={seller} />;
+  const me = await getMe();
+  const workspace = me?.workspace ?? null;
+  let starred = false;
+  if (workspace) {
+    starred = await apiServer<{ starred: boolean }>(
+      `/workspaces/${workspace.id}/discover/favorites/check?kind=seller&externalId=${sellerId}&region=${region}`,
+    )
+      .then((r) => r.starred)
+      .catch(() => false);
+  }
+
+  return (
+    <SellerDetailClient
+      seller={seller}
+      fav={{ workspaceId: workspace?.id ?? "", isGuest: !workspace, starred }}
+    />
+  );
 }

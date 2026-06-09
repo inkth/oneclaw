@@ -57,6 +57,7 @@ func main() {
 		&model.DiscoverSnapshot{},
 		&model.DiscoverCache{},
 		&model.WorkspaceDiscoverInteraction{},
+		&model.WorkspaceDiscoverFavorite{},
 		&model.NewsletterSubscription{},
 		&model.DemoRequest{},
 		&model.Shop{},
