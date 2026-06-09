@@ -81,9 +81,16 @@ export default async function AppLayout({
             <span className="text-sm font-semibold">OneClaw</span>
           </Link>
         </header>
-        <main className="flex-1 p-4 sm:p-8">
-          <BoardTabs />
-          {children}
+        <main className="relative flex-1 p-4 sm:p-8">
+          {/* 活力氛围:全工作台顶部极淡 violet/fuchsia 柔光,统一去「纯白感」 */}
+          <div
+            aria-hidden
+            className="gradient-bg pointer-events-none absolute inset-x-0 top-0 h-72 opacity-70"
+          />
+          <div className="relative">
+            <BoardTabs />
+            {children}
+          </div>
         </main>
       </div>
     </div>

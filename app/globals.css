@@ -21,6 +21,10 @@
   --brand: var(--brand-600);
   --brand-dark: var(--brand-800);
   --accent: var(--brand-600);
+
+  /* 活力能量层：violet → fuchsia 渐变实体面（消费级活力，仅成交/CTA/奖牌/PRO 白名单使用） */
+  --gradient-vibrant: linear-gradient(135deg, var(--brand-600) 0%, #c026d3 50%, #ec4899 100%);
+  --gradient-vibrant-soft: linear-gradient(135deg, var(--brand-500) 0%, #d946ef 55%, #f472b6 100%);
 }
 
 @theme inline {
@@ -60,6 +64,8 @@
   --shadow-xl: 0 24px 56px -12px rgba(16, 14, 30, 0.14), 0 8px 20px -8px rgba(16, 14, 30, 0.08);
   /* 品牌辉光投影：可点击/重点卡 hover */
   --shadow-brand: 0 8px 28px -6px rgba(124, 58, 237, 0.22), 0 2px 8px -2px rgba(124, 58, 237, 0.14);
+  /* 活力辉光：更暖更嗨的品红光晕，给渐变成交按钮 hover */
+  --shadow-vibrant: 0 10px 32px -6px rgba(217, 70, 239, 0.35), 0 4px 12px -4px rgba(236, 72, 153, 0.22);
 }
 
 html,
@@ -133,6 +139,29 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* 活力渐变实体面：成交按钮 / CTA / 奖牌 / PRO 卡。配 .pop 微交互更嗨 */
+.bg-vibrant {
+  background-image: var(--gradient-vibrant);
+}
+.bg-vibrant-soft {
+  background-image: var(--gradient-vibrant-soft);
+}
+
+/* 微交互：成交/兴奋按钮 hover 轻放大 + 活力辉光 */
+.pop {
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease,
+    filter 0.18s ease;
+}
+.pop:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: var(--shadow-vibrant);
+  filter: saturate(1.06);
+}
+.pop:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.08s;
 }
 
 /* hero 顶部柔光：双层 violet / fuchsia 极光 */
@@ -307,6 +336,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .lift,
   .press,
+  .pop,
   .animate-fade-up,
   .reveal,
   .skeleton,
@@ -317,7 +347,8 @@ body {
   .skeleton-media::after {
     animation: none !important;
   }
-  .lift:hover {
+  .lift:hover,
+  .pop:hover {
     transform: none;
   }
   .reveal {

@@ -6,6 +6,7 @@ import { FilterBar, type Region, type CategoryOption } from "../_components/Filt
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { RankMedal } from "@/components/ui/RankMedal";
 import { fmt, fmtMoney } from "../_components/format";
 
 export type Influencer = {
@@ -83,7 +84,7 @@ export function InfluencersClient({
           <tbody>
             {influencers.map((i, idx) => (
               <Tr key={i.userId}>
-                <Td className="text-zinc-400 tabular-nums">{idx + 1}</Td>
+                <Td><RankMedal rank={idx + 1} /></Td>
                 <Td className="max-w-[320px]">
                   <Link
                     href={`/app/discover/influencers/${i.userId}?region=${i.region}`}

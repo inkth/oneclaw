@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">你好，{greeting}</h1>
+        <h1 className="text-title text-zinc-900">你好，{greeting}</h1>
         <p className="mt-1.5 text-sm text-zinc-500">
           {!workspace
             ? "这是 OneClaw 概览。给下面的 Agent 派个活,或登录后拥有自己的工作台。"
@@ -62,9 +62,9 @@ export default async function DashboardPage() {
       {workspace && isFresh && <OnboardingCard workspaceId={workspace.id} />}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Stat icon={TrendingUp} label="选品库存" value={productCount} href="/app/assets/products" />
-        <Stat icon={Video} label="已生成视频" value={videoCount} href="/app/videos" />
-        <Stat icon={Bot} label="Agent 任务" value={taskCount} href="/app/agents" />
+        <Stat icon={TrendingUp} label="选品库存" value={productCount} href="/app/assets/products" size="lg" />
+        <Stat icon={Video} label="已生成视频" value={videoCount} href="/app/videos" size="lg" />
+        <Stat icon={Bot} label="Agent 任务" value={taskCount} href="/app/agents" size="lg" />
       </div>
 
       <section className="rounded-xl border border-zinc-200/80 bg-white">

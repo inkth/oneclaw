@@ -5,6 +5,7 @@ import { Clapperboard, Play, Eye, Heart, MessageCircle, Share2 } from "lucide-re
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { RankMedal } from "@/components/ui/RankMedal";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, stringToGradient, initial } from "../_components/format";
 
 export type Video = {
@@ -101,9 +102,15 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
             查看详情
           </span>
         </div>
-        <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/60 px-1.5 text-2xs font-semibold tabular-nums text-white">
-          {rank}
-        </span>
+        {rank <= 3 ? (
+          <span className="absolute left-2 top-2">
+            <RankMedal rank={rank} />
+          </span>
+        ) : (
+          <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/60 px-1.5 text-2xs font-semibold tabular-nums text-white">
+            {rank}
+          </span>
+        )}
         <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white">
           <Play className="h-2.5 w-2.5 fill-white" />
           {fmtDuration(v.duration)}

@@ -114,8 +114,8 @@ const toneClass: Record<string, { ring: string; icon: string; cta: string }> = {
   },
   brand: {
     ring: "gradient-border shadow-xl",
-    icon: "bg-brand-600",
-    cta: "bg-brand-600 hover:bg-brand-700 text-white hover:shadow-[var(--shadow-brand)]",
+    icon: "bg-vibrant",
+    cta: "bg-vibrant pop text-white hover:shadow-[var(--shadow-vibrant)]",
   },
   fuchsia: {
     ring: "ring-1 ring-zinc-200/80",

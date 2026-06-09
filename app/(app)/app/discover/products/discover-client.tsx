@@ -8,14 +8,23 @@ import { apiBrowser } from "@/lib/api-browser";
 import { LoginPromptModal } from "@/components/LoginPromptModal";
 import { FilterBar, type CategoryOption, type FieldOption } from "../_components/FilterBar";
 import { type Region } from "../_components/regions";
+import { Thumb } from "../_components/shared";
+import { fmt, fmtMoney } from "../_components/format";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { RankMedal } from "@/components/ui/RankMedal";
+import { Delta } from "@/components/ui/Delta";
+import { VERDICT_TONE, VERDICT_LABEL } from "@/lib/ui/tokens";
 import {
+  Compass,
   Sparkles,
   Plus,
   Loader2,
   Star,
   ArrowUpRight,
-  Check,
   CheckCircle2,
   PackageSearch,
 } from "lucide-react";
@@ -58,27 +67,6 @@ const PRODUCT_FIELDS: FieldOption[] = [
   { v: 2, cn: "GMV" },
   { v: 3, cn: "增长" },
 ];
-
-// 把字符串映射成确定的渐变色（同名产品颜色稳定）—— 给商品 cell 当占位封面
-function stringToGradient(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  const hue1 = h % 360;
-  const hue2 = (hue1 + 40) % 360;
-  return `linear-gradient(135deg, hsl(${hue1} 70% 55%), hsl(${hue2} 70% 65%))`;
-}
-
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-function fmtMoney(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-  return `$${n.toFixed(2)}`;
-}
 
 type DiscoverState = "live" | "cached" | "empty" | "mock" | "error";
 
@@ -229,14 +217,16 @@ export function DiscoverClient({
           desc="导入选品、收藏、AI 分析都需要账号。趋势榜随便逛,登录后一键操作。"
         />
       )}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">发现 · TikTok 爆品</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断
-          </p>
-        </div>
-      </div>
+
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Compass className="h-5 w-5 text-brand-500" />
+            发现 · TikTok 爆品
+          </span>
+        }
+        description="TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断"
+      />
 
       <FilterBar
         basePath="/app/discover/products"
@@ -248,34 +238,33 @@ export function DiscoverClient({
         categories={categories}
       />
 
-      {/* Main table — 无数据时不渲染裸表头，改用统一空态 */}
+      {/* Main table — 无数据时不渲染裸表头,改用统一空态 */}
       {products.length === 0 ? (
         <EmptyState
           icon={PackageSearch}
           title="该榜单暂无数据"
-          description="这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜，或者换个国家 / 地区再看看。"
+          description="这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜,或者换个国家 / 地区再看看。"
         />
       ) : (
-      <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
-        <table className="w-full text-sm min-w-[920px]">
-          <thead className="bg-zinc-50/60 text-xs text-zinc-500">
+        <TableWrap>
+          <THead>
             <tr>
-              <th className="text-left font-medium px-4 py-3">#</th>
-              <th className="text-left font-medium px-4 py-3">商品</th>
-              <th className="text-right font-medium px-4 py-3">均价</th>
-              <th className="text-right font-medium px-4 py-3">佣金</th>
-              <th className="text-right font-medium px-4 py-3">总销量</th>
-              <th className="text-right font-medium px-4 py-3">总 GMV</th>
-              <th className="text-right font-medium px-4 py-3">达人</th>
-              <th className="text-right font-medium px-4 py-3">视频</th>
-              <th className="text-right font-medium px-4 py-3">操作</th>
+              <Th>#</Th>
+              <Th>商品</Th>
+              <Th align="right">均价</Th>
+              <Th align="right">佣金</Th>
+              <Th align="right">总销量</Th>
+              <Th align="right">总 GMV</Th>
+              <Th align="right">达人</Th>
+              <Th align="right">视频</Th>
+              <Th align="right">操作</Th>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100">
+          </THead>
+          <tbody>
             {products.map((p, idx) => (
-              <tr key={p.productId} className="hover:bg-zinc-50/50">
-                <td className="px-4 py-3 text-zinc-400 tabular-nums">
-                  <div className="flex items-center gap-1.5">
+              <Tr key={p.productId}>
+                <Td>
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => toggleStar(p)}
                       disabled={starring.has(p.productId)}
@@ -288,146 +277,115 @@ export function DiscoverClient({
                         }`}
                       />
                     </button>
-                    <span>{idx + 1}</span>
+                    <RankMedal rank={idx + 1} />
                   </div>
-                </td>
-                <td className="px-4 py-3 max-w-[360px]">
+                </Td>
+                <Td className="max-w-[360px]">
                   <Link
                     href={`/app/discover/products/${p.productId}?region=${p.region}`}
                     className="flex items-start gap-2.5 group"
                   >
-                    {p.coverUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.coverUrl}
-                        alt=""
-                        className="h-10 w-10 flex-shrink-0 rounded-md object-cover bg-zinc-100"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div
-                        className="h-10 w-10 flex-shrink-0 rounded-md flex items-center justify-center text-sm font-semibold text-white shadow-sm"
-                        style={{ background: stringToGradient(p.productName) }}
-                      >
-                        {p.productName
-                          .replace(/\[.*?\]/g, "")
-                          .trim()
-                          .charAt(0)
-                          .toUpperCase()}
-                      </div>
-                    )}
+                    <Thumb src={p.coverUrl} name={p.productName} className="h-10 w-10 rounded-md" />
                     <div className="min-w-0">
-                  <div className="font-medium truncate group-hover:text-brand-700 transition-colors" title={p.productName}>
-                    {p.productName}
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono">
-                    <span>{p.region} · {p.productId.slice(0, 12)}</span>
-                    {p.importedProductId && (
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 font-sans">
-                        <Check className="h-2 w-2" />
-                        已加入
-                      </span>
-                    )}
-                    {p.analysis && (
-                      <span
-                        className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium font-sans ${
-                          p.analysis.verdict === "RECOMMENDED"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : p.analysis.verdict === "AVOID"
-                              ? "bg-rose-50 text-rose-700"
-                              : "bg-amber-50 text-amber-700"
-                        }`}
-                        title={`分析于 ${new Date(p.analysis.createdAt).toLocaleString("zh-CN")}`}
+                      <div
+                        className="font-medium truncate group-hover:text-brand-700 transition-colors"
+                        title={p.productName}
                       >
-                        <Sparkles className="h-2 w-2" />
-                        {p.analysis.verdict === "RECOMMENDED"
-                          ? "推荐"
-                          : p.analysis.verdict === "AVOID"
-                            ? "避开"
-                            : "已分析"}
-                      </span>
-                    )}
-                  </div>
+                        {p.productName}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-2xs text-zinc-500 font-mono">
+                        <span>
+                          {p.region} · {p.productId.slice(0, 12)}
+                        </span>
+                        {p.importedProductId && (
+                          <Badge tone="success" outline={false} className="font-sans">
+                            已加入
+                          </Badge>
+                        )}
+                        {p.analysis && (
+                          <Badge
+                            tone={VERDICT_TONE[p.analysis.verdict ?? ""] ?? "warning"}
+                            outline={false}
+                            icon={<Sparkles className="h-2.5 w-2.5" />}
+                            title={`分析于 ${new Date(p.analysis.createdAt).toLocaleString("zh-CN")}`}
+                            className="font-sans"
+                          >
+                            {VERDICT_LABEL[p.analysis.verdict ?? ""] ?? "已分析"}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </Link>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                </Td>
+                <Td align="right" className="font-semibold">
                   ${p.avgPrice.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-emerald-700">
+                </Td>
+                <Td align="right" className="text-emerald-700">
                   {(p.commissionRate * 100).toFixed(0)}%
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
+                </Td>
+                <Td align="right">
                   <div className="inline-flex items-baseline gap-1.5">
                     <span>{fmt(p.totalSaleCnt)}</span>
-                    {p.trend7dPct != null && p.trend7dPct !== 0 && (
-                      <span
-                        className={`text-[10px] font-medium ${
-                          p.trend7dPct > 0 ? "text-emerald-600" : "text-rose-600"
-                        }`}
-                        title="近 7 天变化"
-                      >
-                        {p.trend7dPct > 0 ? "↑" : "↓"}
-                        {Math.abs(p.trend7dPct).toFixed(1)}%
-                      </span>
-                    )}
+                    <Delta value={p.trend7dPct} />
                   </div>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(p.totalSaleGmvAmt)}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{fmt(p.totalIflCnt)}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{fmt(p.totalVideoCnt)}</td>
-                <td className="px-4 py-3">
+                </Td>
+                <Td align="right">{fmtMoney(p.totalSaleGmvAmt)}</Td>
+                <Td align="right">{fmt(p.totalIflCnt)}</Td>
+                <Td align="right">{fmt(p.totalVideoCnt)}</Td>
+                <Td align="right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <button
+                    <Button
+                      variant="subtle"
+                      size="sm"
                       onClick={() => analyzeProduct(p)}
                       disabled={analyzing.has(p.productId)}
-                      className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-50"
+                      className="rounded-full px-2.5"
                       title="让分析师 Agent 基于真实数据做深度分析"
                     >
                       {analyzing.has(p.productId) ? (
-                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <Sparkles className="h-2.5 w-2.5" />
+                        <Sparkles className="h-3 w-3" />
                       )}
                       AI 分析
-                    </button>
+                    </Button>
                     {p.importedProductId ? (
-                      <Link
-                        href={`/app/assets/products`}
-                        className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100"
-                        title="已在选品库中，点击查看"
+                      <ButtonLink
+                        href="/app/assets/products"
+                        size="sm"
+                        className="rounded-full px-2.5 bg-emerald-50 text-emerald-700 ring-0 hover:bg-emerald-100"
+                        title="已在选品库中,点击查看"
                       >
-                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        <CheckCircle2 className="h-3 w-3" />
                         已加入
-                      </Link>
+                      </ButtonLink>
                     ) : (
-                      <button
+                      <Button
+                        variant="brand"
+                        size="sm"
                         onClick={() => importProduct(p)}
                         disabled={importing.has(p.productId)}
-                        className="inline-flex items-center gap-1 rounded-full bg-zinc-900 px-2 py-1 text-[11px] font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                        className="rounded-full px-2.5"
                         title="加入到我的选品库"
                       >
                         {importing.has(p.productId) ? (
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Plus className="h-2.5 w-2.5" />
+                          <Plus className="h-3 w-3" />
                         )}
                         加入
-                      </button>
+                      </Button>
                     )}
                   </div>
-                </td>
-              </tr>
+                </Td>
+              </Tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </TableWrap>
       )}
 
       <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-xs text-zinc-600 flex items-center justify-between flex-wrap gap-2">
-        <span>
-          💡 点商品查看详情：销量趋势、Top 带货达人、关联视频与选品诊断评分。
-        </span>
+        <span>💡 点商品查看详情：销量趋势、Top 带货达人、关联视频与选品诊断评分。</span>
         <Link
           href="/app/agents"
           className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 font-medium"
@@ -438,4 +396,3 @@ export function DiscoverClient({
     </div>
   );
 }
-

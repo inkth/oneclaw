@@ -108,7 +108,7 @@ export function LoginForm() {
           <button
             onClick={sendCode}
             disabled={sending || !phone}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700 hover:shadow-[var(--shadow-brand)] disabled:opacity-60 transition-all"
           >
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
             发送验证码
@@ -158,7 +158,7 @@ export function LoginForm() {
           <button
             onClick={verifyAndSignIn}
             disabled={verifying || code.length !== 6}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700 hover:shadow-[var(--shadow-brand)] disabled:opacity-60 transition-all"
           >
             {verifying && <Loader2 className="h-4 w-4 animate-spin" />}
             登录

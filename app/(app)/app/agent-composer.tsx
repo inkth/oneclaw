@@ -123,7 +123,7 @@ export function AgentComposer({
           <button
             onClick={submit}
             disabled={submitting || !input.trim()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+            className="bg-vibrant pop inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:shadow-[var(--shadow-vibrant)] disabled:opacity-50 disabled:pointer-events-none"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

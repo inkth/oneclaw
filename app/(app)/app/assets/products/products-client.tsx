@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { Delta } from "@/components/ui/Delta";
 
 type Status = "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 
@@ -180,11 +181,8 @@ export function ProductsClient({
                   <Td align="right" className="nums">
                     {p.monthlySales.toLocaleString()}
                   </Td>
-                  <Td
-                    align="right"
-                    className={`nums ${p.trendDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}
-                  >
-                    {p.trendDelta >= 0 ? "↑" : "↓"} {Math.abs(p.trendDelta)}%
+                  <Td align="right" className="nums">
+                    <Delta value={p.trendDelta} title="近 14 天变化" className="text-xs" />
                   </Td>
                   <Td align="center">
                     <span
