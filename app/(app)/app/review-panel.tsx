@@ -1,29 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
 import {
   Activity,
-  ArrowUpFromLine,
-  FileSpreadsheet,
-  Loader2,
   MousePointerClick,
   ShoppingCart,
   Sparkles,
   Target,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { type Tone } from "@/lib/ui/tokens";
 import { cn } from "@/lib/utils";
 import { QUADRANT_META, type Quadrant, type ReviewResult } from "@/lib/review/types";
 import { CopyButton } from "./copy-button";
-
-// 复盘走 Go 后端的 workspace 端点(multipart 上传,不能用 apiBrowser——它强制 JSON 头)。
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
 const QUADRANT_BG: Record<Tone, string> = {
   brand: "border-brand-100 bg-brand-50/40",
@@ -43,127 +33,11 @@ const PRIORITY_TONE: Record<string, Tone> = { P0: "danger", P1: "warning", P2: "
 const pct = (n: number) => (n * 100).toFixed(1) + "%";
 const num = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
-export function ReviewClient({ workspaceId }: { workspaceId: string | null }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [targetRoi, setTargetRoi] = useState("3.0");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ReviewResult | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  async function analyze() {
-    if (!workspaceId) {
-      toast.error("请先登录后再上传报表");
-      return;
-    }
-    if (!file) {
-      toast.error("先选择 GMVMax 报表文件");
-      return;
-    }
-    setLoading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("targetRoi", targetRoi);
-      const res = await fetch(
-        `${API_BASE}/api/v1/workspaces/${workspaceId}/review/analyze`,
-        { method: "POST", body: fd, credentials: "include" },
-      );
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.ok) {
-        toast.error(json?.message || "分析失败，请检查报表格式");
-        return;
-      }
-      const r = json.data.result as ReviewResult;
-      setResult(r);
-      if (r.warnings?.length) toast.message(r.warnings[0]);
-      else toast.success("复盘完成");
-    } catch {
-      toast.error("网络异常，稍后再试");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function onPick(f: File | null) {
-    setFile(f);
-    setResult(null);
-  }
-
-  return (
-    <div className="space-y-6 pb-16">
-      <PageHeader
-        title="复盘"
-        badge={
-          <Badge tone="brand" icon={<Sparkles className="h-3 w-3" />}>
-            GMVMax 数据诊断
-          </Badge>
-        }
-        description="上传 Creative Hub 导出的广告报表（CSV / Excel），自动跑出健康度基线、Cost×ROI 象限分诊与优化行动清单。"
-      />
-
-      {/* 上传与参数 */}
-      <Card>
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const f = e.dataTransfer.files?.[0];
-            if (f) onPick(f);
-          }}
-          onClick={() => inputRef.current?.click()}
-          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60 px-4 py-8 text-center transition-colors hover:border-brand-300 hover:bg-brand-50/40"
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".csv,.tsv,.xlsx,text/csv"
-            className="hidden"
-            onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-          />
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-brand-600 ring-1 ring-zinc-200">
-            {file ? <FileSpreadsheet className="h-5 w-5" /> : <ArrowUpFromLine className="h-5 w-5" />}
-          </div>
-          {file ? (
-            <div className="text-sm font-medium text-zinc-800">{file.name}</div>
-          ) : (
-            <>
-              <div className="text-sm font-medium text-zinc-700">点击或拖入报表文件</div>
-              <div className="text-2xs text-zinc-400">
-                支持 .csv / .tsv / .xlsx，需含 Cost、GMV、曝光、点击、订单、完播率等列
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-sm text-zinc-600">
-            ROI 目标
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              value={targetRoi}
-              onChange={(e) => setTargetRoi(e.target.value)}
-              className="h-9 w-20 rounded-lg border border-zinc-200 px-2 text-sm tabular-nums focus:border-brand-400 focus:outline-none"
-            />
-            <span className="text-2xs text-zinc-400">象限以此为高/低 ROI 分界</span>
-          </label>
-          <Button variant="primary" onClick={analyze} disabled={loading || !file}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {loading ? "分析中…" : "开始复盘"}
-          </Button>
-        </div>
-        {!workspaceId && (
-          <p className="mt-3 text-2xs text-amber-600">登录后即可上传报表分析。</p>
-        )}
-      </Card>
-
-      {result && <Results result={result} />}
-    </div>
-  );
-}
-
-function Results({ result }: { result: ReviewResult }) {
+/**
+ * 复盘结果仪表盘（纯展示）：健康度基线 + Cost×ROI 象限 + 优化行动清单 + Gemini 深挖提示词。
+ * 计算全在 Go 后端完成，这里只渲染 ReviewResult。由「店铺投流数据分析」Agent 在工作台内调用。
+ */
+export function ReviewResults({ result }: { result: ReviewResult }) {
   const { baseline: b, counts, quadrants, actions } = result;
   const roiOk = b.roi >= b.targetRoi;
 
