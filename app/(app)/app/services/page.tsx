@@ -5,13 +5,10 @@ import {
   Truck,
   Warehouse,
   PackageCheck,
-  Headphones,
-  ClipboardList,
   Users,
   Radio,
   Wallet,
   ReceiptText,
-  Building2,
   ShieldCheck,
   Megaphone,
   type LucideIcon,
@@ -96,37 +93,6 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    key: "operations",
-    label: "运营提效",
-    desc: "把重复琐碎的日常交给工具。",
-    services: [
-      {
-        label: "在线客服",
-        desc: "聚合 TikTok Shop 站内信与多店铺消息，自动回复。",
-        icon: Headphones,
-        status: "beta",
-        tags: ["消息聚合", "自动回复"],
-        regions: ["global"],
-      },
-      {
-        label: "ERP 订单管理",
-        desc: "多店铺订单、库存、采购一处同步，告别表格。",
-        icon: ClipboardList,
-        status: "soon",
-        tags: ["订单同步", "库存管理"],
-        regions: ["global"],
-      },
-      {
-        label: "店铺代运营",
-        desc: "专业团队托管选品、上架与日常运营，按效果付费。",
-        icon: Building2,
-        status: "live",
-        tags: ["全托管", "按效果付费"],
-        regions: ["us", "uk", "sea"],
-      },
-    ],
-  },
-  {
     key: "marketing",
     label: "营销推广",
     desc: "让更多对的人看到你的商品。",
@@ -148,7 +114,7 @@ const CATEGORIES: Category[] = [
         regions: ["sea", "us", "uk"],
       },
       {
-        label: "广告代投",
+        label: "广告开户",
         desc: "GMV Max 广告搭建、托管优化与预算控制。",
         icon: Megaphone,
         status: "soon",
@@ -179,7 +145,7 @@ const CATEGORIES: Category[] = [
         regions: ["us", "uk", "eu"],
       },
       {
-        label: "公司与资质",
+        label: "公司与店铺",
         desc: "海外主体注册、店铺入驻资质，一站式办妥。",
         icon: ShieldCheck,
         status: "soon",
@@ -189,8 +155,6 @@ const CATEGORIES: Category[] = [
     ],
   },
 ];
-
-const CATEGORY_FILTERS = [{ key: "all", label: "全部" }, ...CATEGORIES.map((c) => ({ key: c.key, label: c.label }))];
 
 // 服务是否命中某个地区筛选：global（市场无关）始终命中；否则看 regions 是否包含该地区。
 function matchRegion(svc: Service, region: string) {
@@ -205,11 +169,9 @@ function regionText(svc: Service) {
 }
 
 export default function ServicesPage() {
-  const [cat, setCat] = useState("all");
   const [region, setRegion] = useState("all");
 
   const shown = CATEGORIES
-    .filter((c) => cat === "all" || c.key === cat)
     .map((c) => ({ ...c, services: c.services.filter((s) => matchRegion(s, region)) }))
     .filter((c) => c.services.length > 0);
 
@@ -221,7 +183,6 @@ export default function ServicesPage() {
       />
 
       <div className="space-y-2.5">
-        <FilterRow label="环节" items={CATEGORY_FILTERS} active={cat} onSelect={setCat} />
         <FilterRow
           label="市场"
           items={[{ key: "all", label: "全部" }, ...REGION_FILTERS.map((r) => ({ key: r, label: REGION_LABEL[r] }))]}
