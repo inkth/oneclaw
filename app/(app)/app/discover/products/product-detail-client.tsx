@@ -26,6 +26,7 @@ import {
   Users,
   Video,
   Play,
+  Heart,
   ShieldCheck,
   Truck,
 } from "lucide-react";
@@ -449,36 +450,56 @@ export function ProductDetailClient({
           <div className="mb-3 flex items-center gap-2">
             <Video className="h-4 w-4 text-brand-600" />
             <span className="text-sm font-medium text-zinc-900">关联热门视频</span>
+            <span className="text-xs text-zinc-400">共 {p.videos.length} 条 · 按播放量排序</span>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {p.videos.map((v) => {
               const playable = v.playAddr?.startsWith("http");
               const inner = (
                 <>
-                  <div className="relative aspect-[9/16] overflow-hidden rounded-lg bg-zinc-100">
-                    <Img src={v.cover} seed={v.videoId} className="h-full w-full object-cover" />
+                  <div className="relative aspect-[9/16] overflow-hidden bg-zinc-100">
+                    <Img
+                      src={v.cover}
+                      seed={v.videoId}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {/* 顶部渐变 + 播放量 */}
+                    <div className="absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/50 to-transparent p-1.5">
+                      <span className="rounded bg-black/40 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums backdrop-blur-sm">
+                        ▶ {fmt(v.views)}
+                      </span>
+                      {v.saleCnt > 0 && (
+                        <span className="rounded bg-emerald-500/90 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums">
+                          带货 {fmt(v.saleCnt)}
+                        </span>
+                      )}
+                    </div>
                     {playable && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
                         <Play className="h-8 w-8 text-white drop-shadow" />
                       </div>
                     )}
-                    <div className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs text-white tabular-nums">
-                      {fmt(v.views)} 播放
+                    {/* 底部渐变 + 点赞 / 日期 */}
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/60 to-transparent p-1.5 text-2xs text-white/90 tabular-nums">
+                      <span className="inline-flex items-center gap-0.5">
+                        <Heart className="h-3 w-3" /> {fmt(v.digg)}
+                      </span>
+                      <span>{fmtUnixDate(v.createTime)}</span>
                     </div>
                   </div>
-                  <div className="mt-1.5 line-clamp-2 text-xs text-zinc-600">{v.desc || "—"}</div>
-                  <div className="mt-0.5 flex items-center justify-between text-2xs text-zinc-400 tabular-nums">
-                    <span>{fmtUnixDate(v.createTime)}</span>
-                    <span className="text-emerald-600">带货 {fmt(v.saleCnt)}</span>
+                  <div className="line-clamp-2 min-h-[2rem] px-2 pb-2 pt-1.5 text-xs leading-4 text-zinc-600 transition-colors group-hover:text-zinc-900">
+                    {v.desc || "—"}
                   </div>
                 </>
               );
+              const shell =
+                "group block overflow-hidden rounded-xl ring-1 ring-zinc-100 transition-shadow hover:ring-zinc-200 hover:shadow-sm";
               return playable ? (
-                <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className="group block">
+                <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className={shell}>
                   {inner}
                 </a>
               ) : (
-                <div key={v.videoId} className="group block">
+                <div key={v.videoId} className={shell}>
                   {inner}
                 </div>
               );
