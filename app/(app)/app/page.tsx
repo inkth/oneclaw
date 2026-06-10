@@ -59,7 +59,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* 核心:给三位 Agent 派活的聊天框 */}
+      {/* 核心:给 Agent 派活的聊天框（含「店铺投流数据分析」复盘 Agent） */}
       <div className="relative">
         <div
           aria-hidden

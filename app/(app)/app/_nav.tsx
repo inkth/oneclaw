@@ -7,7 +7,6 @@ import {
   Compass,
   Clapperboard,
   Boxes,
-  LineChart,
   LayoutGrid,
   Settings,
 } from "lucide-react";
@@ -25,8 +24,9 @@ type Board = {
   soon?: boolean; // 功能尚未完成，标「即将上线」
 };
 
-// TikTok 电商全流程的六大板块：工作台 → 选品 → 创作 → 资产 → 复盘 → 服务。
-// 所有现有页面都归进某个板块，子页面收进板块内 Tab，侧边栏永远只有这 6 行 + 设置。
+// TikTok 电商全流程的五大板块：工作台 → 选品 → 创作 → 资产 → 服务。
+// 复盘已并入工作台的「店铺投流数据分析」Agent，不再单列板块。
+// 所有现有页面都归进某个板块，子页面收进板块内 Tab，侧边栏永远只有这 5 行 + 设置。
 const BOARDS: Board[] = [
   {
     // 工作台的核心是 Agent：首页直接呈现派活聊天框与最近任务，不用 Tab 切换。
@@ -73,14 +73,6 @@ const BOARDS: Board[] = [
       { label: "素材库", href: "/app/assets/materials" },
       { label: "短视频", href: "/app/videos" },
     ],
-  },
-  {
-    key: "review",
-    label: "复盘",
-    icon: LineChart,
-    href: "/app/analytics",
-    paths: ["/app/analytics"],
-    tabs: [],
   },
   {
     key: "services",
