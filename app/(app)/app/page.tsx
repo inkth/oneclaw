@@ -44,10 +44,13 @@ export default async function DashboardPage() {
     user?.name || user?.phone?.slice(-4) || user?.email?.split("@")[0] || "访客";
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-title text-zinc-900">你好，{greeting}</h1>
-        <p className="mt-1.5 text-sm text-zinc-500">
+    <div className="mx-auto max-w-4xl space-y-8">
+      {/* 照搬 Designkit：居中大标题 + 居中 composer，背后极淡彩虹氛围光 */}
+      <div className="pt-4 text-center sm:pt-8">
+        <h1 className="font-display text-[26px] font-medium leading-snug text-ink">
+          你好，{greeting}
+        </h1>
+        <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-500">
           {!workspace
             ? "这是 OneClaw 概览。给下面的 Agent 派个活,或登录后拥有自己的工作台。"
             : isFresh
@@ -57,7 +60,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* 核心:给三位 Agent 派活的聊天框 */}
-      <AgentComposer workspaceId={workspace?.id ?? ""} isGuest={!workspace} />
+      <div className="relative">
+        <div
+          aria-hidden
+          className="dk-aura pointer-events-none absolute -inset-x-8 -top-6 bottom-0 -z-10"
+        />
+        <AgentComposer workspaceId={workspace?.id ?? ""} isGuest={!workspace} />
+      </div>
 
       {workspace && isFresh && <OnboardingCard workspaceId={workspace.id} />}
 
@@ -67,12 +76,12 @@ export default async function DashboardPage() {
         <Stat icon={Bot} label="Agent 任务" value={taskCount} href="/app/agents" size="lg" />
       </div>
 
-      <section className="rounded-xl border border-zinc-200/80 bg-white">
-        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
-          <h2 className="text-sm font-semibold text-zinc-900">最近 Agent 任务</h2>
+      <section className="dk-card">
+        <div className="flex items-center justify-between border-b border-black/5 px-5 py-4">
+          <h2 className="font-display text-sm font-semibold text-ink">最近 Agent 任务</h2>
           <Link
             href="/app/agents"
-            className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
+            className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-ink"
           >
             全部 <ArrowRight className="h-3 w-3" />
           </Link>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const base = "rounded-xl ring-edge surface-sheen shadow-xs";
+// 照搬 Designkit：纯白 + 16px 圆角 + 发丝边 + 极弱阴影
+const base = "dk-card";
 
 export function Card({
   className,
@@ -30,7 +31,7 @@ export function CardLink({
       href={href}
       className={cn(
         base,
-        "group block p-5 lift hover:border-brand-200",
+        "group block p-5 lift hover:border-black/15",
         className
       )}
     >

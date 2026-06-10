@@ -4,25 +4,28 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "brand" | "vibrant" | "secondary" | "ghost" | "subtle";
 type Size = "sm" | "md" | "lg";
 
+// 照搬 Designkit：主操作统一近黑胶囊（#1C1D1F），不再用饱和电紫/渐变。
+// brand / vibrant 保留变体名（避免改调用点），观感全部收敛到近黑。
 const VARIANTS: Record<Variant, string> = {
-  // 中性强操作：实心黑（数据密集处需克制时用）
-  primary: "bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm press",
-  // 页面级主操作：实心电紫 + 紫色辉光（导入选品 / 发送 / 登录 / 订阅）
-  brand: "bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow-[var(--shadow-brand)] press",
-  // 成交/兴奋操作：violet→fuchsia 活力渐变 + 活力辉光（营销 CTA / 定价高亮 / 派活）。白名单使用。
-  vibrant: "bg-vibrant text-white shadow-sm hover:shadow-[var(--shadow-vibrant)] pop",
-  // 次级：白底 + 描边
-  secondary: "bg-white text-zinc-800 ring-1 ring-zinc-200 hover:ring-zinc-300 hover:bg-zinc-50 press",
+  // 中性强操作 == Designkit Send 按钮：近黑胶囊
+  primary: "bg-[#1c1d1f] text-white hover:bg-black shadow-sm press",
+  // 页面级主操作：同近黑（原电紫）
+  brand: "bg-[#1c1d1f] text-white hover:bg-black shadow-sm press",
+  // 成交/兴奋操作：同近黑（原 violet→fuchsia 渐变）
+  vibrant: "bg-[#1c1d1f] text-white hover:bg-black shadow-sm press",
+  // 次级：白底 + 发丝描边
+  secondary: "bg-white text-ink ring-1 ring-black/10 hover:ring-black/20 hover:bg-zinc-50 press",
   // 幽灵：仅 hover 浅底
-  ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
-  // 弱强调：accent 浅底
-  subtle: "bg-brand-50 text-brand-700 hover:bg-brand-100 press",
+  ghost: "text-zinc-600 hover:bg-black/5 hover:text-ink",
+  // 弱强调：中性浅底
+  subtle: "bg-black/[0.04] text-ink hover:bg-black/[0.07] press",
 };
 
+// 照搬 Designkit：按钮全部胶囊圆角（rounded-full）。
 const SIZES: Record<Size, string> = {
-  sm: "h-8 px-3 text-xs gap-1.5 rounded-lg",
-  md: "h-10 px-4 text-sm gap-2 rounded-xl",
-  lg: "h-12 px-6 text-base gap-2 rounded-2xl",
+  sm: "h-8 px-3.5 text-xs gap-1.5 rounded-full",
+  md: "h-10 px-4 text-sm gap-2 rounded-full",
+  lg: "h-12 px-6 text-base gap-2 rounded-full",
 };
 
 const base =

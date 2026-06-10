@@ -18,7 +18,7 @@ export function PageHeader({
     <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between", className)}>
       <div className="min-w-0">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-title text-zinc-900">{title}</h1>
+          <h1 className="text-title text-ink">{title}</h1>
           {badge}
         </div>
         {description && (

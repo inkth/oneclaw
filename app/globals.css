@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a1a;
+  /* 照搬 Designkit：冷白灰画布 + 近黑正文（实测 #F6F7FA / #252525） */
+  --background: #f6f7fa;
+  --foreground: #252525;
+  --surface: #ffffff; /* 卡片纯白 */
+  --ink: #222326; /* 标题色 */
+  --ink-action: #1c1d1f; /* 近黑主操作色 */
+  --hairline: rgba(0, 0, 0, 0.07); /* 卡片发丝边 */
 
   /* 品牌 = 电紫 Violet。全站唯一真源：改这 11 个值即整站换肤。 */
   --brand-50: #f5f3ff;
@@ -49,8 +54,10 @@
   --color-brand-dark: var(--brand-dark);
   --color-accent: var(--accent);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* 照搬 Designkit：正文 Open Sans，标题 Poppins（font-display 工具类用） */
+  --font-sans: var(--font-open-sans);
+  --font-display: var(--font-poppins);
+  --font-mono: var(--font-open-sans);
 
   /* 11px 辅助字号 */
   --text-2xs: 0.6875rem;
@@ -68,12 +75,40 @@
   --shadow-vibrant: 0 10px 32px -6px rgba(217, 70, 239, 0.35), 0 4px 12px -4px rgba(236, 72, 153, 0.22);
 }
 
+/* 照搬 Designkit：把 /app 外壳子树内的「电紫 brand 色阶」整体改写为中性近黑，
+   令所有页面内联的 text-brand / bg-brand / border-brand 自动转中性（不动 21 个功能文件，
+   也不影响 /app 之外的营销落地页）。工具类内联引用 var(--brand-*)，
+   故在祖先节点改写 --brand-* 即可级联生效。 */
+.app-skin {
+  --brand-50: #f5f5f6;
+  --brand-100: #e9e9eb;
+  --brand-200: #d8d8dc;
+  --brand-300: #b4b4ba;
+  --brand-400: #79797f;
+  --brand-500: #3f3f46;
+  --brand-600: #1c1d1f; /* 主色 → 近黑 */
+  --brand-700: #0c0c0e;
+  --brand-800: #050506;
+  --brand-900: #000000;
+  --brand-950: #000000;
+  --brand: #1c1d1f;
+  --brand-dark: #000000;
+  --accent: #1c1d1f;
+  /* 渐变/辉光也去电紫，收敛为中性 */
+  --gradient-vibrant: linear-gradient(135deg, #1c1d1f 0%, #2b2b30 100%);
+  --gradient-vibrant-soft: linear-gradient(135deg, #2b2b30 0%, #46464d 100%);
+  --shadow-brand: 0 8px 28px -6px rgba(16, 14, 30, 0.16),
+    0 2px 8px -2px rgba(16, 14, 30, 0.1);
+  --shadow-vibrant: 0 10px 32px -6px rgba(16, 14, 30, 0.18),
+    0 4px 12px -4px rgba(16, 14, 30, 0.1);
+}
+
 html,
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Latin/数字走 Geist，中文回退到高质系统/开源字体（含 Noto/Source Han 兜底 CI/Linux 截图） */
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
+  /* Latin/数字走 Open Sans（照搬 Designkit 正文），中文回退到高质系统/开源字体 */
+  font-family: var(--font-open-sans), -apple-system, BlinkMacSystemFont,
     "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
     "Source Han Sans SC", "Microsoft YaHei", "微软雅黑", "WenQuanYi Micro Hei",
     sans-serif;
@@ -88,9 +123,16 @@ body {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-/* ---------- 表现力标题层级 ---------- */
+/* ---------- 表现力标题层级（照搬 Designkit：标题统一 Poppins） ---------- */
+/* 标题字族工具类：直接给任意标题套 Poppins */
+.font-display {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+}
 /* 流体大标题：hero h1 / 营销 section h2。-0.022em 字距对 Latin 锐利、对中文也不挤 */
 .text-display {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4.5rem);
   line-height: 1.06;
   letter-spacing: -0.022em;
@@ -98,19 +140,24 @@ body {
   text-wrap: balance;
 }
 .text-display-sm {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: clamp(1.875rem, 1.3rem + 2vw, 3rem);
   line-height: 1.12;
   letter-spacing: -0.02em;
   font-weight: 700;
   text-wrap: balance;
 }
-/* 应用内页头标题：稳健不流体（== 现 text-2xl） */
+/* 应用内页头标题：稳健不流体（== 现 text-2xl），Poppins */
 .text-title {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: 1.5rem;
   line-height: 1.25;
   letter-spacing: -0.018em;
   font-weight: 600;
   text-wrap: balance;
+  color: var(--ink);
 }
 /* 中文正文行高补偿：段落更舒展透气 */
 .text-cjk-relaxed {
@@ -164,18 +211,63 @@ body {
   transition-duration: 0.08s;
 }
 
-/* hero 顶部柔光：双层 violet / fuchsia 极光 */
+/* 照搬 Designkit：顶部氛围光改为极淡中性彩虹（不再全站紫光顶） */
 .gradient-bg {
   background: radial-gradient(
       ellipse 60% 50% at 50% -10%,
-      rgba(124, 58, 237, 0.1),
+      rgba(120, 140, 255, 0.05),
       transparent 70%
     ),
     radial-gradient(
-      ellipse 40% 40% at 85% 5%,
-      rgba(217, 70, 239, 0.06),
+      ellipse 40% 40% at 80% 0%,
+      rgba(255, 170, 210, 0.04),
       transparent 70%
     );
+}
+
+/* ---------- 照搬 Designkit 的核心表面原语 ---------- */
+/* 卡片：纯白 + 16px 圆角 + 发丝边 + 极弱阴影（实测无重阴影） */
+.dk-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 1px 2px rgba(16, 14, 30, 0.03);
+}
+/* 图标导航轨激活项：图标后浅灰圆角底 */
+.dk-rail-item {
+  background: rgba(0, 0, 0, 0.05);
+}
+/* composer / hero 背后氛围光：极淡彩虹漫射（替代 aura-violet 紫光） */
+.dk-aura {
+  background: radial-gradient(
+      ellipse 50% 60% at 30% 40%,
+      rgba(150, 180, 255, 0.16),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 55% at 72% 55%,
+      rgba(255, 180, 220, 0.14),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 50% at 55% 30%,
+      rgba(190, 245, 210, 0.12),
+      transparent 70%
+    );
+  filter: blur(36px);
+}
+/* 彩虹发丝边环：激活态 pill / 高亮卡（替代单色电紫渐变边） */
+.dk-ring {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(
+        100deg,
+        #ffb4d2,
+        #c4b5ff 35%,
+        #9ad8ff 65%,
+        #b6f3c8
+      )
+      border-box;
 }
 
 /* 玻璃面：磨砂 + 提饱和 */
@@ -262,9 +354,9 @@ body {
     background-position: 250% 0;
   }
 }
-/* 文本/块骨架：底色 brand-50 + 流动高光 */
+/* 文本/块骨架：中性浅灰底 + 流动高光（照搬 Designkit 去电紫） */
 .skeleton {
-  background-color: var(--brand-50);
+  background-color: #eef0f4;
   background-image: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
@@ -358,5 +450,5 @@ body {
 }
 
 ::selection {
-  background: rgba(124, 58, 237, 0.16);
+  background: rgba(34, 35, 38, 0.12);
 }

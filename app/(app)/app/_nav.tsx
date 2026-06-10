@@ -107,55 +107,69 @@ function activeBoard(pathname: string): Board | undefined {
   );
 }
 
-const itemBase =
-  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors";
-const itemActive =
-  " bg-brand-50 text-brand-700 font-medium shadow-[inset_0_0_0_1px_var(--color-brand-100)]";
-const itemIdle = " text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900";
+// 照搬 Designkit 图标导航轨：每项为 图标方块 + 下方小字，纵向堆叠。
+// 激活项图标后有浅灰圆角底（.dk-rail-item），文字/图标转近黑。
+function RailItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex w-full flex-col items-center gap-1 py-1 text-center"
+    >
+      <span
+        className={
+          "flex h-11 w-11 items-center justify-center rounded-2xl transition-colors " +
+          (active
+            ? "dk-rail-item text-ink"
+            : "text-zinc-500 group-hover:bg-black/[0.04] group-hover:text-ink")
+        }
+      >
+        <Icon className="h-[22px] w-[22px]" />
+      </span>
+      <span
+        className={
+          "text-[11px] leading-none transition-colors " +
+          (active ? "font-medium text-ink" : "text-zinc-500 group-hover:text-ink")
+        }
+      >
+        {label}
+      </span>
+    </Link>
+  );
+}
 
 export function SidebarNav() {
   const pathname = usePathname();
   const active = activeBoard(pathname);
 
   return (
-    <nav className="flex-1 overflow-y-auto px-2 py-2 flex flex-col">
-      <div className="space-y-0.5">
-        {BOARDS.map((board) => {
-          const Icon = board.icon;
-          const isActive = active?.key === board.key;
-          return (
-            <Link
-              key={board.key}
-              href={board.href}
-              className={itemBase + (isActive ? itemActive : itemIdle)}
-            >
-              <Icon className={"h-4 w-4 " + (isActive ? "text-brand-600" : "text-zinc-400")} />
-              <span className="flex-1">{board.label}</span>
-              {board.soon && (
-                <span className="rounded px-1.5 py-0.5 text-2xs font-medium text-zinc-400 bg-zinc-100">
-                  即将上线
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
+    <nav className="mt-6 flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto px-1">
+      {BOARDS.map((board) => (
+        <RailItem
+          key={board.key}
+          href={board.href}
+          label={board.label}
+          icon={board.icon}
+          active={active?.key === board.key}
+        />
+      ))}
 
       <div className="mt-auto pt-2">
-        <Link
+        <RailItem
           href={settingsItem.href}
-          className={
-            itemBase + (matchPath(settingsItem.href, pathname) ? itemActive : itemIdle)
-          }
-        >
-          <settingsItem.icon
-            className={
-              "h-4 w-4 " +
-              (matchPath(settingsItem.href, pathname) ? "text-brand-600" : "text-zinc-400")
-            }
-          />
-          {settingsItem.label}
-        </Link>
+          label={settingsItem.label}
+          icon={settingsItem.icon}
+          active={matchPath(settingsItem.href, pathname)}
+        />
       </div>
     </nav>
   );

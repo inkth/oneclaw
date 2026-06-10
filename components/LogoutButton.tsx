@@ -18,10 +18,11 @@ export function LogoutButton() {
   return (
     <button
       onClick={logout}
-      className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50"
+      title="退出登录"
+      aria-label="退出登录"
+      className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-black/5 hover:text-ink transition-colors"
     >
-      <LogOut className="h-3.5 w-3.5" />
-      退出登录
+      <LogOut className="h-4 w-4" />
     </button>
   );
 }

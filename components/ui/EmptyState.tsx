@@ -8,7 +8,7 @@ export function EmptyState({
   action,
   className,
 }: {
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   title: string;
   description?: React.ReactNode;
   action?: React.ReactNode;
@@ -17,26 +17,19 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl ring-edge surface-sheen px-6 py-14 text-center",
+        // 照搬 Designkit：无卡框、居中、线框图标 + 粗标题 + 灰副标题 + 近黑 CTA
+        "px-6 py-16 text-center",
         className
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-6 h-40 w-64 -translate-x-1/2 aura-violet opacity-60"
-      />
-      <div className="relative">
-        {Icon && (
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-fuchsia-500 text-white shadow-[var(--shadow-brand)]">
-            <Icon className="h-5 w-5" />
-          </div>
-        )}
-        <div className="text-base font-semibold text-zinc-900">{title}</div>
-        {description && (
-          <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-zinc-500">{description}</p>
-        )}
-        {action && <div className="mt-5 flex justify-center">{action}</div>}
-      </div>
+      {Icon && (
+        <Icon className="mx-auto mb-4 h-12 w-12 text-zinc-300" strokeWidth={1.5} />
+      )}
+      <div className="font-display text-lg font-semibold text-ink">{title}</div>
+      {description && (
+        <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-zinc-500">{description}</p>
+      )}
+      {action && <div className="mt-5 flex justify-center">{action}</div>}
     </div>
   );
 }

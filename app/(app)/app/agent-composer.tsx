@@ -86,7 +86,7 @@ export function AgentComposer({
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-md transition-shadow focus-within:border-brand-300 focus-within:shadow-lg">
+    <div className="dk-card overflow-hidden transition-shadow focus-within:border-black/15">
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -95,11 +95,11 @@ export function AgentComposer({
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
         }}
-        className="w-full resize-none rounded-t-2xl bg-transparent px-4 py-3.5 text-sm leading-relaxed outline-none placeholder:text-zinc-400"
+        className="w-full resize-none bg-transparent px-4 py-3.5 text-sm leading-relaxed outline-none placeholder:text-zinc-400"
       />
 
-      {/* 工具栏：把 Agent 选择收成并列按钮 */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-zinc-100 px-3 py-2.5">
+      {/* 工具栏：把 Agent 选择收成并列按钮（照搬 Designkit：激活态白底彩虹环） */}
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
         {AGENTS.map((a) => {
           const active = a.kind === activeAgent;
           return (
@@ -108,8 +108,8 @@ export function AgentComposer({
               onClick={() => setActiveAgent(a.kind)}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                 active
-                  ? `${a.solid} text-white`
-                  : "border border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50"
+                  ? "dk-ring text-ink"
+                  : "border border-black/10 bg-white text-zinc-600 hover:border-black/20 hover:text-ink"
               }`}
             >
               <a.icon className="h-3.5 w-3.5" />
@@ -123,7 +123,7 @@ export function AgentComposer({
           <button
             onClick={submit}
             disabled={submitting || !input.trim()}
-            className="bg-vibrant pop inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:shadow-[var(--shadow-vibrant)] disabled:opacity-50 disabled:pointer-events-none"
+            className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

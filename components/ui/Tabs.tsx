@@ -14,7 +14,7 @@ export function Tabs({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-1 border-b border-zinc-200", className)}>
+    <div className={cn("flex items-center gap-1 border-b border-black/5", className)}>
       {items.map((tab) => {
         const isActive = tab.href === activeHref;
         return (
@@ -24,8 +24,8 @@ export function Tabs({
             className={cn(
               "-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors",
               isActive
-                ? "border-brand-600 font-medium text-brand-700"
-                : "border-transparent text-zinc-500 hover:text-zinc-900"
+                ? "border-ink font-medium text-ink"
+                : "border-transparent text-zinc-500 hover:text-ink"
             )}
           >
             {tab.label}
