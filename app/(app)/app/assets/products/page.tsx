@@ -34,7 +34,9 @@ export default async function ProductsPage() {
   }
 
   return (
+    // key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*)
     <ProductsClient
+      key={me?.user?.id ?? "guest"}
       workspaceId={workspace?.id ?? ""}
       initialProducts={products.map((p) => ({
         id: p.id,

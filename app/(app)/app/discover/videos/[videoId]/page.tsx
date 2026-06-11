@@ -106,7 +106,9 @@ export default async function VideoDetailPage({
   }
 
   return (
+    // key：弹窗内登录后 refresh 重传 props，强制重挂载以重置收藏初始态
     <VideoDetailClient
+      key={workspace?.id ?? "guest"}
       video={video}
       fav={{ workspaceId: workspace?.id ?? "", isGuest: !workspace, starred }}
     />

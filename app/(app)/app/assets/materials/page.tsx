@@ -17,7 +17,9 @@ export default async function MaterialsPage() {
     }
   }
   return (
+    // key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*)
     <MaterialsClient
+      key={me?.user?.id ?? "guest"}
       workspaceId={ws?.id ?? ""}
       initialMaterials={materials}
       isGuest={!ws}

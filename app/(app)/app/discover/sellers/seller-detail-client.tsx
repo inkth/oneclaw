@@ -100,7 +100,6 @@ export function SellerDetailClient({
               workspaceId={fav.workspaceId}
               isGuest={fav.isGuest}
               initialStarred={fav.starred}
-              callbackUrl={`/app/discover/sellers/${s.sellerId}?region=${s.region}`}
               snapshot={{
                 name: s.sellerName,
                 cover: s.cover,

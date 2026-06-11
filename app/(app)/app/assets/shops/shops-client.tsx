@@ -18,6 +18,7 @@ import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState as EmptyStatePrimitive } from "@/components/ui/EmptyState";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 
 type Platform =
   | "TIKTOK_SHOP"
@@ -76,16 +77,13 @@ export function ShopsClient({
   const router = useRouter();
   const [shops, setShops] = useState(initialShops);
   const [modalOpen, setModalOpen] = useState(false);
+  const { open: openAuthModal } = useAuthModal();
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
-    toast("登录后即可操作", {
-      action: {
-        label: "去登录",
-        onClick: () => {
-          window.location.href = "/login?callbackUrl=/app";
-        },
-      },
+    openAuthModal({
+      title: "登录后即可绑定店铺",
+      desc: "店铺库需要账号，登录后绑定的 TikTok Shop 会保存在工作台。",
     });
     return true;
   }

@@ -16,5 +16,6 @@ export default async function ModelsPage() {
       models = [];
     }
   }
-  return <ModelsClient workspaceId={ws?.id ?? ""} initialModels={models} isGuest={!ws} />;
+  // key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*)
+  return <ModelsClient key={me?.user?.id ?? "guest"} workspaceId={ws?.id ?? ""} initialModels={models} isGuest={!ws} />;
 }

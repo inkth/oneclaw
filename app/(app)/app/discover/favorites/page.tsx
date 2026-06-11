@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { apiServer, getMe } from "@/lib/api-client";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AuthModalTrigger } from "@/components/auth/AuthModalTrigger";
 import { Bookmark } from "lucide-react";
 import { FavoritesClient, type FavoriteItem } from "./favorites-client";
 
@@ -19,12 +19,14 @@ export default async function FavoritesPage() {
           description="收藏的商品、店铺、达人、视频会汇总在这里。登录即可开始收藏。"
         />
         <div className="text-center">
-          <Link
-            href="/login?callbackUrl=/app/discover/favorites"
+          <AuthModalTrigger
+            label="去登录 →"
             className="text-sm font-medium text-brand-600 hover:text-brand-700"
-          >
-            去登录 →
-          </Link>
+            options={{
+              title: "登录后查看收藏",
+              desc: "收藏的商品、店铺、达人、视频会汇总在这里。",
+            }}
+          />
         </div>
       </div>
     );

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
-import { LoginPromptModal } from "@/components/LoginPromptModal";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { Button } from "@/components/ui/Button";
 import { Star, Loader2 } from "lucide-react";
 
@@ -18,7 +18,6 @@ export function FavoriteButton({
   isGuest,
   initialStarred,
   snapshot,
-  callbackUrl,
 }: {
   kind: "seller" | "influencer" | "video";
   externalId: string;
@@ -27,16 +26,18 @@ export function FavoriteButton({
   isGuest: boolean;
   initialStarred: boolean;
   snapshot: FavSnapshot;
-  callbackUrl: string;
 }) {
   const [starred, setStarred] = useState(initialStarred);
   const [busy, setBusy] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const { open: openAuthModal } = useAuthModal();
 
   async function toggle() {
     if (busy) return;
     if (isGuest) {
-      setLoginOpen(true);
+      openAuthModal({
+        title: "登录后即可收藏",
+        desc: "收藏店铺、达人、视频需要账号。详情随便看,登录后一键收藏。",
+      });
       return;
     }
     const next = !starred;
@@ -57,23 +58,13 @@ export function FavoriteButton({
   }
 
   return (
-    <>
-      {loginOpen && (
-        <LoginPromptModal
-          onClose={() => setLoginOpen(false)}
-          callbackUrl={callbackUrl}
-          title="登录后即可收藏"
-          desc="收藏店铺、达人、视频需要账号。详情随便看,登录后一键收藏。"
-        />
+    <Button variant="secondary" size="sm" onClick={toggle} disabled={busy}>
+      {busy ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <Star className={`h-3.5 w-3.5 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
       )}
-      <Button variant="secondary" size="sm" onClick={toggle} disabled={busy}>
-        {busy ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Star className={`h-3.5 w-3.5 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
-        )}
-        {starred ? "已收藏" : "收藏"}
-      </Button>
-    </>
+      {starred ? "已收藏" : "收藏"}
+    </Button>
   );
 }

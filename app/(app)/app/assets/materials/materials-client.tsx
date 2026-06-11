@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 
 type MaterialType = "IMAGE" | "VIDEO" | "AUDIO" | "LOGO" | "WATERMARK" | "FONT";
 
@@ -64,16 +65,13 @@ export function MaterialsClient({
   isGuest?: boolean;
 }) {
   const router = useRouter();
+  const { open: openAuthModal } = useAuthModal();
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
-    toast("登录后即可操作", {
-      action: {
-        label: "去登录",
-        onClick: () => {
-          window.location.href = "/login?callbackUrl=/app";
-        },
-      },
+    openAuthModal({
+      title: "登录后即可上传素材",
+      desc: "素材库需要账号，登录后上传的图片、视频会保存在工作台。",
     });
     return true;
   }

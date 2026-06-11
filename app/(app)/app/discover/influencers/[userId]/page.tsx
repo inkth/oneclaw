@@ -137,7 +137,9 @@ export default async function InfluencerDetailPage({
   }
 
   return (
+    // key：弹窗内登录后 refresh 重传 props，强制重挂载以重置收藏初始态
     <InfluencerDetailClient
+      key={workspace?.id ?? "guest"}
       influencer={influencer}
       fav={{ workspaceId: workspace?.id ?? "", isGuest: !workspace, starred }}
     />

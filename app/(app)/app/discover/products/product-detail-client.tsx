@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
-import { LoginPromptModal } from "@/components/LoginPromptModal";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Stat } from "@/components/ui/Stat";
@@ -122,14 +122,17 @@ export function ProductDetailClient({
 }) {
   const router = useRouter();
   const [gallery, setGallery] = useState(0);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [starred, setStarred] = useState(p.interaction?.isStarred ?? false);
   const [busy, setBusy] = useState<"" | "star" | "import" | "analyze">("");
   const [imported, setImported] = useState<string | null>(p.importedProductId);
+  const { open: openAuthModal } = useAuthModal();
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
-    setLoginOpen(true);
+    openAuthModal({
+      title: "登录后即可操作",
+      desc: "导入选品、收藏、AI 分析都需要账号。详情随便看,登录后一键操作。",
+    });
     return true;
   }
 
@@ -217,15 +220,6 @@ export function ProductDetailClient({
 
   return (
     <div className="space-y-6">
-      {loginOpen && (
-        <LoginPromptModal
-          onClose={() => setLoginOpen(false)}
-          callbackUrl={`/app/discover/products/${p.productId}?region=${p.region}`}
-          title="登录后即可操作"
-          desc="导入选品、收藏、AI 分析都需要账号。详情随便看,登录后一键操作。"
-        />
-      )}
-
       <Link
         href="/app/discover/products"
         className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800"

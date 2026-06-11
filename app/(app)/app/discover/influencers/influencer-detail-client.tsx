@@ -119,7 +119,6 @@ export function InfluencerDetailClient({
               workspaceId={fav.workspaceId}
               isGuest={fav.isGuest}
               initialStarred={fav.starred}
-              callbackUrl={`/app/discover/influencers/${i.userId}?region=${i.region}`}
               snapshot={{
                 name: i.nickName,
                 cover: i.avatar,

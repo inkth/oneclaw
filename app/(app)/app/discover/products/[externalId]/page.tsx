@@ -167,7 +167,9 @@ export default async function ProductDetailPage({
   };
 
   return (
+    // key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*)
     <ProductDetailClient
+      key={workspace?.id ?? "guest"}
       product={product}
       workspaceId={workspace?.id ?? ""}
       isGuest={!workspace}

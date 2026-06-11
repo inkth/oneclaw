@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getMe } from "@/lib/api-client";
 import { LogoutButton } from "@/components/LogoutButton";
-import { Sparkles, User } from "lucide-react";
+import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
+import { SidebarLoginButton } from "@/components/auth/SidebarLoginButton";
+import { Sparkles } from "lucide-react";
 import { SidebarNav, BoardTabs } from "./_nav";
 
 export default async function AppLayout({
@@ -16,6 +18,7 @@ export default async function AppLayout({
   const display = user?.name || user?.phone || user?.email || "游客";
 
   return (
+    <AuthModalProvider>
     <div className="app-skin min-h-screen flex bg-background">
       {/* 照搬 Designkit：80px 图标导航轨，透明贴画布色，纵向 图标+小字 */}
       <aside className="hidden md:flex sticky top-0 h-screen w-20 shrink-0 flex-col items-center self-start overflow-y-auto border-r border-black/5 bg-transparent py-4">
@@ -41,15 +44,7 @@ export default async function AppLayout({
               <LogoutButton />
             </>
           ) : (
-            <Link
-              href="/login?callbackUrl=/app"
-              className="flex flex-col items-center gap-1 text-zinc-500 hover:text-ink transition-colors"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white">
-                <User className="h-4 w-4" />
-              </span>
-              <span className="text-[11px]">登录</span>
-            </Link>
+            <SidebarLoginButton />
           )}
         </div>
       </aside>
@@ -76,5 +71,6 @@ export default async function AppLayout({
         </main>
       </div>
     </div>
+    </AuthModalProvider>
   );
 }

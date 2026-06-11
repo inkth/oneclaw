@@ -58,7 +58,9 @@ export default async function DashboardPage({
         </p>
       </div>
 
+      {/* key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*) */}
       <Workbench
+        key={user?.id ?? "guest"}
         workspaceId={workspace?.id ?? ""}
         isGuest={!workspace}
         showPresets={!!workspace && isFresh}

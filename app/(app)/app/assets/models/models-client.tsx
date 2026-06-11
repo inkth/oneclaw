@@ -15,6 +15,7 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 
 type Kind = "DIGITAL_HUMAN" | "REAL_PERSON";
 type Gender = "FEMALE" | "MALE" | "NEUTRAL";
@@ -66,16 +67,13 @@ export function ModelsClient({
   const router = useRouter();
   const [models, setModels] = useState(initialModels);
   const [modalOpen, setModalOpen] = useState(false);
+  const { open: openAuthModal } = useAuthModal();
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
-    toast("登录后即可操作", {
-      action: {
-        label: "去登录",
-        onClick: () => {
-          window.location.href = "/login?callbackUrl=/app";
-        },
-      },
+    openAuthModal({
+      title: "登录后即可创建模特",
+      desc: "模特库需要账号，登录后创建的数字模特会保存在工作台。",
     });
     return true;
   }

@@ -108,7 +108,6 @@ export function VideoDetailClient({
               workspaceId={fav.workspaceId}
               isGuest={fav.isGuest}
               initialStarred={fav.starred}
-              callbackUrl={`/app/discover/videos/${v.videoId}?region=${v.region}`}
               snapshot={{
                 name: v.desc || "带货视频",
                 cover: v.cover,

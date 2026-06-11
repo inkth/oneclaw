@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
-import { LoginPromptModal } from "@/components/LoginPromptModal";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { FilterBar, type CategoryOption, type FieldOption } from "../_components/FilterBar";
 import { type Region } from "../_components/regions";
 import { Thumb } from "../_components/shared";
@@ -94,12 +94,15 @@ export function DiscoverClient({
   const router = useRouter();
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState<Set<string>>(new Set());
-  const [loginOpen, setLoginOpen] = useState(false);
+  const { open: openAuthModal } = useAuthModal();
 
   // 游客触发「导入/收藏/分析」时拦下来弹登录浮层。返回 true 表示已拦截。
   function gateGuest(): boolean {
     if (!isGuest) return false;
-    setLoginOpen(true);
+    openAuthModal({
+      title: "登录后即可操作",
+      desc: "导入选品、收藏、AI 分析都需要账号。趋势榜随便逛,登录后一键操作。",
+    });
     return true;
   }
 
@@ -209,15 +212,6 @@ export function DiscoverClient({
 
   return (
     <div className="space-y-6">
-      {loginOpen && (
-        <LoginPromptModal
-          onClose={() => setLoginOpen(false)}
-          callbackUrl="/app/discover/products"
-          title="登录后即可操作"
-          desc="导入选品、收藏、AI 分析都需要账号。趋势榜随便逛,登录后一键操作。"
-        />
-      )}
-
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2">

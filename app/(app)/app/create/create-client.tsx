@@ -23,6 +23,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { TemplateOptimizerModal } from "@/components/TemplateOptimizerModal";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { Popover, ToolbarButton } from "@/components/ui/Popover";
 
 type AspectRatio = "9:16" | "16:9" | "1:1";
@@ -149,7 +150,7 @@ export function CreateClient({
   const [optimizerOpen, setOptimizerOpen] = useState(false);
 
   // 游客登录引导
-  const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+  const { open: openAuthModal } = useAuthModal();
 
   // Template state
   const [customs, setCustoms] = useState<Template[]>(customTemplates);
@@ -182,7 +183,10 @@ export function CreateClient({
   function gateGuest(): boolean {
     if (!isGuest) return false;
     saveDraft();
-    setLoginPromptOpen(true);
+    openAuthModal({
+      title: "登录后继续",
+      desc: "你刚才填写的内容已经帮你保存好了，登录后自动恢复，不用重填。",
+    });
     return true;
   }
 
@@ -1036,10 +1040,6 @@ export function CreateClient({
         />
       )}
 
-      {loginPromptOpen && (
-        <LoginPromptModal onClose={() => setLoginPromptOpen(false)} />
-      )}
-
       {optimizerOpen && (
         <TemplateOptimizerModal
           workspaceId={workspaceId}
@@ -1063,51 +1063,6 @@ function EmptyPickerHint({ href, label }: { href: string; label: string }) {
     >
       还没有，{label} →
     </Link>
-  );
-}
-
-function LoginPromptModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-sm rounded-xl bg-white shadow-sm"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100"
-        >
-          <X className="h-4 w-4" />
-        </button>
-        <div className="p-6 space-y-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600">
-            <Sparkles className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">登录后继续</h2>
-            <p className="mt-1 text-xs text-zinc-500 leading-relaxed">
-              你刚才填写的内容已经帮你保存好了，登录回来会自动恢复，不用重填。
-            </p>
-          </div>
-          <Link
-            href="/login?callbackUrl=/app/create"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
-          >
-            登录 / 注册
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <button
-            onClick={onClose}
-            className="w-full text-xs text-zinc-400 hover:text-zinc-600"
-          >
-            再逛逛
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

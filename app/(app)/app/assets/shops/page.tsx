@@ -21,5 +21,6 @@ export default async function ShopsPage() {
       shops = [];
     }
   }
-  return <ShopsClient workspaceId={ws?.id ?? ""} initialShops={shops} totals={totals} isGuest={!ws} />;
+  // key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*)
+  return <ShopsClient key={me?.user?.id ?? "guest"} workspaceId={ws?.id ?? ""} initialShops={shops} totals={totals} isGuest={!ws} />;
 }

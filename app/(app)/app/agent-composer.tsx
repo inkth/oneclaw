@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { type ReviewResult } from "@/lib/review/types";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { type StreamTask } from "./task-stream";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
@@ -98,6 +99,7 @@ export function AgentComposer({
   const [targetRoi, setTargetRoi] = useState("3.0");
   const prevAgentRef = useRef<ComposerKind>("ANALYST");
   const fileRef = useRef<HTMLInputElement>(null);
+  const { open: openAuthModal } = useAuthModal();
 
   const isReview = activeAgent === "REVIEW";
   const placeholder =
@@ -108,13 +110,9 @@ export function AgentComposer({
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
-    toast("登录后即可使用 Agent", {
-      action: {
-        label: "去登录",
-        onClick: () => {
-          window.location.href = "/login?callbackUrl=/app";
-        },
-      },
+    openAuthModal({
+      title: "登录后即可使用 Agent",
+      desc: "派活给选品分析、视频创作、投放复盘 Agent 需要账号。",
     });
     return true;
   }
@@ -155,7 +153,10 @@ export function AgentComposer({
 
   async function analyze() {
     if (!workspaceId) {
-      toast.error("请先登录后再上传报表");
+      openAuthModal({
+        title: "登录后即可上传报表",
+        desc: "投放复盘需要账号，登录后报表分析结果会保存在工作台。",
+      });
       return;
     }
     if (!attachedFile) return;
