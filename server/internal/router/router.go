@@ -51,7 +51,7 @@ func New(d Deps) *gin.Engine {
 	agentH := handler.NewAgentHandler(d.Agent, d.Workspace)
 	videoH := handler.NewVideoHandler(d.Video, d.Workspace)
 	tplH := handler.NewTemplateHandler(d.Template, d.Workspace)
-	reviewH := handler.NewReviewHandler(d.Workspace)
+	reviewH := handler.NewReviewHandler(d.Workspace, d.Agent)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready())

@@ -33,6 +33,10 @@ const (
 
 	AgentAnalyst  = "ANALYST"
 	AgentDirector = "DIRECTOR"
+	AgentListing  = "LISTING"
+	AgentTeam     = "TEAM"
+	// REVIEW 由 review/analyze 同步产出后落库(不走异步队列,不在 validAgents 内)。
+	AgentReview = "REVIEW"
 
 	TaskQueued  = "QUEUED"
 	TaskRunning = "RUNNING"

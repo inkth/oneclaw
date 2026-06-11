@@ -1,21 +1,8 @@
-import Link from "next/link";
 import { getMe, apiServer } from "@/lib/api-client";
-import { TrendingUp, Video, Bot, ArrowRight } from "lucide-react";
-import { OnboardingCard } from "@/components/OnboardingCard";
-import { Stat } from "@/components/ui/Stat";
-import { Badge } from "@/components/ui/Badge";
-import { AGENT_IDENTITY, TASK_STATUS_TONE, TASK_STATUS_LABEL, type AgentKey } from "@/lib/ui/tokens";
-import { AgentComposer } from "./agent-composer";
+import { Workbench } from "./workbench";
+import { type StreamTask } from "./task-stream";
 
 export const metadata = { title: "工作台 · OneClaw" };
-
-type AgentTask = {
-  id: string;
-  agent: string;
-  status: string;
-  input: string;
-  createdAt: string;
-};
 
 export default async function DashboardPage() {
   // 游客可浏览;无工作台时各项为空。
@@ -25,97 +12,45 @@ export default async function DashboardPage() {
 
   let productCount = 0;
   let videoCount = 0;
-  let tasks: AgentTask[] = [];
+  let tasks: StreamTask[] = [];
   if (workspace) {
     const [prod, vids, ts] = await Promise.all([
       apiServer<{ products: unknown[] }>(`/workspaces/${workspace.id}/products`).catch(() => ({ products: [] })),
       apiServer<{ videos: unknown[] }>(`/workspaces/${workspace.id}/videos`).catch(() => ({ videos: [] })),
-      apiServer<{ tasks: AgentTask[] }>(`/workspaces/${workspace.id}/agent-tasks`).catch(() => ({ tasks: [] })),
+      apiServer<{ tasks: StreamTask[] }>(`/workspaces/${workspace.id}/agent-tasks`).catch(() => ({ tasks: [] })),
     ]);
     productCount = prod.products?.length ?? 0;
     videoCount = vids.videos?.length ?? 0;
     tasks = ts.tasks ?? [];
   }
 
-  const taskCount = tasks.length;
-  const recentTasks = tasks.slice(0, 5);
-  const isFresh = productCount === 0 && videoCount === 0 && taskCount === 0;
+  const isFresh = productCount === 0 && videoCount === 0 && tasks.length === 0;
   const greeting =
     user?.name || user?.phone?.slice(-4) || user?.email?.split("@")[0] || "访客";
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      {/* 照搬 Designkit：居中大标题 + 居中 composer，背后极淡彩虹氛围光 */}
+      {/* 对标竞品:居中大标题 + 胶囊行 + 超大输入卡;任务以会话流追加在输入框下方 */}
       <div className="pt-4 text-center sm:pt-8">
-        <h1 className="font-display text-[26px] font-medium leading-snug text-ink">
-          你好，{greeting}
+        <h1 className="font-display text-display-sm text-ink">
+          让每个爆品,自己卖货
         </h1>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-500">
+        <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-500">
           {!workspace
-            ? "这是 OneClaw 概览。给下面的 Agent 派个活,或登录后拥有自己的工作台。"
+            ? `你好,${greeting} —— 选个 Agent 派活,或登录后拥有自己的工作台。`
             : isFresh
-              ? `欢迎来到 ${workspace.name} —— 给 Agent 派个活,跑通你的第一条出海链路吧。`
-              : `这是 ${workspace.name} 的今日概览。给 Agent 派个活就从下面开始。`}
+              ? `你好,${greeting} —— 欢迎来到 ${workspace.name},派个活跑通你的第一条出海链路。`
+              : `你好,${greeting} —— 接着派活,结果会出现在输入框下方。`}
         </p>
       </div>
 
-      {/* 核心:给 Agent 派活的聊天框（含「店铺投流数据分析」复盘 Agent） */}
-      <div className="relative">
-        <div
-          aria-hidden
-          className="dk-aura pointer-events-none absolute -inset-x-8 -top-6 bottom-0 -z-10"
-        />
-        <AgentComposer workspaceId={workspace?.id ?? ""} isGuest={!workspace} />
-      </div>
-
-      {workspace && isFresh && <OnboardingCard workspaceId={workspace.id} />}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Stat icon={TrendingUp} label="选品库存" value={productCount} href="/app/assets/products" size="lg" />
-        <Stat icon={Video} label="已生成视频" value={videoCount} href="/app/videos" size="lg" />
-        <Stat icon={Bot} label="Agent 任务" value={taskCount} href="/app/agents" size="lg" />
-      </div>
-
-      <section className="dk-card">
-        <div className="flex items-center justify-between border-b border-black/5 px-5 py-4">
-          <h2 className="font-display text-sm font-semibold text-ink">最近 Agent 任务</h2>
-          <Link
-            href="/app/agents"
-            className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-ink"
-          >
-            全部 <ArrowRight className="h-3 w-3" />
-          </Link>
-        </div>
-        {recentTasks.length === 0 ? (
-          <div className="px-5 py-12 text-center text-sm text-zinc-500">
-            还没有任务。在上面的聊天框给 Agent 派个活试试。
-          </div>
-        ) : (
-          <ul className="divide-y divide-zinc-100">
-            {recentTasks.map((t) => {
-              const agent = AGENT_IDENTITY[t.agent as AgentKey];
-              return (
-                <li key={t.id} className="flex items-center gap-3 px-5 py-3.5 text-sm">
-                  {agent && (
-                    <Badge tone={agent.tone} outline={false}>
-                      {agent.label}
-                    </Badge>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-zinc-800">{t.input}</div>
-                    <div className="mt-0.5 text-2xs text-zinc-400">
-                      {new Date(t.createdAt).toLocaleString("zh-CN")}
-                    </div>
-                  </div>
-                  <Badge tone={TASK_STATUS_TONE[t.status] ?? "neutral"}>
-                    {TASK_STATUS_LABEL[t.status] ?? t.status}
-                  </Badge>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      <Workbench
+        workspaceId={workspace?.id ?? ""}
+        isGuest={!workspace}
+        showPresets={!!workspace && isFresh}
+        initialTasks={tasks}
+        streamLimit={8}
+      />
     </div>
   );
 }

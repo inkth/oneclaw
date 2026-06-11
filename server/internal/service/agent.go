@@ -31,6 +31,8 @@ func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService) *AgentSer
 var validAgents = map[string]bool{
 	model.AgentAnalyst:  true,
 	model.AgentDirector: true,
+	model.AgentListing:  true,
+	model.AgentTeam:     true,
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
@@ -77,7 +79,12 @@ func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.
 
 // execute 后台执行单个任务。任何 panic/错误都落库为 FAILED。
 func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	// TEAM 串行跑三个 Agent,放宽超时。
+	timeout := 2 * time.Minute
+	if agent == model.AgentTeam {
+		timeout = 6 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	defer func() {
 		if r := recover(); r != nil {
@@ -100,6 +107,10 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input)
 	case model.AgentDirector:
 		output, meta, usage, err = s.runDirector(ctx, wsID, input)
+	case model.AgentListing:
+		output, meta, usage, err = s.runListing(ctx, wsID, input)
+	case model.AgentTeam:
+		output, meta, usage, err = s.runTeam(ctx, taskID, wsID, input)
 	default:
 		err = fmt.Errorf("agent %s 尚未在 Go 端实现", agent)
 	}
@@ -128,7 +139,7 @@ func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
 
 // ── Analyst ─────────────────────────────────────────────────────────────────
 
-const analystSystem = `你是 OneClaw 的"市场分析师 Agent"。
+const analystSystem = `你是 OneClaw 的"选品分析 Agent"。
 你的任务是基于用户的需求描述，给出 3-5 个跨境电商高潜力选品建议。
 
 强制要求：
