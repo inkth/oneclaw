@@ -11,7 +11,7 @@ import (
 type AgentTask struct {
 	ID           uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	WorkspaceID  uuid.UUID  `gorm:"column:workspace_id;type:uuid;not null;index:idx_task_ws_created;index:idx_task_ws_agent_created" json:"workspaceId"`
-	Agent        string     `gorm:"not null;index:idx_task_ws_agent_created" json:"agent"` // ANALYST|DIRECTOR|OPERATOR
+	Agent        string     `gorm:"not null;index:idx_task_ws_agent_created" json:"agent"` // ANALYST|DIRECTOR
 	Status       string     `gorm:"not null;default:'QUEUED'" json:"status"`
 	Input        string     `gorm:"type:text;not null" json:"input"`
 	Output       *string    `gorm:"type:text" json:"output,omitempty"`

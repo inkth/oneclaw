@@ -5,7 +5,6 @@ import {
   ArrowRight,
   BarChart3,
   Check,
-  Globe,
   Loader2,
   Send,
   TrendingUp,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 
 /* 首屏即产品：复刻工作台 composer 的「一句话派活」交互。
-   占位文字打字机轮换四条真实指令，对应的 Agent pill 同步点亮，
+   占位文字打字机轮换三条真实指令，对应的 Agent pill 同步点亮，
    下方接一卡「Agent 接力实况」循环播放完整链路。 */
 
 type DemoPrompt = {
@@ -30,13 +29,8 @@ const PROMPTS: DemoPrompt[] = [
   },
   {
     agent: "创意总监",
-    text: "给这款便携榨汁杯生成 4 支 15 秒带货短视频",
+    text: "给这款便携榨汁杯生成一支 15 秒带货短视频，叙事角度你帮我挑",
     icon: Video,
-  },
-  {
-    agent: "品牌运营官",
-    text: "把本周的视频排期发到 TikTok、Instagram 和 YouTube Shorts",
-    icon: Globe,
   },
   {
     agent: "投放复盘",
@@ -112,7 +106,7 @@ export function HomeHero() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base text-zinc-600 text-cjk-relaxed sm:text-lg">
-            选品、做视频、发多平台、看投放复盘——交给三位 AI Agent 接力完成。
+            选品、做视频、看投放复盘——交给三位 AI Agent 接力完成。
             <br className="hidden sm:block" />
             哪怕你是第一次做跨境电商。
           </p>
@@ -195,7 +189,7 @@ export function HomeHero() {
   );
 }
 
-/* ---------- Agent 接力实况：四步循环点亮 ---------- */
+/* ---------- Agent 接力实况：三步循环点亮 ---------- */
 
 type RunStep = {
   agent: string;
@@ -216,16 +210,9 @@ const RUN_STEPS: RunStep[] = [
   {
     agent: "创意总监",
     dot: "bg-violet-500",
-    text: "生成 4 支 9:16 带货短视频",
-    result: "开箱 / 测评 / 场景 / 对比",
+    text: "挑叙事角度，生成 9:16 带货短视频",
+    result: "开箱 / 测评 / 场景 / 对比中自动选",
     duration: "3m 12s",
-  },
-  {
-    agent: "品牌运营官",
-    dot: "bg-fuchsia-500",
-    text: "适配标题与标签，排期发布",
-    result: "TikTok · Instagram · Shorts",
-    duration: "41s",
   },
   {
     agent: "投放复盘",

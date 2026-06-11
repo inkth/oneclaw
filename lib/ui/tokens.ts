@@ -19,11 +19,10 @@ export const STATUS_TONES = {
 
 export type Tone = keyof typeof STATUS_TONES;
 
-/** 三 Agent 身份：仅作小 chip 标识 + 极小图标块，不再大面积渐变。 */
+/** Agent 身份：仅作小 chip 标识 + 极小图标块，不再大面积渐变。 */
 export const AGENT_IDENTITY = {
   ANALYST: { label: "分析师", tone: "brand" as Tone, dot: "bg-brand-500" },
   DIRECTOR: { label: "创意总监", tone: "violet" as Tone, dot: "bg-violet-500" },
-  OPERATOR: { label: "运营官", tone: "fuchsia" as Tone, dot: "bg-fuchsia-500" },
 } as const;
 
 export type AgentKey = keyof typeof AGENT_IDENTITY;

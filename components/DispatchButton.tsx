@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Video, Globe } from "lucide-react";
+import { Loader2, Video } from "lucide-react";
 
-type AgentKind = "ANALYST" | "DIRECTOR" | "OPERATOR";
+type AgentKind = "ANALYST" | "DIRECTOR";
 
 const config = {
   ANALYST: { label: "重新分析", icon: Video },
   DIRECTOR: { label: "派给创意总监", icon: Video },
-  OPERATOR: { label: "排给运营官", icon: Globe },
 } as const;
 
 export function DispatchButton({

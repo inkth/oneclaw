@@ -17,7 +17,7 @@ export default async function AgentsPage() {
             AI Agent
           </span>
         }
-        description="派发市场分析师 / 创意总监 / 品牌运营官,异步执行后到对应模块查看结果。"
+        description="派发市场分析师 / 创意总监,异步执行后到对应模块查看结果;或上传投流报表做复盘。"
       />
       <AgentComposer workspaceId={ws?.id ?? ""} isGuest={!ws} />
     </div>

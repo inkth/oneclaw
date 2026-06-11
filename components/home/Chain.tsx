@@ -1,14 +1,6 @@
-import {
-  BarChart3,
-  Check,
-  Clapperboard,
-  Clock3,
-  Globe,
-  Play,
-  TrendingUp,
-} from "lucide-react";
+import { BarChart3, Clapperboard, Play, TrendingUp } from "lucide-react";
 
-/* 全链路：四个环节连成一条流水线，上一步产出 = 下一步输入。
+/* 全链路：三个环节连成一条流水线，上一步产出 = 下一步输入。
    每张卡底部放该环节的「真实产物」微缩样张，而非抽象插图。 */
 
 const STEPS = [
@@ -32,15 +24,6 @@ const STEPS = [
   },
   {
     no: "03",
-    agent: "品牌运营官",
-    icon: Globe,
-    tone: "text-fuchsia-600 bg-fuchsia-50",
-    title: "三个平台，一次排期",
-    desc: "标题、标签、发布时间自动适配各平台节奏，多账号同步不再靠手动复制。",
-    visual: <PublishVisual />,
-  },
-  {
-    no: "04",
     agent: "投放复盘",
     icon: BarChart3,
     tone: "text-emerald-600 bg-emerald-50",
@@ -54,7 +37,7 @@ const PROOFS = [
   { value: "30+ 小时 → 10 分钟", label: "每周重复工作" },
   { value: "1 个人", label: "跑通完整链路" },
   { value: "4 种叙事角度", label: "AI 按产品自动匹配" },
-  { value: "3 大平台", label: "一次排期同步发布" },
+  { value: "ROI 四象限", label: "投流报表一键复盘" },
 ];
 
 export function Chain() {
@@ -67,7 +50,7 @@ export function Chain() {
           </div>
           <h2 className="text-display-sm mt-3">一条链路，跑完一单生意</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            别再于十几个工具之间搬运数据。OneClaw 把出海的四个关键环节连成一条流水线，
+            别再于十几个工具之间搬运数据。OneClaw 把出海的三个关键环节连成一条流水线，
             上一步的产出自动成为下一步的输入。
           </p>
         </div>
@@ -78,7 +61,7 @@ export function Chain() {
             aria-hidden
             className="absolute left-[12%] right-[12%] top-4 hidden h-px bg-gradient-to-r from-brand-300 via-fuchsia-300 to-emerald-300 lg:block"
           />
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {STEPS.map((s) => (
               <div key={s.no} className="flex flex-col">
                 <div className="relative z-10 flex justify-center">
@@ -159,31 +142,6 @@ function VideoVisual() {
             </span>
           )}
           <span className="relative z-10 pb-1 text-2xs font-medium text-zinc-600">{t}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PublishVisual() {
-  const rows = [
-    { name: "TikTok", state: "已发布 · 18:00", done: true },
-    { name: "Instagram", state: "已发布 · 19:30", done: true },
-    { name: "YouTube Shorts", state: "排期中 · 明天", done: false },
-  ];
-  return (
-    <div className="divide-y divide-black/[0.04] rounded-xl border border-black/[0.05] bg-zinc-50/60">
-      {rows.map((r) => (
-        <div key={r.name} className="flex items-center gap-2 px-3 py-2 text-2xs">
-          {r.done ? (
-            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white">
-              <Check className="h-2 w-2" strokeWidth={3.5} />
-            </span>
-          ) : (
-            <Clock3 className="h-3.5 w-3.5 text-amber-500" />
-          )}
-          <span className="font-medium text-zinc-700">{r.name}</span>
-          <span className="ml-auto text-zinc-400 nums">{r.state}</span>
         </div>
       ))}
     </div>

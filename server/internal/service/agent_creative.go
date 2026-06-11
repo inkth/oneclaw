@@ -115,35 +115,3 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 	}
 	return b.String(), meta, res.Usage, nil
 }
-
-// ── Operator:基于近期视频排周历 ────────────────────────────────────────────
-
-const operatorSystem = `你是 OneClaw 的"品牌运营官 Agent",服务 TikTok Shop 跨境卖家。
-根据用户目标和已有视频清单,产出一份**本周三平台(TikTok / Instagram Reels / YouTube Shorts)发布日历**。
-要点:每天给出平台 + 发布时段(目标市场当地时间)+ 内容主题/对应视频 + 一句话钩子。
-用简洁中文、分天列出,先给一句整体策略,再列周一到周日。`
-
-func (s *AgentService) runOperator(ctx context.Context, wsID uuid.UUID, input string) (string, any, llm.Usage, error) {
-	if !s.llm.Configured() {
-		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请设置 OPENROUTER_API_KEY")
-	}
-	var vids []model.Video
-	s.db.WithContext(ctx).Where("workspace_id = ?", wsID).
-		Order("created_at DESC").Limit(12).Find(&vids)
-
-	var sb strings.Builder
-	sb.WriteString(strings.TrimSpace(input))
-	sb.WriteString("\n\n已有视频清单:\n")
-	if len(vids) == 0 {
-		sb.WriteString("(暂无视频,请基于通用爆款节奏给出排期建议)\n")
-	} else {
-		for i, v := range vids {
-			fmt.Fprintf(&sb, "%d. 《%s》风格 %s\n", i+1, v.Title, v.Style)
-		}
-	}
-	res, err := s.llm.Chat(ctx, operatorSystem, sb.String(), false, 2000)
-	if err != nil {
-		return "", nil, llm.Usage{}, err
-	}
-	return res.Content, map[string]any{"videosConsidered": len(vids)}, res.Usage, nil
-}

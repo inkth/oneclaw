@@ -1,4 +1,4 @@
-import { Clapperboard, Globe, TrendingUp } from "lucide-react";
+import { BarChart3, Clapperboard, TrendingUp } from "lucide-react";
 
 /* AI 团队：三张「同事名片」。
    渐变头像 + 职责 + 一条你真的会说的指令，让 Agent 显得像人而非功能列表。 */
@@ -21,12 +21,12 @@ const MEMBERS = [
     skills: ["脚本生成", "9:16 成片", "封面直出"],
   },
   {
-    name: "品牌运营官",
-    icon: Globe,
-    grad: "from-fuchsia-500 to-fuchsia-600",
-    role: "管排期、管发布、管复盘，多平台一个人搞定。",
-    quote: "把本周视频排到 TikTok、IG、Shorts 三个平台。",
-    skills: ["多平台排期", "自动适配", "投放复盘"],
+    name: "投放复盘",
+    icon: BarChart3,
+    grad: "from-emerald-500 to-emerald-600",
+    role: "读投流报表、算 ROI，告诉你该给谁加预算、关停谁。",
+    quote: "分析我店铺上周的投流报表，哪些素材值得加预算？",
+    skills: ["报表解析", "ROI 象限", "预算建议"],
   },
 ];
 

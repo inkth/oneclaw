@@ -33,7 +33,6 @@ const (
 
 	AgentAnalyst  = "ANALYST"
 	AgentDirector = "DIRECTOR"
-	AgentOperator = "OPERATOR"
 
 	TaskQueued  = "QUEUED"
 	TaskRunning = "RUNNING"
