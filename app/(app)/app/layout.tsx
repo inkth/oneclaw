@@ -18,7 +18,7 @@ export default async function AppLayout({
   return (
     <div className="app-skin min-h-screen flex bg-background">
       {/* 照搬 Designkit：80px 图标导航轨，透明贴画布色，纵向 图标+小字 */}
-      <aside className="hidden md:flex w-20 shrink-0 flex-col items-center border-r border-black/5 bg-transparent py-4">
+      <aside className="hidden md:flex sticky top-0 h-screen w-20 shrink-0 flex-col items-center self-start overflow-y-auto border-r border-black/5 bg-transparent py-4">
         <Link
           href="/"
           aria-label="OneClaw 首页"
