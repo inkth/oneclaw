@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/oneclaw/server/internal/config"
+	"github.com/oneclaw/server/internal/job"
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/router"
@@ -90,7 +91,7 @@ func main() {
 	} else {
 		logger.Warn("[fal] FALAI_API_KEY 未配置,封面图不可用")
 	}
-	agentSvc := service.NewAgentService(db, llmClient, videoSvc)
+	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc)
 	tplSvc := service.NewTemplateService(db, llmClient)
 	if llmClient.Configured() {
 		logger.Info("[llm] OpenRouter 已配置", logger.String("model", llmClient.Model()))
@@ -108,6 +109,11 @@ func main() {
 	} else {
 		logger.Warn("[echotik] 未配置 ECHOTIK_USERNAME/PASSWORD,发现页走 mock 数据")
 	}
+
+	// 后台任务:选品榜单定时同步(预热缓存 + 每日快照)。
+	jobCtx, jobCancel := context.WithCancel(context.Background())
+	defer jobCancel()
+	job.NewDiscoverSync(cfg.DiscoverSync, discSvc, echoClient).Start(jobCtx)
 
 	r := router.New(router.Deps{
 		Cfg:       cfg,
@@ -146,6 +152,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	logger.Info("收到停机信号,30s 内优雅退出")
+	jobCancel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

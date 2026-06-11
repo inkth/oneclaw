@@ -24,7 +24,7 @@ const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
 );
 
 const PLACEHOLDERS: Record<ComposerKind, string> = {
-  ANALYST: "例:东南亚母婴本周新爆品,毛利 40%+,月销 2K+",
+  ANALYST: "例:从美国热销榜帮我挑 3 个高佣金潜力品(基于 EchoTik 真实榜单筛选)",
   DIRECTOR: "例:为推荐榜首产品生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感",
   LISTING: "例:为「便携榨汁杯」生成 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案",
   REVIEW: "点左下角「+ 添加」上传 GMVMax 投放报表(.csv / .xlsx),即可开始复盘",
