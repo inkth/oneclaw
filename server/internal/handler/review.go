@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	apperr "github.com/oneclaw/server/internal/errors"
+	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/service"
 	"github.com/oneclaw/server/internal/service/review"
 )
@@ -14,17 +16,19 @@ import (
 const maxReviewBytes = 15 << 20 // 15MB
 
 // ReviewHandler 复盘(GMVMax 数据诊断):接收上传报表 → 解析 → 四象限诊断。
-// 纯计算无状态,仅借 WorkspaceService 做成员鉴权。
+// 计算同步完成后经 AgentService 落库为 REVIEW 任务,与其他 Agent 统一留痕。
 type ReviewHandler struct {
-	ws *service.WorkspaceService
+	ws     *service.WorkspaceService
+	agents *service.AgentService
 }
 
-func NewReviewHandler(ws *service.WorkspaceService) *ReviewHandler {
-	return &ReviewHandler{ws: ws}
+func NewReviewHandler(ws *service.WorkspaceService, agents *service.AgentService) *ReviewHandler {
+	return &ReviewHandler{ws: ws, agents: agents}
 }
 
 func (h *ReviewHandler) Analyze(c *gin.Context) {
-	if _, _, ok := authorizeWorkspace(c, h.ws); !ok {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
 		return
 	}
 
@@ -69,5 +73,12 @@ func (h *ReviewHandler) Analyze(c *gin.Context) {
 	}
 
 	result := review.Analyze(parsed.Rows, targetRoi, parsed.Warnings)
-	OK(c, gin.H{"result": result})
+
+	// 落库为 REVIEW 任务统一留痕;失败不影响本次返回结果。
+	input := fmt.Sprintf("复盘报表「%s」· ROI 目标 %.1f", fileHeader.Filename, result.Baseline.TargetRoi)
+	task, rerr := h.agents.RecordReview(c.Request.Context(), wid, input, &result)
+	if rerr != nil {
+		logger.Warn("[review] 落库失败", logger.String("err", rerr.Error()))
+	}
+	OK(c, gin.H{"result": result, "task": task})
 }
