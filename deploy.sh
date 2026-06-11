@@ -81,6 +81,41 @@ precheck_local_env() {
   ok "本地 .env 就绪"
 }
 
+# 防呆:rsync 发的是当前工作树内容——先亮明发布源;不在 main 分支必须人工确认。
+# 背景:多会话/多 worktree 并行时,各自部署会互相覆盖线上(2026-06-11 实际发生过)。
+precheck_git() {
+  local branch head_info dirty
+  if ! branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); then
+    warn "当前目录不是 git 仓库,无法确认要发布的代码版本"
+    confirm_or_abort "仍要继续部署?"
+    return 0
+  fi
+  head_info=$(git log -1 --format='%h %s' 2>/dev/null || echo '?')
+  dirty=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+  step "发布源:${branch} @ ${head_info}"
+  info "目录:$(pwd)"
+  if [ "$dirty" != "0" ]; then
+    warn "工作区有 ${dirty} 个未提交改动 —— rsync 发的是工作区内容,不是 git 提交"
+  fi
+  if [ "$branch" != "main" ]; then
+    warn "当前不在 main 分支,继续会用这份代码覆盖线上"
+    confirm_or_abort "确认从 ${branch} 部署?"
+  fi
+  ok "发布源确认"
+}
+
+confirm_or_abort() {
+  local ans=""
+  if ! ( : < /dev/tty ) 2>/dev/null; then
+    fail "非交互环境无法确认。切到 main 分支可免确认,或在终端手动运行。"
+  fi
+  read -r -p "$1 [y/N] " ans < /dev/tty || ans=""
+  case "$ans" in
+    y|Y|yes|YES) ;;
+    *) fail "已取消" ;;
+  esac
+}
+
 cmd_logs() { remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE logs -f --tail=${1:-200} go-api next"; }
 
 cmd_status() {
@@ -97,7 +132,7 @@ cmd_status() {
 cmd_shell() { "${SSH_BASE[@]}" -t "$SSH_TARGET" "cd $ONECLAW_REMOTE_DIR && exec \$SHELL"; }
 
 cmd_init() {
-  precheck_ssh; precheck_local_env
+  precheck_git; precheck_ssh; precheck_local_env
   head "首次初始化"
   step "确保远端目录存在 $ONECLAW_REMOTE_DIR"
   remote "sudo mkdir -p $ONECLAW_REMOTE_DIR && sudo chown -R \$(id -u):\$(id -g) $ONECLAW_REMOTE_DIR"
@@ -122,7 +157,7 @@ cmd_backup() {
 
 cmd_deploy() {
   local quick="${1:-false}"
-  precheck_ssh; precheck_local_env
+  precheck_git; precheck_ssh; precheck_local_env
   head "$([ "$quick" = "true" ] && echo "快速重建" || echo "完整部署")"
   step "备份远端 .env"
   remote "[ -f $ONECLAW_REMOTE_DIR/.env ] && cp $ONECLAW_REMOTE_DIR/.env $ONECLAW_REMOTE_DIR/.env.bak.\$(date +%s) || true"
