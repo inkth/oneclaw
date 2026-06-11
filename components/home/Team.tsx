@@ -16,9 +16,9 @@ const MEMBERS = [
     name: "创意总监",
     icon: Clapperboard,
     grad: "from-violet-500 to-violet-600",
-    role: "一个产品出四套差异化叙事，喂饱平台算法。",
-    quote: "给榜首产品生成 4 条 TikTok 短视频，要有对比测评。",
-    skills: ["脚本生成", "9:16 成片", "剪映工程导出"],
+    role: "为每个产品挑最对路的叙事角度，差异化素材喂饱算法。",
+    quote: "给榜首产品来一条 TikTok 短视频，叙事角度你帮我定。",
+    skills: ["脚本生成", "9:16 成片", "封面直出"],
   },
   {
     name: "品牌运营官",
