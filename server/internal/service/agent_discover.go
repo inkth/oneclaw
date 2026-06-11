@@ -16,7 +16,7 @@ import (
 	"github.com/oneclaw/server/internal/service/llm"
 )
 
-const discoverAnalyzeSystem = `你是 OneClaw 的"市场分析师 Agent"，专门基于 EchoTik 真实销售数据做出海商品可行性分析。
+const discoverAnalyzeSystem = `你是 OneClaw 的"选品分析 Agent"，专门基于 EchoTik 真实销售数据做出海商品可行性分析。
 
 **给你的事实块全部是 TikTok Shop 真实数据**，请直接基于这些数字推理，**不要瞎编更多数字**。
 

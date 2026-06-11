@@ -9,10 +9,12 @@ Next.js 16 App Router + Tailwind v4 + Prisma 6 + Auth.js v5 + Postgres。
 - 🏠 **营销落地页**：Hero、痛点、工作流对比、选品（精简）、内容创作、Agent 团队、合作伙伴、CTA、Footer
 - 🔐 **认证**：邮箱+密码（bcrypt），Auth.js v5 凭证登录，JWT session，proxy 保护 `/app`
 - 🗄️ **数据层**：Prisma 6 / Postgres，`User` `Workspace` `Membership` `Product` `Video` `AgentTask` `NewsletterSubscription` `DemoRequest`
-- 🤖 **AI Agent**（已真实化，三种角色）：
-  - **Market Analyst** —— LLM（多模型可切）输出结构化 JSON，自动写入 `Product` 表
-  - **Creative Director** —— LLM 写 4 套脚本 + 并行生成 4 张封面 + 提交 4 个 5s 视频生成任务
-  - **Brand Operator** —— 基于工作台已有视频生成本周三平台发布日历
+- 🤖 **AI Agent**（已真实化）：
+  - **选品分析（ANALYST）** —— LLM（多模型可切）输出结构化 JSON，自动写入 `Product` 表
+  - **短视频创作（DIRECTOR）** —— AI 自选叙事角度，写脚本 + 生成封面 + 提交 5s 视频生成任务，单条出片
+  - **Listing 内容（LISTING）** —— 标题 / 五点卖点 / A+ 文案 / 主图出图 prompt
+  - **投放复盘（REVIEW）** —— 上传 GMVMax 投流报表，产出 ROI 四象限与预算建议
+  - **全链路小队（TEAM）** —— 单任务内串行接力：选品分析 → 短视频创作
 - ⏳ **异步执行**：`POST /agent-tasks` 立即返回 `QUEUED` 任务，`after()` 后台执行，前端每 2.5s 轮询任务状态，视频生成每 8s 轮询生成队列
 - 📡 **API**：见下表
 - 🧑‍💻 **/app 工作台**：概览（任务/选品/视频统计）、选品库、短视频墙（含视频内联播放）、Agent Runner、设置
