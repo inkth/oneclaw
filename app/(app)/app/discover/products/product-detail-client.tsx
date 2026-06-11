@@ -457,43 +457,52 @@ export function ProductDetailClient({
               const playable = v.playAddr?.startsWith("http");
               const inner = (
                 <>
-                  <div className="relative aspect-[9/16] overflow-hidden bg-zinc-100">
+                  <div className="relative aspect-[9/16] overflow-hidden rounded-t-xl bg-zinc-100">
                     <Img
                       src={v.cover}
                       seed={v.videoId}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    {/* 顶部渐变 + 播放量 */}
-                    <div className="absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/50 to-transparent p-1.5">
-                      <span className="rounded bg-black/40 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums backdrop-blur-sm">
-                        ▶ {fmt(v.views)}
+                    {/* 顶部:播放量 + 带货徽标 */}
+                    <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-1 p-2">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums backdrop-blur-sm">
+                        <Play className="h-2.5 w-2.5 fill-current" />
+                        {fmt(v.views)}
                       </span>
                       {v.saleCnt > 0 && (
-                        <span className="rounded bg-emerald-500/90 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums">
+                        <span className="inline-flex items-center rounded-md bg-emerald-600/90 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums backdrop-blur-sm">
                           带货 {fmt(v.saleCnt)}
                         </span>
                       )}
                     </div>
                     {playable && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Play className="h-8 w-8 text-white drop-shadow" />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+                          <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
+                        </span>
                       </div>
                     )}
                     {/* 底部渐变 + 点赞 / 日期 */}
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/60 to-transparent p-1.5 text-2xs text-white/90 tabular-nums">
-                      <span className="inline-flex items-center gap-0.5">
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/65 via-black/25 to-transparent px-2 pb-1.5 pt-6 text-2xs text-white tabular-nums">
+                      <span className="inline-flex items-center gap-1">
                         <Heart className="h-3 w-3" /> {fmt(v.digg)}
                       </span>
-                      <span>{fmtUnixDate(v.createTime)}</span>
+                      <span className="text-white/80">{fmtUnixDate(v.createTime)}</span>
                     </div>
                   </div>
-                  <div className="line-clamp-2 min-h-[2rem] px-2 pb-2 pt-1.5 text-xs leading-4 text-zinc-600 transition-colors group-hover:text-zinc-900">
-                    {v.desc || "—"}
+                  <div className="px-2.5 pb-2.5 pt-2">
+                    {v.desc ? (
+                      <p className="line-clamp-2 min-h-8 text-xs leading-4 text-zinc-600 transition-colors group-hover:text-zinc-900">
+                        {v.desc}
+                      </p>
+                    ) : (
+                      <p className="min-h-8 text-xs leading-4 text-zinc-300">无文案</p>
+                    )}
                   </div>
                 </>
               );
               const shell =
-                "group block overflow-hidden rounded-xl ring-1 ring-zinc-100 transition-shadow hover:ring-zinc-200 hover:shadow-sm";
+                "group block overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200/70 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-zinc-300";
               return playable ? (
                 <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className={shell}>
                   {inner}
