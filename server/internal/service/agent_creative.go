@@ -15,7 +15,7 @@ import (
 
 // ── Director:写脚本 → 下发视频 ───────────────────────────────────────────────
 
-const directorSystem = `你是 OneClaw 的"创意总监 Agent",服务 TikTok Shop 跨境卖家。
+const directorSystem = `你是 OneClaw 的"短视频创作 Agent",服务 TikTok Shop 跨境卖家。
 根据用户的商品/需求,产出一条可直接生成的短视频创意。
 
 先判断哪种叙事角度最适合该商品,从下面四种里选一个:

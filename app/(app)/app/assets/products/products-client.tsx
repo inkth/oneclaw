@@ -91,7 +91,7 @@ export function ProductsClient({
     <div className="space-y-6">
       <PageHeader
         title="选品库"
-        description="市场分析师 Agent 推荐与你手动加入的潜力品类。"
+        description="选品分析 Agent 推荐与你手动加入的潜力品类。"
         actions={
           <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
             {filters.map((f) => (
@@ -128,7 +128,7 @@ export function ProductsClient({
           title={filter === "ALL" ? "还没有选品" : "这个分类下还没有选品"}
           description={
             <>
-              前往 <span className="text-brand-600">Agent 工作流</span>，让市场分析师扫描热门品类。
+              前往 <span className="text-brand-600">Agent 工作流</span>，让选品分析扫描热门品类。
             </>
           }
         />

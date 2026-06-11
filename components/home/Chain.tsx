@@ -6,7 +6,7 @@ import { BarChart3, Clapperboard, Play, TrendingUp } from "lucide-react";
 const STEPS = [
   {
     no: "01",
-    agent: "市场分析师",
+    agent: "选品分析",
     icon: TrendingUp,
     tone: "text-brand-600 bg-brand-50",
     title: "带 ROI 评分的选品清单",
@@ -15,7 +15,7 @@ const STEPS = [
   },
   {
     no: "02",
-    agent: "创意总监",
+    agent: "短视频创作",
     icon: Clapperboard,
     tone: "text-violet-600 bg-violet-50",
     title: "一个产品，选对角度出片",

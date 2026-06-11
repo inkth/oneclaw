@@ -139,7 +139,7 @@ func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
 
 // ── Analyst ─────────────────────────────────────────────────────────────────
 
-const analystSystem = `你是 OneClaw 的"市场分析师 Agent"。
+const analystSystem = `你是 OneClaw 的"选品分析 Agent"。
 你的任务是基于用户的需求描述，给出 3-5 个跨境电商高潜力选品建议。
 
 强制要求：

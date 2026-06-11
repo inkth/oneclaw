@@ -12,7 +12,7 @@ import (
 	"github.com/oneclaw/server/internal/service/llm"
 )
 
-// ── Team:爆品全链路小队(选品 → 短视频 → 排期 串行接力) ─────────────────────
+// ── Team:爆品全链路小队(选品 → 短视频 串行接力) ─────────────────────
 
 type teamStep struct {
 	Key    string `json:"key"`

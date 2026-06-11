@@ -1,11 +1,11 @@
-import { BarChart3, Clapperboard, TrendingUp } from "lucide-react";
+import { BarChart3, Clapperboard, LayoutList, TrendingUp } from "lucide-react";
 
-/* AI 团队：三张「同事名片」。
+/* AI 团队：四张「同事名片」，命名与工作台 Agent 标签一致。
    渐变头像 + 职责 + 一条你真的会说的指令，让 Agent 显得像人而非功能列表。 */
 
 const MEMBERS = [
   {
-    name: "市场分析师",
+    name: "选品分析",
     icon: TrendingUp,
     grad: "from-brand-500 to-brand-600",
     role: "盯趋势、算毛利，替你避开滞销品。",
@@ -13,12 +13,20 @@ const MEMBERS = [
     skills: ["趋势扫描", "ROI 评分", "竞品报告"],
   },
   {
-    name: "创意总监",
+    name: "短视频创作",
     icon: Clapperboard,
     grad: "from-violet-500 to-violet-600",
     role: "为每个产品挑最对路的叙事角度，差异化素材喂饱算法。",
     quote: "给榜首产品来一条 TikTok 短视频，叙事角度你帮我定。",
     skills: ["脚本生成", "9:16 成片", "封面直出"],
+  },
+  {
+    name: "Listing 内容",
+    icon: LayoutList,
+    grad: "from-sky-500 to-sky-600",
+    role: "标题、五点卖点、A+ 文案到主图 prompt，一次产出可直接上架。",
+    quote: "给这款便携榨汁杯写一套英文 Listing，标题带核心关键词。",
+    skills: ["英文标题", "五点卖点", "主图 prompt"],
   },
   {
     name: "投放复盘",
@@ -38,13 +46,13 @@ export function Team() {
           <div className="text-xs font-semibold uppercase tracking-widest text-brand-600">
             Meet the team
           </div>
-          <h2 className="text-display-sm mt-3">三位全职 Agent，7×24 在线</h2>
+          <h2 className="text-display-sm mt-3">四位全职 Agent，7×24 在线</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            像招了一支老练的三人小队——只是他们不休假、不离职，也不用发工资。
+            像招了一支老练的小队——不休假、不离职，还能组成「全链路小队」从选品到出片串行接力。
           </p>
         </div>
 
-        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="mx-auto mt-12 grid max-w-6xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {MEMBERS.map((m) => (
             <div key={m.name} className="dk-card lift flex flex-col p-6">
               <div

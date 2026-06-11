@@ -235,7 +235,7 @@ export function ModelsClient({
 
       <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-4 text-xs text-zinc-600 leading-relaxed">
         💡 真实数字人 / 真人对接（HeyGen、D-ID、阿里云灵境）正在开发中。
-        当前模特是「人设档案」，给创意总监 Agent 写脚本时作为风格输入。
+        当前模特是「人设档案」，给短视频创作 Agent 写脚本时作为风格输入。
       </div>
 
       {modalOpen && (

@@ -104,7 +104,7 @@ export function VideosClient({
       <EmptyState
         icon={Video}
         title="还没有视频"
-        description="去工作台让「创意总监」生成差异化短视频，AI 会自动挑最合适的叙事角度。"
+        description="去工作台让「短视频创作」生成差异化短视频，AI 会自动挑最合适的叙事角度。"
       />
     );
   }

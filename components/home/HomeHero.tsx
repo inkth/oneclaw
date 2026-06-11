@@ -23,12 +23,12 @@ type DemoPrompt = {
 
 const PROMPTS: DemoPrompt[] = [
   {
-    agent: "市场分析师",
+    agent: "选品分析",
     text: "找 3 个适合新手起步的高毛利宠物用品，要欧美市场的",
     icon: TrendingUp,
   },
   {
-    agent: "创意总监",
+    agent: "短视频创作",
     text: "给这款便携榨汁杯生成一支 15 秒带货短视频，叙事角度你帮我挑",
     icon: Video,
   },
@@ -106,7 +106,7 @@ export function HomeHero() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base text-zinc-600 text-cjk-relaxed sm:text-lg">
-            选品、做视频、看投放复盘——交给三位 AI Agent 接力完成。
+            选品、做视频、看投放复盘——交给你的 AI Agent 小队接力完成。
             <br className="hidden sm:block" />
             哪怕你是第一次做跨境电商。
           </p>
@@ -201,14 +201,14 @@ type RunStep = {
 
 const RUN_STEPS: RunStep[] = [
   {
-    agent: "市场分析师",
+    agent: "选品分析",
     dot: "bg-brand-500",
     text: "扫描 10+ 数据源，按毛利底线筛选",
     result: "便携榨汁杯 · ROI 94 · 月销 12.4K",
     duration: "28s",
   },
   {
-    agent: "创意总监",
+    agent: "短视频创作",
     dot: "bg-violet-500",
     text: "挑叙事角度，生成 9:16 带货短视频",
     result: "开箱 / 测评 / 场景 / 对比中自动选",
