@@ -18,8 +18,16 @@ import (
 const directorSystem = `你是 OneClaw 的"创意总监 Agent",服务 TikTok Shop 跨境卖家。
 根据用户的商品/需求,产出一条可直接生成的短视频创意。
 
+先判断哪种叙事角度最适合该商品,从下面四种里选一个:
+- UNBOXING(开箱):有质感、配件多、第一印象强的实物
+- COMPARISON(对比):有竞品参照或参数可比的商品
+- SCENE(场景):融入生活方式、使用场景出片的商品
+- BEFORE_AFTER(效果对比):使用前后有可见变化的商品
+不要硬套不合适的角度;分镜脚本必须体现所选角度的叙事结构。
+
 只输出合法 JSON,不要 markdown:
 {
+  "style": "UNBOXING | COMPARISON | SCENE | BEFORE_AFTER 之一",
   "title": "视频标题(中文,≤20字)",
   "script": "分镜脚本:3-5 个镜头,每镜头一行,含画面+口播要点",
   "videoPrompt": "用于文生视频模型的英文视觉提示词(一句话,具体、可拍,描述画面/光线/运镜)",
@@ -28,11 +36,28 @@ const directorSystem = `你是 OneClaw 的"创意总监 Agent",服务 TikTok Sho
 }`
 
 type directorOut struct {
+	Style       string `json:"style"`
 	Title       string `json:"title"`
 	Script      string `json:"script"`
 	VideoPrompt string `json:"videoPrompt"`
 	DurationSec int    `json:"durationSec"`
 	AspectRatio string `json:"aspectRatio"`
+}
+
+var styleLabels = map[string]string{
+	model.VideoStyleUnboxing:    "开箱",
+	model.VideoStyleComparison:  "对比",
+	model.VideoStyleScene:       "场景",
+	model.VideoStyleBeforeAfter: "效果对比",
+}
+
+// normalizeStyle 把 LLM 输出归一到四个合法风格,非法或为空时回落 SCENE。
+func normalizeStyle(s string) string {
+	s = strings.ToUpper(strings.TrimSpace(s))
+	if _, ok := styleLabels[s]; ok {
+		return s
+	}
+	return model.VideoStyleScene
 }
 
 func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string) (string, any, llm.Usage, error) {
@@ -60,15 +85,16 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 	if title == "" {
 		title = firstN(input, 40)
 	}
+	style := normalizeStyle(out.Style)
 
-	meta := map[string]any{"title": title, "script": out.Script}
+	meta := map[string]any{"title": title, "script": out.Script, "style": style}
 	var b strings.Builder
-	fmt.Fprintf(&b, "🎬 %s\n\n%s\n", title, out.Script)
+	fmt.Fprintf(&b, "🎬 %s · 角度:%s\n\n%s\n", title, styleLabels[style], out.Script)
 
 	// 下发视频(异步,VideoService 自己轮询 + 转存)
 	if s.videos != nil {
 		v, e := s.videos.Create(ctx, wsID, VideoInput{
-			Title: title, Prompt: out.VideoPrompt, Style: model.VideoStyleScene,
+			Title: title, Prompt: out.VideoPrompt, Style: style,
 			DurationSec: out.DurationSec, AspectRatio: out.AspectRatio,
 		})
 		if e != nil {

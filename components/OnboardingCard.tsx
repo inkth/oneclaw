@@ -106,7 +106,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
           icon={Video}
           tone="violet"
           title="创意总监"
-          desc="给它一个推荐选品，它会写 4 套脚本 + 出 4 张封面 + 跑 4 条短视频。"
+          desc="给它一个推荐选品，它会挑最合适的叙事角度，写脚本、出封面、跑出 9:16 成片。"
         />
         <Step
           n={3}

@@ -26,8 +26,8 @@ const STEPS = [
     agent: "创意总监",
     icon: Clapperboard,
     tone: "text-violet-600 bg-violet-50",
-    title: "一个产品，四套短视频",
-    desc: "开箱、测评、场景、对比四种叙事，9:16 成片平均 15 秒，可导出剪映 / CapCut 工程。",
+    title: "一个产品，选对角度出片",
+    desc: "AI 从开箱、测评、场景、对比四种叙事中挑最适合产品的，直出 9:16 成片与封面。",
     visual: <VideoVisual />,
   },
   {
@@ -53,7 +53,7 @@ const STEPS = [
 const PROOFS = [
   { value: "30+ 小时 → 10 分钟", label: "每周重复工作" },
   { value: "1 个人", label: "跑通完整链路" },
-  { value: "4 套素材", label: "每个产品自动产出" },
+  { value: "4 种叙事角度", label: "AI 按产品自动匹配" },
   { value: "3 大平台", label: "一次排期同步发布" },
 ];
 
