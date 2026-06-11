@@ -4,9 +4,8 @@ import { useState } from "react";
 import { Menu, X, Sparkles, ArrowRight } from "lucide-react";
 
 const navItems: Array<{ label: string; href: string; badge?: string }> = [
-  { label: "数据洞察", href: "/#insights" },
-  { label: "内容创作", href: "/#content" },
-  { label: "Agent 团队", href: "/#agents" },
+  { label: "全链路", href: "/#chain" },
+  { label: "AI 团队", href: "/#team" },
   { label: "定价", href: "/pricing" },
 ];
 
@@ -50,7 +49,7 @@ export function Header() {
               登录
             </a>
             <a
-              href="/app/create"
+              href="/app"
               className="bg-vibrant pop group relative inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-white shadow-sm"
             >
               开始体验
@@ -87,7 +86,7 @@ export function Header() {
               <a href="/login" className="flex-1 text-center rounded-full border border-zinc-300 py-2 text-sm font-medium">
                 登录
               </a>
-              <a href="/app/create" className="bg-vibrant flex-1 text-center rounded-full py-2 text-sm font-medium text-white">
+              <a href="/app" className="bg-vibrant flex-1 text-center rounded-full py-2 text-sm font-medium text-white">
                 开始体验
               </a>
             </div>
