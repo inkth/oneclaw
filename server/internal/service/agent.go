@@ -14,18 +14,20 @@ import (
 	apperr "github.com/oneclaw/server/internal/errors"
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
+	"github.com/oneclaw/server/internal/service/echotik"
 	"github.com/oneclaw/server/internal/service/llm"
 )
 
 // AgentService 派发并异步执行 Agent 任务(QUEUED→RUNNING→DONE/FAILED)。
 type AgentService struct {
-	db     *gorm.DB
-	llm    *llm.Client
-	videos *VideoService // director 用来下发视频
+	db       *gorm.DB
+	llm      *llm.Client
+	videos   *VideoService    // director 用来下发视频
+	discover *DiscoverService // analyst 用来取真实榜单候选
 }
 
-func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService) *AgentService {
-	return &AgentService{db: db, llm: l, videos: videos}
+func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService) *AgentService {
+	return &AgentService{db: db, llm: l, videos: videos, discover: discover}
 }
 
 var validAgents = map[string]bool{
@@ -130,49 +132,165 @@ func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
 }
 
 // ── Analyst ─────────────────────────────────────────────────────────────────
+//
+// 选品分析基于 discover_products 真实榜单数据(EchoTik 定时同步/按需拉取落库),
+// LLM 只负责"从候选中筛选 + 给理由",指标(ROI/毛利/趋势)全部由既有换算函数得出,不让模型编数。
 
 const analystSystem = `你是 OneClaw 的"选品分析 Agent"。
-你的任务是基于用户的需求描述，给出 3-5 个跨境电商高潜力选品建议。
+下面会给你一份 TikTok Shop 真实热销榜单（EchoTik 数据），请结合用户需求从中筛选 3-5 个最值得做的商品。
 
 强制要求：
+- 只能从给定榜单中选，externalId 必须原样引用，**绝对不要**编造榜单外的商品或任何数字
+- recommended=true 的商品最多 2 个
+- reason 是 30 字以内的中文推荐理由，要结合给定的销量/佣金/达人覆盖等数字
 - 必须用合法 JSON 输出，**绝对不要**有 markdown 代码块或额外解释
-- 价格 / 成本必须是美元，转成"美分"整数（如 24.99 美元 → 2499）
-- ROI 评分 0-100，越高越值得做
-- trendDelta 是过去 14 天热度变化百分比（正/负整数）
-- recommended=true 的产品最多 2 个
 
 输出严格遵循这个 schema：
 {
   "summary": "一段不超过 120 字的整体洞察",
-  "products": [
-    { "title": "英文商品名+关键参数", "category": "中文品类", "emoji": "单个emoji",
-      "priceCents": 2499, "costCents": 620, "marginPct": 62, "roiScore": 94,
-      "monthlySales": 12400, "trendDelta": 218, "note": "30字以内理由", "recommended": true }
+  "picks": [
+    { "externalId": "1729384756", "reason": "30字以内理由", "recommended": true }
   ]
 }`
 
 type analystOut struct {
-	Summary  string `json:"summary"`
-	Products []struct {
-		Title        string `json:"title"`
-		Category     string `json:"category"`
-		Emoji        string `json:"emoji"`
-		PriceCents   int    `json:"priceCents"`
-		CostCents    int    `json:"costCents"`
-		MarginPct    int    `json:"marginPct"`
-		RoiScore     int    `json:"roiScore"`
-		MonthlySales int    `json:"monthlySales"`
-		TrendDelta   int    `json:"trendDelta"`
-		Note         string `json:"note"`
-		Recommended  bool   `json:"recommended"`
-	} `json:"products"`
+	Summary string `json:"summary"`
+	Picks   []struct {
+		ExternalID  string `json:"externalId"`
+		Reason      string `json:"reason"`
+		Recommended bool   `json:"recommended"`
+	} `json:"picks"`
+}
+
+// regionKeywords 用户输入 → 目标区域(命中即追加,无命中默认 US)。
+var regionKeywords = []struct {
+	kw      string
+	regions []string
+}{
+	{"东南亚", []string{"ID", "TH", "VN"}},
+	{"美国", []string{"US"}},
+	{"印尼", []string{"ID"}},
+	{"印度尼西亚", []string{"ID"}},
+	{"泰国", []string{"TH"}},
+	{"越南", []string{"VN"}},
+	{"马来", []string{"MY"}},
+	{"菲律宾", []string{"PH"}},
+	{"新加坡", []string{"SG"}},
+	{"英国", []string{"GB"}},
+}
+
+func detectRegions(input string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, e := range regionKeywords {
+		if strings.Contains(input, e.kw) {
+			for _, r := range e.regions {
+				if !seen[r] {
+					seen[r] = true
+					out = append(out, r)
+				}
+			}
+		}
+	}
+	if len(out) == 0 {
+		out = []string{"US"}
+	}
+	return out
+}
+
+// analystCandidates 取近 72h 抓取过的热销商品(72h 与 EchoTik 日期回退 T-1→T-3 对齐)。
+func (s *AgentService) analystCandidates(ctx context.Context, regions []string, limit int) ([]model.DiscoverProduct, error) {
+	var dps []model.DiscoverProduct
+	err := s.db.WithContext(ctx).
+		Where("provider = ? AND region IN ? AND last_fetched_at > ?", "echotik", regions, time.Now().Add(-72*time.Hour)).
+		Order("total_sale_cnt DESC").
+		Limit(limit).
+		Find(&dps).Error
+	return dps, err
+}
+
+// ranklistFacts 把候选商品压成编号事实块,每商品一行,供 LLM 筛选。
+func ranklistFacts(dps []model.DiscoverProduct) string {
+	var b strings.Builder
+	for i, dp := range dps {
+		fmt.Fprintf(&b, "#%d id=%s | %s | %s | 均价$%.2f | 佣金%.1f%% | 销量%d | GMV$%.0f | 达人%d | 视频%d\n",
+			i+1, dp.ExternalID, dp.Name, dp.Region,
+			float64(dp.AvgPriceCents)/100, dp.CommissionRate,
+			dp.TotalSaleCnt, float64(dp.TotalSaleGmv)/100,
+			dp.TotalIflCnt, dp.TotalVideoCnt)
+	}
+	return b.String()
+}
+
+// snapshotTrendDelta 批量算每个商品最近两条每日快照的销量变化百分比;不足两天置 0。
+func (s *AgentService) snapshotTrendDelta(ctx context.Context, dpIDs []uuid.UUID) map[uuid.UUID]int {
+	out := make(map[uuid.UUID]int, len(dpIDs))
+	if len(dpIDs) == 0 {
+		return out
+	}
+	var snaps []model.DiscoverSnapshot
+	if err := s.db.WithContext(ctx).
+		Where("discover_product_id IN ?", dpIDs).
+		Order("discover_product_id, dt DESC").
+		Find(&snaps).Error; err != nil {
+		return out
+	}
+	latest := map[uuid.UUID][]int{}
+	for _, sn := range snaps {
+		if len(latest[sn.DiscoverProductID]) < 2 {
+			latest[sn.DiscoverProductID] = append(latest[sn.DiscoverProductID], sn.TotalSaleCnt)
+		}
+	}
+	for id, vals := range latest {
+		if len(vals) == 2 && vals[1] > 0 {
+			out[id] = (vals[0] - vals[1]) * 100 / vals[1]
+		}
+	}
+	return out
+}
+
+// ensureCandidates 候选为空时的兜底:live 配置现场刷一次榜单;mock 模式触发 mock 落库。
+func (s *AgentService) ensureCandidates(ctx context.Context, regions []string, limit int) ([]model.DiscoverProduct, error) {
+	dps, err := s.analystCandidates(ctx, regions, limit)
+	if err != nil || len(dps) > 0 {
+		return dps, err
+	}
+	p := echotik.RanklistParams{Region: regions[0], RankType: 1, RankField: 1, PageSize: 30}
+	if s.discover.echo.Configured() {
+		if _, err := s.discover.RefreshRanklist(ctx, p); err != nil {
+			logger.Warn("[agent] analyst 现场刷新榜单失败", logger.Err(err))
+		}
+	} else {
+		// mock 模式:Ranklist 会把预置商品 upsert 进 discover_products,本地无凭证也能演示。
+		if _, err := s.discover.Ranklist(ctx, uuid.Nil, p); err != nil {
+			logger.Warn("[agent] analyst mock 榜单落库失败", logger.Err(err))
+		}
+	}
+	return s.analystCandidates(ctx, regions, limit)
 }
 
 func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input string) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请在服务端 .env 设置 OPENROUTER_API_KEY")
 	}
-	res, err := s.llm.Chat(ctx, analystSystem, input, true, 1800)
+
+	regions := detectRegions(input)
+	candidates, err := s.ensureCandidates(ctx, regions, 30)
+	if err != nil {
+		return "", nil, llm.Usage{}, fmt.Errorf("查询选品候选失败: %w", err)
+	}
+	if len(candidates) == 0 {
+		// 数据未就绪不算系统错误:DONE + 引导,不回退编造模式(避免污染选品库)。
+		return "选品榜单数据暂未就绪。请先到【发现 → 商品】浏览一次榜单，或稍后重试。", nil, llm.Usage{}, nil
+	}
+	byExternalID := make(map[string]model.DiscoverProduct, len(candidates))
+	for _, dp := range candidates {
+		byExternalID[dp.ExternalID] = dp
+	}
+
+	user := fmt.Sprintf("用户需求：%s\n\n候选榜单（%s 近 3 日热销，按销量降序）：\n%s",
+		input, strings.Join(regions, "/"), ranklistFacts(candidates))
+	res, err := s.llm.Chat(ctx, analystSystem, user, true, 1800)
 	if err != nil {
 		return "", nil, llm.Usage{}, err
 	}
@@ -180,37 +298,97 @@ func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input str
 	if err := json.Unmarshal([]byte(llm.ExtractJSON(res.Content)), &out); err != nil {
 		return "", nil, llm.Usage{}, fmt.Errorf("解析模型输出失败: %w", err)
 	}
-	if len(out.Products) == 0 {
-		return "", nil, llm.Usage{}, fmt.Errorf("模型未给出任何选品")
+
+	// 防幻觉:externalId 必须在候选内,找不到的丢弃。
+	type pick struct {
+		dp          model.DiscoverProduct
+		reason      string
+		recommended bool
+	}
+	var picks []pick
+	for _, p := range out.Picks {
+		dp, ok := byExternalID[strings.TrimSpace(p.ExternalID)]
+		if !ok {
+			logger.Warn("[agent] analyst 丢弃榜单外 externalId", logger.String("id", p.ExternalID))
+			continue
+		}
+		picks = append(picks, pick{dp: dp, reason: p.Reason, recommended: p.Recommended})
+	}
+	if len(picks) == 0 {
+		return "", nil, llm.Usage{}, fmt.Errorf("模型未给出有效选品")
 	}
 
-	// 写入选品库
+	dpIDs := make([]uuid.UUID, len(picks))
+	for i, p := range picks {
+		dpIDs[i] = p.dp.ID
+	}
+	trendByID := s.snapshotTrendDelta(ctx, dpIDs)
+
+	// 写入选品库:指标用既有换算函数,不采信模型数字;同款已存在(唯一索引)则视为重新评估走更新。
 	type created struct {
-		ID       string `json:"id"`
-		Title    string `json:"title"`
-		RoiScore int    `json:"roiScore"`
+		ID          string `json:"id"`
+		Title       string `json:"title"`
+		RoiScore    int    `json:"roiScore"`
+		Recommended bool   `json:"recommended"`
+		Reason      string `json:"reason"`
+		ExternalID  string `json:"externalId"`
+		Region      string `json:"region"`
 	}
 	var createdList []created
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for _, p := range out.Products {
-			emoji := p.Emoji
+		for _, p := range picks {
+			dp := p.dp
 			status := model.ProductEvaluating
-			if p.Recommended {
+			if p.recommended {
 				status = model.ProductRecommended
 			}
-			prod := model.Product{
-				WorkspaceID: wsID, Title: p.Title, Category: p.Category, Emoji: &emoji,
-				PriceCents: p.PriceCents, CostCents: p.CostCents, MarginPct: p.MarginPct,
-				RoiScore: p.RoiScore, MonthlySales: p.MonthlySales, TrendDelta: p.TrendDelta,
-				Status: status,
+			priceCents := dp.AvgPriceCents
+			costCents := echotik.EstimateCostCents(priceCents)
+			roi := echotik.RoiScore(dp.TotalSaleCnt, dp.TotalIflCnt)
+			note := p.reason + " · 来自 EchoTik " + dp.Region
+			emoji := echotik.GuessEmoji(dp.Name)
+
+			var existing model.Product
+			e := tx.Where("workspace_id = ? AND discover_product_id = ?", wsID, dp.ID).First(&existing).Error
+			switch {
+			case e == nil:
+				if err := tx.Model(&existing).Updates(map[string]any{
+					"status": status, "note": note, "roi_score": roi,
+					"monthly_sales": dp.TotalSaleCnt, "trend_delta": trendByID[dp.ID],
+				}).Error; err != nil {
+					return err
+				}
+				createdList = append(createdList, created{
+					ID: existing.ID.String(), Title: existing.Title, RoiScore: roi,
+					Recommended: p.recommended, Reason: p.reason, ExternalID: dp.ExternalID, Region: dp.Region,
+				})
+			case errors.Is(e, gorm.ErrRecordNotFound):
+				dpID := dp.ID
+				prod := model.Product{
+					WorkspaceID:       wsID,
+					DiscoverProductID: &dpID,
+					Title:             dp.Name,
+					Category:          "TikTok Shop 爆品",
+					Emoji:             &emoji,
+					PriceCents:        priceCents,
+					CostCents:         costCents,
+					MarginPct:         echotik.EstimateMarginPct(priceCents, costCents),
+					RoiScore:          roi,
+					MonthlySales:      dp.TotalSaleCnt,
+					TrendDelta:        trendByID[dp.ID],
+					Status:            status,
+					Note:              &note,
+				}
+				if err := tx.Create(&prod).Error; err != nil {
+					return err
+				}
+				createdList = append(createdList, created{
+					ID: prod.ID.String(), Title: prod.Title, RoiScore: roi,
+					Recommended: p.recommended, Reason: p.reason, ExternalID: dp.ExternalID, Region: dp.Region,
+				})
+			default:
+				return e
 			}
-			if p.Note != "" {
-				prod.Note = &p.Note
-			}
-			if err := tx.Create(&prod).Error; err != nil {
-				return err
-			}
-			createdList = append(createdList, created{ID: prod.ID.String(), Title: p.Title, RoiScore: p.RoiScore})
 		}
 		return nil
 	})
@@ -219,20 +397,20 @@ func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input str
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "🔎 分析师扫描到 %d 个匹配项：\n\n", len(out.Products))
-	for i, p := range out.Products {
-		emoji := p.Emoji
-		if emoji == "" {
-			emoji = "📦"
-		}
-		fmt.Fprintf(&b, "%02d. %s %s · ROI %d · 月销 %d · 毛利 %d%%", i+1, emoji, p.Title, p.RoiScore, p.MonthlySales, p.MarginPct)
-		if p.Recommended {
+	fmt.Fprintf(&b, "🔎 分析师从 %d 个真实热销品中筛出 %d 个匹配项：\n\n", len(candidates), len(picks))
+	for i, p := range picks {
+		dp := p.dp
+		fmt.Fprintf(&b, "%02d. %s %s [%s] · ROI %d · 销量 %d · 佣金 %.1f%%",
+			i+1, echotik.GuessEmoji(dp.Name), dp.Name, dp.Region,
+			echotik.RoiScore(dp.TotalSaleCnt, dp.TotalIflCnt), dp.TotalSaleCnt, dp.CommissionRate)
+		if p.recommended {
 			b.WriteString(" · ⭐ 推荐")
 		}
-		b.WriteString("\n")
+		fmt.Fprintf(&b, "\n    %s\n", p.reason)
 	}
-	fmt.Fprintf(&b, "\n→ %s\n\n已自动写入【选品库】。", out.Summary)
+	fmt.Fprintf(&b, "\n→ %s\n\n已自动写入【选品库】。基于 EchoTik %s 近 3 日真实热销榜筛选。",
+		out.Summary, strings.Join(regions, "/"))
 
-	meta := map[string]any{"products": createdList, "summary": out.Summary}
+	meta := map[string]any{"source": "discover.ranklist", "products": createdList, "summary": out.Summary}
 	return b.String(), meta, res.Usage, nil
 }

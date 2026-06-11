@@ -95,6 +95,23 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 	return &RanklistResult{State: state, FetchedAt: fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
 }
 
+// RefreshRanklist 强制拉取并落库(定时预热用):跳过缓存检查、不做工作台装饰。
+// 走 persist 既有路径,刷新后 6h 内用户请求命中缓存。返回落库条数。
+func (s *DiscoverService) RefreshRanklist(ctx context.Context, p echotik.RanklistParams) (int, error) {
+	if !s.echo.Configured() {
+		return 0, errors.New("echotik 未配置")
+	}
+	if p.PageSize <= 0 {
+		p.PageSize = 10
+	}
+	raw, err := s.echo.GetProductRanklist(ctx, p)
+	if err != nil {
+		return 0, err
+	}
+	dps := s.persist(ctx, p, raw, p.CategoryID == "")
+	return len(dps), nil
+}
+
 func (s *DiscoverService) fetchRaw(ctx context.Context, p echotik.RanklistParams) ([]echotik.ProductListItem, error) {
 	if !s.echo.Configured() {
 		return echotik.MockRanklist(p.Region, p.PageSize), nil

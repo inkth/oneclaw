@@ -21,12 +21,13 @@ type Config struct {
 	Cookie    CookieConfig
 	RateLimit RateLimitConfig
 	SMS       SMSConfig
-	EchoTik    EchoTikConfig
-	Storage    StorageConfig
-	OpenRouter OpenRouterConfig
-	Fal        FalConfig
-	CORS       CORSConfig
-	Log        LogConfig
+	EchoTik      EchoTikConfig
+	DiscoverSync DiscoverSyncConfig
+	Storage      StorageConfig
+	OpenRouter   OpenRouterConfig
+	Fal          FalConfig
+	CORS         CORSConfig
+	Log          LogConfig
 }
 
 type ServerConfig struct {
@@ -95,6 +96,22 @@ type EchoTikConfig struct {
 }
 
 func (e EchoTikConfig) Configured() bool { return e.Username != "" && e.Password != "" }
+
+// DiscoverSyncConfig 选品榜单定时同步:预热榜单缓存 + 保证每日快照连续。
+// 仅在 EchoTik 已配置时生效(mock 模式无预热价值)。
+type DiscoverSyncConfig struct {
+	Enabled  bool
+	Interval time.Duration // 与榜单缓存 TTL(6h)对齐
+	Combos   []SyncCombo   // 抓取的 region × 榜单组合
+	PageSize int           // 每榜抓取条数
+}
+
+// SyncCombo 一组榜单抓取参数。RankType/RankField 取值见 echotik 包枚举(1=热销榜/销量)。
+type SyncCombo struct {
+	Region    string
+	RankType  int
+	RankField int
+}
 
 // StorageConfig 腾讯云 COS 对象存储(素材 / 视频转存)。
 type StorageConfig struct {
@@ -185,6 +202,12 @@ func Load() *Config {
 			Username: getEnv("ECHOTIK_USERNAME", ""),
 			Password: getEnv("ECHOTIK_PASSWORD", ""),
 		},
+		DiscoverSync: DiscoverSyncConfig{
+			Enabled:  getEnvBool("DISCOVER_SYNC_ENABLED", true),
+			Interval: time.Duration(getEnvInt("DISCOVER_SYNC_INTERVAL_HOURS", 6)) * time.Hour,
+			Combos:   parseSyncCombos(getEnv("DISCOVER_SYNC_COMBOS", "US,ID,TH,VN")),
+			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 30),
+		},
 		Storage: StorageConfig{
 			COSBucket:    getEnv("TENCENT_COS_BUCKET", ""),
 			COSRegion:    getEnv("TENCENT_COS_REGION", ""),
@@ -255,6 +278,35 @@ func getEnvBool(key string, def bool) bool {
 		}
 	}
 	return def
+}
+
+// parseSyncCombos 解析 "US,ID:1:1,TH" 形态:每段 region[:rankType[:rankField]],
+// 后两段省略默认 1(热销榜×销量)。非法段跳过;全空保底 US 热销榜。
+func parseSyncCombos(s string) []SyncCombo {
+	var out []SyncCombo
+	for _, part := range splitCSV(s) {
+		seg := strings.Split(part, ":")
+		region := strings.ToUpper(strings.TrimSpace(seg[0]))
+		if region == "" {
+			continue
+		}
+		c := SyncCombo{Region: region, RankType: 1, RankField: 1}
+		if len(seg) > 1 {
+			if n, err := strconv.Atoi(strings.TrimSpace(seg[1])); err == nil && n > 0 {
+				c.RankType = n
+			}
+		}
+		if len(seg) > 2 {
+			if n, err := strconv.Atoi(strings.TrimSpace(seg[2])); err == nil && n > 0 {
+				c.RankField = n
+			}
+		}
+		out = append(out, c)
+	}
+	if len(out) == 0 {
+		out = []SyncCombo{{Region: "US", RankType: 1, RankField: 1}}
+	}
+	return out
 }
 
 func splitCSV(s string) []string {

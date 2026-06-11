@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bot, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { ArrowRight, Bot, ChevronDown, ChevronUp, Loader2, Package, Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import {
   AGENT_IDENTITY,
@@ -23,6 +23,16 @@ export type StreamTask = {
   metadata?: {
     /** REVIEW 任务:完整复盘结果,流内还原仪表盘。 */
     review?: ReviewResult;
+    /** ANALYST 任务:写入选品库的商品,externalId 存在时可跳转发现页详情。 */
+    products?: {
+      id: string;
+      title: string;
+      roiScore: number;
+      recommended?: boolean;
+      reason?: string;
+      externalId?: string;
+      region?: string;
+    }[];
   } | null;
   createdAt: string;
 };
@@ -110,6 +120,40 @@ function AgentBubble({
   );
 }
 
+/** ANALYST 选品结果:商品 chip 行,有 externalId 时可点击跳发现页详情。 */
+function ProductChips({ products }: { products: NonNullable<NonNullable<StreamTask["metadata"]>["products"]> }) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {products.map((p) => {
+        const body = (
+          <>
+            <Package className="h-3 w-3 shrink-0 text-brand-600" />
+            <span className="max-w-[180px] truncate font-medium">{p.title}</span>
+            <span className="text-zinc-400">ROI {p.roiScore}</span>
+            {p.recommended && <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />}
+          </>
+        );
+        const cls =
+          "inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-700";
+        return p.externalId ? (
+          <Link
+            key={p.id}
+            href={`/app/discover/products/${p.externalId}?region=${p.region ?? "US"}`}
+            title={p.reason}
+            className={`${cls} transition-colors hover:border-brand-300 hover:text-brand-700`}
+          >
+            {body}
+          </Link>
+        ) : (
+          <span key={p.id} title={p.reason} className={cls}>
+            {body}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const review = task.agent === "REVIEW" ? task.metadata?.review : undefined;
@@ -146,6 +190,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                 {expanded ? "收起" : "展开全部"}
               </button>
             )}
+            {!!task.metadata?.products?.length && <ProductChips products={task.metadata.products} />}
             {review && (
               <button
                 onClick={() => setDashOpen((v) => !v)}
