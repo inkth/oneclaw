@@ -32,7 +32,6 @@ var validAgents = map[string]bool{
 	model.AgentAnalyst:  true,
 	model.AgentDirector: true,
 	model.AgentListing:  true,
-	model.AgentTeam:     true,
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
@@ -79,12 +78,7 @@ func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.
 
 // execute 后台执行单个任务。任何 panic/错误都落库为 FAILED。
 func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
-	// TEAM 串行跑三个 Agent,放宽超时。
-	timeout := 2 * time.Minute
-	if agent == model.AgentTeam {
-		timeout = 6 * time.Minute
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	defer func() {
 		if r := recover(); r != nil {
@@ -109,8 +103,6 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
 		output, meta, usage, err = s.runDirector(ctx, wsID, input)
 	case model.AgentListing:
 		output, meta, usage, err = s.runListing(ctx, wsID, input)
-	case model.AgentTeam:
-		output, meta, usage, err = s.runTeam(ctx, taskID, wsID, input)
 	default:
 		err = fmt.Errorf("agent %s 尚未在 Go 端实现", agent)
 	}

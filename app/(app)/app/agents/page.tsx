@@ -25,7 +25,7 @@ export default async function AgentsPage() {
             AI Agent
           </span>
         }
-        description="选品分析 / 短视频创作 / Listing 内容,或交给全链路小队串行交付。全部任务历史都在这里。"
+        description="选品分析 / 短视频创作 / Listing 内容 / 投放复盘,全部任务历史都在这里。"
       />
       <Workbench workspaceId={ws?.id ?? ""} isGuest={!ws} initialTasks={tasks} />
     </div>

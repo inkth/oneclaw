@@ -48,7 +48,7 @@ export function Team() {
           </div>
           <h2 className="text-display-sm mt-3">四位全职 Agent，7×24 在线</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            像招了一支老练的小队——不休假、不离职，还能组成「全链路小队」从选品到出片串行接力。
+            像招了四位老练的同事——不休假、不离职，一句话就能派活。
           </p>
         </div>
 

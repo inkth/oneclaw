@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bot, Check, ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
+import { ArrowRight, Bot, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import {
   AGENT_IDENTITY,
@@ -21,7 +21,6 @@ export type StreamTask = {
   output?: string | null;
   errorMessage?: string | null;
   metadata?: {
-    steps?: { key: string; label: string; status: string }[];
     /** REVIEW 任务:完整复盘结果,流内还原仪表盘。 */
     review?: ReviewResult;
   } | null;
@@ -111,39 +110,6 @@ function AgentBubble({
   );
 }
 
-/** TEAM 任务的接力进度:metadata.steps 渲染为 ✓ / 转圈 / ✗ 一行。 */
-function TeamSteps({ steps }: { steps: { key: string; label: string; status: string }[] }) {
-  return (
-    <div className="mb-2 flex flex-wrap items-center gap-1.5">
-      {steps.map((s, i) => (
-        <span key={s.key} className="inline-flex items-center gap-1.5">
-          {i > 0 && <span className="text-zinc-300">→</span>}
-          <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium ${
-              s.status === "DONE"
-                ? "border-emerald-100 bg-emerald-50 text-emerald-700"
-                : s.status === "RUNNING"
-                  ? "border-amber-100 bg-amber-50 text-amber-700"
-                  : s.status === "FAILED"
-                    ? "border-rose-100 bg-rose-50 text-rose-700"
-                    : "border-zinc-200 bg-zinc-50 text-zinc-400"
-            }`}
-          >
-            {s.status === "DONE" ? (
-              <Check className="h-3 w-3" />
-            ) : s.status === "RUNNING" ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : s.status === "FAILED" ? (
-              <X className="h-3 w-3" />
-            ) : null}
-            {s.label}
-          </span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const review = task.agent === "REVIEW" ? task.metadata?.review : undefined;
@@ -153,13 +119,11 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   const output = task.output ?? "";
   const long = output.length > OUTPUT_COLLAPSE_LIMIT;
   const shown = !long || expanded ? output : output.slice(0, OUTPUT_COLLAPSE_LIMIT) + "…";
-  const steps = task.metadata?.steps;
 
   return (
     <div className="space-y-2">
       <UserBubble>{task.input}</UserBubble>
       <AgentBubble agent={task.agent} status={task.status}>
-        {Array.isArray(steps) && steps.length > 0 && <TeamSteps steps={steps} />}
         {active ? (
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

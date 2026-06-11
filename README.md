@@ -14,7 +14,6 @@ Next.js 16 App Router + Tailwind v4 + Prisma 6 + Auth.js v5 + Postgres。
   - **短视频创作（DIRECTOR）** —— AI 自选叙事角度，写脚本 + 生成封面 + 提交 5s 视频生成任务，单条出片
   - **Listing 内容（LISTING）** —— 标题 / 五点卖点 / A+ 文案 / 主图出图 prompt
   - **投放复盘（REVIEW）** —— 上传 GMVMax 投流报表，产出 ROI 四象限与预算建议
-  - **全链路小队（TEAM）** —— 单任务内串行接力：选品分析 → 短视频创作
 - ⏳ **异步执行**：`POST /agent-tasks` 立即返回 `QUEUED` 任务，`after()` 后台执行，前端每 2.5s 轮询任务状态，视频生成每 8s 轮询生成队列
 - 📡 **API**：见下表
 - 🧑‍💻 **/app 工作台**：概览（任务/选品/视频统计）、选品库、短视频墙（含视频内联播放）、Agent Runner、设置

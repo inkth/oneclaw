@@ -106,7 +106,7 @@ export function HomeHero() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base text-zinc-600 text-cjk-relaxed sm:text-lg">
-            选品、做视频、看投放复盘——交给你的 AI Agent 小队接力完成。
+            选品、做视频、看投放复盘——都交给你的 AI Agent，上一步的结果就是下一步的起点。
             <br className="hidden sm:block" />
             哪怕你是第一次做跨境电商。
           </p>

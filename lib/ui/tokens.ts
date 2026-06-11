@@ -6,7 +6,6 @@ import {
   Clapperboard,
   LayoutList,
   TrendingUp,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -34,7 +33,6 @@ export const AGENT_IDENTITY = {
   ANALYST: { label: "选品分析", icon: TrendingUp as LucideIcon, tone: "brand" as Tone, dot: "bg-brand-500" },
   DIRECTOR: { label: "短视频创作", icon: Clapperboard as LucideIcon, tone: "violet" as Tone, dot: "bg-violet-500" },
   LISTING: { label: "Listing 内容", icon: LayoutList as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },
-  TEAM: { label: "全链路小队", icon: Users as LucideIcon, tone: "warning" as Tone, dot: "bg-amber-500" },
   REVIEW: { label: "投放复盘", icon: BarChart3 as LucideIcon, tone: "success" as Tone, dot: "bg-emerald-500" },
 } as const;
 

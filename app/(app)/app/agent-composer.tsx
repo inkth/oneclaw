@@ -8,23 +8,16 @@ import {
   Plus,
   Send,
   Sparkles,
-  Users,
   X,
 } from "lucide-react";
 import { type ReviewResult } from "@/lib/review/types";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
-import { Popover } from "@/components/ui/Popover";
 import { type StreamTask } from "./task-stream";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
-export type ComposerKind =
-  | "ANALYST"
-  | "DIRECTOR"
-  | "LISTING"
-  | "TEAM"
-  | "REVIEW";
+export type ComposerKind = "ANALYST" | "DIRECTOR" | "LISTING" | "REVIEW";
 
-/** 胶囊行展示的链路 Agent(TEAM 走右下角「Agent 团队」入口,不占胶囊位)。 */
+/** 胶囊行展示的 Agent。 */
 const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
   (kind) => ({ kind: kind as ComposerKind, ...AGENT_IDENTITY[kind] }),
 );
@@ -33,7 +26,6 @@ const PLACEHOLDERS: Record<ComposerKind, string> = {
   ANALYST: "例:东南亚母婴本周新爆品,毛利 40%+,月销 2K+",
   DIRECTOR: "例:为推荐榜首产品生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感",
   LISTING: "例:为「便携榨汁杯」生成 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案",
-  TEAM: "输入一个品类或目标,小队依次完成:选品 → 短视频。例:宠物用品,主攻北美市场",
   REVIEW: "点左下角「+ 添加」上传 GMVMax 投放报表(.csv / .xlsx),即可开始复盘",
 };
 
@@ -75,8 +67,8 @@ export function AgentPills({
 
 /**
  * 工作台核心:对标竞品的超大输入卡。
- * 一个输入框统一所有流程——异步 Agent 派活、上传报表触发同步复盘、小队串行编排;
- * 左下「+ 添加」收附件,右下「Agent 团队」+ 黑色发送。
+ * 一个输入框统一所有流程——异步 Agent 派活、上传报表触发同步复盘;
+ * 左下「+ 添加」收附件,右下黑色发送。
  * 派活成功 / 复盘完成都通过回调交给上层会话流(TaskStream)渲染。
  */
 export function AgentComposer({
@@ -108,7 +100,6 @@ export function AgentComposer({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isReview = activeAgent === "REVIEW";
-  const isTeam = activeAgent === "TEAM";
   const placeholder =
     isReview && attachedFile
       ? "可补充说明(选填),例:重点看 ROI 低于 2 的素材该停还是改"
@@ -221,21 +212,6 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
-        {/* 小队模式横幅 */}
-        {isTeam && (
-          <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50/60 px-4 py-2 text-xs text-amber-800">
-            <Users className="h-3.5 w-3.5" />
-            小队模式:选品 → 短视频 串行执行,一次输入全链路交付
-            <button
-              onClick={() => onAgentChange("ANALYST")}
-              className="ml-auto rounded-full p-1 text-amber-500 hover:bg-amber-100 hover:text-amber-700"
-              aria-label="退出小队模式"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-
         {/* 附件 chip:报表文件 + 内联 ROI 目标 */}
         {attachedFile && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
@@ -277,7 +253,7 @@ export function AgentComposer({
           className="w-full resize-none bg-transparent px-4 py-3.5 text-sm leading-relaxed outline-none placeholder:text-zinc-400"
         />
 
-        {/* 底栏:左「+ 添加」附件,右「Agent 团队」+ 黑色发送 */}
+        {/* 底栏:左「+ 添加」附件,右黑色发送 */}
         <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
           <input
             ref={fileRef}
@@ -301,39 +277,6 @@ export function AgentComposer({
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 发送</span>
-            <Popover
-              align="end"
-              trigger={({ open }) => (
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                    isTeam || open
-                      ? "border-amber-200 bg-amber-50 text-amber-700"
-                      : "border-black/10 bg-white text-zinc-600 hover:border-black/20 hover:text-ink"
-                  }`}
-                >
-                  <Users className="h-3.5 w-3.5" />
-                  Agent 团队
-                </span>
-              )}
-            >
-              {({ close }) => (
-                <button
-                  onClick={() => {
-                    onAgentChange("TEAM");
-                    close();
-                  }}
-                  className="block w-64 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-zinc-50"
-                >
-                  <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
-                    <Users className="h-4 w-4 text-amber-500" />
-                    爆品全链路小队
-                  </span>
-                  <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
-                    选品分析 → 短视频创作,两位 Agent 串行接力,一句话从选品到成片。
-                  </span>
-                </button>
-              )}
-            </Popover>
             <button
               onClick={submit}
               disabled={submitting || !canSend}

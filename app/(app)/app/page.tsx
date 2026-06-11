@@ -1,10 +1,24 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { Workbench } from "./workbench";
+import { type ComposerKind } from "./agent-composer";
 import { type StreamTask } from "./task-stream";
 
 export const metadata = { title: "工作台 · OneClaw" };
 
-export default async function DashboardPage() {
+const COMPOSER_KINDS = new Set(["ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  // 其他页面可带 ?agent=DIRECTOR&prompt=… 接力进工作台(如选品库「为它做视频」)。
+  const sp = await searchParams;
+  const initialAgent = COMPOSER_KINDS.has(sp.agent ?? "")
+    ? (sp.agent as ComposerKind)
+    : undefined;
+  const initialInput = sp.prompt || undefined;
+
   // 游客可浏览;无工作台时各项为空。
   const me = await getMe();
   const user = me?.user ?? null;
@@ -50,6 +64,8 @@ export default async function DashboardPage() {
         showPresets={!!workspace && isFresh}
         initialTasks={tasks}
         streamLimit={8}
+        initialAgent={initialAgent}
+        initialInput={initialInput}
       />
     </div>
   );

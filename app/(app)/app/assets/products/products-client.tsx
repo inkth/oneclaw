@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, RotateCcw, Trash2, Loader2, Package } from "lucide-react";
+import { Archive, Clapperboard, RotateCcw, Trash2, Loader2, Package } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -33,6 +33,13 @@ const statusMap: Record<Status, { label: string; cls: string }> = {
   EVALUATING: { label: "评估中", cls: "bg-amber-50 text-amber-700" },
   ARCHIVED: { label: "已归档", cls: "bg-zinc-100 text-zinc-500" },
 };
+
+// 选品 → 创作的接力:带着产品上下文跳到工作台,预选短视频创作并预填指令。
+function videoPromptFor(p: Product): string {
+  const price = `售价 $${(p.priceCents / 100).toFixed(2)},毛利 ${p.marginPct}%`;
+  const selling = p.note ? `卖点参考:${p.note}。` : "";
+  return `为「${p.title}」(${p.category})生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感。${price}。${selling}`;
+}
 
 const filters: Array<{ key: "ALL" | Status; label: string }> = [
   { key: "ALL", label: "全部" },
@@ -193,6 +200,20 @@ export function ProductsClient({
                   </Td>
                   <Td>
                     <div className="flex items-center justify-end gap-1.5">
+                      {p.status !== "ARCHIVED" && (
+                        <button
+                          onClick={() =>
+                            router.push(
+                              `/app?agent=DIRECTOR&prompt=${encodeURIComponent(videoPromptFor(p))}`,
+                            )
+                          }
+                          className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-2xs font-medium text-brand-700 hover:bg-brand-100"
+                          title="带着这个产品的上下文去做短视频"
+                        >
+                          <Clapperboard className="h-2.5 w-2.5" />
+                          为它做视频
+                        </button>
+                      )}
                       {p.status === "ARCHIVED" ? (
                         <button
                           onClick={() => patchProduct(p.id, { status: "EVALUATING" })}

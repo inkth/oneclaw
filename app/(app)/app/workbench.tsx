@@ -19,6 +19,8 @@ export function Workbench({
   showPresets = false,
   initialTasks = [],
   streamLimit,
+  initialAgent,
+  initialInput,
 }: {
   workspaceId: string;
   isGuest?: boolean;
@@ -28,12 +30,21 @@ export function Workbench({
   initialTasks?: StreamTask[];
   /** 流最多展示几条,溢出显示「查看全部」(首页传,全量页不传)。 */
   streamLimit?: number;
+  /** 从其他页面接力进来时预选的 Agent 与预填指令(如选品库「为它做视频」)。 */
+  initialAgent?: ComposerKind;
+  initialInput?: string;
 }) {
-  const [activeAgent, setActiveAgent] = useState<ComposerKind>("ANALYST");
-  const [input, setInput] = useState("");
+  const [activeAgent, setActiveAgent] = useState<ComposerKind>(initialAgent ?? "ANALYST");
+  const [input, setInput] = useState(initialInput ?? "");
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 带指令接力进来时(如选品库跳转),光标直接落到输入框,看一眼就能发。
+  useEffect(() => {
+    if (initialInput) textareaRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 有排队/执行中的任务时轮询,全部到达终态自动停。
   const hasActive = tasks.some((t) => t.status === "QUEUED" || t.status === "RUNNING");
