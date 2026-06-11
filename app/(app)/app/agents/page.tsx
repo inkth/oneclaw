@@ -1,5 +1,6 @@
-import { getMe } from "@/lib/api-client";
-import { AgentComposer } from "../agent-composer";
+import { getMe, apiServer } from "@/lib/api-client";
+import { Workbench } from "../workbench";
+import { type StreamTask } from "../task-stream";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Bot } from "lucide-react";
 
@@ -8,6 +9,13 @@ export const metadata = { title: "Agent · OneClaw" };
 export default async function AgentsPage() {
   const me = await getMe();
   const ws = me?.workspace ?? null;
+  let tasks: StreamTask[] = [];
+  if (ws) {
+    const res = await apiServer<{ tasks: StreamTask[] }>(
+      `/workspaces/${ws.id}/agent-tasks`,
+    ).catch(() => ({ tasks: [] as StreamTask[] }));
+    tasks = res.tasks ?? [];
+  }
   return (
     <div className="space-y-6">
       <PageHeader
@@ -17,9 +25,9 @@ export default async function AgentsPage() {
             AI Agent
           </span>
         }
-        description="派发市场分析师 / 创意总监,异步执行后到对应模块查看结果;或上传投流报表做复盘。"
+        description="选品分析 / 短视频创作 / Listing 内容,或交给全链路小队串行交付。全部任务历史都在这里。"
       />
-      <AgentComposer workspaceId={ws?.id ?? ""} isGuest={!ws} />
+      <Workbench workspaceId={ws?.id ?? ""} isGuest={!ws} initialTasks={tasks} />
     </div>
   );
 }
