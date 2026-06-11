@@ -5,9 +5,8 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
   {
     title: "产品",
     links: [
-      { label: "数据洞察", href: "/#insights" },
-      { label: "内容创作", href: "/#content" },
-      { label: "Agent 团队", href: "/#agents" },
+      { label: "全链路", href: "/#chain" },
+      { label: "AI 团队", href: "/#team" },
       { label: "定价方案", href: "/pricing" },
     ],
   },
