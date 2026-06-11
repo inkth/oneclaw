@@ -31,7 +31,6 @@ func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService) *AgentSer
 var validAgents = map[string]bool{
 	model.AgentAnalyst:  true,
 	model.AgentDirector: true,
-	model.AgentOperator: true,
 	model.AgentListing:  true,
 	model.AgentTeam:     true,
 }
@@ -108,8 +107,6 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input)
 	case model.AgentDirector:
 		output, meta, usage, err = s.runDirector(ctx, wsID, input)
-	case model.AgentOperator:
-		output, meta, usage, err = s.runOperator(ctx, wsID, input)
 	case model.AgentListing:
 		output, meta, usage, err = s.runListing(ctx, wsID, input)
 	case model.AgentTeam:

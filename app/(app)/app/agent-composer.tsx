@@ -21,12 +21,11 @@ export type ComposerKind =
   | "ANALYST"
   | "DIRECTOR"
   | "LISTING"
-  | "OPERATOR"
   | "TEAM"
   | "REVIEW";
 
 /** 胶囊行展示的链路 Agent(TEAM 走右下角「Agent 团队」入口,不占胶囊位)。 */
-const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "OPERATOR", "REVIEW"] as const).map(
+const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
   (kind) => ({ kind: kind as ComposerKind, ...AGENT_IDENTITY[kind] }),
 );
 
@@ -34,8 +33,7 @@ const PLACEHOLDERS: Record<ComposerKind, string> = {
   ANALYST: "例:东南亚母婴本周新爆品,毛利 40%+,月销 2K+",
   DIRECTOR: "例:为推荐榜首产品生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感",
   LISTING: "例:为「便携榨汁杯」生成 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案",
-  OPERATOR: "例:把本周视频排到 TikTok / IG / YouTube 三个平台",
-  TEAM: "输入一个品类或目标,小队依次完成:选品 → 短视频 → 排期。例:宠物用品,主攻北美市场",
+  TEAM: "输入一个品类或目标,小队依次完成:选品 → 短视频。例:宠物用品,主攻北美市场",
   REVIEW: "点左下角「+ 添加」上传 GMVMax 投放报表(.csv / .xlsx),即可开始复盘",
 };
 
@@ -227,7 +225,7 @@ export function AgentComposer({
         {isTeam && (
           <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50/60 px-4 py-2 text-xs text-amber-800">
             <Users className="h-3.5 w-3.5" />
-            小队模式:选品 → 短视频 → 排期 串行执行,一次输入全链路交付
+            小队模式:选品 → 短视频 串行执行,一次输入全链路交付
             <button
               onClick={() => onAgentChange("ANALYST")}
               className="ml-auto rounded-full p-1 text-amber-500 hover:bg-amber-100 hover:text-amber-700"
@@ -331,7 +329,7 @@ export function AgentComposer({
                     爆品全链路小队
                   </span>
                   <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
-                    选品分析 → 短视频创作 → 运营排期,三位 Agent 串行接力,一句话交付全链路。
+                    选品分析 → 短视频创作,两位 Agent 串行接力,一句话从选品到成片。
                   </span>
                 </button>
               )}

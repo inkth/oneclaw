@@ -28,7 +28,7 @@ func (s *AgentService) saveTeamSteps(ctx context.Context, taskID uuid.UUID, step
 	}
 }
 
-// runTeam 单任务内串行跑 选品分析 → 短视频创作 → 运营排期,
+// runTeam 单任务内串行跑 选品分析 → 短视频创作,
 // 每步完成即更新 metadata.steps;中途失败保留已完成步骤,整体置 FAILED。
 func (s *AgentService) runTeam(ctx context.Context, taskID, wsID uuid.UUID, input string) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
@@ -38,7 +38,6 @@ func (s *AgentService) runTeam(ctx context.Context, taskID, wsID uuid.UUID, inpu
 	steps := []teamStep{
 		{Key: model.AgentAnalyst, Label: "选品分析", Status: model.TaskRunning},
 		{Key: model.AgentDirector, Label: "短视频创作", Status: model.TaskQueued},
-		{Key: model.AgentOperator, Label: "运营排期", Status: model.TaskQueued},
 	}
 	s.saveTeamSteps(ctx, taskID, steps)
 
@@ -96,23 +95,12 @@ func (s *AgentService) runTeam(ctx context.Context, taskID, wsID uuid.UUID, inpu
 	}
 	addUsage(dUsage)
 	steps[1].Status = model.TaskDone
-	steps[2].Status = model.TaskRunning
 	s.saveTeamSteps(ctx, taskID, steps)
 
-	// Step 3:围绕爆品和新视频排本周三平台日历。
-	oInput := fmt.Sprintf("围绕爆品「%s」和刚生成的视频排本周发布日历。用户目标:%s", topTitle, input)
-	oOut, _, oUsage, err := s.runOperator(ctx, wsID, oInput)
-	if err != nil {
-		return failStep(2, err)
-	}
-	addUsage(oUsage)
-	steps[2].Status = model.TaskDone
-
 	var b strings.Builder
-	b.WriteString("🤝 全链路小队交付完成:选品 → 短视频 → 排期\n\n")
+	b.WriteString("全链路小队交付完成:选品 → 短视频\n\n")
 	b.WriteString("━━ ① 选品分析 ━━\n" + aOut + "\n\n")
-	b.WriteString("━━ ② 短视频创作 ━━\n" + dOut + "\n\n")
-	b.WriteString("━━ ③ 运营排期 ━━\n" + oOut)
+	b.WriteString("━━ ② 短视频创作 ━━\n" + dOut)
 
 	meta := map[string]any{
 		"steps":      steps,
