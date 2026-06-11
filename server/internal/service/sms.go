@@ -51,7 +51,12 @@ func NewSMSService(db *gorm.DB, cfg *config.SMSConfig, dev bool) *SMSService {
 	var sender SMSSender = MockSender{}
 	switch strings.ToLower(strings.TrimSpace(cfg.Provider)) {
 	case "tencent":
-		logger.Warn("[SMS] tencent provider 暂未在 Phase 1 接入,降级到 MockSender")
+		if cfg.TencentConfigured() {
+			sender = TencentSender{cfg: cfg}
+			logger.Info("[SMS] 使用腾讯云短信", zap.String("region", cfg.TencentRegion), zap.String("sign", cfg.TencentSignName))
+		} else {
+			logger.Warn("[SMS] provider=tencent 但凭证不全,降级到 MockSender")
+		}
 	default:
 		logger.Info("[SMS] 使用 MockSender(验证码打印到日志)")
 	}

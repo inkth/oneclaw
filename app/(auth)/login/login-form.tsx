@@ -83,7 +83,7 @@ export function LoginForm() {
         <>
           <div>
             <label className="block text-xs font-medium text-zinc-700">手机号</label>
-            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2.5 focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-300">
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-zinc-200/80 px-3 py-2.5 focus-within:ring-2 focus-within:ring-brand-200 focus-within:border-brand-300">
               <span className="text-sm text-zinc-500">+86</span>
               <input
                 type="tel"
@@ -108,7 +108,7 @@ export function LoginForm() {
           <button
             onClick={sendCode}
             disabled={sending || !phone}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700 hover:shadow-[var(--shadow-brand)] disabled:opacity-60 transition-all"
           >
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
             发送验证码
@@ -144,7 +144,7 @@ export function LoginForm() {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               onKeyDown={(e) => e.key === "Enter" && verifyAndSignIn()}
               placeholder="000000"
-              className="mt-1.5 w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-center font-mono text-lg tracking-[0.5em] outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="mt-1.5 w-full rounded-lg border border-zinc-200/80 px-3 py-2.5 text-center font-mono text-lg tracking-[0.5em] outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
               autoFocus
             />
           </div>
@@ -158,7 +158,7 @@ export function LoginForm() {
           <button
             onClick={verifyAndSignIn}
             disabled={verifying || code.length !== 6}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700 hover:shadow-[var(--shadow-brand)] disabled:opacity-60 transition-all"
           >
             {verifying && <Loader2 className="h-4 w-4 animate-spin" />}
             登录
@@ -173,7 +173,7 @@ export function LoginForm() {
               <button
                 onClick={sendCode}
                 disabled={sending}
-                className="text-xs text-indigo-600 hover:text-indigo-700"
+                className="text-xs text-brand-600 hover:text-brand-700"
               >
                 {sending ? "重发中…" : "重新发送验证码"}
               </button>

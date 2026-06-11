@@ -38,16 +38,16 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-zinc-200 bg-zinc-50/60">
+    <footer className="relative border-t border-zinc-200/80 bg-zinc-50/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div className="col-span-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500">
                 <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
               </div>
               <span className="text-lg font-semibold tracking-tight">
-                One<span className="text-indigo-600">Claw</span>
+                One<span className="text-brand-600">Claw</span>
               </span>
             </div>
             <p className="mt-4 text-sm text-zinc-600 leading-relaxed max-w-xs">
@@ -55,11 +55,11 @@ export function Footer() {
               让每一个出海人都能像团队一样高效。
             </p>
             <div className="mt-6 flex flex-col gap-2 text-sm text-zinc-600">
-              <a href="mailto:hello@oneclaw.ai" className="inline-flex items-center gap-2 hover:text-indigo-600">
+              <a href="mailto:hello@oneclaw.ai" className="inline-flex items-center gap-2 hover:text-brand-600">
                 <Mail className="h-4 w-4" />
                 hello@oneclaw.ai
               </a>
-              <a href="#" className="inline-flex items-center gap-2 hover:text-indigo-600">
+              <a href="#" className="inline-flex items-center gap-2 hover:text-brand-600">
                 <MessageSquare className="h-4 w-4" />
                 微信公众号：OneClaw 出海
               </a>
@@ -72,7 +72,7 @@ export function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {s.links.map((l) => (
                   <li key={l.label}>
-                    <a href={l.href} className="text-sm text-zinc-600 hover:text-indigo-600 transition-colors">
+                    <a href={l.href} className="text-sm text-zinc-600 hover:text-brand-600 transition-colors">
                       {l.label}
                     </a>
                   </li>
@@ -82,7 +82,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 rounded-2xl border border-zinc-200 bg-white p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mt-12 rounded-2xl border border-zinc-200/80 bg-white p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="text-sm font-semibold">订阅出海周报</div>
             <div className="mt-0.5 text-xs text-zinc-500">
@@ -92,7 +92,7 @@ export function Footer() {
           <SubscribeForm />
         </div>
 
-        <div className="mt-12 border-t border-zinc-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
+        <div className="mt-12 border-t border-zinc-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
           <div>© 2026 OneClaw Technology. All rights reserved.</div>
           <div className="flex items-center gap-4">
             <a href="#" className="hover:text-zinc-900">隐私政策</a>

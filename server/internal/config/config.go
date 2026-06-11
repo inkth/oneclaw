@@ -21,9 +21,12 @@ type Config struct {
 	Cookie    CookieConfig
 	RateLimit RateLimitConfig
 	SMS       SMSConfig
-	EchoTik   EchoTikConfig
-	CORS      CORSConfig
-	Log       LogConfig
+	EchoTik    EchoTikConfig
+	Storage    StorageConfig
+	OpenRouter OpenRouterConfig
+	Fal        FalConfig
+	CORS       CORSConfig
+	Log        LogConfig
 }
 
 type ServerConfig struct {
@@ -70,12 +73,18 @@ type RateLimitConfig struct {
 }
 
 type SMSConfig struct {
-	Provider          string // mock | tencent(tencent 在后续阶段接入)
+	Provider          string // mock | tencent
 	TencentSecretID   string
 	TencentSecretKey  string
 	TencentSDKAppID   string
 	TencentSignName   string
 	TencentTemplateID string
+	TencentRegion     string // 如 ap-guangzhou
+}
+
+func (s SMSConfig) TencentConfigured() bool {
+	return s.TencentSecretID != "" && s.TencentSecretKey != "" && s.TencentSDKAppID != "" &&
+		s.TencentSignName != "" && s.TencentTemplateID != ""
 }
 
 // EchoTikConfig EchoTik 开放 API(TikTok Shop 选品数据源)。HTTP Basic Auth。
@@ -86,6 +95,39 @@ type EchoTikConfig struct {
 }
 
 func (e EchoTikConfig) Configured() bool { return e.Username != "" && e.Password != "" }
+
+// StorageConfig 腾讯云 COS 对象存储(素材 / 视频转存)。
+type StorageConfig struct {
+	COSBucket    string // TENCENT_COS_BUCKET
+	COSRegion    string // TENCENT_COS_REGION
+	COSSecretID  string // TENCENT_SECRET_ID
+	COSSecretKey string // TENCENT_SECRET_KEY
+	COSDomain    string // TENCENT_COS_DOMAIN(可选 CDN 域名)
+}
+
+func (s StorageConfig) Configured() bool {
+	return s.COSBucket != "" && s.COSRegion != "" && s.COSSecretID != "" && s.COSSecretKey != ""
+}
+
+// OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
+type OpenRouterConfig struct {
+	APIKey     string
+	Model      string // 文本默认 deepseek/deepseek-chat
+	VideoModel string // 视频默认 bytedance/seedance-2.0-fast
+	ImageModel string // 图像默认 google/gemini-3.1-flash-image-preview
+	Referer    string // HTTP-Referer 头
+}
+
+func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
+
+// FalConfig fal.ai(图像生成,国内可达,区域不受限)。
+type FalConfig struct {
+	APIKey     string
+	BaseURL    string // 默认 https://fal.run
+	ImageModel string // 默认 fal-ai/flux/schnell
+}
+
+func (f FalConfig) Configured() bool { return f.APIKey != "" }
 
 // CORSConfig 带凭证跨域:本地开发 Next(:3000)调 Go(:8082)需显式白名单(不能用 *)。
 type CORSConfig struct {
@@ -136,11 +178,31 @@ func Load() *Config {
 			TencentSDKAppID:   getEnv("SMS_TENCENT_SDK_APP_ID", ""),
 			TencentSignName:   getEnv("SMS_TENCENT_SIGN_NAME", ""),
 			TencentTemplateID: getEnv("SMS_TENCENT_TEMPLATE_ID", ""),
+			TencentRegion:     getEnv("SMS_TENCENT_REGION", "ap-guangzhou"),
 		},
 		EchoTik: EchoTikConfig{
 			BaseURL:  getEnv("ECHOTIK_BASE_URL", "https://open.echotik.live/api/v3"),
 			Username: getEnv("ECHOTIK_USERNAME", ""),
 			Password: getEnv("ECHOTIK_PASSWORD", ""),
+		},
+		Storage: StorageConfig{
+			COSBucket:    getEnv("TENCENT_COS_BUCKET", ""),
+			COSRegion:    getEnv("TENCENT_COS_REGION", ""),
+			COSSecretID:  getEnv("TENCENT_SECRET_ID", ""),
+			COSSecretKey: getEnv("TENCENT_SECRET_KEY", ""),
+			COSDomain:    getEnv("TENCENT_COS_DOMAIN", ""),
+		},
+		OpenRouter: OpenRouterConfig{
+			APIKey:     getEnv("OPENROUTER_API_KEY", ""),
+			Model:      getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
+			VideoModel: getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
+			ImageModel: getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
+			Referer:    getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
+		},
+		Fal: FalConfig{
+			APIKey:     getEnv("FALAI_API_KEY", ""),
+			BaseURL:    getEnv("FALAI_BASE_URL", "https://fal.run"),
+			ImageModel: getEnv("FALAI_DEFAULT_IMAGE_MODEL", "fal-ai/flux/schnell"),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

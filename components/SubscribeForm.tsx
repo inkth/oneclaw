@@ -16,7 +16,7 @@ export function SubscribeForm({ source = "landing-footer" }: { source?: string }
     const email = String(fd.get("email") || "");
     setState("loading");
     setMessage(null);
-    const res = await fetch("/api/subscribe", {
+    const res = await fetch("/api/v1/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, source }),
@@ -50,7 +50,7 @@ export function SubscribeForm({ source = "landing-footer" }: { source?: string }
         type="email"
         required
         placeholder="your@email.com"
-        className="w-full sm:w-64 rounded-full border border-zinc-200 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+        className="w-full sm:w-64 rounded-full border border-zinc-200 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
       />
       <button
         type="submit"

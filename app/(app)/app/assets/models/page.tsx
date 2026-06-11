@@ -1,6 +1,20 @@
-import { redirect } from "next/navigation";
+import { getMe, apiServer } from "@/lib/api-client";
+import { ModelsClient } from "./models-client";
 
-// Phase 1:模特库 模块迁移中,暂重定向到概览。
-export default function DeferredPage() {
-  redirect("/app");
+export const metadata = { title: "模特 · OneClaw" };
+
+type Initial = Parameters<typeof ModelsClient>[0]["initialModels"];
+
+export default async function ModelsPage() {
+  const me = await getMe();
+  const ws = me?.workspace ?? null;
+  let models: Initial = [];
+  if (ws) {
+    try {
+      models = (await apiServer<{ models: Initial }>(`/workspaces/${ws.id}/models`)).models ?? [];
+    } catch {
+      models = [];
+    }
+  }
+  return <ModelsClient workspaceId={ws?.id ?? ""} initialModels={models} isGuest={!ws} />;
 }

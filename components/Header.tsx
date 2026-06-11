@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, ArrowRight } from "lucide-react";
 
 const navItems: Array<{ label: string; href: string; badge?: string }> = [
   { label: "数据洞察", href: "/#insights" },
@@ -17,11 +17,11 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <a href="#" className="flex items-center gap-2">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-sm">
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500 shadow-sm">
               <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-lg font-semibold tracking-tight">
-              One<span className="text-indigo-600">Claw</span>
+              One<span className="text-brand-600">Claw</span>
             </span>
           </a>
 
@@ -30,11 +30,11 @@ export function Header() {
               <a
                 key={item.label}
                 href={item.href}
-                className="relative px-3 py-2 text-sm font-medium text-zinc-700 hover:text-indigo-600 transition-colors"
+                className="relative px-3 py-2 text-sm font-medium text-zinc-700 hover:text-brand-600 transition-colors"
               >
                 {item.label}
                 {item.badge && (
-                  <span className="absolute -top-0.5 -right-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 px-1.5 py-0.5 text-[9px] font-semibold text-white leading-none">
+                  <span className="absolute -top-0.5 -right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-2xs font-semibold text-white leading-none">
                     {item.badge}
                   </span>
                 )}
@@ -45,18 +45,16 @@ export function Header() {
           <div className="hidden md:flex items-center gap-2">
             <a
               href="/login"
-              className="px-3 py-2 text-sm font-medium text-zinc-700 hover:text-indigo-600 transition-colors"
+              className="px-3 py-2 text-sm font-medium text-zinc-700 hover:text-brand-600 transition-colors"
             >
               登录
             </a>
             <a
-              href="/login"
-              className="group relative inline-flex items-center gap-1 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 transition-all shadow-sm hover:shadow-md"
+              href="/app/create"
+              className="bg-vibrant pop group relative inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-white shadow-sm"
             >
               开始体验
-              <span className="ml-1 transition-transform group-hover:translate-x-0.5">
-                →
-              </span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
 
@@ -79,7 +77,7 @@ export function Header() {
               >
                 {item.label}
                 {item.badge && (
-                  <span className="ml-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                  <span className="ml-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-2xs font-semibold text-white">
                     {item.badge}
                   </span>
                 )}
@@ -89,7 +87,7 @@ export function Header() {
               <a href="/login" className="flex-1 text-center rounded-full border border-zinc-300 py-2 text-sm font-medium">
                 登录
               </a>
-              <a href="/login" className="flex-1 text-center rounded-full bg-zinc-900 py-2 text-sm font-medium text-white">
+              <a href="/app/create" className="bg-vibrant flex-1 text-center rounded-full py-2 text-sm font-medium text-white">
                 开始体验
               </a>
             </div>

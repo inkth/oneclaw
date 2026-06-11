@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, RotateCcw, Trash2, Loader2 } from "lucide-react";
+import { Archive, RotateCcw, Trash2, Loader2, Package } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
+import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { Delta } from "@/components/ui/Delta";
 
 type Status = "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 
@@ -84,34 +89,32 @@ export function ProductsClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">选品库</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            市场分析师 Agent 推荐与你手动加入的潜力品类。
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                filter === f.key
-                  ? "bg-white text-zinc-900 shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
-            >
-              {f.label}
-              <span className="ml-1 text-[10px] text-zinc-400">
-                {f.key === "ALL"
-                  ? products.length
-                  : products.filter((p) => p.status === f.key).length}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="选品库"
+        description="市场分析师 Agent 推荐与你手动加入的潜力品类。"
+        actions={
+          <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
+            {filters.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  filter === f.key
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-zinc-600 hover:text-brand-700"
+                }`}
+              >
+                {f.label}
+                <span className={`ml-1 text-2xs ${filter === f.key ? "text-brand-200" : "text-zinc-400"}`}>
+                  {f.key === "ALL"
+                    ? products.length
+                    : products.filter((p) => p.status === f.key).length}
+                </span>
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {error && (
         <div className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-100">
@@ -120,87 +123,81 @@ export function ProductsClient({
       )}
 
       {visible.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-          <div className="text-base font-semibold">
-            {filter === "ALL" ? "还没有选品" : "这个分类下还没有选品"}
-          </div>
-          <p className="mt-1.5 text-sm text-zinc-500">
-            前往 <span className="text-indigo-600">Agent 工作流</span>，让市场分析师扫描热门品类。
-          </p>
-        </div>
+        <EmptyState
+          icon={Package}
+          title={filter === "ALL" ? "还没有选品" : "这个分类下还没有选品"}
+          description={
+            <>
+              前往 <span className="text-brand-600">Agent 工作流</span>，让市场分析师扫描热门品类。
+            </>
+          }
+        />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
-          <table className="w-full text-sm min-w-[760px]">
-            <thead className="bg-zinc-50/60 text-xs text-zinc-500">
+        <TableWrap minWidth={760}>
+            <THead>
               <tr>
-                <th className="text-left font-medium px-4 py-3">商品</th>
-                <th className="text-left font-medium px-4 py-3">店铺</th>
-                <th className="text-left font-medium px-4 py-3">品类</th>
-                <th className="text-right font-medium px-4 py-3">ROI</th>
-                <th className="text-right font-medium px-4 py-3">毛利率</th>
-                <th className="text-right font-medium px-4 py-3">月销</th>
-                <th className="text-right font-medium px-4 py-3">14d</th>
-                <th className="text-center font-medium px-4 py-3">状态</th>
-                <th className="text-right font-medium px-4 py-3">操作</th>
+                <Th>商品</Th>
+                <Th>店铺</Th>
+                <Th>品类</Th>
+                <Th align="right">ROI</Th>
+                <Th align="right">毛利率</Th>
+                <Th align="right">月销</Th>
+                <Th align="right">14d</Th>
+                <Th align="center">状态</Th>
+                <Th align="right">操作</Th>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
+            </THead>
+            <tbody>
               {visible.map((p) => (
-                <tr key={p.id} className="hover:bg-zinc-50/50">
-                  <td className="px-4 py-3">
+                <Tr key={p.id}>
+                  <Td>
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-100 to-rose-100 flex items-center justify-center text-lg">
-                        {p.emoji ?? "📦"}
-                      </div>
+                      <MediaPlaceholder seed={p.id} rounded="rounded-lg" className="h-9 w-9 shrink-0" />
                       <div>
                         <div className="font-medium" title={p.note ?? undefined}>{p.title}</div>
-                        <div className="text-[11px] text-zinc-500 font-mono">
+                        <div className="text-2xs text-zinc-500 font-mono nums">
                           ${(p.priceCents / 100).toFixed(2)} · 成本 $
                           {(p.costCents / 100).toFixed(2)}
                         </div>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-zinc-600">
+                  </Td>
+                  <Td className="text-zinc-600">
                     {p.shop ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-1.5 py-0.5 text-2xs">
                         {p.shop.name}
                       </span>
                     ) : (
                       <span className="text-zinc-300">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-zinc-600">{p.category}</td>
-                  <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                  </Td>
+                  <Td className="text-zinc-600">{p.category}</Td>
+                  <Td align="right" className="font-semibold nums">
                     {p.roiScore}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  </Td>
+                  <Td align="right" className="nums">
                     {p.marginPct}%
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  </Td>
+                  <Td align="right" className="nums">
                     {p.monthlySales.toLocaleString()}
-                  </td>
-                  <td
-                    className={`px-4 py-3 text-right tabular-nums ${
-                      p.trendDelta >= 0 ? "text-emerald-600" : "text-rose-600"
-                    }`}
-                  >
-                    {p.trendDelta >= 0 ? "↑" : "↓"} {Math.abs(p.trendDelta)}%
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                  </Td>
+                  <Td align="right" className="nums">
+                    <Delta value={p.trendDelta} title="近 14 天变化" className="text-xs" />
+                  </Td>
+                  <Td align="center">
                     <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${statusMap[p.status].cls}`}
+                      className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-medium ${statusMap[p.status].cls}`}
                     >
                       {statusMap[p.status].label}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  </Td>
+                  <Td>
                     <div className="flex items-center justify-end gap-1.5">
                       {p.status === "ARCHIVED" ? (
                         <button
                           onClick={() => patchProduct(p.id, { status: "EVALUATING" })}
                           disabled={busyId === p.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-[10px] text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-2xs text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
                           title="恢复"
                         >
                           {busyId === p.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <RotateCcw className="h-2.5 w-2.5" />}
@@ -209,7 +206,7 @@ export function ProductsClient({
                         <button
                           onClick={() => patchProduct(p.id, { status: "ARCHIVED" })}
                           disabled={busyId === p.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-[10px] text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-2xs text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
                           title="归档"
                         >
                           {busyId === p.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Archive className="h-2.5 w-2.5" />}
@@ -218,18 +215,17 @@ export function ProductsClient({
                       <button
                         onClick={() => deleteProduct(p.id)}
                         disabled={busyId === p.id}
-                        className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-[10px] text-rose-600 hover:bg-rose-100 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-2xs text-rose-600 hover:bg-rose-100 disabled:opacity-50"
                         title="删除"
                       >
                         <Trash2 className="h-2.5 w-2.5" />
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </Td>
+                </Tr>
               ))}
             </tbody>
-          </table>
-        </div>
+        </TableWrap>
       )}
 
     </div>

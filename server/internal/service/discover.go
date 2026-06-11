@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	apperr "github.com/oneclaw/server/internal/errors"
+	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/echotik"
 )
@@ -64,9 +65,14 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		p.PageSize = 10
 	}
 
+	// 全局榜单缓存键不含 category,按类目筛选时绕过缓存(实时拉、不写缓存)。
+	useCache := p.CategoryID == ""
+
 	// 1. 缓存命中?
-	if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
-		return &RanklistResult{State: "cached", FetchedAt: &fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
+	if useCache {
+		if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
+			return &RanklistResult{State: "cached", FetchedAt: &fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
+		}
 	}
 
 	// 2. 取数据源(live / mock)。
@@ -79,8 +85,8 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		state = "mock"
 	}
 
-	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live)。
-	dps := s.persist(ctx, p, raw, state == "live")
+	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live 且非类目筛选)。
+	dps := s.persist(ctx, p, raw, state == "live" && useCache)
 	var fetchedAt *time.Time
 	if state == "live" {
 		now := time.Now()
@@ -138,6 +144,12 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 	out := make([]model.DiscoverProduct, 0, len(raw))
 	externalIDs := make([]string, 0, len(raw))
 
+	// 商品榜接口不带封面;仅 live 拉取时补取并签名(防盗链),避免给 mock/error 数据空跑。
+	var coverByID map[string]model.JSONB
+	if writeCache {
+		coverByID = s.enrichCovers(ctx, p.Region, raw)
+	}
+
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, it := range raw {
 			dp := model.DiscoverProduct{
@@ -159,15 +171,22 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 				TotalLiveCnt:   it.TotalLiveCnt,
 				LastFetchedAt:  time.Now(),
 			}
+			updateCols := []string{
+				"name", "category_id", "category_l2_id", "category_l3_id",
+				"min_price_cents", "max_price_cents", "avg_price_cents", "commission_rate",
+				"total_sale_cnt", "total_sale_gmv", "total_ifl_cnt", "total_video_cnt", "total_live_cnt",
+				"last_fetched_at", "updated_at",
+			}
+			// 只在本轮拿到封面时才更新 cover_urls,否则保留库里既有值(避免签名失败把旧图清空)。
+			if cov, ok := coverByID[it.ProductID]; ok && len(cov) > 0 {
+				dp.CoverUrls = cov
+				updateCols = append(updateCols, "cover_urls")
+			}
+
 			// upsert by (provider, external_id, region)
 			tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
-				DoUpdates: clause.AssignmentColumns([]string{
-					"name", "category_id", "category_l2_id", "category_l3_id",
-					"min_price_cents", "max_price_cents", "avg_price_cents", "commission_rate",
-					"total_sale_cnt", "total_sale_gmv", "total_ifl_cnt", "total_video_cnt", "total_live_cnt",
-					"last_fetched_at", "updated_at",
-				}),
+				Columns:   []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
+				DoUpdates: clause.AssignmentColumns(updateCols),
 			}).Create(&dp)
 
 			// 取回带 ID 的行(OnConflict 时 dp.ID 可能为新生成而非库内既有,统一回查)。
@@ -216,24 +235,27 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 		ids = append(ids, d.ID)
 	}
 
+	// 游客(wsID == Nil)没有工作台,跳过「已导入/已收藏」个性化浮层,只回公共榜单。
 	importedBy := map[uuid.UUID]string{}
-	var prods []model.Product
-	s.db.WithContext(ctx).
-		Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
-		Find(&prods)
-	for _, p := range prods {
-		if p.DiscoverProductID != nil {
-			importedBy[*p.DiscoverProductID] = p.ID.String()
-		}
-	}
-
 	interBy := map[uuid.UUID]model.WorkspaceDiscoverInteraction{}
-	var inters []model.WorkspaceDiscoverInteraction
-	s.db.WithContext(ctx).
-		Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
-		Find(&inters)
-	for _, it := range inters {
-		interBy[it.DiscoverProductID] = it
+	if wsID != uuid.Nil {
+		var prods []model.Product
+		s.db.WithContext(ctx).
+			Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
+			Find(&prods)
+		for _, p := range prods {
+			if p.DiscoverProductID != nil {
+				importedBy[*p.DiscoverProductID] = p.ID.String()
+			}
+		}
+
+		var inters []model.WorkspaceDiscoverInteraction
+		s.db.WithContext(ctx).
+			Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
+			Find(&inters)
+		for _, it := range inters {
+			interBy[it.DiscoverProductID] = it
+		}
 	}
 
 	out := make([]DecoratedProduct, 0, len(dps))
@@ -252,6 +274,56 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 			dp.Interaction = &interDTO{IsStarred: it.IsStarred, Tags: it.Tags}
 		}
 		out = append(out, dp)
+	}
+	return out
+}
+
+// enrichCovers 取商品榜封面并换成签名 URL,返回 productID -> JSONB([]string{signedURL})。
+// 流程:product/detail 拿防盗链原文 → batch/cover/download 签名(3 天有效)。
+// 前端只显示 coverUrls[0],故每个商品只签首图,省接口调用。
+// 任一步出错只影响封面(降级为占位图),不阻断榜单返回。
+func (s *DiscoverService) enrichCovers(ctx context.Context, region string, raw []echotik.ProductListItem) map[string]model.JSONB {
+	out := map[string]model.JSONB{}
+	if len(raw) == 0 || !s.echo.Configured() {
+		return out
+	}
+
+	ids := make([]string, 0, len(raw))
+	for _, it := range raw {
+		ids = append(ids, it.ProductID)
+	}
+
+	coversByID, err := s.echo.GetProductCovers(ctx, ids, region)
+	if err != nil {
+		logger.Warn("发现页封面取详情失败,降级占位图", logger.String("region", region), logger.Err(err))
+		return out
+	}
+
+	// 收集每个商品的首图原文,批量签名。
+	firstRaw := make(map[string]string, len(coversByID))
+	rawList := make([]string, 0, len(coversByID))
+	for pid, urls := range coversByID {
+		if len(urls) == 0 {
+			continue
+		}
+		firstRaw[pid] = urls[0]
+		rawList = append(rawList, urls[0])
+	}
+	if len(rawList) == 0 {
+		return out
+	}
+
+	signed := s.echo.SignCovers(ctx, rawList)
+	for pid, rawURL := range firstRaw {
+		su, ok := signed[rawURL]
+		if !ok {
+			continue
+		}
+		b, e := json.Marshal([]string{su})
+		if e != nil {
+			continue
+		}
+		out[pid] = model.JSONB(b)
 	}
 	return out
 }

@@ -19,6 +19,40 @@ const (
 	ProductRecommended = "RECOMMENDED"
 	ProductEvaluating  = "EVALUATING"
 	ProductArchived    = "ARCHIVED"
+
+	ShopStatusConnected    = "CONNECTED"
+	ShopStatusPending      = "PENDING"
+	ShopStatusDisconnected = "DISCONNECTED"
+	ShopStatusError        = "ERROR"
+
+	ModelKindDigitalHuman = "DIGITAL_HUMAN"
+	ModelKindRealPerson   = "REAL_PERSON"
+	ModelGenderFemale     = "FEMALE"
+	ModelGenderMale       = "MALE"
+	ModelGenderNeutral    = "NEUTRAL"
+
+	AgentAnalyst  = "ANALYST"
+	AgentDirector = "DIRECTOR"
+	AgentOperator = "OPERATOR"
+	AgentListing  = "LISTING"
+	AgentTeam     = "TEAM"
+	// REVIEW 由 review/analyze 同步产出后落库(不走异步队列,不在 validAgents 内)。
+	AgentReview = "REVIEW"
+
+	TaskQueued  = "QUEUED"
+	TaskRunning = "RUNNING"
+	TaskDone    = "DONE"
+	TaskFailed  = "FAILED"
+
+	VideoPending    = "PENDING"
+	VideoGenerating = "GENERATING"
+	VideoCompleted  = "COMPLETED"
+	VideoFailed     = "FAILED"
+
+	VideoStyleUnboxing    = "UNBOXING"
+	VideoStyleComparison  = "COMPARISON"
+	VideoStyleScene       = "SCENE"
+	VideoStyleBeforeAfter = "BEFORE_AFTER"
 )
 
 // JSONB 是存进 Postgres jsonb 列的原始 JSON。

@@ -130,7 +130,7 @@ export function CheckoutModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -144,7 +144,7 @@ export function CheckoutModal({
           // 选档 + 选支付方式
           <div className="p-6 space-y-6">
             <div>
-              <div className="text-[11px] font-medium uppercase tracking-wider text-indigo-600">
+              <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
                 升级到 {planLabel}
               </div>
               <h2 className="mt-1 text-xl font-bold tracking-tight">选择订阅周期</h2>
@@ -157,13 +157,13 @@ export function CheckoutModal({
                   onClick={() => setPeriod(p.months)}
                   className={`rounded-xl border px-3 py-3 text-center transition-all ${
                     period === p.months
-                      ? "border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-200"
-                      : "border-zinc-200 hover:border-zinc-300"
+                      ? "border-brand-500 bg-brand-50/60 ring-2 ring-brand-200"
+                      : "border-zinc-200/80 hover:border-zinc-300"
                   }`}
                 >
                   <div className="text-sm font-semibold">{p.label}</div>
                   {p.sub && (
-                    <div className="mt-0.5 text-[10px] text-emerald-600 font-medium">
+                    <div className="mt-0.5 text-2xs text-emerald-600 font-medium">
                       {p.sub}
                     </div>
                   )}
@@ -193,8 +193,8 @@ export function CheckoutModal({
                       onClick={() => setProvider(pv)}
                       className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
                         active
-                          ? "border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-200"
-                          : "border-zinc-200 hover:border-zinc-300"
+                          ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
+                          : "border-zinc-200/80 hover:border-zinc-300"
                       }`}
                     >
                       <span>{m.icon}</span>
@@ -220,7 +220,7 @@ export function CheckoutModal({
               生成二维码
             </button>
 
-            <p className="text-center text-[11px] text-zinc-400">
+            <p className="text-center text-2xs text-zinc-400">
               支付即视为同意《订阅服务协议》，到期后自动降回 FREE。
             </p>
           </div>
@@ -229,14 +229,14 @@ export function CheckoutModal({
           <div className="p-6 space-y-4">
             <div className="flex items-baseline justify-between">
               <div>
-                <div className="text-[11px] font-medium uppercase tracking-wider text-indigo-600">
+                <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
                   {PROVIDER_META[order.provider].cn} · {order.periodMonths} 个月
                 </div>
                 <h2 className="mt-1 text-xl font-bold tracking-tight">
                   ¥{(order.amountCents / 100).toFixed(2)}
                 </h2>
               </div>
-              <div className="text-[10px] font-mono text-zinc-400">
+              <div className="text-2xs font-mono text-zinc-400">
                 {order.outTradeNo}
               </div>
             </div>
@@ -276,7 +276,7 @@ export function CheckoutModal({
                 <div className="text-center text-xs text-zinc-500">
                   请用 <span className="font-medium">{PROVIDER_META[order.provider].cn}</span> 扫描上方二维码完成支付
                 </div>
-                <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-400">
+                <div className="flex items-center justify-center gap-2 text-2xs text-zinc-400">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   等待回调中…
                 </div>
@@ -294,7 +294,7 @@ export function CheckoutModal({
                         <button
                           onClick={mockConfirm}
                           disabled={confirming}
-                          className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                          className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-600 px-3 py-1 text-2xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
                         >
                           {confirming && <Loader2 className="h-3 w-3 animate-spin" />}
                           模拟支付成功

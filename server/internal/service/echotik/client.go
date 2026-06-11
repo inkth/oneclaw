@@ -98,6 +98,7 @@ func (c *Client) GetProductRanklist(ctx context.Context, p RanklistParams) ([]Pr
 					"region":             p.Region,
 					"rank_type":          strconv.Itoa(p.RankType),
 					"product_rank_field": strconv.Itoa(p.RankField),
+					"category_id":        p.CategoryID,
 					"date":               date,
 					"page_size":          strconv.Itoa(pageSize),
 					"page_num":           strconv.Itoa(startPage + i),

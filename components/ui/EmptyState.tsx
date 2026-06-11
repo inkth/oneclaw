@@ -1,0 +1,35 @@
+import { cn } from "@/lib/utils";
+
+/** 全站通用空态 / 即将上线占位。极简虚线卡片。 */
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+}: {
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  title: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        // 照搬 Designkit：无卡框、居中、线框图标 + 粗标题 + 灰副标题 + 近黑 CTA
+        "px-6 py-16 text-center",
+        className
+      )}
+    >
+      {Icon && (
+        <Icon className="mx-auto mb-4 h-12 w-12 text-zinc-300" strokeWidth={1.5} />
+      )}
+      <div className="font-display text-lg font-semibold text-ink">{title}</div>
+      {description && (
+        <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-zinc-500">{description}</p>
+      )}
+      {action && <div className="mt-5 flex justify-center">{action}</div>}
+    </div>
+  );
+}

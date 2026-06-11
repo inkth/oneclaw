@@ -64,6 +64,22 @@ func (r *RanklistCacheEntry) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
+// DiscoverCache 通用 JSON 缓存:店铺/达人/视频榜 + 类目下拉的整段响应按 cache_key 缓存。
+// 这些数据无工作台个性化,可全局复用;按 TTL 失效。
+type DiscoverCache struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	CacheKey  string    `gorm:"column:cache_key;not null;uniqueIndex:uq_dc_key" json:"cacheKey"`
+	Payload   JSONB     `gorm:"type:jsonb" json:"payload"`
+	FetchedAt time.Time `gorm:"column:fetched_at" json:"fetchedAt"`
+}
+
+func (c *DiscoverCache) BeforeCreate(*gorm.DB) error {
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+	return nil
+}
+
 // DiscoverSnapshot 每日商品指标快照。(discover_product_id, dt) 唯一。
 type DiscoverSnapshot struct {
 	ID                uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
@@ -98,6 +114,25 @@ type WorkspaceDiscoverInteraction struct {
 }
 
 func (w *WorkspaceDiscoverInteraction) BeforeCreate(*gorm.DB) error {
+	if w.ID == uuid.Nil {
+		w.ID = uuid.New()
+	}
+	return nil
+}
+
+// WorkspaceDiscoverFavorite 工作台对店铺/达人/视频的收藏(这些实体不落库,故另存快照供收藏页渲染)。
+// (workspace_id, kind, external_id, region) 唯一。kind = seller | influencer | video。
+type WorkspaceDiscoverFavorite struct {
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	WorkspaceID uuid.UUID `gorm:"column:workspace_id;type:uuid;not null;uniqueIndex:uq_wdf_key" json:"workspaceId"`
+	Kind        string    `gorm:"not null;uniqueIndex:uq_wdf_key" json:"kind"`
+	ExternalID  string    `gorm:"column:external_id;not null;uniqueIndex:uq_wdf_key" json:"externalId"`
+	Region      string    `gorm:"not null;uniqueIndex:uq_wdf_key" json:"region"`
+	Snapshot    JSONB     `gorm:"type:jsonb" json:"snapshot"` // {name, cover, subtitle, metric} 供收藏页渲染
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+func (w *WorkspaceDiscoverFavorite) BeforeCreate(*gorm.DB) error {
 	if w.ID == uuid.Nil {
 		w.ID = uuid.New()
 	}

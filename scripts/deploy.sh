@@ -76,7 +76,11 @@ echo "==> [3/6] 上传到 $DEPLOY_DIR..."
 run_remote "mkdir -p $DEPLOY_DIR"
 
 # 上传 standalone (包含 server.js + node_modules 子集)
-rsync -az --delete -e "ssh ${SSH_OPTS[*]}" "$STANDALONE/" "$TARGET:$DEPLOY_DIR/"
+# --delete 会清理 DEPLOY_DIR 里 standalone 没有的文件；必须排除服务器自有的环境变量，
+# 否则会把生产 .env.local 删掉（standalone 产物里没有它），导致下方 env 逻辑误判为"首次部署"。
+rsync -az --delete \
+  --exclude='.env.local' --exclude='.env.local.bak' --exclude='.env.production' \
+  -e "ssh ${SSH_OPTS[*]}" "$STANDALONE/" "$TARGET:$DEPLOY_DIR/"
 
 # 上传静态资源 (.next/static → .next/static)
 rsync -az -e "ssh ${SSH_OPTS[*]}" "$ROOT/.next/static/" "$TARGET:$DEPLOY_DIR/.next/static/"
@@ -86,10 +90,20 @@ if [ -d "$ROOT/public" ]; then
   rsync -az -e "ssh ${SSH_OPTS[*]}" "$ROOT/public/" "$TARGET:$DEPLOY_DIR/public/"
 fi
 
-# 上传 .env.local (环境变量)
-if [ -f "$ROOT/.env.local" ]; then
+# 环境变量：绝不用本地 dev 的 .env.local 覆盖服务器已有的生产配置
+# 优先级：本地 .env.production（显式生产配置，覆盖） > 服务器已有 .env.local（保留） > 本地 .env.local（仅首次兜底）
+if [ -f "$ROOT/.env.production" ]; then
+  scp "${SSH_OPTS[@]}" "$ROOT/.env.production" "$TARGET:$DEPLOY_DIR/.env.local"
+  echo "✓ 已用本地 .env.production 更新服务器环境变量"
+elif run_remote "[ -f $DEPLOY_DIR/.env.local ]"; then
+  echo "↩ 服务器已存在 .env.local，保留不覆盖（避免把本地 dev 配置推到生产）"
+  echo "  如需更新生产环境变量：维护本地 .env.production，或直接编辑服务器上的 $DEPLOY_DIR/.env.local"
+elif [ -f "$ROOT/.env.local" ]; then
   scp "${SSH_OPTS[@]}" "$ROOT/.env.local" "$TARGET:$DEPLOY_DIR/.env.local"
-  echo "✓ .env.local 已同步"
+  echo "✓ 首次部署：已上传本地 .env.local 作为初始环境变量"
+  echo "  ⚠ 请上服务器核对 AUTH_URL 等生产值（dev 值如 http://localhost:3000 需改成正式域名）"
+else
+  echo "⚠ 本地与服务器均无 .env.local，应用可能缺少环境变量"
 fi
 
 echo "✓ 上传完成"

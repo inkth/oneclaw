@@ -19,6 +19,9 @@ import (
 	"github.com/oneclaw/server/internal/router"
 	"github.com/oneclaw/server/internal/service"
 	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/oneclaw/server/internal/service/fal"
+	"github.com/oneclaw/server/internal/service/llm"
+	"github.com/oneclaw/server/internal/storage"
 )
 
 func main() {
@@ -52,7 +55,17 @@ func main() {
 		&model.DiscoverProduct{},
 		&model.RanklistCacheEntry{},
 		&model.DiscoverSnapshot{},
+		&model.DiscoverCache{},
 		&model.WorkspaceDiscoverInteraction{},
+		&model.WorkspaceDiscoverFavorite{},
+		&model.NewsletterSubscription{},
+		&model.DemoRequest{},
+		&model.Shop{},
+		&model.ModelAsset{},
+		&model.Material{},
+		&model.AgentTask{},
+		&model.Video{},
+		&model.CreationTemplate{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -64,6 +77,31 @@ func main() {
 	prodSvc := service.NewProductService(db)
 	echoClient := echotik.New(cfg.EchoTik)
 	discSvc := service.NewDiscoverService(db, echoClient)
+	mktSvc := service.NewMarketingService(db)
+	shopSvc := service.NewShopService(db)
+	modelSvc := service.NewModelAssetService(db)
+	store := storage.New(cfg.Storage)
+	matSvc := service.NewMaterialService(db, store)
+	llmClient := llm.New(cfg.OpenRouter)
+	falClient := fal.New(cfg.Fal)
+	videoSvc := service.NewVideoService(db, llmClient, store, falClient)
+	if falClient.Configured() {
+		logger.Info("[fal] 已配置(封面图)")
+	} else {
+		logger.Warn("[fal] FALAI_API_KEY 未配置,封面图不可用")
+	}
+	agentSvc := service.NewAgentService(db, llmClient, videoSvc)
+	tplSvc := service.NewTemplateService(db, llmClient)
+	if llmClient.Configured() {
+		logger.Info("[llm] OpenRouter 已配置", logger.String("model", llmClient.Model()))
+	} else {
+		logger.Warn("[llm] OPENROUTER_API_KEY 未配置,Agent 走未配置降级")
+	}
+	if store.Configured() {
+		logger.Info("[storage] 腾讯云 COS 已配置")
+	} else {
+		logger.Warn("[storage] COS 未配置,素材上传不可用")
+	}
 
 	if echoClient.Configured() {
 		logger.Info("[echotik] 已配置凭证,走实时数据")
@@ -77,6 +115,13 @@ func main() {
 		Workspace: wsSvc,
 		Product:   prodSvc,
 		Discover:  discSvc,
+		Marketing: mktSvc,
+		Shop:      shopSvc,
+		Model:     modelSvc,
+		Material:  matSvc,
+		Agent:     agentSvc,
+		Video:     videoSvc,
+		Template:  tplSvc,
 	})
 
 	srv := &http.Server{

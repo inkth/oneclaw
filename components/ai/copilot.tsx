@@ -15,8 +15,6 @@ const STARTERS = [
   '想批量做短视频,创作工坊怎么用?',
 ];
 
-const BRAND = 'from-indigo-500 via-violet-500 to-fuchsia-500';
-
 /** Other components can open the Copilot with a prefilled question by
  *  dispatching `window.dispatchEvent(new CustomEvent('oneclaw:copilot', { detail: '...' }))`. */
 export function Copilot() {
@@ -87,24 +85,24 @@ export function Copilot() {
         <button
           onClick={() => setOpen(true)}
           aria-label="打开 AI 助手"
-          className={`fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-gradient-to-br ${BRAND} px-4 py-3 text-white shadow-lg shadow-indigo-500/30 hover:opacity-90 transition-opacity`}
+          className="press fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-3 text-white shadow-[var(--shadow-brand)] hover:bg-zinc-800 transition-colors"
         >
-          <Sparkles size={18} />
+          <Sparkles size={18} className="text-brand-300" />
           <span className="text-sm font-medium">AI 助手</span>
         </button>
       )}
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-40 flex h-[min(70vh,560px)] w-[min(92vw,400px)] flex-col rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+        <div className="fixed bottom-6 right-6 z-40 flex h-[min(70vh,560px)] w-[min(92vw,400px)] flex-col rounded-2xl border border-zinc-200 bg-white shadow-xl">
           <header className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
             <div className="flex items-center gap-2">
-              <div className={`flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br ${BRAND} text-white`}>
-                <Sparkles size={15} strokeWidth={2.5} />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900 text-white">
+                <Sparkles size={15} strokeWidth={2.5} className="text-brand-300" />
               </div>
               <div>
                 <div className="text-sm font-semibold leading-tight">AI 经营助手</div>
-                <div className="text-[10px] text-zinc-400">TikTok Shop 出海助手</div>
+                <div className="text-2xs text-zinc-400">TikTok Shop 出海助手</div>
               </div>
             </div>
             <button
@@ -141,7 +139,7 @@ export function Copilot() {
                   <div
                     className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                       m.role === 'user'
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-brand-600 text-white'
                         : 'bg-zinc-100 text-zinc-800'
                     }`}
                   >
@@ -170,13 +168,13 @@ export function Copilot() {
               }}
               rows={1}
               placeholder="输入问题…"
-              className="flex-1 resize-none rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 max-h-28"
+              className="flex-1 resize-none rounded-lg border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 max-h-28"
             />
             <button
               type="submit"
               disabled={streaming || !input.trim()}
               aria-label="发送"
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${BRAND} text-white disabled:opacity-40`}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors disabled:opacity-40"
             >
               {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>

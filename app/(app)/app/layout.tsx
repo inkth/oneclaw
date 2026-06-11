@@ -1,111 +1,79 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getMe } from "@/lib/api-client";
 import { LogoutButton } from "@/components/LogoutButton";
-import {
-  LayoutDashboard,
-  Package,
-  Sparkles,
-  Compass,
-} from "lucide-react";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
-type NavGroup = { label: string; items: NavItem[] };
-
-// Phase 1:仅核心域(概览 / 发现 / 商品)。其余模块迁移完成后再放开。
-const navGroups: NavGroup[] = [
-  { label: "", items: [{ href: "/app", label: "概览", icon: LayoutDashboard }] },
-  { label: "发现", items: [{ href: "/app/discover/products", label: "TikTok 爆品", icon: Compass }] },
-  { label: "资产", items: [{ href: "/app/assets/products", label: "商品", icon: Package }] },
-];
+import { Sparkles, User } from "lucide-react";
+import { SidebarNav, BoardTabs } from "./_nav";
 
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // 游客可浏览;无会话时 user/workspace 为 null,侧栏显示登录入口。
   const me = await getMe();
-  if (!me) redirect("/login?callbackUrl=/app");
-  const { user, workspace } = me;
-  const display = user.name || user.phone || user.email || "?";
+  const user = me?.user ?? null;
+  const workspace = me?.workspace ?? null;
+  const display = user?.name || user?.phone || user?.email || "游客";
 
   return (
-    <div className="min-h-screen flex bg-zinc-50/50">
-      <aside className="hidden md:flex w-60 flex-col border-r border-zinc-200 bg-white">
-        <Link href="/" className="flex items-center gap-2 px-5 h-16 border-b border-zinc-100">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500">
-            <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-base font-semibold tracking-tight">
-            One<span className="text-indigo-600">Claw</span>
-          </span>
+    <div className="app-skin min-h-screen flex bg-background">
+      {/* 照搬 Designkit：80px 图标导航轨，透明贴画布色，纵向 图标+小字 */}
+      <aside className="hidden md:flex w-20 shrink-0 flex-col items-center border-r border-black/5 bg-transparent py-4">
+        <Link
+          href="/"
+          aria-label="OneClaw 首页"
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-sm"
+        >
+          <Sparkles className="h-5 w-5 text-white" strokeWidth={2.5} />
         </Link>
 
-        <div className="px-3 py-3 border-b border-zinc-100">
-          <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-400">当前工作台</div>
-            <div className="mt-0.5 text-sm font-medium truncate">{workspace.name}</div>
-            <div className="mt-0.5 text-[10px] text-zinc-500">方案 · {workspace.plan}</div>
-          </div>
-        </div>
+        <SidebarNav />
 
-        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-3">
-          {navGroups.map((group, gi) => (
-            <div key={gi}>
-              {group.label && (
-                <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                  {group.label}
-                </div>
-              )}
-              <div className="space-y-0.5">
-                {group.items.map(({ href, label, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600 transition-colors"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                ))}
+        <div className="mt-4 flex flex-col items-center gap-3">
+          {user ? (
+            <>
+              <div
+                title={display}
+                className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-400 to-violet-500 text-white text-sm font-semibold flex items-center justify-center"
+              >
+                {display.charAt(0).toUpperCase()}
               </div>
-            </div>
-          ))}
-        </nav>
-
-        <div className="border-t border-zinc-100 p-3">
-          <div className="flex items-center gap-2 mb-3 px-2">
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-white text-xs font-semibold flex items-center justify-center">
-              {display.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-medium truncate">{display}</div>
-              <div className="text-[10px] text-zinc-500 truncate font-mono">
-                {user.phone
-                  ? `+86 ${user.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1 **** $2")}`
-                  : user.email}
-              </div>
-            </div>
-          </div>
-          <LogoutButton />
+              <LogoutButton />
+            </>
+          ) : (
+            <Link
+              href="/login?callbackUrl=/app"
+              className="flex flex-col items-center gap-1 text-zinc-500 hover:text-ink transition-colors"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white">
+                <User className="h-4 w-4" />
+              </span>
+              <span className="text-[11px]">登录</span>
+            </Link>
+          )}
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-zinc-200 bg-white">
+        <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-black/5 bg-background">
           <Link href="/app" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500">
+            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500">
               <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-semibold">OneClaw</span>
+            <span className="font-display text-sm font-semibold">OneClaw</span>
           </Link>
         </header>
-        <main className="flex-1 p-4 sm:p-8">{children}</main>
+        <main className="relative flex-1 p-4 sm:p-8">
+          {/* 活力氛围:全工作台顶部极淡 violet/fuchsia 柔光,统一去「纯白感」 */}
+          <div
+            aria-hidden
+            className="gradient-bg pointer-events-none absolute inset-x-0 top-0 h-72 opacity-70"
+          />
+          <div className="relative">
+            <BoardTabs />
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

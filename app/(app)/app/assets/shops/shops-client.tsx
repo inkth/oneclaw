@@ -14,6 +14,10 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
+import { EmptyState as EmptyStatePrimitive } from "@/components/ui/EmptyState";
 
 type Platform =
   | "TIKTOK_SHOP"
@@ -62,18 +66,33 @@ export function ShopsClient({
   workspaceId,
   initialShops,
   totals,
+  isGuest = false,
 }: {
   workspaceId: string;
   initialShops: Shop[];
   totals: { revenueCents: number; orders: number; itemsSold: number; visitors: number };
+  isGuest?: boolean;
 }) {
   const router = useRouter();
   const [shops, setShops] = useState(initialShops);
   const [modalOpen, setModalOpen] = useState(false);
 
+  function gateGuest(): boolean {
+    if (!isGuest) return false;
+    toast("登录后即可操作", {
+      action: {
+        label: "去登录",
+        onClick: () => {
+          window.location.href = "/login?callbackUrl=/app";
+        },
+      },
+    });
+    return true;
+  }
+
   async function deleteShop(id: string) {
     if (!confirm("删除该店铺？相关商品会保留但解绑。")) return;
-    const res = await fetch(`/api/workspaces/${workspaceId}/shops/${id}`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/shops/${id}`, {
       method: "DELETE",
     });
     if (res.ok) {
@@ -87,24 +106,25 @@ export function ShopsClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">店铺</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            连接你的电商平台店铺，统一追踪营收、订单、转化率。
-          </p>
-        </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-        >
-          <Plus className="h-4 w-4" />
-          添加店铺
-        </button>
-      </div>
+      <PageHeader
+        title="店铺"
+        description="连接你的电商平台店铺，统一追踪营收、订单、转化率。"
+        actions={
+          <Button
+            variant="primary"
+            onClick={() => {
+              if (gateGuest()) return;
+              setModalOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            添加店铺
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="总营收" value={`¥${(totals.revenueCents / 100).toLocaleString()}`} icon={TrendingUp} tone="indigo" />
+        <StatCard label="总营收" value={`¥${(totals.revenueCents / 100).toLocaleString()}`} icon={TrendingUp} tone="brand" />
         <StatCard label="订单数" value={totals.orders.toLocaleString()} icon={ShoppingCart} tone="violet" />
         <StatCard label="已售商品" value={totals.itemsSold.toLocaleString()} icon={Package} tone="fuchsia" />
         <StatCard label="访客" value={totals.visitors.toLocaleString()} icon={Users} tone="emerald" />
@@ -113,70 +133,68 @@ export function ShopsClient({
       {shops.length === 0 ? (
         <EmptyState onAdd={() => setModalOpen(true)} />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
-          <table className="w-full text-sm min-w-[820px]">
-            <thead className="bg-zinc-50/60 text-xs text-zinc-500">
+        <TableWrap minWidth={820}>
+            <THead>
               <tr>
-                <th className="text-left font-medium px-4 py-3">店铺</th>
-                <th className="text-left font-medium px-4 py-3">平台</th>
-                <th className="text-left font-medium px-4 py-3">国家</th>
-                <th className="text-right font-medium px-4 py-3">营收</th>
-                <th className="text-right font-medium px-4 py-3">订单</th>
-                <th className="text-right font-medium px-4 py-3">商品</th>
-                <th className="text-right font-medium px-4 py-3">转化率</th>
-                <th className="text-center font-medium px-4 py-3">状态</th>
-                <th className="text-right font-medium px-4 py-3">操作</th>
+                <Th>店铺</Th>
+                <Th>平台</Th>
+                <Th>国家</Th>
+                <Th align="right">营收</Th>
+                <Th align="right">订单</Th>
+                <Th align="right">商品</Th>
+                <Th align="right">转化率</Th>
+                <Th align="center">状态</Th>
+                <Th align="right">操作</Th>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
+            </THead>
+            <tbody>
               {shops.map((s) => {
                 const pm = platformMeta[s.platform];
                 return (
-                  <tr key={s.id} className="hover:bg-zinc-50/50">
-                    <td className="px-4 py-3">
+                  <Tr key={s.id}>
+                    <Td>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-lg">
+                        <div className="h-9 w-9 rounded-lg bg-zinc-100 flex items-center justify-center text-lg">
                           {pm.emoji}
                         </div>
                         <div>
                           <div className="font-medium">{s.name}</div>
-                          <div className="text-[11px] text-zinc-500">
+                          <div className="text-2xs text-zinc-500">
                             {new Date(s.createdAt).toLocaleDateString("zh-CN")} 添加
                           </div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-zinc-600">{pm.cn}</td>
-                    <td className="px-4 py-3 text-zinc-600">
+                    </Td>
+                    <Td className="text-zinc-600">{pm.cn}</Td>
+                    <Td className="text-zinc-600">
                       {s.country ?? <span className="text-zinc-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                    </Td>
+                    <Td align="right" className="font-semibold">
                       ¥{(s.totalRevenueCents / 100).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">{s.orders.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{s.productCount}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    </Td>
+                    <Td align="right">{s.orders.toLocaleString()}</Td>
+                    <Td align="right">{s.productCount}</Td>
+                    <Td align="right">
                       {(s.conversionRate * 100).toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${statusMeta[s.status].cls}`}>
+                    </Td>
+                    <Td align="center">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-medium ${statusMeta[s.status].cls}`}>
                         {statusMeta[s.status].cn}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    </Td>
+                    <Td align="right">
                       <button
                         onClick={() => deleteShop(s.id)}
-                        className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-[10px] text-rose-600 hover:bg-rose-100"
+                        className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-2xs text-rose-600 hover:bg-rose-100"
                       >
                         <Trash2 className="h-2.5 w-2.5" />
                       </button>
-                    </td>
-                  </tr>
+                    </Td>
+                  </Tr>
                 );
               })}
             </tbody>
-          </table>
-        </div>
+        </TableWrap>
       )}
 
       {modalOpen && (
@@ -196,7 +214,7 @@ export function ShopsClient({
 }
 
 const toneMap = {
-  indigo: { fg: "text-indigo-600", bg: "bg-indigo-50" },
+  brand: { fg: "text-brand-600", bg: "bg-brand-50" },
   violet: { fg: "text-violet-600", bg: "bg-violet-50" },
   fuchsia: { fg: "text-fuchsia-600", bg: "bg-fuchsia-50" },
   emerald: { fg: "text-emerald-600", bg: "bg-emerald-50" },
@@ -215,37 +233,31 @@ function StatCard({
 }) {
   const t = toneMap[tone];
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+    <div className="rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm">
       <div className="flex items-center gap-2">
         <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${t.bg} ${t.fg}`}>
           <Icon className="h-3.5 w-3.5" />
         </div>
         <span className="text-xs text-zinc-500">{label}</span>
       </div>
-      <div className="mt-2 text-xl font-bold tabular-nums">{value}</div>
+      <div className="mt-2 text-xl font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 mb-4">
-        <Store className="h-5 w-5" />
-      </div>
-      <div className="text-base font-semibold">还没添加店铺</div>
-      <p className="mt-1.5 text-sm text-zinc-500 max-w-md mx-auto">
-        连接你的 TikTok Shop / Amazon / Shopify 等平台店铺，OneClaw 会自动同步商品、订单与营收，
-        让 Agent 的选品和投放决策都有数据兜底。
-      </p>
-      <button
-        onClick={onAdd}
-        className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-      >
-        <Plus className="h-4 w-4" />
-        添加第一个店铺
-      </button>
-    </div>
+    <EmptyStatePrimitive
+      icon={Store}
+      title="还没添加店铺"
+      description="连接你的 TikTok Shop / Amazon / Shopify 等平台店铺，OneClaw 会自动同步商品、订单与营收，让 Agent 的选品和投放决策都有数据兜底。"
+      action={
+        <Button variant="primary" onClick={onAdd}>
+          <Plus className="h-4 w-4" />
+          添加第一个店铺
+        </Button>
+      }
+    />
   );
 }
 
@@ -271,7 +283,7 @@ function AddShopModal({
     }
     setSubmitting(true);
     setError(null);
-    const res = await fetch(`/api/workspaces/${workspaceId}/shops`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/shops`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -299,7 +311,7 @@ function AddShopModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-md rounded-xl bg-white shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -310,7 +322,7 @@ function AddShopModal({
         </button>
 
         <div className="p-6 space-y-5">
-          <h2 className="text-lg font-bold tracking-tight">添加店铺</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-zinc-900">添加店铺</h2>
 
           <div>
             <label className="block text-xs font-medium text-zinc-700 mb-2">平台</label>
@@ -325,15 +337,15 @@ function AddShopModal({
                     disabled={!m.available}
                     className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
                       active
-                        ? "border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-200"
-                        : "border-zinc-200 hover:border-zinc-300"
+                        ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
+                        : "border-zinc-200/80 hover:border-zinc-300"
                     } ${!m.available ? "opacity-40 cursor-not-allowed" : ""}`}
                   >
                     <span>{m.emoji}</span>
                     <span className="text-left">
                       {m.cn}
                       {!m.available && (
-                        <span className="ml-1 text-[9px] text-zinc-400">敬请期待</span>
+                        <span className="ml-1 text-2xs text-zinc-400">敬请期待</span>
                       )}
                     </span>
                   </button>
@@ -350,7 +362,7 @@ function AddShopModal({
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：OneClaw US 旗舰店"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
@@ -364,11 +376,11 @@ function AddShopModal({
               onChange={(e) => setCountry(e.target.value.toUpperCase())}
               maxLength={4}
               placeholder="US / GB / SG / JP …"
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none font-mono focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none font-mono focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-3 text-[11px] text-zinc-600 leading-relaxed">
+          <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-3 text-2xs text-zinc-600 leading-relaxed">
             🔌 真实平台对接（OAuth + 拉取订单 / 商品）正在开发中。
             当前先以「待对接」状态保存，OneClaw 会把后续生成的 Agent 报告关联到对应店铺。
           </div>
@@ -379,14 +391,15 @@ function AddShopModal({
             </div>
           )}
 
-          <button
+          <Button
+            variant="primary"
             onClick={submit}
             disabled={submitting}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+            className="w-full"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             保存
-          </button>
+          </Button>
         </div>
       </div>
     </div>

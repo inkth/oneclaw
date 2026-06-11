@@ -8,6 +8,7 @@ import { Agents } from "@/components/Agents";
 import { Partners } from "@/components/Partners";
 import { CTA } from "@/components/CTA";
 import { Footer } from "@/components/Footer";
+import { Reveal } from "@/components/ui/Reveal";
 
 export default function Home() {
   return (
@@ -15,13 +16,14 @@ export default function Home() {
       <Header />
       <main className="flex flex-col">
         <Hero />
-        <PainPoints />
-        <Workflow />
-        <ProductDiscovery />
-        <ContentCreation />
-        <Agents />
-        <Partners />
-        <CTA />
+        {/* 滚动进场：下半屏区块淡入上浮，营造高级感节奏 */}
+        <Reveal><PainPoints /></Reveal>
+        <Reveal><Workflow /></Reveal>
+        <Reveal><ProductDiscovery /></Reveal>
+        <Reveal><ContentCreation /></Reveal>
+        <Reveal><Agents /></Reveal>
+        <Reveal><Partners /></Reveal>
+        <Reveal><CTA /></Reveal>
       </main>
       <Footer />
     </>

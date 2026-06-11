@@ -4,7 +4,7 @@ const avatars = [
   "from-rose-400 to-orange-400",
   "from-amber-400 to-yellow-400",
   "from-emerald-400 to-teal-400",
-  "from-sky-400 to-indigo-400",
+  "from-sky-400 to-brand-400",
   "from-violet-400 to-fuchsia-400",
 ];
 
@@ -12,13 +12,15 @@ export function CTA() {
   return (
     <section className="relative py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-indigo-900 px-6 py-16 sm:px-16 sm:py-20 text-center">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-brand-950 px-6 py-16 sm:px-16 sm:py-20 text-center shadow-xl">
+          {/* 柔紫 / 品红辉光，营造深色高级感 */}
           <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 30% 20%, rgba(139,92,246,0.4), transparent 50%), radial-gradient(circle at 70% 60%, rgba(236,72,153,0.3), transparent 50%)",
-            }}
+            aria-hidden
+            className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[44rem] -translate-x-1/2 rounded-full bg-brand-500/25 blur-[100px]"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-28 right-0 h-64 w-96 rounded-full bg-fuchsia-500/15 blur-[90px]"
           />
           <div className="relative">
             <div className="flex justify-center -space-x-2 mb-6">
@@ -37,7 +39,7 @@ export function CTA() {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
               <a
-                href="/login"
+                href="/app/create"
                 className="group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 transition-all shadow-xl"
               >
                 免费开始体验

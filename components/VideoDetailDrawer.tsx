@@ -121,7 +121,7 @@ export function VideoDetailDrawer({
     let alive = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/workspaces/${workspaceId}/videos/${videoId}`, { cache: "no-store" })
+    fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;
@@ -155,7 +155,7 @@ export function VideoDetailDrawer({
     if (!video?.falRequestId) return;
     setBusy(true);
     const r = await fetch(
-      `/api/workspaces/${workspaceId}/videos/${videoId}/refresh`,
+      `/api/v1/workspaces/${workspaceId}/videos/${videoId}/refresh`,
       { method: "POST" },
     );
     const j = await r.json();
@@ -172,7 +172,7 @@ export function VideoDetailDrawer({
     if (!video) return;
     if (!confirm(`删除视频「${video.title}」？`)) return;
     setBusy(true);
-    const r = await fetch(`/api/workspaces/${workspaceId}/videos/${videoId}`, {
+    const r = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, {
       method: "DELETE",
     });
     setBusy(false);
@@ -212,8 +212,8 @@ export function VideoDetailDrawer({
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <aside className="absolute right-0 top-0 h-full w-full max-w-xl bg-white shadow-2xl overflow-y-auto">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <aside className="absolute right-0 top-0 h-full w-full max-w-xl bg-white shadow-xl overflow-y-auto">
         <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-100 px-5 py-3.5 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-xs text-zinc-400 font-mono truncate">{videoId}</div>
@@ -291,7 +291,7 @@ export function VideoDetailDrawer({
                     target="_blank"
                     rel="noopener noreferrer"
                     download={`${video.title}.mp4`}
-                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100"
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-2xs font-medium text-emerald-700 hover:bg-emerald-100"
                   >
                     <Download className="h-3 w-3" />
                     下载
@@ -301,14 +301,14 @@ export function VideoDetailDrawer({
                   <>
                     <button
                       onClick={copyPrompt}
-                      className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-medium text-zinc-700 hover:bg-zinc-200"
+                      className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1.5 text-2xs font-medium text-zinc-700 hover:bg-zinc-200"
                     >
                       <Copy className="h-3 w-3" />
                       复制 prompt
                     </button>
                     <button
                       onClick={reuseInCreate}
-                      className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100"
+                      className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1.5 text-2xs font-medium text-brand-700 hover:bg-brand-100"
                     >
                       <Sparkles className="h-3 w-3" />
                       复用到创作工坊
@@ -319,7 +319,7 @@ export function VideoDetailDrawer({
                   <button
                     onClick={refresh}
                     disabled={busy}
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-2xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
                   >
                     {busy ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -332,7 +332,7 @@ export function VideoDetailDrawer({
                 <button
                   onClick={del}
                   disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-100 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1.5 text-2xs font-medium text-rose-600 hover:bg-rose-100 disabled:opacity-50"
                 >
                   <Trash2 className="h-3 w-3" />
                   删除
@@ -342,7 +342,7 @@ export function VideoDetailDrawer({
               {/* 错误信息 */}
               {video.errorMessage && (
                 <Section title="错误信息" icon={AlertTriangle} tone="rose">
-                  <pre className="rounded-lg bg-rose-50 px-3 py-2 text-[11px] text-rose-700 whitespace-pre-wrap font-mono">
+                  <pre className="rounded-lg bg-rose-50 px-3 py-2 text-2xs text-rose-700 whitespace-pre-wrap font-mono">
                     {video.errorMessage}
                   </pre>
                 </Section>
@@ -441,10 +441,10 @@ export function VideoDetailDrawer({
 
               {/* 技术参数 */}
               <Section title="技术参数">
-                <dl className="grid grid-cols-2 gap-2 text-[11px]">
+                <dl className="grid grid-cols-2 gap-2 text-2xs">
                   <KV label="引擎 key" value={video.engine ?? "—"} mono />
-                  <KV label="fal 模型" value={video.falModel ?? "—"} mono />
-                  <KV label="fal 请求 ID" value={video.falRequestId ?? "—"} mono />
+                  <KV label="模型" value={video.falModel ?? "—"} mono />
+                  <KV label="请求 ID" value={video.falRequestId ?? "—"} mono />
                   <KV label="比例" value={video.aspectRatio ?? "—"} />
                   <KV label="时长" value={`${video.durationSec}s`} />
                   <KV
@@ -490,7 +490,7 @@ function ProcessingChip({ processing }: { processing: Processing }) {
   const spin = processing === "GENERATING" || processing === "PENDING";
   return (
     <span
-      className={`absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${m.cls}`}
+      className={`absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${m.cls}`}
     >
       <Icon className={`h-2.5 w-2.5 ${spin ? "animate-spin" : ""}`} />
       {m.cn}
@@ -517,7 +517,7 @@ function Chip({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${TONE_CHIP[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${TONE_CHIP[tone]}`}
       title={title}
     >
       {Icon && <Icon className="h-2.5 w-2.5" />}
@@ -545,7 +545,7 @@ function Section({
   return (
     <section>
       <div
-        className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider mb-2 ${SECTION_TONE[tone]}`}
+        className={`flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider mb-2 ${SECTION_TONE[tone]}`}
       >
         {Icon && <Icon className="h-3 w-3" />}
         {title}
@@ -573,16 +573,16 @@ function RelationRow({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+      className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 hover:border-brand-200 hover:bg-brand-50/30 transition-colors"
     >
       <div className="flex h-8 w-8 items-center justify-center rounded-md bg-zinc-100 flex-shrink-0">
         {emoji ? <span className="text-base">{emoji}</span> : <Icon className="h-4 w-4 text-zinc-500" />}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] text-zinc-500">{label}</div>
+        <div className="text-2xs text-zinc-500">{label}</div>
         <div className="text-xs font-medium truncate">{value}</div>
         {secondary && (
-          <div className="text-[10px] text-zinc-400 truncate">{secondary}</div>
+          <div className="text-2xs text-zinc-400 truncate">{secondary}</div>
         )}
       </div>
     </Link>
@@ -592,9 +592,9 @@ function RelationRow({
 function KV({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="rounded-lg bg-zinc-50/60 px-2.5 py-2">
-      <div className="text-[9px] text-zinc-400 uppercase tracking-wider">{label}</div>
+      <div className="text-2xs text-zinc-400 uppercase tracking-wider">{label}</div>
       <div
-        className={`mt-0.5 text-zinc-800 truncate ${mono ? "font-mono text-[10px]" : "text-[11px]"}`}
+        className={`mt-0.5 text-zinc-800 truncate ${mono ? "font-mono text-2xs" : "text-2xs"}`}
         title={value}
       >
         {value}
@@ -607,7 +607,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-zinc-200 bg-white px-2 py-1.5">
       <div className="text-sm font-bold tabular-nums">{value}</div>
-      <div className="text-[9px] text-zinc-500">{label}</div>
+      <div className="text-2xs text-zinc-500">{label}</div>
     </div>
   );
 }

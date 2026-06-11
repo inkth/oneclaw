@@ -1,78 +1,454 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a1a;
-  --brand: #4f46e5;
-  --brand-dark: #3730a3;
-  --accent: #10b981;
+  /* 照搬 Designkit：冷白灰画布 + 近黑正文（实测 #F6F7FA / #252525） */
+  --background: #f6f7fa;
+  --foreground: #252525;
+  --surface: #ffffff; /* 卡片纯白 */
+  --ink: #222326; /* 标题色 */
+  --ink-action: #1c1d1f; /* 近黑主操作色 */
+  --hairline: rgba(0, 0, 0, 0.07); /* 卡片发丝边 */
+
+  /* 品牌 = 电紫 Violet。全站唯一真源：改这 11 个值即整站换肤。 */
+  --brand-50: #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed; /* 主色 */
+  --brand-700: #6d28d9;
+  --brand-800: #5b21b6;
+  --brand-900: #4c1d95;
+  --brand-950: #2e1065;
+
+  /* 兼容别名：旧的 --brand / --accent 引用点继续可用 */
+  --brand: var(--brand-600);
+  --brand-dark: var(--brand-800);
+  --accent: var(--brand-600);
+
+  /* 活力能量层：violet → fuchsia 渐变实体面（消费级活力，仅成交/CTA/奖牌/PRO 白名单使用） */
+  --gradient-vibrant: linear-gradient(135deg, var(--brand-600) 0%, #c026d3 50%, #ec4899 100%);
+  --gradient-vibrant-soft: linear-gradient(135deg, var(--brand-500) 0%, #d946ef 55%, #f472b6 100%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* 品牌色阶 → 生成 bg-brand-600 / text-brand-700 / ring-brand-500 / border-brand-200 等工具类 */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  /* 别名 token：bg-brand / text-accent 仍可用 */
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* 照搬 Designkit：正文 Open Sans，标题 Poppins（font-display 工具类用） */
+  --font-sans: var(--font-open-sans);
+  --font-display: var(--font-poppins);
+  --font-mono: var(--font-open-sans);
+
+  /* 11px 辅助字号 */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  /* 分层柔阴影：低透明、多层，Stripe 质感。覆盖 Tailwind 默认 shadow-*，现有 shadow-sm/lg/xl 自动升级 */
+  --shadow-xs: 0 1px 2px rgba(16, 14, 30, 0.04);
+  --shadow-sm: 0 1px 2px rgba(16, 14, 30, 0.05), 0 1px 1px rgba(16, 14, 30, 0.03);
+  --shadow-md: 0 4px 12px -2px rgba(16, 14, 30, 0.06), 0 2px 6px -2px rgba(16, 14, 30, 0.05);
+  --shadow-lg: 0 12px 32px -8px rgba(16, 14, 30, 0.1), 0 4px 12px -4px rgba(16, 14, 30, 0.06);
+  --shadow-xl: 0 24px 56px -12px rgba(16, 14, 30, 0.14), 0 8px 20px -8px rgba(16, 14, 30, 0.08);
+  /* 品牌辉光投影：可点击/重点卡 hover */
+  --shadow-brand: 0 8px 28px -6px rgba(124, 58, 237, 0.22), 0 2px 8px -2px rgba(124, 58, 237, 0.14);
+  /* 活力辉光：更暖更嗨的品红光晕，给渐变成交按钮 hover */
+  --shadow-vibrant: 0 10px 32px -6px rgba(217, 70, 239, 0.35), 0 4px 12px -4px rgba(236, 72, 153, 0.22);
+}
+
+/* 照搬 Designkit：把 /app 外壳子树内的「电紫 brand 色阶」整体改写为中性近黑，
+   令所有页面内联的 text-brand / bg-brand / border-brand 自动转中性（不动 21 个功能文件，
+   也不影响 /app 之外的营销落地页）。工具类内联引用 var(--brand-*)，
+   故在祖先节点改写 --brand-* 即可级联生效。 */
+.app-skin {
+  --brand-50: #f5f5f6;
+  --brand-100: #e9e9eb;
+  --brand-200: #d8d8dc;
+  --brand-300: #b4b4ba;
+  --brand-400: #79797f;
+  --brand-500: #3f3f46;
+  --brand-600: #1c1d1f; /* 主色 → 近黑 */
+  --brand-700: #0c0c0e;
+  --brand-800: #050506;
+  --brand-900: #000000;
+  --brand-950: #000000;
+  --brand: #1c1d1f;
+  --brand-dark: #000000;
+  --accent: #1c1d1f;
+  /* 渐变/辉光也去电紫，收敛为中性 */
+  --gradient-vibrant: linear-gradient(135deg, #1c1d1f 0%, #2b2b30 100%);
+  --gradient-vibrant-soft: linear-gradient(135deg, #2b2b30 0%, #46464d 100%);
+  --shadow-brand: 0 8px 28px -6px rgba(16, 14, 30, 0.16),
+    0 2px 8px -2px rgba(16, 14, 30, 0.1);
+  --shadow-vibrant: 0 10px 32px -6px rgba(16, 14, 30, 0.18),
+    0 4px 12px -4px rgba(16, 14, 30, 0.1);
 }
 
 html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
-    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  /* Latin/数字走 Open Sans（照搬 Designkit 正文），中文回退到高质系统/开源字体 */
+  font-family: var(--font-open-sans), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+    "Source Han Sans SC", "Microsoft YaHei", "微软雅黑", "WenQuanYi Micro Hei",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none; /* 禁止中文假粗，只用真字重 */
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+/* 数字等宽 + 衬线特性，给数据 / 价格 / 榜单列 */
+.nums {
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+/* ---------- 表现力标题层级（照搬 Designkit：标题统一 Poppins） ---------- */
+/* 标题字族工具类：直接给任意标题套 Poppins */
+.font-display {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+}
+/* 流体大标题：hero h1 / 营销 section h2。-0.022em 字距对 Latin 锐利、对中文也不挤 */
+.text-display {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.text-display-sm {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-size: clamp(1.875rem, 1.3rem + 2vw, 3rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  text-wrap: balance;
+}
+/* 应用内页头标题：稳健不流体（== 现 text-2xl），Poppins */
+.text-title {
+  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
+    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  letter-spacing: -0.018em;
+  font-weight: 600;
+  text-wrap: balance;
+  color: var(--ink);
+}
+/* 中文正文行高补偿：段落更舒展透气 */
+.text-cjk-relaxed {
+  line-height: 1.75;
+  letter-spacing: 0.01em;
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate-float { animation: float 4s ease-in-out infinite; }
-.animate-fade-up { animation: fadeUp 0.6s ease-out forwards; }
+.animate-fade-up {
+  animation: fadeUp 0.5s ease-out forwards;
+}
 
+/* 品牌强调字：violet → fuchsia 渐变，仅用于关键词 */
 .gradient-text {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+  background: linear-gradient(90deg, var(--brand-600), #d946ef);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+/* 活力渐变实体面：成交按钮 / CTA / 奖牌 / PRO 卡。配 .pop 微交互更嗨 */
+.bg-vibrant {
+  background-image: var(--gradient-vibrant);
+}
+.bg-vibrant-soft {
+  background-image: var(--gradient-vibrant-soft);
+}
+
+/* 微交互：成交/兴奋按钮 hover 轻放大 + 活力辉光 */
+.pop {
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease,
+    filter 0.18s ease;
+}
+.pop:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: var(--shadow-vibrant);
+  filter: saturate(1.06);
+}
+.pop:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.08s;
+}
+
+/* 照搬 Designkit：顶部氛围光改为极淡中性彩虹（不再全站紫光顶） */
 .gradient-bg {
   background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(99, 102, 241, 0.15),
-    transparent
-  );
+      ellipse 60% 50% at 50% -10%,
+      rgba(120, 140, 255, 0.05),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 40% at 80% 0%,
+      rgba(255, 170, 210, 0.04),
+      transparent 70%
+    );
 }
 
-.grid-pattern {
-  background-image:
-    linear-gradient(rgba(99, 102, 241, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 102, 241, 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
+/* ---------- 照搬 Designkit 的核心表面原语 ---------- */
+/* 卡片：纯白 + 16px 圆角 + 发丝边 + 极弱阴影（实测无重阴影） */
+.dk-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 1px 2px rgba(16, 14, 30, 0.03);
+}
+/* 图标导航轨激活项：图标后浅灰圆角底 */
+.dk-rail-item {
+  background: rgba(0, 0, 0, 0.05);
+}
+/* composer / hero 背后氛围光：极淡彩虹漫射（替代 aura-violet 紫光） */
+.dk-aura {
+  background: radial-gradient(
+      ellipse 50% 60% at 30% 40%,
+      rgba(150, 180, 255, 0.16),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 55% at 72% 55%,
+      rgba(255, 180, 220, 0.14),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 50% at 55% 30%,
+      rgba(190, 245, 210, 0.12),
+      transparent 70%
+    );
+  filter: blur(36px);
+}
+/* 彩虹发丝边环：激活态 pill / 高亮卡（替代单色电紫渐变边） */
+.dk-ring {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(
+        100deg,
+        #ffb4d2,
+        #c4b5ff 35%,
+        #9ad8ff 65%,
+        #b6f3c8
+      )
+      border-box;
 }
 
+/* 玻璃面：磨砂 + 提饱和 */
 .glass {
   background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+/* 近白微渐变卡面（顶部微光） */
+.surface-sheen {
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.9),
+      rgba(250, 250, 252, 0.6)
+    ),
+    #ffffff;
+}
+
+/* 柔紫极光：放在 hero / 重点卡背后（absolute, aria-hidden） */
+.aura-violet {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(124, 58, 237, 0.18),
+    transparent 70%
+  );
+  filter: blur(40px);
+}
+
+/* 精致卡缘：1px 描边 + 顶部内高光 */
+.ring-edge {
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+}
+
+/* 微交互：hover 上浮 + 柔阴影 */
+.lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.lift:active {
+  transform: translateY(0);
+  transition-duration: 0.08s;
+}
+
+/* 微交互：按压轻缩 */
+.press {
+  transition: transform 0.08s ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* ---------- 进场动画（配合 Reveal 组件） ---------- */
+.reveal {
+  opacity: 0;
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-rise {
+  transform: translateY(16px);
+}
+.reveal-scale {
+  transform: scale(0.96);
+}
+.reveal-fade {
+  transform: none;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- 微光骨架 / shimmer ---------- */
+@keyframes shimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+/* 文本/块骨架：中性浅灰底 + 流动高光（照搬 Designkit 去电紫） */
+.skeleton {
+  background-color: #eef0f4;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+/* 媒体占位：紫→品红极柔渐变 + 流光，无字无 emoji */
+.skeleton-media {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--brand-100), #fae8ff 60%, var(--brand-50));
+}
+.skeleton-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.2s ease-in-out infinite;
+}
+
+/* ---------- 处理中辉光脉冲（视频生成中徽标） ---------- */
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.18);
+  }
+}
+.glow-pulse {
+  animation: glowPulse 1.8s ease-in-out infinite;
+}
+
+/* ---------- 背景颗粒：极淡胶片质感 ---------- */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- 渐变描边：violet → fuchsia 发丝边（推荐 / 高亮 / PRO 卡） ---------- */
+.gradient-border {
+  border: 1px solid transparent;
+  background: linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, var(--brand-500), #d946ef) border-box;
+}
+.gradient-border-soft {
+  border: 1px solid transparent;
+  background: linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, var(--brand-300), #f0abfc) border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lift,
+  .press,
+  .pop,
+  .animate-fade-up,
+  .reveal,
+  .skeleton,
+  .glow-pulse {
+    transition: none !important;
+    animation: none !important;
+  }
+  .skeleton-media::after {
+    animation: none !important;
+  }
+  .lift:hover,
+  .pop:hover {
+    transform: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 ::selection {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(34, 35, 38, 0.12);
 }

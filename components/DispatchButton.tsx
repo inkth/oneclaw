@@ -7,15 +7,9 @@ import { Loader2, Video, Globe } from "lucide-react";
 type AgentKind = "ANALYST" | "DIRECTOR" | "OPERATOR";
 
 const config = {
-  ANALYST: { label: "重新分析", icon: Video, color: "indigo" },
-  DIRECTOR: { label: "派给创意总监", icon: Video, color: "violet" },
-  OPERATOR: { label: "排给运营官", icon: Globe, color: "fuchsia" },
-} as const;
-
-const colorClass = {
-  indigo: "from-indigo-500 to-indigo-600",
-  violet: "from-violet-500 to-violet-600",
-  fuchsia: "from-fuchsia-500 to-fuchsia-600",
+  ANALYST: { label: "重新分析", icon: Video },
+  DIRECTOR: { label: "派给创意总监", icon: Video },
+  OPERATOR: { label: "排给运营官", icon: Globe },
 } as const;
 
 export function DispatchButton({
@@ -41,7 +35,7 @@ export function DispatchButton({
     if (busy) return;
     setBusy(true);
     setErr(null);
-    const res = await fetch(`/api/workspaces/${workspaceId}/agent-tasks`, {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ agent, input }),
@@ -49,23 +43,23 @@ export function DispatchButton({
     const json = await res.json();
     if (!res.ok || !json.ok) {
       setBusy(false);
-      setErr(json?.error?.message || "派发失败");
+      setErr(json?.error?.message || "发送失败");
       return;
     }
-    router.push("/app/agents");
+    router.push("/app");
   }
 
   const sizeCls =
     size === "xs"
-      ? "px-2 py-1 text-[10px]"
-      : "px-3 py-1.5 text-[11px]";
+      ? "px-2 py-1 text-2xs"
+      : "px-3 py-1.5 text-2xs";
 
   return (
     <div className={className}>
       <button
         onClick={dispatch}
         disabled={busy}
-        className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-br ${colorClass[meta.color]} ${sizeCls} font-medium text-white shadow-sm hover:shadow disabled:opacity-50 transition-all`}
+        className={`inline-flex items-center gap-1 rounded-full bg-zinc-900 ${sizeCls} font-medium text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors`}
       >
         {busy ? (
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -74,7 +68,7 @@ export function DispatchButton({
         )}
         {meta.label}
       </button>
-      {err && <div className="mt-1 text-[10px] text-rose-600">{err}</div>}
+      {err && <div className="mt-1 text-2xs text-rose-600">{err}</div>}
     </div>
   );
 }

@@ -17,11 +17,11 @@ RUN apk add --no-cache ca-certificates tzdata wget && \
 WORKDIR /home/app
 
 COPY --from=builder /out/server ./server
-COPY .env.example ./.env.example
 
 USER app
 EXPOSE 8080
+# 用 GET(-O /dev/null)而非 --spider(HEAD)——go-api 只注册了 GET /health，HEAD 会 404。
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+    CMD wget --no-verbose --tries=1 -O /dev/null http://localhost:8080/health || exit 1
 
 CMD ["./server"]
