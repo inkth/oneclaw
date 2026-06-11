@@ -8,7 +8,7 @@ import {
   ArrowRight,
   TrendingUp,
   Video,
-  Globe,
+  BarChart3,
   Loader2,
 } from "lucide-react";
 
@@ -57,7 +57,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
           </h2>
           <p className="mt-2 text-sm text-zinc-600 max-w-2xl">
             点下面任一品类，分析师 Agent 会立刻为你扫描这个赛道的高潜爆品，自动写入选品库。
-            之后你可以再让创意总监给爆品出短视频，让运营官安排发布日程。
+            之后你可以再让创意总监给爆品出短视频，最后上传投流报表一键复盘。
           </p>
 
           <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-2.5">
@@ -110,10 +110,10 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
         />
         <Step
           n={3}
-          icon={Globe}
-          tone="fuchsia"
-          title="品牌运营官"
-          desc="给它你已有的视频清单，它会排好 TikTok / IG / YouTube 三平台周日历。"
+          icon={BarChart3}
+          tone="emerald"
+          title="投放复盘"
+          desc="上传 GMVMax 投流报表，它给你 ROI 四象限和加减预算建议。"
         />
       </div>
     </div>
@@ -123,7 +123,7 @@ export function OnboardingCard({ workspaceId }: { workspaceId: string }) {
 const toneMap = {
   brand: "bg-brand-50 text-brand-600",
   violet: "bg-violet-50 text-violet-600",
-  fuchsia: "bg-fuchsia-50 text-fuchsia-600",
+  emerald: "bg-emerald-50 text-emerald-600",
 } as const;
 
 function Step({

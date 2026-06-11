@@ -7,7 +7,6 @@ import {
   ArrowUpFromLine,
   BarChart3,
   FileSpreadsheet,
-  Globe,
   Loader2,
   Send,
   Sparkles,
@@ -17,8 +16,8 @@ import {
 import { type ReviewResult } from "@/lib/review/types";
 import { ReviewResults } from "./review-panel";
 
-// 走后端 agent-tasks 的三位异步 Agent。
-type AgentKind = "ANALYST" | "DIRECTOR" | "OPERATOR";
+// 走后端 agent-tasks 的异步 Agent。
+type AgentKind = "ANALYST" | "DIRECTOR";
 // 复盘是前端特殊模式：上传报表 → 同步出仪表盘，不落 agent-tasks 列表。
 type ComposerKind = AgentKind | "REVIEW";
 
@@ -39,14 +38,8 @@ const CHAT_AGENTS: ChatAgent[] = [
   {
     kind: "DIRECTOR",
     name: "创意总监",
-    placeholder: "例：为推荐榜首产品生成 4 条 TikTok 短视频",
+    placeholder: "例：为推荐榜首产品生成一条 TikTok 短视频，叙事角度你帮我挑",
     icon: Video,
-  },
-  {
-    kind: "OPERATOR",
-    name: "品牌运营官",
-    placeholder: "例：把本周视频排到 TikTok / IG / YouTube 三个平台",
-    icon: Globe,
   },
 ];
 
@@ -55,7 +48,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
 /**
  * 工作台核心：以聊天框为中心给 Agent 派活。
- * 三位异步 Agent（分析师/创意总监/运营官）发送后落到下方「最近 Agent 任务」；
+ * 异步 Agent（分析师/创意总监）发送后落到下方「最近 Agent 任务」；
  * 「店铺投流数据分析」为同步复盘 Agent：选中后主体换为报表上传区，结果就地渲染仪表盘。
  */
 export function AgentComposer({
