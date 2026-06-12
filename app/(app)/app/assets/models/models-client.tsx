@@ -30,6 +30,8 @@ type ModelAsset = {
   avatarUrl: string | null;
   usageCount: number;
   isFavorite: boolean;
+  /** 全局预置人设:所有工作台可见,只读(不可收藏/删除)。 */
+  isPreset?: boolean;
   createdAt: string;
 };
 
@@ -192,24 +194,31 @@ export function ModelsClient({
                         AI
                       </span>
                     )}
+                    {m.isPreset && (
+                      <span className="inline-flex rounded-full bg-violet-50 px-1.5 py-0.5 text-2xs font-medium text-violet-700">
+                        预置
+                      </span>
+                    )}
                   </div>
-                  <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => toggleFavorite(m)}
-                      className="inline-flex items-center justify-center rounded-full bg-white/90 p-1 hover:bg-white"
-                      title={m.isFavorite ? "取消收藏" : "收藏"}
-                    >
-                      <Star
-                        className={`h-3 w-3 ${m.isFavorite ? "fill-amber-400 text-amber-400" : "text-zinc-400"}`}
-                      />
-                    </button>
-                    <button
-                      onClick={() => deleteModel(m.id)}
-                      className="inline-flex items-center justify-center rounded-full bg-rose-500/90 p-1 text-white hover:bg-rose-600"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
+                  {!m.isPreset && (
+                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => toggleFavorite(m)}
+                        className="inline-flex items-center justify-center rounded-full bg-white/90 p-1 hover:bg-white"
+                        title={m.isFavorite ? "取消收藏" : "收藏"}
+                      >
+                        <Star
+                          className={`h-3 w-3 ${m.isFavorite ? "fill-amber-400 text-amber-400" : "text-zinc-400"}`}
+                        />
+                      </button>
+                      <button
+                        onClick={() => deleteModel(m.id)}
+                        className="inline-flex items-center justify-center rounded-full bg-rose-500/90 p-1 text-white hover:bg-rose-600"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
                   {m.isFavorite && (
                     <Star className="absolute right-2 bottom-2 h-3 w-3 fill-amber-400 text-amber-400 group-hover:opacity-0" />
                   )}

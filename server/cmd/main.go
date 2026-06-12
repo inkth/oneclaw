@@ -91,6 +91,19 @@ func main() {
 	} else {
 		logger.Warn("[fal] FALAI_API_KEY 未配置,封面图不可用")
 	}
+	// 一次性任务:生成预置人设库(Seedream 出图 → COS → model_assets)后退出。
+	// 用法:docker compose run --rm go-api ./server --seed-personas
+	for _, arg := range os.Args[1:] {
+		if arg == "--seed-personas" {
+			created, err := service.NewPersonaSeeder(db, falClient, store).Run(context.Background())
+			if err != nil {
+				logger.Fatal("[persona] 种子任务失败", logger.Err(err))
+			}
+			logger.Info("[persona] 种子任务完成", zap.Int("created", created))
+			return
+		}
+	}
+
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc)
 	tplSvc := service.NewTemplateService(db, llmClient)
 	if llmClient.Configured() {

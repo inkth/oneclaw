@@ -35,10 +35,12 @@ type ModelPatch struct {
 	IsFavorite  *bool   `json:"isFavorite"`
 }
 
+// List 返回工作台自己的模特 + 全局预置人设(预置排在自有之后,只读)。
 func (s *ModelAssetService) List(ctx context.Context, wsID uuid.UUID) ([]model.ModelAsset, error) {
 	var items []model.ModelAsset
 	if err := s.db.WithContext(ctx).
-		Where("workspace_id = ?", wsID).
+		Where("workspace_id = ? OR is_preset = TRUE", wsID).
+		Order("is_preset ASC").
 		Order("is_favorite DESC").
 		Order("created_at DESC").
 		Find(&items).Error; err != nil {
@@ -57,7 +59,7 @@ func (s *ModelAssetService) Create(ctx context.Context, wsID uuid.UUID, in Model
 		gender = model.ModelGenderNeutral
 	}
 	m := model.ModelAsset{
-		WorkspaceID: wsID,
+		WorkspaceID: &wsID,
 		Name:        in.Name,
 		Kind:        kind,
 		Gender:      gender,

@@ -27,18 +27,31 @@ func (c *Client) Configured() bool { return c.cfg.Configured() }
 
 // GenerateImage 调 fal flux 出图,下载后返回字节 + content-type。
 func (c *Client) GenerateImage(ctx context.Context, prompt, imageSize string) ([]byte, string, error) {
+	return c.GenerateImageWith(ctx, c.cfg.ImageModel, prompt, imageSize, nil)
+}
+
+// GenerateImageWith 调指定 fal 模型出图;refImageURLs 非空时作为编辑/参考输入
+// (如 Seedream edit 的 image_urls,用于同一人设多镜头的一致性)。返回首图字节 + content-type。
+func (c *Client) GenerateImageWith(ctx context.Context, modelPath, prompt, imageSize string, refImageURLs []string) ([]byte, string, error) {
 	if !c.Configured() {
 		return nil, "", fmt.Errorf("fal: FALAI_API_KEY 未配置")
+	}
+	if modelPath == "" {
+		modelPath = c.cfg.ImageModel
 	}
 	if imageSize == "" {
 		imageSize = "portrait_16_9"
 	}
-	body, _ := json.Marshal(map[string]any{
+	payload := map[string]any{
 		"prompt":     prompt,
 		"image_size": imageSize,
 		"num_images": 1,
-	})
-	url := strings.TrimRight(c.cfg.BaseURL, "/") + "/" + c.cfg.ImageModel
+	}
+	if len(refImageURLs) > 0 {
+		payload["image_urls"] = refImageURLs
+	}
+	body, _ := json.Marshal(payload)
+	url := strings.TrimRight(c.cfg.BaseURL, "/") + "/" + modelPath
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, "", err
