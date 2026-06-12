@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bot, ChevronDown, ChevronUp, Loader2, Package, Star } from "lucide-react";
+import { toast } from "sonner";
+import {
+  ArrowRight,
+  Bot,
+  ChevronDown,
+  ChevronUp,
+  Clapperboard,
+  Loader2,
+  Package,
+  Star,
+} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import {
   AGENT_IDENTITY,
@@ -15,6 +25,7 @@ import { ReviewResults } from "./review-panel";
 
 export type StreamTask = {
   id: string;
+  workspaceId: string;
   agent: string;
   status: string;
   input: string;
@@ -33,6 +44,11 @@ export type StreamTask = {
       externalId?: string;
       region?: string;
     }[];
+    /** DIRECTOR 任务:脚本草稿。draft=true 且无 videoId 时等待用户确认出片。 */
+    draft?: boolean;
+    videoId?: string;
+    durationSec?: number;
+    aspectRatio?: string;
   } | null;
   createdAt: string;
 };
@@ -164,6 +180,36 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   const long = output.length > OUTPUT_COLLAPSE_LIMIT;
   const shown = !long || expanded ? output : output.slice(0, OUTPUT_COLLAPSE_LIMIT) + "…";
 
+  // DIRECTOR 脚本草稿:确认后才真正出片。本地 videoId 覆盖 metadata(确认成功立即切换 UI)。
+  const isDirector = task.agent === "DIRECTOR";
+  const [confirming, setConfirming] = useState(false);
+  const [localVideoId, setLocalVideoId] = useState<string | null>(null);
+  const videoId = localVideoId ?? task.metadata?.videoId ?? null;
+  const awaitingConfirm =
+    isDirector && task.status === "DONE" && !!task.metadata?.draft && !videoId;
+
+  async function confirmVideo() {
+    if (confirming) return;
+    setConfirming(true);
+    try {
+      const res = await fetch(
+        `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/video`,
+        { method: "POST" },
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.error?.message || "提交失败,稍后再试");
+        return;
+      }
+      setLocalVideoId(json.data.video.id as string);
+      toast.success("已提交视频生成,约 1-2 分钟出片");
+    } catch {
+      toast.error("网络异常,稍后再试");
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   return (
     <div className="space-y-2">
       <UserBubble>{task.input}</UserBubble>
@@ -191,6 +237,35 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
               </button>
             )}
             {!!task.metadata?.products?.length && <ProductChips products={task.metadata.products} />}
+            {awaitingConfirm && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={confirmVideo}
+                  disabled={confirming}
+                  className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {confirming ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Clapperboard className="h-3.5 w-3.5" />
+                  )}
+                  {confirming ? "提交中…" : "生成视频"}
+                </button>
+                <span className="text-2xs text-zinc-400">
+                  {task.metadata?.durationSec ?? 5}s · {task.metadata?.aspectRatio ?? "9:16"} ·
+                  确认后才开始消耗生成额度
+                </span>
+              </div>
+            )}
+            {isDirector && task.status === "DONE" && videoId && (
+              <Link
+                href="/app/videos"
+                className="mt-3 inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+              >
+                <Clapperboard className="h-3 w-3" />
+                去短视频墙查看成片 <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
             {review && (
               <button
                 onClick={() => setDashOpen((v) => !v)}

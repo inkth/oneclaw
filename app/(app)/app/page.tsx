@@ -12,12 +12,13 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  // 其他页面可带 ?agent=DIRECTOR&prompt=… 接力进工作台(如选品库「为它做视频」)。
+  // 其他页面可带 ?agent=DIRECTOR&prompt=…&productId=… 接力进工作台(如选品库「为它做视频」)。
   const sp = await searchParams;
   const initialAgent = COMPOSER_KINDS.has(sp.agent ?? "")
     ? (sp.agent as ComposerKind)
     : undefined;
   const initialInput = sp.prompt || undefined;
+  const initialProductId = sp.productId || undefined;
 
   // 游客可浏览;无工作台时各项为空。
   const me = await getMe();
@@ -68,6 +69,7 @@ export default async function DashboardPage({
         streamLimit={8}
         initialAgent={initialAgent}
         initialInput={initialInput}
+        initialProductId={initialProductId}
       />
     </div>
   );

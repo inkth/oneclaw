@@ -35,10 +35,9 @@ const statusMap: Record<Status, { label: string; cls: string }> = {
 };
 
 // 选品 → 创作的接力:带着产品上下文跳到工作台,预选短视频创作并预填指令。
+// 只带创作意图;价格/卖点/市场数据由后端按 productId 从选品库真实数据注入,避免 URL 里的快照过期。
 function videoPromptFor(p: Product): string {
-  const price = `售价 $${(p.priceCents / 100).toFixed(2)},毛利 ${p.marginPct}%`;
-  const selling = p.note ? `卖点参考:${p.note}。` : "";
-  return `为「${p.title}」(${p.category})生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感。${price}。${selling}`;
+  return `为「${p.title}」生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感。`;
 }
 
 const filters: Array<{ key: "ALL" | Status; label: string }> = [
@@ -204,7 +203,7 @@ export function ProductsClient({
                         <button
                           onClick={() =>
                             router.push(
-                              `/app?agent=DIRECTOR&prompt=${encodeURIComponent(videoPromptFor(p))}`,
+                              `/app?agent=DIRECTOR&productId=${p.id}&prompt=${encodeURIComponent(videoPromptFor(p))}`,
                             )
                           }
                           className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-2xs font-medium text-brand-700 hover:bg-brand-100"

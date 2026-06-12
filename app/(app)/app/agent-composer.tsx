@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   FileSpreadsheet,
   Loader2,
+  Package,
   Plus,
   Send,
   Sparkles,
@@ -79,6 +80,8 @@ export function AgentComposer({
   onAgentChange,
   input,
   onInputChange,
+  productId,
+  onClearProduct,
   textareaRef,
   onDispatched,
 }: {
@@ -88,6 +91,9 @@ export function AgentComposer({
   onAgentChange: (k: ComposerKind) => void;
   input: string;
   onInputChange: (v: string) => void;
+  /** 选品库接力带入的商品 ID:DIRECTOR 派活时一并提交,后端注入真实商品数据并关联产出视频。 */
+  productId?: string | null;
+  onClearProduct?: () => void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   /** 任务创建成功(异步派活或同步复盘落库),新任务立即插入会话流。 */
   onDispatched?: (task: StreamTask) => void;
@@ -137,7 +143,12 @@ export function AgentComposer({
     const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ agent: activeAgent, input: input.trim() }),
+      body: JSON.stringify({
+        agent: activeAgent,
+        input: input.trim(),
+        // 只在创作 Agent 下携带:后端据此注入选品库真实数据并关联产出视频
+        ...(activeAgent === "DIRECTOR" && productId ? { productId } : {}),
+      }),
     });
     const json = await res.json();
     setSubmitting(false);
@@ -213,6 +224,23 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
+        {/* 关联商品 chip:选品库「为它做视频」接力带入,派活时注入真实商品数据 */}
+        {activeAgent === "DIRECTOR" && productId && (
+          <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-2 pr-1 text-xs font-medium text-brand-700">
+              <Package className="h-3.5 w-3.5" />
+              已关联选品商品 · 将注入其真实数据
+              <button
+                onClick={onClearProduct}
+                className="rounded-full p-0.5 text-brand-400 hover:bg-brand-100 hover:text-brand-700"
+                aria-label="取消关联商品"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+        )}
+
         {/* 附件 chip:报表文件 + 内联 ROI 目标 */}
         {attachedFile && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">

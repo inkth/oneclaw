@@ -21,6 +21,8 @@ type Video struct {
 	AspectRatio   string     `gorm:"column:aspect_ratio;default:'9:16'" json:"aspectRatio"`
 	Prompt        *string    `gorm:"type:text" json:"prompt,omitempty"`
 	Script        *string    `gorm:"type:text" json:"script,omitempty"`
+	FirstFrameURL *string    `gorm:"column:first_frame_url;type:text" json:"firstFrameUrl,omitempty"` // 图生视频首帧(如商品实拍图);留存供重试复用
+
 	ThumbnailURL  *string    `gorm:"column:thumbnail_url" json:"thumbnailUrl,omitempty"`
 	VideoURL      *string    `gorm:"column:video_url" json:"videoUrl,omitempty"`
 	Engine        *string    `json:"engine,omitempty"`                      // OpenRouter 视频模型 id

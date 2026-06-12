@@ -33,6 +33,8 @@ func (h *AgentHandler) List(c *gin.Context) {
 type agentCreateReq struct {
 	Agent string `json:"agent" binding:"required"`
 	Input string `json:"input" binding:"required"`
+	// ProductID 选品库商品 ID(可选):DIRECTOR 据此注入真实商品数据并关联产出视频。
+	ProductID string `json:"productId"`
 }
 
 func (h *AgentHandler) Create(c *gin.Context) {
@@ -45,12 +47,40 @@ func (h *AgentHandler) Create(c *gin.Context) {
 		_ = c.Error(apperr.BadRequest("参数缺失:需要 agent 和 input"))
 		return
 	}
-	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input)
+	var pid *uuid.UUID
+	if in.ProductID != "" {
+		v, err := uuid.Parse(in.ProductID)
+		if err != nil {
+			_ = c.Error(apperr.BadRequest("productId 无效"))
+			return
+		}
+		pid = &v
+	}
+	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input, pid)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 	Created(c, gin.H{"task": t})
+}
+
+// ConfirmVideo 用户在任务流里确认 DIRECTOR 脚本草稿,触发真正的视频生成。
+func (h *AgentHandler) ConfirmVideo(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	tid, err := uuid.Parse(c.Param("tid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("任务 ID 无效"))
+		return
+	}
+	v, err := h.agents.ConfirmVideo(c.Request.Context(), wid, tid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	Created(c, gin.H{"video": v})
 }
 
 func (h *AgentHandler) Get(c *gin.Context) {

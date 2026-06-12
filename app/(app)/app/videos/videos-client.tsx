@@ -18,6 +18,7 @@ type Video = {
   videoUrl: string | null;
   script: string | null;
   processing: Processing;
+  errorMessage?: string | null;
   views: number;
   likes: number;
   productTitle: string | null;
@@ -41,6 +42,7 @@ export function VideosClient({
   const router = useRouter();
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [drawerVideoId, setDrawerVideoId] = useState<string | null>(null);
 
   // 自动轮询所有 GENERATING 视频
@@ -82,6 +84,21 @@ export function VideosClient({
     const json = await res.json();
     setRefreshingId(null);
     if (json.ok && json.data.video) {
+      setVideos((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, ...json.data.video } : v)),
+      );
+    }
+  }
+
+  async function retryVideo(id: string) {
+    setRetryingId(id);
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${id}/retry`, {
+      method: "POST",
+    });
+    const json = await res.json().catch(() => null);
+    setRetryingId(null);
+    if (res.ok && json?.ok && json.data.video) {
+      // 状态切回 GENERATING 后,既有轮询 effect 会自动接管
       setVideos((prev) =>
         prev.map((v) => (v.id === id ? { ...v, ...json.data.video } : v)),
       );
@@ -149,7 +166,10 @@ export function VideosClient({
                       生成中…
                     </div>
                   ) : isFailed ? (
-                    <div className="rounded-full bg-rose-500/80 backdrop-blur px-3 py-1.5 text-2xs font-medium text-white inline-flex items-center gap-1.5">
+                    <div
+                      className="rounded-full bg-rose-500/80 backdrop-blur px-3 py-1.5 text-2xs font-medium text-white inline-flex items-center gap-1.5"
+                      title={v.errorMessage ?? undefined}
+                    >
                       <XCircle className="h-3.5 w-3.5" />
                       生成失败
                     </div>
@@ -168,7 +188,7 @@ export function VideosClient({
               {v.processing === "COMPLETED" && v.videoUrl && (
                 <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-2xs font-medium text-white">
                   <CheckCircle2 className="h-2.5 w-2.5" />
-                  fal 完成
+                  已出片
                 </div>
               )}
 
@@ -203,6 +223,19 @@ export function VideosClient({
                   >
                     <Download className="h-2.5 w-2.5" />
                   </a>
+                )}
+                {isFailed && (
+                  <button
+                    onClick={() => retryVideo(v.id)}
+                    disabled={retryingId === v.id}
+                    className="inline-flex items-center gap-0.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-brand-700 hover:bg-brand-100 disabled:opacity-50"
+                    title="沿用原参数重新提交生成"
+                  >
+                    <RefreshCw
+                      className={`h-2.5 w-2.5 ${retryingId === v.id ? "animate-spin" : ""}`}
+                    />
+                    重试
+                  </button>
                 )}
                 {isGenerating && (
                   <button

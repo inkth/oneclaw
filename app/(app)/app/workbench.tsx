@@ -21,6 +21,7 @@ export function Workbench({
   streamLimit,
   initialAgent,
   initialInput,
+  initialProductId,
 }: {
   workspaceId: string;
   isGuest?: boolean;
@@ -33,9 +34,12 @@ export function Workbench({
   /** 从其他页面接力进来时预选的 Agent 与预填指令(如选品库「为它做视频」)。 */
   initialAgent?: ComposerKind;
   initialInput?: string;
+  /** 接力时关联的选品库商品 ID:DIRECTOR 派活会带上,后端注入真实商品数据。 */
+  initialProductId?: string;
 }) {
   const [activeAgent, setActiveAgent] = useState<ComposerKind>(initialAgent ?? "ANALYST");
   const [input, setInput] = useState(initialInput ?? "");
+  const [productId, setProductId] = useState<string | null>(initialProductId ?? null);
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,8 +107,14 @@ export function Workbench({
           onAgentChange={setActiveAgent}
           input={input}
           onInputChange={setInput}
+          productId={productId}
+          onClearProduct={() => setProductId(null)}
           textareaRef={textareaRef}
-          onDispatched={(task) => setTasks((prev) => [task, ...prev])}
+          onDispatched={(task) => {
+            setTasks((prev) => [task, ...prev]);
+            // 关联商品是一次性的:派活成功即消费,避免下一条任务误带同一商品
+            if (task.agent === "DIRECTOR") setProductId(null);
+          }}
         />
       </div>
 

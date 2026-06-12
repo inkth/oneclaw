@@ -65,6 +65,25 @@ func (h *VideoHandler) Delete(c *gin.Context) {
 	OK(c, gin.H{"deleted": true})
 }
 
+// Retry 重新提交一条生成失败的视频(沿用原参数)。
+func (h *VideoHandler) Retry(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	vid, err := uuid.Parse(c.Param("vid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("视频 ID 无效"))
+		return
+	}
+	v, err := h.videos.Retry(c.Request.Context(), wid, vid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"video": v})
+}
+
 func (h *VideoHandler) Refresh(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {

@@ -37,7 +37,8 @@ var validAgents = map[string]bool{
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
-func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input string) (*model.AgentTask, error) {
+// productID(可选)目前仅 DIRECTOR 使用:注入选品库真实数据并把产出视频关联到该商品。
+func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input string, productID *uuid.UUID) (*model.AgentTask, error) {
 	agent = strings.ToUpper(strings.TrimSpace(agent))
 	if !validAgents[agent] {
 		return nil, apperr.BadRequest("未知的 agent 类型")
@@ -50,7 +51,7 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建任务失败", err)
 	}
 	// 异步执行:独立 context(请求结束不取消),沿用 service 的 db/llm。
-	go s.execute(t.ID, wsID, agent, input)
+	go s.execute(t.ID, wsID, agent, input, productID)
 	return &t, nil
 }
 
@@ -79,7 +80,7 @@ func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.
 }
 
 // execute 后台执行单个任务。任何 panic/错误都落库为 FAILED。
-func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
+func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, productID *uuid.UUID) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	defer func() {
@@ -102,7 +103,7 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string) {
 	case model.AgentAnalyst:
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input)
 	case model.AgentDirector:
-		output, meta, usage, err = s.runDirector(ctx, wsID, input)
+		output, meta, usage, err = s.runDirector(ctx, wsID, input, productID)
 	case model.AgentListing:
 		output, meta, usage, err = s.runListing(ctx, wsID, input)
 	default:

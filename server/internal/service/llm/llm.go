@@ -197,6 +197,8 @@ type VideoParams struct {
 	DurationSec int
 	AspectRatio string
 	Resolution  string
+	// FirstFrameURL 非空时走图生视频:该图作为成片首帧(需公网可直接下载的 URL)。
+	FirstFrameURL string
 }
 
 // SubmitVideo 提交一次视频生成,返回 job(含 polling_url)。
@@ -217,6 +219,13 @@ func (c *Client) SubmitVideo(ctx context.Context, p VideoParams) (*VideoJob, err
 	}
 	if p.Resolution != "" {
 		body["resolution"] = p.Resolution
+	}
+	if p.FirstFrameURL != "" {
+		body["frame_images"] = []map[string]any{{
+			"type":       "image_url",
+			"image_url":  map[string]string{"url": p.FirstFrameURL},
+			"frame_type": "first_frame",
+		}}
 	}
 	return c.videoCall(ctx, http.MethodPost, videoEndpoint, body)
 }

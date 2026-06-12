@@ -38,6 +38,8 @@ type VideoInput struct {
 	Resolution  string  `json:"resolution"`
 	Style       string  `json:"style"`
 	ProductID   *string `json:"productId"`
+	// FirstFrameURL 非空时以该图(如商品实拍主图)作为成片首帧,保证画面里是真货。
+	FirstFrameURL string `json:"firstFrameUrl"`
 }
 
 func (s *VideoService) List(ctx context.Context, wsID uuid.UUID) ([]model.Video, error) {
@@ -99,6 +101,9 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 		WorkspaceID: wsID, Title: title, Style: style, DurationSec: dur, AspectRatio: ar,
 		Prompt: &in.Prompt, Processing: model.VideoPending,
 	}
+	if ff := strings.TrimSpace(in.FirstFrameURL); ff != "" {
+		v.FirstFrameURL = &ff
+	}
 	if in.ProductID != nil {
 		if pid, err := uuid.Parse(*in.ProductID); err == nil {
 			v.ProductID = &pid
@@ -107,16 +112,61 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 	if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建视频记录失败", err)
 	}
+	s.dispatch(ctx, &v, in.Resolution)
+	return &v, nil
+}
 
-	job, err := s.llm.SubmitVideo(ctx, llm.VideoParams{
-		Prompt: in.Prompt, DurationSec: dur, AspectRatio: ar, Resolution: in.Resolution,
-	})
+// Retry 重新提交一条生成失败的视频(沿用原 prompt/时长/比例/首帧图)。
+func (s *VideoService) Retry(ctx context.Context, wsID, vid uuid.UUID) (*model.Video, error) {
+	if !s.llm.Configured() {
+		return nil, apperr.New(apperr.CodeServiceUnavailable, "AI 未配置:请设置 OPENROUTER_API_KEY")
+	}
+	v, err := s.Get(ctx, wsID, vid)
+	if err != nil {
+		return nil, err
+	}
+	if v.Processing != model.VideoFailed {
+		return nil, apperr.BadRequest("只有生成失败的视频可以重试")
+	}
+	if v.Prompt == nil || strings.TrimSpace(*v.Prompt) == "" {
+		return nil, apperr.BadRequest("缺少原始提示词,无法重试")
+	}
+	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", v.ID).
+		Updates(map[string]any{"processing": model.VideoPending, "error_message": nil})
+	v.Processing = model.VideoPending
+	v.ErrorMessage = nil
+	s.dispatch(ctx, v, "")
+	return v, nil
+}
+
+// dispatch 把一条 PENDING 视频提交给生成模型并起轮询;失败状态直接写回 v。
+// 带首帧图提交失败时降级为纯文生视频重试一次(当前模型可能不支持图生视频)。
+func (s *VideoService) dispatch(ctx context.Context, v *model.Video, resolution string) {
+	prompt := ""
+	if v.Prompt != nil {
+		prompt = *v.Prompt
+	}
+	ff := ""
+	if v.FirstFrameURL != nil {
+		ff = *v.FirstFrameURL
+	}
+	params := llm.VideoParams{
+		Prompt: prompt, DurationSec: v.DurationSec, AspectRatio: v.AspectRatio,
+		Resolution: resolution, FirstFrameURL: ff,
+	}
+	job, err := s.llm.SubmitVideo(ctx, params)
+	if err != nil && ff != "" {
+		logger.Warn("[video] 带首帧图提交失败,降级为纯文生视频",
+			logger.String("video", v.ID.String()), logger.Err(err))
+		params.FirstFrameURL = ""
+		job, err = s.llm.SubmitVideo(ctx, params)
+	}
 	if err != nil {
 		s.markVideoFailed(ctx, v.ID, err.Error())
 		v.Processing = model.VideoFailed
 		msg := err.Error()
 		v.ErrorMessage = &msg
-		return &v, nil
+		return
 	}
 	engine := s.llm.VideoModel()
 	updates := map[string]any{
@@ -129,7 +179,6 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 	v.PollingURL = &job.PollingURL
 
 	go s.pollLoop(v.ID, job.PollingURL)
-	return &v, nil
 }
 
 // Refresh 手动查一次任务状态并更新(供前端轮询/补偿)。
