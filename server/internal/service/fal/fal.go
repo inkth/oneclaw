@@ -190,15 +190,36 @@ func (c *Client) doJSON(ctx context.Context, method, url string, body []byte, ou
 	return json.NewDecoder(res.Body).Decode(out)
 }
 
+// download 拉取生成结果图。fal.media CDN 跨境间歇性 TLS 超时,分步重试 3 次
+// (只重下载、不重新生成,不重复消耗生成费用)。
 func (c *Client) download(ctx context.Context, url string) ([]byte, string, error) {
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		if attempt > 1 {
+			select {
+			case <-ctx.Done():
+				return nil, "", fmt.Errorf("fal: 下载图像失败: %w", lastErr)
+			case <-time.After(3 * time.Second):
+			}
+		}
+		b, ct, err := c.downloadOnce(ctx, url)
+		if err == nil {
+			return b, ct, nil
+		}
+		lastErr = err
+	}
+	return nil, "", fmt.Errorf("fal: 下载图像失败(重试 3 次): %w", lastErr)
+}
+
+func (c *Client) downloadOnce(ctx context.Context, url string) ([]byte, string, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	res, err := c.http.Do(req)
 	if err != nil {
-		return nil, "", fmt.Errorf("fal: 下载图像失败: %w", err)
+		return nil, "", err
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
-		return nil, "", fmt.Errorf("fal: 下载图像 HTTP %d", res.StatusCode)
+		return nil, "", fmt.Errorf("HTTP %d", res.StatusCode)
 	}
 	b, err := io.ReadAll(res.Body)
 	return b, res.Header.Get("Content-Type"), err

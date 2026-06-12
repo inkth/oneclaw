@@ -146,19 +146,23 @@ func (s *PersonaSeeder) Run(ctx context.Context) (int, error) {
 	return created, nil
 }
 
-// genWithRetry 走 fal 队列 API(短请求轮询,跨境不被长连接卡死),单图限时 10 分钟,失败重试一次。
+// genWithRetry 走 fal 队列 API(短请求轮询,跨境不被长连接卡死),单图限时 10 分钟,最多 3 次尝试。
 func (s *PersonaSeeder) genWithRetry(ctx context.Context, modelPath, prompt, size string, refs []string) ([]byte, string, error) {
 	gen := func() ([]byte, string, error) {
 		gctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 		defer cancel()
 		return s.fal.GenerateImageQueued(gctx, modelPath, prompt, size, refs)
 	}
-	data, ct, err := gen()
-	if err == nil {
-		return data, ct, nil
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		data, ct, err := gen()
+		if err == nil {
+			return data, ct, nil
+		}
+		lastErr = err
+		logger.Warn("[persona] 出图失败", logger.Err(err))
 	}
-	logger.Warn("[persona] 出图失败,重试一次", logger.Err(err))
-	return gen()
+	return nil, "", lastErr
 }
 
 // generateSet 产一个人设的 4 张图:正脸底图(t2i) + 半身/侧脸/场景(edit 参考底图)。
