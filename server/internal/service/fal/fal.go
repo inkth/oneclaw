@@ -94,6 +94,102 @@ func (c *Client) GenerateImageWith(ctx context.Context, modelPath, prompt, image
 	return data, ct, nil
 }
 
+// GenerateImageQueued 走 fal 队列 API 出图:提交立即返回 → 轮询状态 → 完成后取结果。
+// 每次 HTTP 都是短请求,适合慢模型/跨境链路(同步接口会被长连接卡死)。
+func (c *Client) GenerateImageQueued(ctx context.Context, modelPath, prompt, imageSize string, refImageURLs []string) ([]byte, string, error) {
+	if !c.Configured() {
+		return nil, "", fmt.Errorf("fal: FALAI_API_KEY 未配置")
+	}
+	if modelPath == "" {
+		modelPath = c.cfg.ImageModel
+	}
+	if imageSize == "" {
+		imageSize = "portrait_16_9"
+	}
+	payload := map[string]any{"prompt": prompt, "image_size": imageSize, "num_images": 1}
+	if len(refImageURLs) > 0 {
+		payload["image_urls"] = refImageURLs
+	}
+	body, _ := json.Marshal(payload)
+
+	var job struct {
+		RequestID   string `json:"request_id"`
+		StatusURL   string `json:"status_url"`
+		ResponseURL string `json:"response_url"`
+	}
+	if err := c.doJSON(ctx, http.MethodPost, "https://queue.fal.run/"+modelPath, body, &job); err != nil {
+		return nil, "", fmt.Errorf("fal/queue: 提交失败: %w", err)
+	}
+	if job.StatusURL == "" || job.ResponseURL == "" {
+		return nil, "", fmt.Errorf("fal/queue: 提交响应缺少轮询地址")
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, "", fmt.Errorf("fal/queue: 等待超时: %w", ctx.Err())
+		case <-time.After(4 * time.Second):
+		}
+		var st struct {
+			Status string `json:"status"`
+		}
+		if err := c.doJSON(ctx, http.MethodGet, job.StatusURL, nil, &st); err != nil {
+			continue // 轮询抖动,下轮再试
+		}
+		switch st.Status {
+		case "COMPLETED":
+			var parsed struct {
+				Images []struct {
+					URL         string `json:"url"`
+					ContentType string `json:"content_type"`
+				} `json:"images"`
+			}
+			if err := c.doJSON(ctx, http.MethodGet, job.ResponseURL, nil, &parsed); err != nil {
+				return nil, "", fmt.Errorf("fal/queue: 取结果失败: %w", err)
+			}
+			if len(parsed.Images) == 0 || parsed.Images[0].URL == "" {
+				return nil, "", fmt.Errorf("fal/queue: 未返回图像")
+			}
+			data, ct, err := c.download(ctx, parsed.Images[0].URL)
+			if err != nil {
+				return nil, "", err
+			}
+			if ct == "" {
+				ct = parsed.Images[0].ContentType
+			}
+			return data, ct, nil
+		case "IN_QUEUE", "IN_PROGRESS", "":
+			// 继续等
+		default:
+			return nil, "", fmt.Errorf("fal/queue: 任务状态 %s", st.Status)
+		}
+	}
+}
+
+// doJSON 发请求并解析 JSON 响应(带 fal 鉴权头)。
+func (c *Client) doJSON(ctx context.Context, method, url string, body []byte, out any) error {
+	var rd io.Reader
+	if body != nil {
+		rd = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, url, rd)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Key "+c.cfg.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+	res, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		b, _ := io.ReadAll(io.LimitReader(res.Body, 2048))
+		return fmt.Errorf("HTTP %d: %s", res.StatusCode, strings.TrimSpace(string(b)))
+	}
+	return json.NewDecoder(res.Body).Decode(out)
+}
+
 func (c *Client) download(ctx context.Context, url string) ([]byte, string, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	res, err := c.http.Do(req)

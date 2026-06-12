@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -145,14 +146,19 @@ func (s *PersonaSeeder) Run(ctx context.Context) (int, error) {
 	return created, nil
 }
 
-// genWithRetry 包一层重试:同步出图偶发超时/抖动,失败后再试一次。
+// genWithRetry 走 fal 队列 API(短请求轮询,跨境不被长连接卡死),单图限时 10 分钟,失败重试一次。
 func (s *PersonaSeeder) genWithRetry(ctx context.Context, modelPath, prompt, size string, refs []string) ([]byte, string, error) {
-	data, ct, err := s.fal.GenerateImageWith(ctx, modelPath, prompt, size, refs)
+	gen := func() ([]byte, string, error) {
+		gctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+		defer cancel()
+		return s.fal.GenerateImageQueued(gctx, modelPath, prompt, size, refs)
+	}
+	data, ct, err := gen()
 	if err == nil {
 		return data, ct, nil
 	}
 	logger.Warn("[persona] 出图失败,重试一次", logger.Err(err))
-	return s.fal.GenerateImageWith(ctx, modelPath, prompt, size, refs)
+	return gen()
 }
 
 // generateSet 产一个人设的 4 张图:正脸底图(t2i) + 半身/侧脸/场景(edit 参考底图)。
