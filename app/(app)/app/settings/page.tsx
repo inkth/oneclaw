@@ -1,6 +1,33 @@
 import { redirect } from "next/navigation";
+import { getMe, apiServer } from "@/lib/api-client";
+import { SettingsClient, type Usage } from "./settings-client";
 
-// Phase 1:设置/计费 模块迁移中,暂重定向到概览。
-export default function DeferredPage() {
-  redirect("/app");
+export const metadata = { title: "设置 · OneClaw" };
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ upgrade?: string }>;
+}) {
+  const me = await getMe();
+  if (!me) redirect("/login");
+  const { upgrade } = await searchParams;
+
+  let usage: Usage | null = null;
+  try {
+    const d = await apiServer<{ usage: Usage }>(`/workspaces/${me.workspace.id}/usage`);
+    usage = d.usage;
+  } catch {
+    usage = null;
+  }
+
+  return (
+    <SettingsClient
+      key={me.user.id}
+      user={me.user}
+      workspace={me.workspace}
+      usage={usage}
+      initialUpgrade={upgrade === "PRO" || upgrade === "TEAM" ? upgrade : null}
+    />
+  );
 }

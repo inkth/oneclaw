@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -12,7 +13,9 @@ import {
   Loader2,
   Package,
   Star,
+  UserRound,
 } from "lucide-react";
+import { apiBrowser } from "@/lib/api-browser";
 import { Badge } from "@/components/ui/Badge";
 import {
   AGENT_IDENTITY,
@@ -50,6 +53,9 @@ export type StreamTask = {
     videoId?: string;
     durationSec?: number;
     aspectRatio?: string;
+    /** 确认出片时选择的人设(后端回写)。 */
+    personaId?: string;
+    personaName?: string;
     /** LISTING 任务:结构化 Listing 内容;imagesStatus 驱动主图确认生成流程(同出片确认)。 */
     title?: string;
     sellingPoints?: string[];
@@ -180,6 +186,89 @@ function ProductChips({ products }: { products: NonNullable<NonNullable<StreamTa
   );
 }
 
+type PersonaOption = {
+  id: string;
+  name: string;
+  isPreset: boolean;
+  avatarUrl?: string | null;
+  style?: string | null;
+};
+
+/** 出片人设选择:默认「不用人设」,可选预置数字人 / 自有模特(头像 chip 横排)。 */
+function PersonaPicker({
+  workspaceId,
+  value,
+  onChange,
+}: {
+  workspaceId: string;
+  value: string | null;
+  onChange: (id: string | null) => void;
+}) {
+  const [options, setOptions] = useState<PersonaOption[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    apiBrowser<{ models: PersonaOption[] }>(`/workspaces/${workspaceId}/models`)
+      .then((d) => {
+        if (alive) setOptions(d.models ?? []);
+      })
+      .catch(() => {
+        if (alive) setOptions([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [workspaceId]);
+
+  if (!options || options.length === 0) return null;
+
+  const chipBase =
+    "press inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-2xs font-medium transition-colors";
+  return (
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+      <span className="inline-flex shrink-0 items-center gap-1 text-2xs text-zinc-400">
+        <UserRound className="h-3 w-3" /> 出镜人设
+      </span>
+      <button
+        onClick={() => onChange(null)}
+        className={`${chipBase} ${
+          value === null
+            ? "border-brand-400 bg-brand-50/60 text-brand-700"
+            : "border-black/10 bg-white text-zinc-600 hover:border-zinc-300"
+        }`}
+      >
+        不用人设
+      </button>
+      {options.map((m) => (
+        <button
+          key={m.id}
+          onClick={() => onChange(value === m.id ? null : m.id)}
+          title={m.style ?? undefined}
+          className={`${chipBase} ${
+            value === m.id
+              ? "border-brand-400 bg-brand-50/60 text-brand-700"
+              : "border-black/10 bg-white text-zinc-600 hover:border-zinc-300"
+          }`}
+        >
+          {m.avatarUrl ? (
+            <Image
+              src={m.avatarUrl}
+              alt={m.name}
+              width={16}
+              height={16}
+              unoptimized
+              className="h-4 w-4 rounded-full object-cover"
+            />
+          ) : (
+            <UserRound className="h-3 w-3 text-zinc-400" />
+          )}
+          {m.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const review = task.agent === "REVIEW" ? task.metadata?.review : undefined;
@@ -198,6 +287,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   const isDirector = task.agent === "DIRECTOR";
   const [confirming, setConfirming] = useState(false);
   const [localVideoId, setLocalVideoId] = useState<string | null>(null);
+  const [personaId, setPersonaId] = useState<string | null>(null);
   const videoId = localVideoId ?? task.metadata?.videoId ?? null;
   const awaitingConfirm =
     isDirector && task.status === "DONE" && !!task.metadata?.draft && !videoId;
@@ -208,11 +298,16 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
     try {
       const res = await fetch(
         `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/video`,
-        { method: "POST" },
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(personaId ? { modelAssetId: personaId } : {}),
+        },
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.error?.message || "提交失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "提交失败,稍后再试");
         return;
       }
       setLocalVideoId(json.data.video.id as string);
@@ -254,23 +349,30 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
             )}
             {!!task.metadata?.products?.length && <ProductChips products={task.metadata.products} />}
             {awaitingConfirm && (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  onClick={confirmVideo}
-                  disabled={confirming}
-                  className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  {confirming ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Clapperboard className="h-3.5 w-3.5" />
-                  )}
-                  {confirming ? "提交中…" : "生成视频"}
-                </button>
-                <span className="text-2xs text-zinc-400">
-                  {task.metadata?.durationSec ?? 5}s · {task.metadata?.aspectRatio ?? "9:16"} ·
-                  确认后才开始消耗生成额度
-                </span>
+              <div className="mt-3 space-y-2.5">
+                <PersonaPicker
+                  workspaceId={task.workspaceId}
+                  value={personaId}
+                  onChange={setPersonaId}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={confirmVideo}
+                    disabled={confirming}
+                    className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {confirming ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Clapperboard className="h-3.5 w-3.5" />
+                    )}
+                    {confirming ? "提交中…" : "生成视频"}
+                  </button>
+                  <span className="text-2xs text-zinc-400">
+                    {task.metadata?.durationSec ?? 5}s · {task.metadata?.aspectRatio ?? "9:16"} ·
+                    确认后才开始消耗生成额度
+                  </span>
+                </div>
               </div>
             )}
             {isDirector && task.status === "DONE" && videoId && (

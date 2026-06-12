@@ -189,6 +189,17 @@ func (s *AgentService) GenerateListingImages(ctx context.Context, wsID, taskID u
 		return nil, apperr.BadRequest("主图已在生成中,请稍候刷新")
 	}
 
+	// 配额前置:按实际会出的张数扣;超额把认领还回 PENDING,用户升级后可再点。
+	qty := len(d.ImagePrompts)
+	if qty > listingMaxImages {
+		qty = listingMaxImages
+	}
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageImage, qty, &taskID); err != nil {
+		s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).
+			Update("metadata", gorm.Expr(`metadata || '{"imagesStatus":"PENDING"}'::jsonb`))
+		return nil, err
+	}
+
 	go s.runListingImages(taskID, d.ImagePrompts, d.CoverURL)
 	s.db.WithContext(ctx).Where("id = ?", taskID).First(&t)
 	return &t, nil
@@ -229,6 +240,10 @@ func (s *AgentService) runListingImages(taskID uuid.UUID, prompts []string, cove
 	status := listingImagesDone
 	if len(done) == 0 {
 		status = listingImagesFailed
+		// 全军覆没退回出图额度(部分成功不退,成本已花)。
+		rctx, rcancel := context.WithTimeout(context.Background(), 10*time.Second)
+		s.quota.Refund(rctx, taskID, model.UsageImage)
+		rcancel()
 	}
 	patch := map[string]any{"imagesStatus": status}
 	if len(done) > 0 {

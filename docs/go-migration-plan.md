@@ -22,7 +22,7 @@ Go API 已覆盖:auth(send-code/login/logout)、me、workspaces/default、produc
 | P1 存储+素材 | storage→Go;materials | 中 | ✅ 完成(COS storage + materials 上传/列表/删除) |
 | P2 AI 核心 | openrouter + agent-tasks 异步 + analyst/director/operator/copilot + discover/analyze + templates/optimize | 高 | 🚧 P2a 完成:LLM 客户端 + AgentTask + goroutine 异步执行器 + analyst + agent-tasks 端点(需 OPENROUTER_API_KEY)。discover-analyze 也已端到端打通。待:operator(依赖 P3 videos)/copilot/templates |
 | P3 视频(OpenRouter,非 fal)| /api/v1/videos 提交+轮询 + videos(create/list/refresh)+ director/templates/operator | 高 | 🚧 P3a 完成:video 客户端(seedance)+ Video 模型 + 异步轮询 + videos 端点。✅ director(脚本→视频)/operator/templates 完成 + 视频转存 COS。✅ 封面图改用 fal flux(OpenRouter 图像模型对国内区域屏蔽)→ COS。P3 完成 |
-| P4 计费 | PaymentOrder + checkout + alipay/wechat webhooks | 高 | ⬜ |
+| P4 计费 | PaymentOrder + checkout + alipay/wechat webhooks | 高 | 🚧 P4a 完成:PaymentOrder + checkout/查单/mock-confirm(dev)+ 支付成功升级 Plan/顺延到期日 + 月度配额(UsageRecord,派活/出片/出图前置扣减、失败退回)+ /usage 端点 + settings 页收银台。待:微信 Native/支付宝当面付真实渠道 + webhook(接入商户凭证时做,见 service/billing.go createQRCode TODO) |
 | P5 定时 | cron/echotik-refresh → Go 定时任务 | 低 | ⬜ |
 | P6 前端切换 + 清 Prisma | 剩余 SSR/客户端全切 Go API;删 app/api/*、prisma/、lib/db、lib/agents、lib/fal、lib/openrouter、@prisma/client 依赖、db:* 脚本、Auth.js 表;调整 docker/部署 | 中 | ✅ Prisma 全删(105 文件)+ 前端全切 /api/v1;next build 零 Prisma;已部署。遗留 billing/copilot/creation 无 Go 后端(P4/暂缓)|
 

@@ -2,7 +2,7 @@
 
 type Plan = "PRO" | "TEAM";
 
-// Phase 1:计费流程迁移中,CTA 先统一引导到登录/工作台。
+// FREE 引导登录;付费档跳设置页并带 upgrade 参数,落地后自动弹出收银台。
 export function PricingCTA({
   plan,
   label,
@@ -12,7 +12,7 @@ export function PricingCTA({
   label: string;
   className: string;
 }) {
-  const href = plan === "FREE" ? "/login" : "/app";
+  const href = plan === "FREE" ? "/login" : `/app/settings?upgrade=${plan}`;
   return (
     <a href={href} className={className}>
       {label}

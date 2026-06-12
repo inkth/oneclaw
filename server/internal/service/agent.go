@@ -28,10 +28,11 @@ type AgentService struct {
 	discover *DiscoverService // analyst 用来取真实榜单候选
 	fal      *fal.Client      // listing 用来出主图
 	storage  *storage.Storage // listing 主图传 COS
+	quota    *QuotaService    // 派活/出图前扣减月度配额
 }
 
-func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService, f *fal.Client, st *storage.Storage) *AgentService {
-	return &AgentService{db: db, llm: l, videos: videos, discover: discover, fal: f, storage: st}
+func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService, f *fal.Client, st *storage.Storage, q *QuotaService) *AgentService {
+	return &AgentService{db: db, llm: l, videos: videos, discover: discover, fal: f, storage: st, quota: q}
 }
 
 var validAgents = map[string]bool{
@@ -50,8 +51,13 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 	if strings.TrimSpace(input) == "" {
 		return nil, apperr.BadRequest("input 不能为空")
 	}
-	t := model.AgentTask{WorkspaceID: wsID, Agent: agent, Status: model.TaskQueued, Input: input}
+	t := model.AgentTask{ID: uuid.New(), WorkspaceID: wsID, Agent: agent, Status: model.TaskQueued, Input: input}
+	// 配额前置:超额直接拒绝;任务终态失败时 fail() 会退回这笔额度。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
+		return nil, err
+	}
 	if err := s.db.WithContext(ctx).Create(&t).Error; err != nil {
+		s.quota.Refund(ctx, t.ID, model.UsageAgentTask)
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建任务失败", err)
 	}
 	// 异步执行:独立 context(请求结束不取消),沿用 service 的 db/llm。
@@ -134,6 +140,40 @@ func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
 	logger.Warn("[agent] 任务失败", logger.String("task", taskID.String()), logger.String("err", msg))
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).
 		Updates(map[string]any{"status": model.TaskFailed, "error_message": msg, "finished_at": time.Now()})
+	s.quota.Refund(ctx, taskID, model.UsageAgentTask) // 失败不烧额度
+}
+
+// RecoverStartup 服务重启后清理悬挂任务:QUEUED/RUNNING 的执行 goroutine 已随进程消失,
+// 标记 FAILED 并退回额度;出图中断(imagesStatus=RUNNING)同理翻成 FAILED 供重试。
+func (s *AgentService) RecoverStartup(ctx context.Context) {
+	var stale []model.AgentTask
+	if err := s.db.WithContext(ctx).
+		Where("status IN ?", []string{model.TaskQueued, model.TaskRunning}).
+		Find(&stale).Error; err != nil {
+		logger.Warn("[agent] 启动恢复:查询悬挂任务失败", logger.Err(err))
+		return
+	}
+	for _, t := range stale {
+		s.fail(ctx, t.ID, "服务重启中断,请重新派活")
+	}
+	if len(stale) > 0 {
+		logger.Info("[agent] 启动恢复:已清理悬挂任务", logger.Int("count", len(stale)))
+	}
+
+	var imgStale []model.AgentTask
+	if err := s.db.WithContext(ctx).
+		Where("agent = ? AND metadata->>'imagesStatus' = ?", model.AgentListing, listingImagesRunning).
+		Find(&imgStale).Error; err != nil {
+		return
+	}
+	for _, t := range imgStale {
+		s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", t.ID).
+			Update("metadata", gorm.Expr(`metadata || '{"imagesStatus":"FAILED"}'::jsonb`))
+		s.quota.Refund(ctx, t.ID, model.UsageImage)
+	}
+	if len(imgStale) > 0 {
+		logger.Info("[agent] 启动恢复:已重置中断的出图任务", logger.Int("count", len(imgStale)))
+	}
 }
 
 // ── Analyst ─────────────────────────────────────────────────────────────────

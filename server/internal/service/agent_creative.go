@@ -195,9 +195,47 @@ type directorDraft struct {
 	Draft         bool   `json:"draft"`
 }
 
+// personaPrompt 把人设资产压成视频 prompt 注入段 + 兜底首帧图。
+// 预置人设 Description 末行带「外观提示词:<英文 look>」,自有模特退化用 description/style。
+func (s *AgentService) personaPrompt(ctx context.Context, wsID, personaID uuid.UUID) (line, refImage string, asset *model.ModelAsset) {
+	var m model.ModelAsset
+	if err := s.db.WithContext(ctx).
+		Where("id = ? AND (workspace_id = ? OR is_preset = TRUE)", personaID, wsID).
+		First(&m).Error; err != nil {
+		return "", "", nil
+	}
+	look := ""
+	if m.Description != nil {
+		desc := *m.Description
+		if i := strings.Index(desc, "外观提示词:"); i >= 0 {
+			look = strings.TrimSpace(desc[i+len("外观提示词:"):])
+		} else {
+			look = strings.TrimSpace(desc)
+		}
+	}
+	if look == "" && m.Style != nil {
+		look = strings.TrimSpace(*m.Style)
+	}
+	if look == "" {
+		return "", "", nil
+	}
+	line = fmt.Sprintf(
+		"\nOn-camera creator: %s. The exact same person is the presenter in every shot — consistent face, hairstyle and outfit, natural UGC selfie energy.",
+		look)
+	// 场景照(参考图组第 4 张)最像实拍开场,作无商品图时的首帧兜底;没有就用头像。
+	var refs []string
+	if len(m.RefImageURLs) > 0 && json.Unmarshal(m.RefImageURLs, &refs) == nil && len(refs) > 0 {
+		refImage = refs[len(refs)-1]
+	} else if m.AvatarURL != nil {
+		refImage = *m.AvatarURL
+	}
+	return line, refImage, &m
+}
+
 // ConfirmVideo 用户确认脚本草稿后才真正下发视频生成。
+// personaID 非空时把所选人设(数字人)注入 videoPrompt,保证出镜的是同一张脸。
 // 幂等:已生成过则直接返回现有视频;用 jsonb 原子认领 draft 防双击重复出片。
-func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID) (*model.Video, error) {
+func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID, personaID *uuid.UUID) (*model.Video, error) {
 	var t model.AgentTask
 	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", taskID, wsID).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -247,6 +285,18 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID)
 	if d.ProductID != "" {
 		vi.ProductID = &d.ProductID
 	}
+	var persona *model.ModelAsset
+	if personaID != nil {
+		if line, ref, asset := s.personaPrompt(ctx, wsID, *personaID); asset != nil {
+			vi.Prompt += line
+			vi.ModelAssetID = &asset.ID
+			// 商品实拍图优先级更高(真货入画);没有商品图时用人设场景照锚定脸。
+			if vi.FirstFrameURL == "" && ref != "" {
+				vi.FirstFrameURL = ref
+			}
+			persona = asset
+		}
+	}
 	v, err := s.videos.Create(ctx, wsID, vi)
 	if err != nil {
 		restoreDraft() // 没花出去钱,把草稿还给用户重试
@@ -255,6 +305,13 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID)
 	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", v.ID).Update("script", d.Script)
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).
 		Update("metadata", gorm.Expr(`metadata || ?::jsonb`, fmt.Sprintf(`{"videoId":%q}`, v.ID.String())))
+	if persona != nil {
+		s.db.WithContext(ctx).Model(&model.ModelAsset{}).Where("id = ?", persona.ID).
+			Update("usage_count", gorm.Expr("usage_count + 1"))
+		s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).
+			Update("metadata", gorm.Expr(`metadata || ?::jsonb`,
+				fmt.Sprintf(`{"personaId":%q,"personaName":%q}`, persona.ID.String(), persona.Name)))
+	}
 
 	// 封面:有商品实拍图(即首帧)直接用,和成片首帧一致还省一次生图;否则 fal flux 兜底。
 	if d.FirstFrameURL != "" {

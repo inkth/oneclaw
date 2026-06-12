@@ -67,6 +67,8 @@ func main() {
 		&model.AgentTask{},
 		&model.Video{},
 		&model.CreationTemplate{},
+		&model.UsageRecord{},
+		&model.PaymentOrder{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -85,7 +87,9 @@ func main() {
 	matSvc := service.NewMaterialService(db, store)
 	llmClient := llm.New(cfg.OpenRouter)
 	falClient := fal.New(cfg.Fal)
-	videoSvc := service.NewVideoService(db, llmClient, store, falClient)
+	quotaSvc := service.NewQuotaService(db)
+	billingSvc := service.NewBillingService(db, cfg.IsDev())
+	videoSvc := service.NewVideoService(db, llmClient, store, falClient, quotaSvc)
 	if falClient.Configured() {
 		logger.Info("[fal] 已配置(封面图)")
 	} else {
@@ -104,8 +108,16 @@ func main() {
 		}
 	}
 
-	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store)
+	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)
 	tplSvc := service.NewTemplateService(db, llmClient)
+
+	// 重启恢复:续上生成中视频的轮询,清掉随进程消失的悬挂任务(额度退回)。
+	go func() {
+		rctx, rcancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer rcancel()
+		agentSvc.RecoverStartup(rctx)
+		videoSvc.RecoverStartup(rctx)
+	}()
 	if llmClient.Configured() {
 		logger.Info("[llm] OpenRouter 已配置", logger.String("model", llmClient.Model()))
 	} else {
@@ -141,6 +153,8 @@ func main() {
 		Agent:     agentSvc,
 		Video:     videoSvc,
 		Template:  tplSvc,
+		Billing:   billingSvc,
+		Quota:     quotaSvc,
 	})
 
 	srv := &http.Server{

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { apiBrowser } from "@/lib/api-browser";
 import {
   Loader2,
   X,
@@ -41,10 +42,12 @@ const PERIOD_OPTIONS: Array<{ months: Period; label: string; sub: string }> = [
 
 export function CheckoutModal({
   plan,
+  workspaceId,
   defaultPeriod = 1,
   onClose,
 }: {
   plan: Plan;
+  workspaceId: string;
   defaultPeriod?: Period;
   onClose: () => void;
 }) {
@@ -59,7 +62,7 @@ export function CheckoutModal({
 
   const planLabel = plan === "PRO" ? "专业版" : "团队版";
 
-  // 价目（与服务端 lib/pricing.ts 保持一致）
+  // 价目（与 Go 端 service/billing.go 保持一致）
   const priceCents = useMemo(() => {
     const monthly = plan === "PRO" ? 19900 : 89900;
     const mult = period === 1 ? 1 : period === 3 ? 2.7 : 9;
@@ -69,29 +72,36 @@ export function CheckoutModal({
   async function createOrder() {
     setCreating(true);
     setError(null);
-    const res = await fetch("/api/billing/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan, periodMonths: period, provider }),
-    });
-    const json = await res.json();
-    setCreating(false);
-    if (!res.ok || !json.ok) {
-      setError(json?.error?.message || "下单失败");
-      return;
+    try {
+      const data = await apiBrowser<{ order: Order; isMock: boolean }>(
+        `/workspaces/${workspaceId}/billing/checkout`,
+        {
+          method: "POST",
+          body: JSON.stringify({ plan, periodMonths: period, provider }),
+        },
+      );
+      setOrder(data.order);
+      setIsMock(data.isMock);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "下单失败");
+    } finally {
+      setCreating(false);
     }
-    setOrder(json.data.order);
-    setIsMock(json.data.isMock);
   }
 
   // 轮询订单状态
   useEffect(() => {
     if (!order || order.status !== "PENDING") return;
     const t = setInterval(async () => {
-      const r = await fetch(`/api/billing/orders/${order.id}`, { cache: "no-store" });
-      const j = await r.json();
-      if (!j.ok) return;
-      const o = j.data.order as Order;
+      let o: Order;
+      try {
+        const d = await apiBrowser<{ order: Order }>(
+          `/workspaces/${workspaceId}/billing/orders/${order.id}`,
+        );
+        o = d.order;
+      } catch {
+        return;
+      }
       if (o.status !== order.status) {
         setOrder(o);
         if (o.status === "PAID") {
@@ -105,23 +115,22 @@ export function CheckoutModal({
       }
     }, 2500);
     return () => clearInterval(t);
-  }, [order, router]);
+  }, [order, workspaceId, router]);
 
   async function mockConfirm() {
     if (!order) return;
     setConfirming(true);
-    const res = await fetch("/api/billing/mock-confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: order.id }),
-    });
-    const json = await res.json();
-    setConfirming(false);
-    if (!res.ok || !json.ok) {
-      toast.error(json?.error?.message || "模拟支付失败");
-      return;
+    try {
+      await apiBrowser(
+        `/workspaces/${workspaceId}/billing/orders/${order.id}/mock-confirm`,
+        { method: "POST" },
+      );
+      // 等下一次轮询自动捕获 PAID
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "模拟支付失败");
+    } finally {
+      setConfirming(false);
     }
-    // 等下一次轮询自动捕获 PAID
   }
 
   return (

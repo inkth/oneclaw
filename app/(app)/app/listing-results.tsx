@@ -64,7 +64,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.error?.message || "提交失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "提交失败,稍后再试");
         return;
       }
       setMeta((m) => ({ ...m, imagesStatus: "RUNNING" }));

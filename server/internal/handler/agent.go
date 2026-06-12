@@ -64,6 +64,11 @@ func (h *AgentHandler) Create(c *gin.Context) {
 	Created(c, gin.H{"task": t})
 }
 
+type confirmVideoReq struct {
+	// ModelAssetID 出镜人设(可选):预置数字人或工作台自有模特。
+	ModelAssetID string `json:"modelAssetId"`
+}
+
 // ConfirmVideo 用户在任务流里确认 DIRECTOR 脚本草稿,触发真正的视频生成。
 func (h *AgentHandler) ConfirmVideo(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
@@ -75,7 +80,18 @@ func (h *AgentHandler) ConfirmVideo(c *gin.Context) {
 		_ = c.Error(apperr.BadRequest("任务 ID 无效"))
 		return
 	}
-	v, err := h.agents.ConfirmVideo(c.Request.Context(), wid, tid)
+	var in confirmVideoReq
+	_ = c.ShouldBindJSON(&in) // body 可为空(不选人设)
+	var personaID *uuid.UUID
+	if in.ModelAssetID != "" {
+		pid, err := uuid.Parse(in.ModelAssetID)
+		if err != nil {
+			_ = c.Error(apperr.BadRequest("modelAssetId 无效"))
+			return
+		}
+		personaID = &pid
+	}
+	v, err := h.agents.ConfirmVideo(c.Request.Context(), wid, tid, personaID)
 	if err != nil {
 		_ = c.Error(err)
 		return

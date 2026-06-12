@@ -23,6 +23,8 @@ type Deps struct {
 	Agent     *service.AgentService
 	Video     *service.VideoService
 	Template  *service.TemplateService
+	Billing   *service.BillingService
+	Quota     *service.QuotaService
 }
 
 func New(d Deps) *gin.Engine {
@@ -52,6 +54,7 @@ func New(d Deps) *gin.Engine {
 	videoH := handler.NewVideoHandler(d.Video, d.Workspace)
 	tplH := handler.NewTemplateHandler(d.Template, d.Workspace)
 	reviewH := handler.NewReviewHandler(d.Workspace, d.Agent)
+	billH := handler.NewBillingHandler(d.Billing, d.Quota, d.Workspace)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready())
@@ -132,6 +135,11 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/videos/:vid/refresh", videoH.Refresh)
 		priv.POST("/workspaces/:wid/videos/:vid/retry", videoH.Retry)
 		priv.DELETE("/workspaces/:wid/videos/:vid", videoH.Delete)
+
+		priv.GET("/workspaces/:wid/usage", billH.Usage)
+		priv.POST("/workspaces/:wid/billing/checkout", billH.Checkout)
+		priv.GET("/workspaces/:wid/billing/orders/:oid", billH.GetOrder)
+		priv.POST("/workspaces/:wid/billing/orders/:oid/mock-confirm", billH.MockConfirm)
 
 		priv.GET("/workspaces/:wid/templates", tplH.List)
 		priv.POST("/workspaces/:wid/templates", tplH.Create)

@@ -24,10 +24,11 @@ type VideoService struct {
 	llm     *llm.Client
 	storage *storage.Storage
 	fal     *fal.Client
+	quota   *QuotaService
 }
 
-func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage, f *fal.Client) *VideoService {
-	return &VideoService{db: db, llm: l, storage: st, fal: f}
+func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage, f *fal.Client, q *QuotaService) *VideoService {
+	return &VideoService{db: db, llm: l, storage: st, fal: f, quota: q}
 }
 
 type VideoInput struct {
@@ -40,6 +41,8 @@ type VideoInput struct {
 	ProductID   *string `json:"productId"`
 	// FirstFrameURL 非空时以该图(如商品实拍主图)作为成片首帧,保证画面里是真货。
 	FirstFrameURL string `json:"firstFrameUrl"`
+	// ModelAssetID 出镜人设(数字人),仅作关联记录;prompt 注入由 ConfirmVideo 完成。
+	ModelAssetID *uuid.UUID `json:"-"`
 }
 
 func (s *VideoService) List(ctx context.Context, wsID uuid.UUID) ([]model.Video, error) {
@@ -98,6 +101,7 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 		title = firstN(in.Prompt, 40)
 	}
 	v := model.Video{
+		ID:          uuid.New(),
 		WorkspaceID: wsID, Title: title, Style: style, DurationSec: dur, AspectRatio: ar,
 		Prompt: &in.Prompt, Processing: model.VideoPending,
 	}
@@ -109,7 +113,15 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 			v.ProductID = &pid
 		}
 	}
+	if in.ModelAssetID != nil {
+		v.ModelAssetID = in.ModelAssetID
+	}
+	// 配额前置:视频是最贵的消耗,超额直接拒绝;生成失败时 markVideoFailed 退回。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageVideo, 1, &v.ID); err != nil {
+		return nil, err
+	}
 	if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
+		s.quota.Refund(ctx, v.ID, model.UsageVideo)
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建视频记录失败", err)
 	}
 	s.dispatch(ctx, &v, in.Resolution)
@@ -130,6 +142,10 @@ func (s *VideoService) Retry(ctx context.Context, wsID, vid uuid.UUID) (*model.V
 	}
 	if v.Prompt == nil || strings.TrimSpace(*v.Prompt) == "" {
 		return nil, apperr.BadRequest("缺少原始提示词,无法重试")
+	}
+	// 失败时额度已退回,重试重新占一笔。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageVideo, 1, &v.ID); err != nil {
+		return nil, err
 	}
 	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", v.ID).
 		Updates(map[string]any{"processing": model.VideoPending, "error_message": nil})
@@ -304,6 +320,38 @@ func (s *VideoService) rehostToCOS(ctx context.Context, videoID uuid.UUID, srcUR
 func (s *VideoService) markVideoFailed(ctx context.Context, videoID uuid.UUID, msg string) {
 	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", videoID).
 		Updates(map[string]any{"processing": model.VideoFailed, "error_message": msg})
+	s.quota.Refund(ctx, videoID, model.UsageVideo) // 失败不烧额度,重试时重新占
+}
+
+// RecoverStartup 服务重启后接管生成中的视频:有轮询地址的恢复 pollLoop 续跑;
+// 卡在 PENDING(提交 goroutine 已消失)的标 FAILED 退额度,用户可一键重试。
+func (s *VideoService) RecoverStartup(ctx context.Context) {
+	var generating []model.Video
+	if err := s.db.WithContext(ctx).
+		Where("processing = ? AND polling_url IS NOT NULL AND polling_url <> ''", model.VideoGenerating).
+		Find(&generating).Error; err != nil {
+		logger.Warn("[video] 启动恢复:查询生成中视频失败", logger.Err(err))
+		return
+	}
+	for _, v := range generating {
+		go s.pollLoop(v.ID, *v.PollingURL)
+	}
+	if len(generating) > 0 {
+		logger.Info("[video] 启动恢复:已续上轮询", logger.Int("count", len(generating)))
+	}
+
+	var pendingIDs []uuid.UUID
+	if err := s.db.WithContext(ctx).Model(&model.Video{}).
+		Where("processing = ?", model.VideoPending).
+		Pluck("id", &pendingIDs).Error; err != nil {
+		return
+	}
+	for _, id := range pendingIDs {
+		s.markVideoFailed(ctx, id, "服务重启中断,请重试")
+	}
+	if len(pendingIDs) > 0 {
+		logger.Info("[video] 启动恢复:已清理中断的提交", logger.Int("count", len(pendingIDs)))
+	}
 }
 
 func firstN(s string, n int) string {

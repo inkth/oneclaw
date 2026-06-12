@@ -28,7 +28,8 @@ const (
 	CodeSMSRateLimited Code = "SMS_RATE_LIMITED"
 
 	// 业务
-	CodeUpstream Code = "UPSTREAM_ERROR" // EchoTik 等上游错误
+	CodeUpstream      Code = "UPSTREAM_ERROR"  // EchoTik 等上游错误
+	CodeQuotaExceeded Code = "QUOTA_EXCEEDED" // 本月配额用尽,前端引导升级
 )
 
 type AppError struct {
@@ -95,6 +96,8 @@ func httpStatusFor(code Code) int {
 		return http.StatusTooManyRequests
 	case CodeServiceUnavailable:
 		return http.StatusServiceUnavailable
+	case CodeQuotaExceeded:
+		return http.StatusPaymentRequired
 	case CodeUpstream:
 		return http.StatusBadGateway
 	default:
