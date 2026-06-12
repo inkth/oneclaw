@@ -84,13 +84,13 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
       href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-brand-200 hover:shadow-sm"
     >
-      <div className="relative aspect-[3/4] w-full bg-zinc-100">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-100">
         {v.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={v.coverUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img src={v.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
         ) : (
           <div
-            className="flex h-full w-full items-center justify-center text-3xl font-bold text-white"
+            className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white"
             style={{ background: stringToGradient(v.desc || v.nickName) }}
           >
             {initial(v.nickName)}
