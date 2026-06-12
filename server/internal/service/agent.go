@@ -15,7 +15,9 @@ import (
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/oneclaw/server/internal/service/fal"
 	"github.com/oneclaw/server/internal/service/llm"
+	"github.com/oneclaw/server/internal/storage"
 )
 
 // AgentService 派发并异步执行 Agent 任务(QUEUED→RUNNING→DONE/FAILED)。
@@ -24,10 +26,12 @@ type AgentService struct {
 	llm      *llm.Client
 	videos   *VideoService    // director 用来下发视频
 	discover *DiscoverService // analyst 用来取真实榜单候选
+	fal      *fal.Client      // listing 用来出主图
+	storage  *storage.Storage // listing 主图传 COS
 }
 
-func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService) *AgentService {
-	return &AgentService{db: db, llm: l, videos: videos, discover: discover}
+func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService, f *fal.Client, st *storage.Storage) *AgentService {
+	return &AgentService{db: db, llm: l, videos: videos, discover: discover, fal: f, storage: st}
 }
 
 var validAgents = map[string]bool{
@@ -37,7 +41,7 @@ var validAgents = map[string]bool{
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
-// productID(可选)目前仅 DIRECTOR 使用:注入选品库真实数据并把产出视频关联到该商品。
+// productID(可选)供 DIRECTOR / LISTING 使用:注入选品库真实数据,产出关联到该商品。
 func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input string, productID *uuid.UUID) (*model.AgentTask, error) {
 	agent = strings.ToUpper(strings.TrimSpace(agent))
 	if !validAgents[agent] {
@@ -105,7 +109,7 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, prod
 	case model.AgentDirector:
 		output, meta, usage, err = s.runDirector(ctx, wsID, input, productID)
 	case model.AgentListing:
-		output, meta, usage, err = s.runListing(ctx, wsID, input)
+		output, meta, usage, err = s.runListing(ctx, wsID, input, productID)
 	default:
 		err = fmt.Errorf("agent %s 尚未在 Go 端实现", agent)
 	}

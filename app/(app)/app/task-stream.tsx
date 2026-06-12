@@ -22,6 +22,7 @@ import {
 } from "@/lib/ui/tokens";
 import { type ReviewResult } from "@/lib/review/types";
 import { ReviewResults } from "./review-panel";
+import { ListingResults } from "./listing-results";
 
 export type StreamTask = {
   id: string;
@@ -49,6 +50,15 @@ export type StreamTask = {
     videoId?: string;
     durationSec?: number;
     aspectRatio?: string;
+    /** LISTING 任务:结构化 Listing 内容;imagesStatus 驱动主图确认生成流程(同出片确认)。 */
+    title?: string;
+    sellingPoints?: string[];
+    aplusSections?: { heading: string; body: string; imagePrompt: string }[];
+    imagePrompts?: string[];
+    hashtags?: string[];
+    images?: string[];
+    imagesStatus?: "PENDING" | "RUNNING" | "DONE" | "FAILED";
+    coverUrl?: string;
   } | null;
   createdAt: string;
 };
@@ -180,6 +190,10 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   const long = output.length > OUTPUT_COLLAPSE_LIMIT;
   const shown = !long || expanded ? output : output.slice(0, OUTPUT_COLLAPSE_LIMIT) + "…";
 
+  // LISTING 结果有结构化 metadata 时用卡片组渲染(可逐区复制/确认出主图),不再铺纯文本。
+  const isListing =
+    task.agent === "LISTING" && task.status === "DONE" && !!task.metadata?.title;
+
   // DIRECTOR 脚本草稿:确认后才真正出片。本地 videoId 覆盖 metadata(确认成功立即切换 UI)。
   const isDirector = task.agent === "DIRECTOR";
   const [confirming, setConfirming] = useState(false);
@@ -223,6 +237,8 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
           <div className="text-sm leading-relaxed text-rose-600">
             {task.errorMessage || "执行失败,请稍后重试"}
           </div>
+        ) : isListing ? (
+          <ListingResults task={task} />
         ) : (
           <>
             <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">

@@ -83,6 +83,25 @@ func (h *AgentHandler) ConfirmVideo(c *gin.Context) {
 	Created(c, gin.H{"video": v})
 }
 
+// GenerateImages 用户在任务流里确认 LISTING 主图方案,触发真正的出图(消耗生成额度)。
+func (h *AgentHandler) GenerateImages(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	tid, err := uuid.Parse(c.Param("tid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("任务 ID 无效"))
+		return
+	}
+	t, err := h.agents.GenerateListingImages(c.Request.Context(), wid, tid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"task": t})
+}
+
 func (h *AgentHandler) Get(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {

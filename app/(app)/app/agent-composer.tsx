@@ -91,7 +91,7 @@ export function AgentComposer({
   onAgentChange: (k: ComposerKind) => void;
   input: string;
   onInputChange: (v: string) => void;
-  /** 选品库接力带入的商品 ID:DIRECTOR 派活时一并提交,后端注入真实商品数据并关联产出视频。 */
+  /** 选品库接力带入的商品 ID:DIRECTOR/LISTING 派活时一并提交,后端注入真实商品数据并关联产出。 */
   productId?: string | null;
   onClearProduct?: () => void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
@@ -146,8 +146,10 @@ export function AgentComposer({
       body: JSON.stringify({
         agent: activeAgent,
         input: input.trim(),
-        // 只在创作 Agent 下携带:后端据此注入选品库真实数据并关联产出视频
-        ...(activeAgent === "DIRECTOR" && productId ? { productId } : {}),
+        // 只在创作类 Agent 下携带:后端据此注入选品库真实数据并关联产出(视频/Listing)
+        ...((activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId
+          ? { productId }
+          : {}),
       }),
     });
     const json = await res.json();
@@ -224,8 +226,8 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
-        {/* 关联商品 chip:选品库「为它做视频」接力带入,派活时注入真实商品数据 */}
-        {activeAgent === "DIRECTOR" && productId && (
+        {/* 关联商品 chip:选品库「为它做视频/为它做 Listing」接力带入,派活时注入真实商品数据 */}
+        {(activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-2 pr-1 text-xs font-medium text-brand-700">
               <Package className="h-3.5 w-3.5" />
