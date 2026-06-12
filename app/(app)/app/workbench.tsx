@@ -34,7 +34,7 @@ export function Workbench({
   /** 从其他页面接力进来时预选的 Agent 与预填指令(如选品库「为它做视频」)。 */
   initialAgent?: ComposerKind;
   initialInput?: string;
-  /** 接力时关联的选品库商品 ID:DIRECTOR 派活会带上,后端注入真实商品数据。 */
+  /** 接力时关联的选品库商品 ID:DIRECTOR/LISTING 派活会带上,后端注入真实商品数据。 */
   initialProductId?: string;
 }) {
   const [activeAgent, setActiveAgent] = useState<ComposerKind>(initialAgent ?? "ANALYST");
@@ -113,7 +113,7 @@ export function Workbench({
           onDispatched={(task) => {
             setTasks((prev) => [task, ...prev]);
             // 关联商品是一次性的:派活成功即消费,避免下一条任务误带同一商品
-            if (task.agent === "DIRECTOR") setProductId(null);
+            if (task.agent === "DIRECTOR" || task.agent === "LISTING") setProductId(null);
           }}
         />
       </div>

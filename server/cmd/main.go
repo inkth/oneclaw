@@ -104,7 +104,7 @@ func main() {
 		}
 	}
 
-	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc)
+	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store)
 	tplSvc := service.NewTemplateService(db, llmClient)
 	if llmClient.Configured() {
 		logger.Info("[llm] OpenRouter 已配置", logger.String("model", llmClient.Model()))

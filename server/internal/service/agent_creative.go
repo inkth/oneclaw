@@ -72,9 +72,9 @@ func normalizeStyle(s string) string {
 	return model.VideoStyleScene
 }
 
-// directorProductFacts 把选品库商品(及关联 EchoTik 市场数据)压成事实块,供注入创作上下文;
-// 同时返回商品实拍主图 URL(有则作为视频首帧,真货入画)。商品不存在或不属于该工作台时 ok=false。
-func (s *AgentService) directorProductFacts(ctx context.Context, wsID, productID uuid.UUID) (facts, coverURL string, ok bool) {
+// productFacts 把选品库商品(及关联 EchoTik 市场数据)压成事实块,供 DIRECTOR/LISTING 注入创作上下文;
+// 同时返回商品实拍主图 URL(视频首帧 / Listing 出图参考,真货入画)。商品不存在或不属于该工作台时 ok=false。
+func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UUID) (facts, coverURL string, ok bool) {
 	var p model.Product
 	if err := s.db.WithContext(ctx).
 		Where("id = ? AND workspace_id = ?", productID, wsID).
@@ -120,7 +120,7 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 	user := input
 	firstFrameURL := ""
 	if productID != nil {
-		if facts, cover, ok := s.directorProductFacts(ctx, wsID, *productID); ok {
+		if facts, cover, ok := s.productFacts(ctx, wsID, *productID); ok {
 			user = fmt.Sprintf("%s\n\n商品档案(选品库真实数据):\n%s", input, facts)
 			firstFrameURL = cover
 			if firstFrameURL != "" {
