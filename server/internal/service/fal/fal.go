@@ -20,7 +20,9 @@ type Client struct {
 }
 
 func New(cfg config.FalConfig) *Client {
-	return &Client{cfg: cfg, http: &http.Client{Timeout: 120 * time.Second}}
+	// 大图模型(如 Seedream V4.5)同步出图跨境可能超过 2 分钟;
+	// 在线链路各调用方自带更短的 ctx 超时,不受这个上限影响。
+	return &Client{cfg: cfg, http: &http.Client{Timeout: 300 * time.Second}}
 }
 
 func (c *Client) Configured() bool { return c.cfg.Configured() }

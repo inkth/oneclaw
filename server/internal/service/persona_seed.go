@@ -145,11 +145,21 @@ func (s *PersonaSeeder) Run(ctx context.Context) (int, error) {
 	return created, nil
 }
 
+// genWithRetry 包一层重试:同步出图偶发超时/抖动,失败后再试一次。
+func (s *PersonaSeeder) genWithRetry(ctx context.Context, modelPath, prompt, size string, refs []string) ([]byte, string, error) {
+	data, ct, err := s.fal.GenerateImageWith(ctx, modelPath, prompt, size, refs)
+	if err == nil {
+		return data, ct, nil
+	}
+	logger.Warn("[persona] 出图失败,重试一次", logger.Err(err))
+	return s.fal.GenerateImageWith(ctx, modelPath, prompt, size, refs)
+}
+
 // generateSet 产一个人设的 4 张图:正脸底图(t2i) + 半身/侧脸/场景(edit 参考底图)。
 // 返回 COS URL 列表,顺序固定 [face, half, side, scene]。
 func (s *PersonaSeeder) generateSet(ctx context.Context, p presetPersona) ([]string, error) {
 	facePrompt := fmt.Sprintf("close-up front portrait of %s, %s, plain warm neutral background", p.Look, personaStyleSuffix)
-	data, ct, err := s.fal.GenerateImageWith(ctx, personaT2IModel, facePrompt, "square_hd", nil)
+	data, ct, err := s.genWithRetry(ctx, personaT2IModel, facePrompt, "square_hd", nil)
 	if err != nil {
 		return nil, fmt.Errorf("正脸底图: %w", err)
 	}
@@ -160,7 +170,7 @@ func (s *PersonaSeeder) generateSet(ctx context.Context, p presetPersona) ([]str
 	urls := []string{faceURL}
 	for _, shot := range personaShots {
 		prompt := shot.Prompt + ", " + personaStyleSuffix
-		data, ct, err := s.fal.GenerateImageWith(ctx, personaEditModel, prompt, shot.Size, []string{faceURL})
+		data, ct, err := s.genWithRetry(ctx, personaEditModel, prompt, shot.Size, []string{faceURL})
 		if err != nil {
 			return nil, fmt.Errorf("%s 镜头: %w", shot.Key, err)
 		}
