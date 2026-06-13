@@ -28,26 +28,44 @@ const (
 	PayAlipay = "ALIPAY"
 )
 
-// PlanQuota 各档方案的月度配额。-1 表示不限。
-type PlanQuota struct {
-	AgentTasks int `json:"agentTasks"`
-	Videos     int `json:"videos"`
-	Images     int `json:"images"`
+// 用量统一计入「积分池」:每个动作按权重扣不同积分(出片贵、出图便宜),
+// 方案按月给一笔积分额度。权重/额度集中在此,调价只改这里。
+
+// usageCreditCost 各动作的积分单价(按 kind)。
+var usageCreditCost = map[string]int{
+	UsageAgentTask: 5,  // 选品分析 / Listing / 复盘
+	UsageVideo:     50, // 出片(短视频)
+	UsageImage:     2,  // 出图(每张)
 }
 
-// planQuotas 与 /pricing 页文案对齐:FREE 10 任务/4 视频,PRO 200 任务/80 视频,TEAM 不限。
-var planQuotas = map[string]PlanQuota{
-	PlanFree: {AgentTasks: 10, Videos: 4, Images: 12},
-	PlanPro:  {AgentTasks: 200, Videos: 80, Images: 240},
-	PlanTeam: {AgentTasks: -1, Videos: -1, Images: -1},
+// planCredits 各档方案的月度积分额度。-1 表示不限。
+// 由旧配额折算:FREE 10×5+4×50+12×2≈300,PRO 200×5+80×50+240×2≈6000。
+var planCredits = map[string]int{
+	PlanFree: 300,
+	PlanPro:  6000,
+	PlanTeam: -1,
 }
 
-// QuotaFor 返回方案配额;未知方案按 FREE 处理。
-func QuotaFor(plan string) PlanQuota {
-	if q, ok := planQuotas[plan]; ok {
-		return q
+// CreditsFor 返回某动作消耗的积分(qty 张/条/次)。未知 kind 记 0。
+func CreditsFor(kind string, qty int) int {
+	return usageCreditCost[kind] * qty
+}
+
+// PlanCredits 返回方案月度积分额度;未知方案按 FREE 处理。-1 不限。
+func PlanCredits(plan string) int {
+	if c, ok := planCredits[plan]; ok {
+		return c
 	}
-	return planQuotas[PlanFree]
+	return planCredits[PlanFree]
+}
+
+// CreditCosts 返回积分单价表(前端动作处标识用)。
+func CreditCosts() map[string]int {
+	return map[string]int{
+		"agentTask": usageCreditCost[UsageAgentTask],
+		"video":     usageCreditCost[UsageVideo],
+		"image":     usageCreditCost[UsageImage],
+	}
 }
 
 // UsageRecord 一笔配额消耗(月度窗口内求和与配额比较)。

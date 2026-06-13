@@ -14,6 +14,8 @@ import {
 import { type ReviewResult } from "@/lib/review/types";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { CreditCost } from "@/components/ui/CreditCost";
+import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
 import { AssetChips } from "./create/asset-chips";
 
@@ -362,6 +364,7 @@ export function AgentComposer({
           )}
 
           <div className="ml-auto flex items-center gap-2">
+            {!isReview && !attachedFile && <CreditCost credits={CREDIT_COST.agentTask} />}
             <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 发送</span>
             <button
               onClick={submit}

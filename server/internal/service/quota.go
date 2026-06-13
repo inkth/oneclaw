@@ -32,10 +32,26 @@ func monthStart(now time.Time) time.Time {
 	return time.Date(n.Year(), n.Month(), 1, 0, 0, 0, 0, cnZone)
 }
 
-var usageKindLabels = map[string]string{
-	model.UsageAgentTask: "Agent 任务",
-	model.UsageVideo:     "视频生成",
-	model.UsageImage:     "出图",
+// monthCredits 汇总当月用量:返回按 kind 的原始次数,以及折算后的总积分。
+// 校验(CheckAndRecord)与汇总(Usage)共用,避免两处折算口径漂移。db 可传事务 tx。
+func monthCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID) (total int, counts map[string]int, err error) {
+	type row struct {
+		Kind string
+		Cnt  int
+	}
+	var rows []row
+	if err = db.WithContext(ctx).Model(&model.UsageRecord{}).
+		Select("kind, COALESCE(SUM(qty),0) AS cnt").
+		Where("workspace_id = ? AND created_at >= ?", wsID, monthStart(time.Now())).
+		Group("kind").Scan(&rows).Error; err != nil {
+		return 0, nil, apperr.Wrap(apperr.CodeInternal, "查询用量失败", err)
+	}
+	counts = map[string]int{}
+	for _, r := range rows {
+		counts[r.Kind] = r.Cnt
+		total += model.CreditsFor(r.Kind, r.Cnt)
+	}
+	return total, counts, nil
 }
 
 // EffectivePlan 返回工作台当前生效方案:到期的付费方案惰性降回 FREE(顺手落库)。
@@ -74,19 +90,16 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 				return apperr.Wrap(apperr.CodeInternal, "方案降级失败", err)
 			}
 		}
-		limit := limitFor(plan, kind)
+		limit := model.PlanCredits(plan)
 		if limit >= 0 {
-			var used int64
-			if err := tx.Model(&model.UsageRecord{}).
-				Select("COALESCE(SUM(qty), 0)").
-				Where("workspace_id = ? AND kind = ? AND created_at >= ?", wsID, kind, monthStart(time.Now())).
-				Scan(&used).Error; err != nil {
-				return apperr.Wrap(apperr.CodeInternal, "查询用量失败", err)
+			cost := model.CreditsFor(kind, qty)
+			used, _, err := monthCredits(ctx, tx, wsID)
+			if err != nil {
+				return err
 			}
-			if used+int64(qty) > int64(limit) {
-				label := usageKindLabels[kind]
+			if used+cost > limit {
 				return apperr.New(apperr.CodeQuotaExceeded,
-					fmt.Sprintf("本月%s额度已用完(%d/%d),升级方案可继续", label, used, limit))
+					fmt.Sprintf("本月积分已用完(%d/%d),升级方案可继续", used, limit))
 			}
 		}
 		rec := model.UsageRecord{WorkspaceID: wsID, Kind: kind, Qty: qty, RefID: refID}
@@ -106,35 +119,28 @@ func (s *QuotaService) Refund(ctx context.Context, refID uuid.UUID, kind string)
 	}
 }
 
-func limitFor(plan, kind string) int {
-	q := model.QuotaFor(plan)
-	switch kind {
-	case model.UsageAgentTask:
-		return q.AgentTasks
-	case model.UsageVideo:
-		return q.Videos
-	case model.UsageImage:
-		return q.Images
-	default:
-		return -1
-	}
-}
-
-// UsageItem 单类用量:used/limit(-1 不限)。
-type UsageItem struct {
+// CreditItem 积分余额:used/limit(单位:积分,limit=-1 不限)。
+type CreditItem struct {
 	Used  int `json:"used"`
 	Limit int `json:"limit"`
 }
 
-// UsageSummary 工作台当月用量总览(settings 页用)。
+// UsageBreakdown 当月各动作原始次数(明细行展示用,不作限额)。
+type UsageBreakdown struct {
+	AgentTasks int `json:"agentTasks"`
+	Videos     int `json:"videos"`
+	Images     int `json:"images"`
+}
+
+// UsageSummary 工作台当月用量总览(settings 页 / 驾驶舱用)。
 type UsageSummary struct {
-	Plan          string     `json:"plan"`
-	PlanExpiresAt *time.Time `json:"planExpiresAt,omitempty"`
-	PeriodStart   time.Time  `json:"periodStart"`
-	AgentTasks    UsageItem  `json:"agentTasks"`
-	Videos        UsageItem  `json:"videos"`
-	Images        UsageItem  `json:"images"`
-	CostCents     int        `json:"costCents"` // 当月 LLM+生成 实际成本(任务+视频累计)
+	Plan          string         `json:"plan"`
+	PlanExpiresAt *time.Time     `json:"planExpiresAt,omitempty"`
+	PeriodStart   time.Time      `json:"periodStart"`
+	Credits       CreditItem     `json:"credits"`      // 统一积分池
+	Breakdown     UsageBreakdown `json:"breakdown"`    // 各动作次数明细
+	CreditCosts   map[string]int `json:"creditCosts"`  // 积分单价表,前端动作处标识用
+	CostCents     int            `json:"costCents"`    // 当月 LLM+生成 实际成本(任务+视频累计)
 }
 
 // Usage 汇总当月用量与方案信息。
@@ -146,20 +152,9 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 	plan := s.EffectivePlan(ctx, &ws)
 	start := monthStart(time.Now())
 
-	type row struct {
-		Kind string
-		Sum  int
-	}
-	var rows []row
-	if err := s.db.WithContext(ctx).Model(&model.UsageRecord{}).
-		Select("kind, COALESCE(SUM(qty),0) AS sum").
-		Where("workspace_id = ? AND created_at >= ?", wsID, start).
-		Group("kind").Scan(&rows).Error; err != nil {
-		return nil, apperr.Wrap(apperr.CodeInternal, "查询用量失败", err)
-	}
-	used := map[string]int{}
-	for _, r := range rows {
-		used[r.Kind] = r.Sum
+	usedCredits, counts, err := monthCredits(ctx, s.db, wsID)
+	if err != nil {
+		return nil, err
 	}
 
 	var taskCost, videoCost int64
@@ -170,14 +165,17 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		Select("COALESCE(SUM(cost_cents),0)").
 		Where("workspace_id = ? AND created_at >= ?", wsID, start).Scan(&videoCost)
 
-	q := model.QuotaFor(plan)
 	return &UsageSummary{
 		Plan:          plan,
 		PlanExpiresAt: ws.PlanExpiresAt,
 		PeriodStart:   start,
-		AgentTasks:    UsageItem{Used: used[model.UsageAgentTask], Limit: q.AgentTasks},
-		Videos:        UsageItem{Used: used[model.UsageVideo], Limit: q.Videos},
-		Images:        UsageItem{Used: used[model.UsageImage], Limit: q.Images},
-		CostCents:     int(taskCost + videoCost),
+		Credits:       CreditItem{Used: usedCredits, Limit: model.PlanCredits(plan)},
+		Breakdown: UsageBreakdown{
+			AgentTasks: counts[model.UsageAgentTask],
+			Videos:     counts[model.UsageVideo],
+			Images:     counts[model.UsageImage],
+		},
+		CreditCosts: model.CreditCosts(),
+		CostCents:   int(taskCost + videoCost),
 	}, nil
 }

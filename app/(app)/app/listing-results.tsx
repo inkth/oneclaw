@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Copy, Hash, Images, Loader2, RefreshCw } from "lucide-react";
+import { CreditCost } from "@/components/ui/CreditCost";
+import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
 
 type ListingMeta = NonNullable<StreamTask["metadata"]>;
@@ -191,10 +193,11 @@ export function ListingResults({ task }: { task: StreamTask }) {
                         ? "重试生成主图"
                         : "生成 Listing 主图"}
                   </button>
+                  <CreditCost credits={CREDIT_COST.image * Math.min(prompts.length, 3)} />
                   <span className="text-2xs text-zinc-400">
                     {meta.imagesStatus === "FAILED"
                       ? "上次生成失败,可直接重试"
-                      : `最多出 ${Math.min(prompts.length, 3)} 张 · 确认后才消耗生成额度`}
+                      : `最多出 ${Math.min(prompts.length, 3)} 张 · 确认后才消耗积分`}
                     {meta.coverUrl ? " · 以商品实拍图为参考,真货入画" : ""}
                   </span>
                 </div>

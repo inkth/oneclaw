@@ -5,6 +5,7 @@ import {
   BadgeCheck,
   CalendarClock,
   Clapperboard,
+  Coins,
   CreditCard,
   Image as ImageIcon,
   Phone,
@@ -22,9 +23,9 @@ export type Usage = {
   plan: string;
   planExpiresAt?: string | null;
   periodStart: string;
-  agentTasks: { used: number; limit: number };
-  videos: { used: number; limit: number };
-  images: { used: number; limit: number };
+  credits: { used: number; limit: number };
+  breakdown: { agentTasks: number; videos: number; images: number };
+  creditCosts: { agentTask: number; video: number; image: number };
   costCents: number;
 };
 
@@ -125,10 +126,12 @@ export function SettingsClient({
         </div>
       </section>
 
-      {/* 本月用量 */}
+      {/* 本月积分 */}
       <section className="dk-card p-5">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold text-ink">本月用量</div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <Coins className="h-4 w-4 text-zinc-400" /> 本月积分
+          </div>
           {usage && usage.costCents > 0 && (
             <div className="text-2xs text-zinc-400">
               本月生成成本约 ¥{(usage.costCents / 100).toFixed(2)}
@@ -136,25 +139,9 @@ export function SettingsClient({
           )}
         </div>
         {usage ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <UsageBar
-              icon={<Zap className="h-3.5 w-3.5" />}
-              label="Agent 任务"
-              item={usage.agentTasks}
-            />
-            <UsageBar
-              icon={<Clapperboard className="h-3.5 w-3.5" />}
-              label="视频生成"
-              item={usage.videos}
-            />
-            <UsageBar
-              icon={<ImageIcon className="h-3.5 w-3.5" />}
-              label="出图"
-              item={usage.images}
-            />
-          </div>
+          <CreditBalance usage={usage} />
         ) : (
-          <div className="mt-4 text-sm text-zinc-400">用量数据暂不可用,稍后刷新重试。</div>
+          <div className="mt-4 text-sm text-zinc-400">积分数据暂不可用,稍后刷新重试。</div>
         )}
       </section>
 
@@ -169,37 +156,52 @@ export function SettingsClient({
   );
 }
 
-function UsageBar({
-  icon,
-  label,
-  item,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  item: { used: number; limit: number };
-}) {
-  const unlimited = item.limit < 0;
-  const pct = unlimited ? 0 : Math.min(100, Math.round((item.used / Math.max(1, item.limit)) * 100));
+function CreditBalance({ usage }: { usage: Usage }) {
+  const { used, limit } = usage.credits;
+  const unlimited = limit < 0;
+  const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
   const danger = !unlimited && pct >= 90;
+  const remaining = unlimited ? null : Math.max(0, limit - used);
+  const b = usage.breakdown;
+
   return (
-    <div className="rounded-xl border border-black/5 bg-zinc-50/60 p-3.5">
-      <div className="flex items-center justify-between">
-        <div className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-600">
-          <span className="text-zinc-400">{icon}</span>
-          {label}
+    <div className="mt-4">
+      <div className="flex items-end justify-between">
+        <div>
+          <span className="text-2xl font-bold tabular-nums text-ink">{used}</span>
+          <span className="text-sm text-zinc-400"> / {unlimited ? "∞" : limit} 积分</span>
         </div>
-        <div className="text-xs tabular-nums text-zinc-500">
-          {item.used}
-          <span className="text-zinc-300"> / {unlimited ? "∞" : item.limit}</span>
+        <div className="text-2xs text-zinc-400">
+          {unlimited ? "团队版不限积分" : `本月剩余 ${remaining} 积分`}
         </div>
       </div>
-      <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-zinc-200/70">
+      <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-zinc-200/70">
         <div
           className={`h-full rounded-full transition-all ${
             unlimited ? "w-1/12 bg-emerald-400" : danger ? "bg-rose-500" : "bg-brand-500"
           }`}
           style={unlimited ? undefined : { width: `${pct}%` }}
         />
+      </div>
+      {danger && (
+        <div className="mt-2 text-2xs font-medium text-rose-500">
+          积分告急,升级方案可继续。
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-zinc-500">
+        <span className="inline-flex items-center gap-1.5">
+          <Zap className="h-3 w-3 text-zinc-400" />选品 {b.agentTasks} 次
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Clapperboard className="h-3 w-3 text-zinc-400" />出片 {b.videos} 条
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <ImageIcon className="h-3 w-3 text-zinc-400" />出图 {b.images} 张
+        </span>
+        <span className="text-zinc-300">
+          (选品 {usage.creditCosts.agentTask} · 出片 {usage.creditCosts.video} · 出图{" "}
+          {usage.creditCosts.image} 积分)
+        </span>
       </div>
     </div>
   );

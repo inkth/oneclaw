@@ -17,6 +17,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { CreditCost } from "@/components/ui/CreditCost";
+import { CREDIT_COST } from "@/lib/credits";
 import {
   AGENT_IDENTITY,
   TASK_STATUS_LABEL,
@@ -287,7 +289,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   const market = (t.metadata?.region as Region) ?? "US";
   const voiceLang = t.metadata?.voiceLang ?? REGION_LANG[market] ?? "英语";
 
-  // 改目标市场 → 用新市场母语重写脚本草稿(纯文本调用,不消耗视频额度)→ 轮询取回新脚本。
+  // 改目标市场 → 用新市场母语重写脚本草稿(纯文本调用,不消耗积分)→ 轮询取回新脚本。
   async function changeMarket(region: Region) {
     if (redrafting || confirming || region === market) return;
     const lang = REGION_LANG[region];
@@ -400,7 +402,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                   {redrafting ? (
                     <span className="inline-flex items-center gap-1.5 text-2xs text-zinc-500">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      正在用{pendingLang}重写口播脚本,不消耗视频额度…
+                      正在用{pendingLang}重写口播脚本,不消耗积分…
                     </span>
                   ) : (
                     <>
@@ -440,9 +442,10 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                     )}
                     {confirming ? "提交中…" : "生成视频"}
                   </button>
+                  <CreditCost credits={CREDIT_COST.video} />
                   <span className="text-2xs text-zinc-400">
                     {t.metadata?.durationSec ?? 5}s · {t.metadata?.aspectRatio ?? "9:16"} ·{" "}
-                    {voiceLang}口播 · 确认后才开始消耗生成额度
+                    {voiceLang}口播 · 确认后才开始消耗积分
                   </span>
                 </div>
               </div>

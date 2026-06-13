@@ -30,8 +30,8 @@ const tiers: Array<{
     highlight: false,
     description: "适合个人测试 OneClaw 的能力边界",
     features: [
-      "每月 10 次 Agent 任务",
-      "每月 4 条 fal 视频生成",
+      "每月 300 积分(≈ 4 条出片 / 10 次选品)",
+      "选品 5 / 出片 50 / 出图 2 积分",
       "1 个工作台",
       "选品 / 视频 / 工作流全功能",
       "社区 Discord 支持",
@@ -49,8 +49,8 @@ const tiers: Array<{
     highlight: true,
     description: "出海个体卖家 / 独立站团队的甜点配置",
     features: [
-      "每月 200 次 Agent 任务",
-      "每月 80 条 fal 视频生成",
+      "每月 6000 积分(≈ 80 条出片)",
+      "选品 5 / 出片 50 / 出图 2 积分",
       "5 个工作台 + 3 名成员",
       "选品 CSV 导出 / 视频批量下载",
       "Webhook + REST API",
@@ -70,8 +70,8 @@ const tiers: Array<{
     highlight: false,
     description: "MCN / 服务商 / 多品牌团队",
     features: [
-      "无限 Agent 任务",
-      "无限 fal 视频生成（按量计费）",
+      "不限积分（按量计费）",
+      "出片 / 选品 / 出图全不限量",
       "无限工作台 + 无限成员",
       "细粒度角色权限 + 审计日志",
       "自定义 LLM Provider Key（BYOK）",
@@ -85,16 +85,16 @@ const tiers: Array<{
 
 const faqs = [
   {
-    q: "Agent 任务怎么算？",
-    a: "每次发送选品分析 / 短视频创作 / Listing 内容算 1 次。短视频创作调用的 fal 视频另外算在视频额度里。",
+    q: "积分怎么算？",
+    a: "所有用量统一计入积分池：选品分析 / Listing 内容 / 短视频脚本各 5 积分，确认出片 50 积分/条，Listing 主图 2 积分/张。投放复盘不消耗积分。动手前按钮旁都会标出本次约消耗。",
   },
   {
-    q: "视频额度用完了怎么办？",
-    a: "Free / Pro 用完会暂停视频生成，选品分析、Listing 内容与投放复盘仍可正常使用；Team 按 $0.06/5s 视频实际消耗结算。",
+    q: "积分用完了怎么办？",
+    a: "Free / Pro 用完会暂停出片 / 出图等消耗积分的动作，投放复盘仍可正常使用，下个自然月自动重置；随时可升级方案立即恢复。Team 不限积分，按实际用量结算。",
   },
   {
     q: "可以中途升级 / 降级吗？",
-    a: "可以。升级即时生效，未消耗额度按比例转入新方案；降级在下个计费周期生效。",
+    a: "可以。升级即时生效，未消耗积分按比例转入新方案；降级在下个计费周期生效。",
   },
   {
     q: "支持 BYOK（自带模型 key）吗？",
@@ -141,7 +141,7 @@ export default function PricingPage() {
             </h1>
             <p className="mt-4 text-zinc-600 max-w-2xl mx-auto text-cjk-relaxed">
               三档方案覆盖从个人测试到 MCN 全场景，每一档都包含全部核心功能 ——
-              区别只在每月能跑多少次 Agent、多少条 fal 视频、能拉几个人进来。
+              区别只在每月给多少积分(出片 / 选品 / 出图统一从积分池扣)、能拉几个人进来。
             </p>
           </div>
         </section>
@@ -231,7 +231,7 @@ export default function PricingPage() {
 
             <p className="mt-10 text-center text-xs text-zinc-500">
               所有方案均不含模型实际推理成本，相关费用由 OneClaw
-              在你的额度内代付；BYOK 模式下走你自己的账户。
+              在你的积分内代付；BYOK 模式下走你自己的账户。
             </p>
           </div>
         </section>

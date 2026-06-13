@@ -1,6 +1,6 @@
 "use client";
 
-import { Clapperboard, Image as ImageIcon, LockKeyhole, Wallet, Zap } from "lucide-react";
+import { Clapperboard, Coins, Image as ImageIcon, LockKeyhole, Wallet } from "lucide-react";
 import { Stat } from "@/components/ui/Stat";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import type { Usage } from "./settings/settings-client";
@@ -48,27 +48,37 @@ export function DashboardStats({
     );
   }
 
+  const { used, limit } = usage.credits;
+  const unlimited = limit < 0;
+  const remaining = unlimited ? "∞" : Math.max(0, limit - used);
+  const pct = unlimited ? 0 : Math.round((used / Math.max(1, limit)) * 100);
+  const creditHint = unlimited
+    ? "团队版不限积分"
+    : pct >= 90
+      ? "积分告急,去设置升级"
+      : `本月已用 ${used} 积分`;
+
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat
-        icon={Zap}
-        label="本月派活"
-        value={quota(usage.agentTasks)}
-        hint={quotaHint(usage.agentTasks, "Agent 任务额度")}
-        href="/app/agents"
+        icon={Coins}
+        label="本月积分余额"
+        value={`${remaining}${unlimited ? "" : `/${limit}`}`}
+        hint={creditHint}
+        href="/app/settings"
       />
       <Stat
         icon={Clapperboard}
         label="本月成片"
-        value={quota(usage.videos)}
-        hint={quotaHint(usage.videos, "视频生成额度")}
+        value={`${usage.breakdown.videos}`}
+        hint="本月出片条数"
         href="/app/videos"
       />
       <Stat
         icon={ImageIcon}
         label="本月出图"
-        value={quota(usage.images)}
-        hint={quotaHint(usage.images, "Listing 主图等出图额度")}
+        value={`${usage.breakdown.images}`}
+        hint="Listing 主图等出图张数"
         href="/app/settings"
       />
       <Stat
@@ -80,14 +90,4 @@ export function DashboardStats({
       />
     </div>
   );
-}
-
-function quota(item: { used: number; limit: number }): string {
-  return `${item.used}/${item.limit < 0 ? "∞" : item.limit}`;
-}
-
-function quotaHint(item: { used: number; limit: number }, label: string): string {
-  if (item.limit < 0) return label;
-  const pct = Math.round((item.used / Math.max(1, item.limit)) * 100);
-  return pct >= 90 ? "额度告急,去设置页升级方案" : label;
 }
