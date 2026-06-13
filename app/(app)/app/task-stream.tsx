@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clapperboard,
+  Globe,
   Loader2,
   Package,
   Star,
@@ -23,6 +24,7 @@ import {
   type AgentKey,
 } from "@/lib/ui/tokens";
 import { type ReviewResult } from "@/lib/review/types";
+import { REGIONS, REGION_LANG, type Region } from "./discover/_components/regions";
 import { ReviewResults } from "./review-panel";
 import { ListingResults } from "./listing-results";
 import { usePersonas } from "./use-personas";
@@ -53,6 +55,9 @@ export type StreamTask = {
     videoId?: string;
     durationSec?: number;
     aspectRatio?: string;
+    /** 目标市场 code 与口播语言(后端按市场母语生成;旧任务无此字段视同美国/英语)。 */
+    region?: string;
+    voiceLang?: string;
     /** 确认出片时选择的人设(后端回写);preferredPersonaId 是派活时预选的,作确认默认值。 */
     personaId?: string;
     personaName?: string;
@@ -250,29 +255,85 @@ function PersonaPicker({
 
 function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boolean }) {
   const [expanded, setExpanded] = useState(false);
-  const review = task.agent === "REVIEW" ? task.metadata?.review : undefined;
+  // 确认卡改目标市场会触发后端重写脚本,完成后用返回的新任务就地覆盖展示(脚本/口播语言一起换)。
+  const [localTask, setLocalTask] = useState<StreamTask | null>(null);
+  const t = localTask ?? task;
+  const review = t.agent === "REVIEW" ? t.metadata?.review : undefined;
   // 最新一条复盘默认展开仪表盘(刚提交完就要看结果),历史折叠省空间。
   const [dashOpen, setDashOpen] = useState(newest);
-  const active = ACTIVE_STATUSES.has(task.status);
-  const output = task.output ?? "";
+  const active = ACTIVE_STATUSES.has(t.status);
+  const output = t.output ?? "";
   const long = output.length > OUTPUT_COLLAPSE_LIMIT;
   const shown = !long || expanded ? output : output.slice(0, OUTPUT_COLLAPSE_LIMIT) + "…";
 
   // LISTING 结果有结构化 metadata 时用卡片组渲染(可逐区复制/确认出主图),不再铺纯文本。
-  const isListing =
-    task.agent === "LISTING" && task.status === "DONE" && !!task.metadata?.title;
+  const isListing = t.agent === "LISTING" && t.status === "DONE" && !!t.metadata?.title;
 
   // DIRECTOR 脚本草稿:确认后才真正出片。本地 videoId 覆盖 metadata(确认成功立即切换 UI)。
-  const isDirector = task.agent === "DIRECTOR";
+  const isDirector = t.agent === "DIRECTOR";
   const [confirming, setConfirming] = useState(false);
   const [localVideoId, setLocalVideoId] = useState<string | null>(null);
+  const [redrafting, setRedrafting] = useState(false);
+  // 重写期间提示用的目标语言(选中市场的母语)
+  const [pendingLang, setPendingLang] = useState("");
   // 派活时在创作页预选过人设的,确认出片默认沿用(仍可换/取消)
   const [personaId, setPersonaId] = useState<string | null>(
     task.metadata?.preferredPersonaId ?? null,
   );
-  const videoId = localVideoId ?? task.metadata?.videoId ?? null;
+  const videoId = localVideoId ?? t.metadata?.videoId ?? null;
   const awaitingConfirm =
-    isDirector && task.status === "DONE" && !!task.metadata?.draft && !videoId;
+    isDirector && t.status === "DONE" && !!t.metadata?.draft && !videoId;
+  // 旧任务(改版前生成)metadata 无 region:后端按 US/英语兜底,展示同口径。
+  const market = (t.metadata?.region as Region) ?? "US";
+  const voiceLang = t.metadata?.voiceLang ?? REGION_LANG[market] ?? "英语";
+
+  // 改目标市场 → 用新市场母语重写脚本草稿(纯文本调用,不消耗视频额度)→ 轮询取回新脚本。
+  async function changeMarket(region: Region) {
+    if (redrafting || confirming || region === market) return;
+    const lang = REGION_LANG[region];
+    setRedrafting(true);
+    setPendingLang(lang);
+    try {
+      const res = await fetch(
+        `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/redraft`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ region }),
+        },
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.message || json?.error?.message || "重写失败,稍后再试");
+        return;
+      }
+      for (let i = 0; i < 24; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const cur = await fetch(
+          `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`,
+          { credentials: "include" },
+        );
+        const cj = await cur.json().catch(() => null);
+        const nt = cj?.data?.task as StreamTask | undefined;
+        if (!nt || ACTIVE_STATUSES.has(nt.status)) continue;
+        if (nt.status === "DONE") {
+          setLocalTask({ ...task, status: nt.status, output: nt.output, metadata: nt.metadata });
+          // 失败时后端回滚 DONE 并保留原 metadata,region 不变即未生效
+          if (nt.metadata?.region === region) toast.success(`已切换为${lang}口播脚本`);
+          else toast.error("重写失败,已保留原脚本");
+        } else {
+          toast.error(nt.errorMessage || "重写失败,请重新派活");
+        }
+        return;
+      }
+      toast.message("脚本仍在重写", { description: "稍后刷新页面查看" });
+    } catch {
+      toast.error("网络异常,稍后再试");
+    } finally {
+      setRedrafting(false);
+    }
+  }
 
   async function confirmVideo() {
     if (confirming) return;
@@ -304,18 +365,18 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   return (
     <div className="space-y-2">
       <UserBubble>{task.input}</UserBubble>
-      <AgentBubble agent={task.agent} status={task.status}>
+      <AgentBubble agent={t.agent} status={t.status}>
         {active ? (
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {task.status === "QUEUED" ? "排队中,马上开始…" : "正在工作,结果会出现在这里…"}
+            {t.status === "QUEUED" ? "排队中,马上开始…" : "正在工作,结果会出现在这里…"}
           </div>
-        ) : task.status === "FAILED" ? (
+        ) : t.status === "FAILED" ? (
           <div className="text-sm leading-relaxed text-rose-600">
-            {task.errorMessage || "执行失败,请稍后重试"}
+            {t.errorMessage || "执行失败,请稍后重试"}
           </div>
         ) : isListing ? (
-          <ListingResults task={task} />
+          <ListingResults task={t} />
         ) : (
           <>
             <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">
@@ -329,9 +390,38 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                 {expanded ? "收起" : "展开全部"}
               </button>
             )}
-            {!!task.metadata?.products?.length && <ProductChips products={task.metadata.products} />}
+            {!!t.metadata?.products?.length && <ProductChips products={t.metadata.products} />}
             {awaitingConfirm && (
               <div className="mt-3 space-y-2.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                  <span className="inline-flex shrink-0 items-center gap-1 text-2xs text-zinc-400">
+                    <Globe className="h-3 w-3" /> 目标市场
+                  </span>
+                  {redrafting ? (
+                    <span className="inline-flex items-center gap-1.5 text-2xs text-zinc-500">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      正在用{pendingLang}重写口播脚本,不消耗视频额度…
+                    </span>
+                  ) : (
+                    <>
+                      <select
+                        value={market}
+                        onChange={(e) => changeMarket(e.target.value as Region)}
+                        disabled={confirming}
+                        className="h-6 shrink-0 rounded-full border border-black/10 bg-white pl-2 pr-1 text-2xs font-medium text-zinc-700 outline-none transition-colors hover:border-zinc-300 focus:border-brand-400"
+                      >
+                        {REGIONS.map((r) => (
+                          <option key={r.code} value={r.code}>
+                            {r.flag} {r.cn} · {r.lang}口播
+                          </option>
+                        ))}
+                      </select>
+                      <span className="shrink-0 text-2xs text-zinc-400">
+                        口播语言:{voiceLang};换市场将用母语重写脚本
+                      </span>
+                    </>
+                  )}
+                </div>
                 <PersonaPicker
                   workspaceId={task.workspaceId}
                   value={personaId}
@@ -340,7 +430,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={confirmVideo}
-                    disabled={confirming}
+                    disabled={confirming || redrafting}
                     className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {confirming ? (
@@ -351,13 +441,13 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                     {confirming ? "提交中…" : "生成视频"}
                   </button>
                   <span className="text-2xs text-zinc-400">
-                    {task.metadata?.durationSec ?? 5}s · {task.metadata?.aspectRatio ?? "9:16"} ·
-                    确认后才开始消耗生成额度
+                    {t.metadata?.durationSec ?? 5}s · {t.metadata?.aspectRatio ?? "9:16"} ·{" "}
+                    {voiceLang}口播 · 确认后才开始消耗生成额度
                   </span>
                 </div>
               </div>
             )}
-            {isDirector && task.status === "DONE" && videoId && (
+            {isDirector && t.status === "DONE" && videoId && (
               <Link
                 href="/app/videos"
                 className="mt-3 inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"

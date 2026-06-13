@@ -18,23 +18,30 @@ export type Region =
   | "JP"
   | "IE";
 
-export const REGIONS: Array<{ code: Region; cn: string; flag: string }> = [
-  { code: "US", cn: "美国", flag: "🇺🇸" },
-  { code: "GB", cn: "英国", flag: "🇬🇧" },
-  { code: "ID", cn: "印尼", flag: "🇮🇩" },
-  { code: "TH", cn: "泰国", flag: "🇹🇭" },
-  { code: "VN", cn: "越南", flag: "🇻🇳" },
-  { code: "MY", cn: "马来", flag: "🇲🇾" },
-  { code: "PH", cn: "菲律宾", flag: "🇵🇭" },
-  { code: "SG", cn: "新加坡", flag: "🇸🇬" },
-  { code: "ES", cn: "西班牙", flag: "🇪🇸" },
-  { code: "MX", cn: "墨西哥", flag: "🇲🇽" },
-  { code: "DE", cn: "德国", flag: "🇩🇪" },
-  { code: "FR", cn: "法国", flag: "🇫🇷" },
-  { code: "IT", cn: "意大利", flag: "🇮🇹" },
-  { code: "BR", cn: "巴西", flag: "🇧🇷" },
-  { code: "JP", cn: "日本", flag: "🇯🇵" },
-  { code: "IE", cn: "爱尔兰", flag: "🇮🇪" },
+// lang 是该市场短视频口播语言的中文名,仅做选择前的下拉预览;
+// 生成侧权威映射在 Go 端 server/internal/service/region_lang.go(regionVoices),
+// 脚本生成后的展示一律用后端写进任务 metadata 的 voiceLang。
+export const REGIONS: Array<{ code: Region; cn: string; flag: string; lang: string }> = [
+  { code: "US", cn: "美国", flag: "🇺🇸", lang: "英语" },
+  { code: "GB", cn: "英国", flag: "🇬🇧", lang: "英语" },
+  { code: "ID", cn: "印尼", flag: "🇮🇩", lang: "印尼语" },
+  { code: "TH", cn: "泰国", flag: "🇹🇭", lang: "泰语" },
+  { code: "VN", cn: "越南", flag: "🇻🇳", lang: "越南语" },
+  { code: "MY", cn: "马来", flag: "🇲🇾", lang: "马来语" },
+  { code: "PH", cn: "菲律宾", flag: "🇵🇭", lang: "菲律宾语" },
+  { code: "SG", cn: "新加坡", flag: "🇸🇬", lang: "英语" },
+  { code: "ES", cn: "西班牙", flag: "🇪🇸", lang: "西班牙语" },
+  { code: "MX", cn: "墨西哥", flag: "🇲🇽", lang: "西班牙语" },
+  { code: "DE", cn: "德国", flag: "🇩🇪", lang: "德语" },
+  { code: "FR", cn: "法国", flag: "🇫🇷", lang: "法语" },
+  { code: "IT", cn: "意大利", flag: "🇮🇹", lang: "意大利语" },
+  { code: "BR", cn: "巴西", flag: "🇧🇷", lang: "葡萄牙语" },
+  { code: "JP", cn: "日本", flag: "🇯🇵", lang: "日语" },
+  { code: "IE", cn: "爱尔兰", flag: "🇮🇪", lang: "英语" },
 ];
 
 export const REGION_CODES: Region[] = REGIONS.map((r) => r.code);
+
+export const REGION_LANG: Record<Region, string> = Object.fromEntries(
+  REGIONS.map((r) => [r.code, r.lang]),
+) as Record<Region, string>;

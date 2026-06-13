@@ -39,6 +39,8 @@ type agentCreateReq struct {
 	ModelAssetID string `json:"modelAssetId"`
 	// MaterialID 素材库图片 ID(可选):视频首帧 / Listing 出图参考。
 	MaterialID string `json:"materialId"`
+	// Region 目标市场(可选,DIRECTOR):定口播语言;空则跟随商品来源市场,兜底 US。
+	Region string `json:"region"`
 }
 
 func (h *AgentHandler) Create(c *gin.Context) {
@@ -73,6 +75,7 @@ func (h *AgentHandler) Create(c *gin.Context) {
 	if opts.MaterialID, valid = parseOpt(in.MaterialID, "materialId"); !valid {
 		return
 	}
+	opts.Region = in.Region
 	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input, opts)
 	if err != nil {
 		_ = c.Error(err)
@@ -114,6 +117,35 @@ func (h *AgentHandler) ConfirmVideo(c *gin.Context) {
 		return
 	}
 	Created(c, gin.H{"video": v})
+}
+
+type redraftReq struct {
+	// Region 新的目标市场 code,必填;脚本将用该市场母语重写口播。
+	Region string `json:"region" binding:"required"`
+}
+
+// RedraftVideo 确认卡上改目标市场,用新市场母语重写脚本草稿(不消耗视频额度)。
+func (h *AgentHandler) RedraftVideo(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	tid, err := uuid.Parse(c.Param("tid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("任务 ID 无效"))
+		return
+	}
+	var in redraftReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数缺失:需要 region"))
+		return
+	}
+	t, err := h.agents.RedraftVideoScript(c.Request.Context(), wid, tid, in.Region)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"task": t})
 }
 
 // GenerateImages 用户在任务流里确认 LISTING 主图方案,触发真正的出图(消耗生成额度)。

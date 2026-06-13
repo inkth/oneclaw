@@ -12,14 +12,18 @@ import (
 	"gorm.io/gorm"
 
 	apperr "github.com/oneclaw/server/internal/errors"
+	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/llm"
 )
 
 // ── Director:写脚本 → 下发视频 ───────────────────────────────────────────────
 
-const directorSystem = `你是 OneClaw 的"短视频创作 Agent",服务 TikTok Shop 跨境卖家(主要面向美国市场)。
-根据用户的商品/需求,产出一条可直接生成的带货短视频:分镜、英文口播、视频提示词三者必须一一对应。
+// directorSystemFor 按目标市场生成 DIRECTOR system prompt:口播/台词用市场母语,
+// videoPrompt 的视觉描述保持英文(Seedance 对英文视觉指令理解最好),脚本/标题仍面向中国卖家用中文。
+func directorSystemFor(v voiceSpec) string {
+	return fmt.Sprintf(`你是 OneClaw 的"短视频创作 Agent",服务 TikTok Shop 跨境卖家。本条视频的目标市场:%s,口播语言:%s。
+根据用户的商品/需求,产出一条可直接生成的带货短视频:分镜、口播、视频提示词三者必须一一对应。
 
 先判断哪种叙事角度最适合该商品,从下面四种里选一个:
 - UNBOXING(开箱):有质感、配件多、第一印象强的实物
@@ -29,23 +33,25 @@ const directorSystem = `你是 OneClaw 的"短视频创作 Agent",服务 TikTok 
 不要硬套不合适的角度;分镜必须体现所选角度的叙事结构。
 
 如果用户消息附带「商品档案」,以档案里的真实卖点、价格、市场数据为准:
-口播要引用其中的具体信息(如价格、卖点),绝对不要编造数字。
+口播要引用其中的具体信息(如价格、卖点),绝对不要编造数字;提及价格时沿用档案里的美元数字,不要自行换算汇率。
 
 规则:
 - 视频总时长 4-15 秒,按镜头数合理分配(3 镜头约 9-12 秒),时间轴必须连续且与总时长一致
-- 口播是英文(美国观众听的),口语化 UGC 语气,短句,每镜头一句
-- videoPrompt 是英文多镜头提示词,逐镜头描述画面/运镜/光线,并把口播台词用引号写进对应镜头
-  (视频模型支持音画联合生成,会按引号内台词输出英文配音),镜头间用自然剪切衔接
+- 口播是%s(%s观众听的),地道口语化 UGC 语气,短句,每镜头一句;要像母语者随手拍,不要翻译腔
+- videoPrompt 是多镜头提示词:视觉描述用英文,逐镜头描述画面/运镜/光线,并把口播台词用引号原文写进对应镜头
+  (视频模型支持音画联合生成,会按引号内台词输出配音,所以引号内必须是%s台词),镜头间用自然剪切衔接
+- videoPrompt 末尾固定加一句:All spoken dialogue is in %s.
 
 只输出合法 JSON,不要 markdown:
 {
   "style": "UNBOXING | COMPARISON | SCENE | BEFORE_AFTER 之一",
   "title": "视频标题(中文,≤20字)",
-  "script": "分镜脚本,3-5 个镜头,每镜头一行,格式:镜头N(起-止秒)|画面(中文)|口播原文(英文)",
-  "videoPrompt": "Shot 1 (0-3s): visual description, camera move, lighting. VO: \"spoken line.\" Shot 2 (3-7s): ...",
+  "script": "分镜脚本,3-5 个镜头,每镜头一行,格式:镜头N(起-止秒)|画面(中文)|口播原文(%s)",
+  "videoPrompt": "Shot 1 (0-3s): visual description, camera move, lighting. VO: \"spoken line in target language.\" Shot 2 (3-7s): ...",
   "durationSec": 12,
   "aspectRatio": "9:16"
-}`
+}`, v.MarketCN, v.LangCN, v.LangCN, v.MarketCN, v.LangCN, v.Directive, v.LangCN)
+}
 
 type directorOut struct {
 	Style       string `json:"style"`
@@ -73,13 +79,15 @@ func normalizeStyle(s string) string {
 }
 
 // productFacts 把选品库商品(及关联 EchoTik 市场数据)压成事实块,供 DIRECTOR/LISTING 注入创作上下文;
-// 同时返回商品实拍主图 URL(视频首帧 / Listing 出图参考,真货入画)。商品不存在或不属于该工作台时 ok=false。
-func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UUID) (facts, coverURL string, ok bool) {
+// 同时返回商品实拍主图 URL(视频首帧 / Listing 出图参考,真货入画)和商品来源市场
+// (DiscoverProduct.Region,DIRECTOR 据此定口播语言;手动建的商品无来源市场,region 为空)。
+// 商品不存在或不属于该工作台时 ok=false。
+func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UUID) (facts, coverURL, region string, ok bool) {
 	var p model.Product
 	if err := s.db.WithContext(ctx).
 		Where("id = ? AND workspace_id = ?", productID, wsID).
 		First(&p).Error; err != nil {
-		return "", "", false
+		return "", "", "", false
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "商品:%s", p.Title)
@@ -102,6 +110,7 @@ func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UU
 		if err := s.db.WithContext(ctx).First(&dp, "id = ?", *p.DiscoverProductID).Error; err == nil {
 			fmt.Fprintf(&b, "市场数据(EchoTik %s):佣金 %.1f%% · 总销量 %d · 带货视频 %d 条 · 带货达人 %d 人\n",
 				dp.Region, dp.CommissionRate, dp.TotalSaleCnt, dp.TotalVideoCnt, dp.TotalIflCnt)
+			region = dp.Region
 			if len(dp.CoverUrls) > 0 {
 				var urls []string
 				if json.Unmarshal(dp.CoverUrls, &urls) == nil && len(urls) > 0 {
@@ -110,52 +119,79 @@ func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UU
 			}
 		}
 	}
-	return b.String(), coverURL, true
+	return b.String(), coverURL, region, true
+}
+
+// directorContext 一次脚本生成所需的全部已解析素材。
+// runDirector(派活)和 RedraftVideoScript(确认卡改市场重写)各自组装后共用 directorGenerate。
+type directorContext struct {
+	productID     *uuid.UUID
+	facts         string // 商品档案事实块,空表示无商品
+	firstFrameURL string
+	persona       *model.ModelAsset
+	region        string // 已归一的目标市场 code(voiceFor 处理过)
 }
 
 func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
-	if !s.llm.Configured() {
-		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请设置 OPENROUTER_API_KEY")
-	}
-	productID := opts.ProductID
-	user := input
+	dc := directorContext{productID: opts.ProductID}
 
 	// 首帧优先级:用户指定素材 > 商品实拍主图(都没有则 ConfirmVideo 时人设场景照兜底)。
-	firstFrameURL := ""
 	if opts.MaterialID != nil {
-		firstFrameURL = s.materialImageURL(ctx, wsID, *opts.MaterialID)
+		dc.firstFrameURL = s.materialImageURL(ctx, wsID, *opts.MaterialID)
 	}
-	if productID != nil {
-		if facts, cover, ok := s.productFacts(ctx, wsID, *productID); ok {
-			user = fmt.Sprintf("%s\n\n商品档案(选品库真实数据):\n%s", input, facts)
-			if firstFrameURL == "" {
-				firstFrameURL = cover
+	prodRegion := ""
+	if dc.productID != nil {
+		if facts, cover, region, ok := s.productFacts(ctx, wsID, *dc.productID); ok {
+			dc.facts = facts
+			prodRegion = region
+			if dc.firstFrameURL == "" {
+				dc.firstFrameURL = cover
 			}
 		} else {
 			// 商品查不到就当没传,避免把视频挂到无效商品上
-			productID = nil
+			dc.productID = nil
 		}
 	}
-	if firstFrameURL != "" {
-		user += "\n注:已指定一张实拍图作为视频首帧,videoPrompt 请以该画面为起点设计运镜,自然展开。"
-	}
-
 	// 出镜人设:脚本与口播按这位创作者出镜来写;外观提示词由 ConfirmVideo 统一注入,避免重复描述。
-	var persona *model.ModelAsset
 	if opts.PersonaID != nil {
 		if _, _, asset := s.personaPrompt(ctx, wsID, *opts.PersonaID); asset != nil {
-			persona = asset
-			tone := ""
-			if asset.Style != nil && strings.TrimSpace(*asset.Style) != "" {
-				tone = "(" + strings.TrimSpace(*asset.Style) + ")"
-			}
-			user += fmt.Sprintf(
-				"\n出镜人设:%s%s。分镜与英文口播请按这位真人创作者第一人称出镜设计,口吻贴合人设;不要在 videoPrompt 里描述其外貌,系统出片时会自动注入。",
-				asset.Name, tone)
+			dc.persona = asset
 		}
 	}
+	// 目标市场优先级:显式指定 > 商品来源市场 > US;非法值由 voiceFor 静默回退。
+	region := strings.TrimSpace(opts.Region)
+	if region == "" {
+		region = prodRegion
+	}
+	dc.region, _ = voiceFor(region)
 
-	res, err := s.llm.Chat(ctx, directorSystem, user, true, 2200)
+	return s.directorGenerate(ctx, wsID, input, dc)
+}
+
+// directorGenerate 用已解析的素材跑一次脚本生成,产出任务 output + 草稿 metadata。
+func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, input string, dc directorContext) (string, map[string]any, llm.Usage, error) {
+	if !s.llm.Configured() {
+		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请设置 OPENROUTER_API_KEY")
+	}
+	_, voice := voiceFor(dc.region)
+	user := input
+	if dc.facts != "" {
+		user = fmt.Sprintf("%s\n\n商品档案(选品库真实数据):\n%s", input, dc.facts)
+	}
+	if dc.firstFrameURL != "" {
+		user += "\n注:已指定一张实拍图作为视频首帧,videoPrompt 请以该画面为起点设计运镜,自然展开。"
+	}
+	if dc.persona != nil {
+		tone := ""
+		if dc.persona.Style != nil && strings.TrimSpace(*dc.persona.Style) != "" {
+			tone = "(" + strings.TrimSpace(*dc.persona.Style) + ")"
+		}
+		user += fmt.Sprintf(
+			"\n出镜人设:%s%s。分镜与口播请按这位真人创作者第一人称出镜设计,口吻贴合人设;不要在 videoPrompt 里描述其外貌,系统出片时会自动注入。",
+			dc.persona.Name, tone)
+	}
+
+	res, err := s.llm.Chat(ctx, directorSystemFor(voice), user, true, 2200)
 	if err != nil {
 		return "", nil, llm.Usage{}, err
 	}
@@ -188,25 +224,27 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 	meta := map[string]any{
 		"title": title, "script": out.Script, "style": style,
 		"videoPrompt": out.VideoPrompt, "durationSec": out.DurationSec, "aspectRatio": out.AspectRatio,
+		"region": dc.region, "voiceLang": voice.LangCN,
 		"draft": true,
 	}
-	if productID != nil {
-		meta["productId"] = productID.String()
+	if dc.productID != nil {
+		meta["productId"] = dc.productID.String()
 	}
-	if firstFrameURL != "" {
-		meta["firstFrameUrl"] = firstFrameURL
+	if dc.firstFrameURL != "" {
+		meta["firstFrameUrl"] = dc.firstFrameURL
 	}
-	if persona != nil {
-		meta["preferredPersonaId"] = persona.ID.String()
-		meta["personaName"] = persona.Name
+	if dc.persona != nil {
+		meta["preferredPersonaId"] = dc.persona.ID.String()
+		meta["personaName"] = dc.persona.Name
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "🎬 %s · 角度:%s\n\n%s\n", title, styleLabels[style], out.Script)
-	if firstFrameURL != "" {
+	fmt.Fprintf(&b, "\n🌍 目标市场:%s · 口播:%s(确认卡上可改市场)", voice.MarketCN, voice.LangCN)
+	if dc.firstFrameURL != "" {
 		b.WriteString("\n🖼 已取实拍图作为视频首帧,出镜的就是你的真货。")
 	}
-	if persona != nil {
-		fmt.Fprintf(&b, "\n🎤 出镜人设「%s」已就位,确认出片时自动沿用。", persona.Name)
+	if dc.persona != nil {
+		fmt.Fprintf(&b, "\n🎤 出镜人设「%s」已就位,确认出片时自动沿用。", dc.persona.Name)
 	}
 	b.WriteString("\n📝 脚本已就绪。满意就点下方「生成视频」出片;想换方向,直接重新派活描述新要求。")
 	return b.String(), meta, res.Usage, nil
@@ -234,8 +272,102 @@ type directorDraft struct {
 	ProductID          string `json:"productId"`
 	FirstFrameURL      string `json:"firstFrameUrl"`
 	PreferredPersonaID string `json:"preferredPersonaId"` // 派活时预选的人设,ConfirmVideo 未指定时沿用
+	Region             string `json:"region"`             // 目标市场 code(决定口播语言;旧任务无此字段视同 US)
+	VoiceLang          string `json:"voiceLang"`          // 口播语言中文名(前端展示用)
 	VideoID            string `json:"videoId"`
 	Draft              bool   `json:"draft"`
+}
+
+// RedraftVideoScript 确认卡上改目标市场后,用新市场的母语重写脚本草稿(纯文本 LLM 调用,不计额度):
+// 台词语言=配音语言,地道口播不是直译,必须让用户在确认卡看到新台词后再花视频额度。
+// 原子条件更新 DONE→RUNNING 防连点;失败时回滚 DONE 保留原脚本(前端按 metadata.region 未变识别失败)。
+func (s *AgentService) RedraftVideoScript(ctx context.Context, wsID, taskID uuid.UUID, region string) (*model.AgentTask, error) {
+	if _, ok := regionVoices[strings.ToUpper(strings.TrimSpace(region))]; !ok {
+		return nil, apperr.BadRequest("目标市场无效")
+	}
+	var t model.AgentTask
+	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", taskID, wsID).First(&t).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apperr.NotFound("任务不存在")
+	}
+	if err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询任务失败", err)
+	}
+	if t.Agent != model.AgentDirector || t.Status != model.TaskDone {
+		return nil, apperr.BadRequest("该任务没有可重写的脚本")
+	}
+	var d directorDraft
+	if len(t.Metadata) > 0 {
+		_ = json.Unmarshal(t.Metadata, &d)
+	}
+	if !d.Draft || d.VideoID != "" {
+		return nil, apperr.BadRequest("视频已生成,无法重写脚本;想换市场请重新派活")
+	}
+
+	// 原子认领:并发/双击时只有一个请求能把 DONE 翻成 RUNNING。
+	claim := s.db.WithContext(ctx).Model(&model.AgentTask{}).
+		Where("id = ? AND status = ? AND metadata->>'draft' = 'true'", taskID, model.TaskDone).
+		Updates(map[string]any{"status": model.TaskRunning, "started_at": time.Now()})
+	if claim.Error != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "重写脚本失败", claim.Error)
+	}
+	if claim.RowsAffected == 0 {
+		return nil, apperr.BadRequest("脚本正在重写中,请稍候")
+	}
+
+	go s.redraftExecute(taskID, wsID, t.Input, d, region)
+	t.Status = model.TaskRunning
+	return &t, nil
+}
+
+// redraftExecute 后台重跑脚本生成。已知边界:中途服务重启时 RecoverStartup 会把 RUNNING 翻 FAILED,
+// 用户需重新派活(与普通任务一致)。注意失败不走 fail():那会退还原派活的 UsageAgentTask 额度。
+func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d directorDraft, region string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	restore := func(reason string) {
+		logger.Warn("[agent] 重写脚本失败,已保留原脚本",
+			logger.String("task", taskID.String()), logger.String("err", reason))
+		s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).
+			Updates(map[string]any{"status": model.TaskDone, "finished_at": time.Now()})
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			restore(fmt.Sprintf("panic: %v", r))
+		}
+	}()
+
+	dc := directorContext{firstFrameURL: d.FirstFrameURL}
+	dc.region, _ = voiceFor(region)
+	if d.ProductID != "" {
+		if pid, e := uuid.Parse(d.ProductID); e == nil {
+			if facts, _, _, ok := s.productFacts(ctx, wsID, pid); ok {
+				dc.productID = &pid
+				dc.facts = facts
+			}
+		}
+	}
+	if d.PreferredPersonaID != "" {
+		if pid, e := uuid.Parse(d.PreferredPersonaID); e == nil {
+			if _, _, asset := s.personaPrompt(ctx, wsID, pid); asset != nil {
+				dc.persona = asset
+			}
+		}
+	}
+
+	output, meta, usage, err := s.directorGenerate(ctx, wsID, input, dc)
+	if err != nil {
+		restore(err.Error())
+		return
+	}
+	updates := map[string]any{
+		"status": model.TaskDone, "output": output, "finished_at": time.Now(),
+		"model": usage.Model, "tokens_in": usage.TokensIn, "tokens_out": usage.TokensOut, "cost_cents": usage.CostCents,
+	}
+	if b, e := json.Marshal(meta); e == nil {
+		updates["metadata"] = model.JSONB(b)
+	}
+	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).Updates(updates)
 }
 
 // personaPrompt 把人设资产压成视频 prompt 注入段 + 兜底首帧图。
