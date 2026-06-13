@@ -218,6 +218,9 @@ export function ProductDetailClient({
   const scoreColor =
     scoreTone === "success" ? "#16a34a" : scoreTone === "brand" ? "#7c3aed" : "#d97706";
 
+  const hasDiscount =
+    !!p.discount && p.discount !== "0" && p.discount !== "null";
+
   return (
     <div className="space-y-6">
       <Link
@@ -229,11 +232,10 @@ export function ProductDetailClient({
 
       <PageHeader
         title={<span className="line-clamp-2">{p.name}</span>}
-        badge={<Badge tone="neutral">{p.region}</Badge>}
         description={
-          <span className="font-mono text-xs">
-            {p.productId}
-            {p.discount && p.discount !== "0" ? ` · 折扣 ${p.discount}` : ""}
+          <span className="flex flex-wrap items-center gap-2">
+            <Badge tone="neutral">{p.region}</Badge>
+            <span className="font-mono text-xs">{p.productId}</span>
           </span>
         }
         actions={
@@ -286,10 +288,10 @@ export function ProductDetailClient({
         </div>
 
         <div className="space-y-4">
-          <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
             <div>
               <div className="text-xs text-zinc-500">售价区间</div>
-              <div className="text-2xl font-semibold tabular-nums">
+              <div className="mt-0.5 text-2xl font-semibold leading-7 tabular-nums">
                 ${p.minPrice.toFixed(2)}
                 {p.maxPrice > p.minPrice && (
                   <span className="text-zinc-400"> – ${p.maxPrice.toFixed(2)}</span>
@@ -299,14 +301,14 @@ export function ProductDetailClient({
             </div>
             <div>
               <div className="text-xs text-zinc-500">佣金率</div>
-              <div className="text-2xl font-semibold tabular-nums text-emerald-700">
+              <div className="mt-0.5 text-2xl font-semibold leading-7 tabular-nums text-emerald-700">
                 {(p.commissionRate * 100).toFixed(0)}%
               </div>
             </div>
             {p.rating > 0 && (
               <div>
                 <div className="text-xs text-zinc-500">评分</div>
-                <div className="text-2xl font-semibold tabular-nums">
+                <div className="mt-0.5 text-2xl font-semibold leading-7 tabular-nums">
                   {p.rating.toFixed(1)}
                   <span className="ml-1 text-xs font-normal text-zinc-400">
                     ({fmt(p.reviewCount)} 评价)
@@ -320,7 +322,7 @@ export function ProductDetailClient({
             {p.freeShipping && (
               <Badge tone="success" icon={<Truck className="h-3 w-3" />}>包邮</Badge>
             )}
-            {p.discount && p.discount !== "0" && (
+            {hasDiscount && (
               <Badge tone="fuchsia">折扣 {p.discount}</Badge>
             )}
             {imported && (
@@ -446,7 +448,7 @@ export function ProductDetailClient({
             <span className="text-sm font-medium text-zinc-900">关联热门视频</span>
             <span className="text-xs text-zinc-400">共 {p.videos.length} 条 · 按播放量排序</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {p.videos.map((v) => {
               const playable = v.playAddr?.startsWith("http");
               const inner = (

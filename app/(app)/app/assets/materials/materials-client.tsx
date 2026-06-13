@@ -54,13 +54,11 @@ function formatBytes(n: number) {
 export function MaterialsClient({
   workspaceId,
   storageReady,
-  storageDriver,
   initialMaterials,
   isGuest = false,
 }: {
   workspaceId: string;
   storageReady: boolean;
-  storageDriver: string;
   initialMaterials: Material[];
   isGuest?: boolean;
 }) {
@@ -138,11 +136,6 @@ export function MaterialsClient({
         description={
           <>
             上传你自己的图片 / 视频 / 音频，OneClaw 会在视频生成时优先用作底料。
-            {storageReady ? (
-              <span className="ml-2 text-2xs text-emerald-600">
-                · 存储：{storageDriver}
-              </span>
-            ) : null}
           </>
         }
         actions={

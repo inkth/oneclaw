@@ -24,7 +24,6 @@ export default async function MaterialsPage() {
       initialMaterials={materials}
       isGuest={!ws}
       storageReady={!!ws}
-      storageDriver="tencent-cos"
     />
   );
 }
