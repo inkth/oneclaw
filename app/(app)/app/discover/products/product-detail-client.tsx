@@ -446,10 +446,12 @@ export function ProductDetailClient({
           <div className="mb-3 flex items-center gap-2">
             <Video className="h-4 w-4 text-brand-600" />
             <span className="text-sm font-medium text-zinc-900">关联热门视频</span>
-            <span className="text-xs text-zinc-400">共 {p.videos.length} 条 · 按播放量排序</span>
+            <span className="text-xs text-zinc-400">共 {p.videos.length} 条 · 按带货量排序</span>
           </div>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            {p.videos.map((v) => {
+            {[...p.videos]
+              .sort((a, b) => b.saleCnt - a.saleCnt || b.views - a.views)
+              .map((v) => {
               const playable = v.playAddr?.startsWith("http");
               const inner = (
                 <>
