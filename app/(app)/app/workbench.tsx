@@ -22,6 +22,11 @@ export function Workbench({
   initialAgent,
   initialInput,
   initialProductId,
+  agents,
+  streamAgents,
+  showQuickActions = false,
+  showAssetChips = false,
+  align = "center",
 }: {
   workspaceId: string;
   isGuest?: boolean;
@@ -36,13 +41,33 @@ export function Workbench({
   initialInput?: string;
   /** 接力时关联的选品库商品 ID:DIRECTOR/LISTING 派活会带上,后端注入真实商品数据。 */
   initialProductId?: string;
+  /** 本页可派活的 Agent 子集(工作台=分析/复盘,创作页=视频/Listing),不传则全量。 */
+  agents?: ComposerKind[];
+  /** 任务流只展示这些 Agent 的任务(创作页传 DIRECTOR/LISTING),不传则全量。 */
+  streamAgents?: ComposerKind[];
+  /** 是否展示快捷功能卡(创作类模板,挂在创作页)。 */
+  showQuickActions?: boolean;
+  /** 是否在输入卡底栏挂资产选择器(商品/人设/素材,创作页开)。 */
+  showAssetChips?: boolean;
+  /** 胶囊行与预设行的对齐:创作页居中 hero,工作台驾驶舱左对齐。 */
+  align?: "center" | "start";
 }) {
-  const [activeAgent, setActiveAgent] = useState<ComposerKind>(initialAgent ?? "ANALYST");
+  const [activeAgent, setActiveAgent] = useState<ComposerKind>(
+    initialAgent ?? agents?.[0] ?? "ANALYST",
+  );
   const [input, setInput] = useState(initialInput ?? "");
   const [productId, setProductId] = useState<string | null>(initialProductId ?? null);
+  // 创作工具链选中的资产:与 productId 同生命周期,派活成功即消费清空。
+  const [personaId, setPersonaId] = useState<string | null>(null);
+  const [materialId, setMaterialId] = useState<string | null>(null);
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 轮询拉的是工作区全量任务,本页只看 streamAgents 的(创作页只看视频/Listing)。
+  const visibleTasks = streamAgents
+    ? tasks.filter((t) => (streamAgents as string[]).includes(t.agent))
+    : tasks;
 
   // 带指令接力进来时(如选品库跳转),光标直接落到输入框,看一眼就能发。
   useEffect(() => {
@@ -93,7 +118,7 @@ export function Workbench({
 
   return (
     <div className="space-y-6">
-      <AgentPills active={activeAgent} onChange={setActiveAgent} />
+      <AgentPills active={activeAgent} onChange={setActiveAgent} kinds={agents} align={align} />
 
       <div className="relative">
         <div
@@ -109,21 +134,36 @@ export function Workbench({
           onInputChange={setInput}
           productId={productId}
           onClearProduct={() => setProductId(null)}
+          onProductChange={setProductId}
+          personaId={personaId}
+          onPersonaChange={setPersonaId}
+          materialId={materialId}
+          onMaterialChange={setMaterialId}
+          showAssetChips={showAssetChips}
           textareaRef={textareaRef}
+          allowReview={!agents || agents.includes("REVIEW")}
           onDispatched={(task) => {
             setTasks((prev) => [task, ...prev]);
-            // 关联商品是一次性的:派活成功即消费,避免下一条任务误带同一商品
-            if (task.agent === "DIRECTOR" || task.agent === "LISTING") setProductId(null);
+            // 关联资产是一次性的:派活成功即消费,避免下一条任务误带上一次的选择
+            if (task.agent === "DIRECTOR" || task.agent === "LISTING") {
+              setProductId(null);
+              setPersonaId(null);
+              setMaterialId(null);
+            }
           }}
         />
       </div>
 
-      <TaskStream items={tasks} limit={streamLimit} moreHref="/app/agents" />
+      <TaskStream items={visibleTasks} limit={streamLimit} moreHref="/app/agents" />
 
-      <QuickActionCards onPick={pickQuickAction} />
+      {showQuickActions && <QuickActionCards onPick={pickQuickAction} />}
 
       {showPresets && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <div
+          className={`flex flex-wrap items-center gap-2 ${
+            align === "center" ? "justify-center" : "justify-start"
+          }`}
+        >
           <span className="text-xs text-zinc-400">不知道从哪开始?选个品类试试:</span>
           {industryPresets.map((p) => (
             <button

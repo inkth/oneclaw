@@ -113,24 +113,48 @@ func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UU
 	return b.String(), coverURL, true
 }
 
-func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, productID *uuid.UUID) (string, any, llm.Usage, error) {
+func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请设置 OPENROUTER_API_KEY")
 	}
+	productID := opts.ProductID
 	user := input
+
+	// 首帧优先级:用户指定素材 > 商品实拍主图(都没有则 ConfirmVideo 时人设场景照兜底)。
 	firstFrameURL := ""
+	if opts.MaterialID != nil {
+		firstFrameURL = s.materialImageURL(ctx, wsID, *opts.MaterialID)
+	}
 	if productID != nil {
 		if facts, cover, ok := s.productFacts(ctx, wsID, *productID); ok {
 			user = fmt.Sprintf("%s\n\n商品档案(选品库真实数据):\n%s", input, facts)
-			firstFrameURL = cover
-			if firstFrameURL != "" {
-				user += "\n注:已有商品实拍主图将作为视频首帧,videoPrompt 请以该商品特写为起点设计运镜,自然展开。"
+			if firstFrameURL == "" {
+				firstFrameURL = cover
 			}
 		} else {
 			// 商品查不到就当没传,避免把视频挂到无效商品上
 			productID = nil
 		}
 	}
+	if firstFrameURL != "" {
+		user += "\n注:已指定一张实拍图作为视频首帧,videoPrompt 请以该画面为起点设计运镜,自然展开。"
+	}
+
+	// 出镜人设:脚本与口播按这位创作者出镜来写;外观提示词由 ConfirmVideo 统一注入,避免重复描述。
+	var persona *model.ModelAsset
+	if opts.PersonaID != nil {
+		if _, _, asset := s.personaPrompt(ctx, wsID, *opts.PersonaID); asset != nil {
+			persona = asset
+			tone := ""
+			if asset.Style != nil && strings.TrimSpace(*asset.Style) != "" {
+				tone = "(" + strings.TrimSpace(*asset.Style) + ")"
+			}
+			user += fmt.Sprintf(
+				"\n出镜人设:%s%s。分镜与英文口播请按这位真人创作者第一人称出镜设计,口吻贴合人设;不要在 videoPrompt 里描述其外貌,系统出片时会自动注入。",
+				asset.Name, tone)
+		}
+	}
+
 	res, err := s.llm.Chat(ctx, directorSystem, user, true, 2200)
 	if err != nil {
 		return "", nil, llm.Usage{}, err
@@ -172,27 +196,46 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 	if firstFrameURL != "" {
 		meta["firstFrameUrl"] = firstFrameURL
 	}
+	if persona != nil {
+		meta["preferredPersonaId"] = persona.ID.String()
+		meta["personaName"] = persona.Name
+	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "🎬 %s · 角度:%s\n\n%s\n", title, styleLabels[style], out.Script)
 	if firstFrameURL != "" {
-		b.WriteString("\n🖼 已取该商品的实拍主图作为视频首帧,出镜的就是你的真货。")
+		b.WriteString("\n🖼 已取实拍图作为视频首帧,出镜的就是你的真货。")
+	}
+	if persona != nil {
+		fmt.Fprintf(&b, "\n🎤 出镜人设「%s」已就位,确认出片时自动沿用。", persona.Name)
 	}
 	b.WriteString("\n📝 脚本已就绪。满意就点下方「生成视频」出片;想换方向,直接重新派活描述新要求。")
 	return b.String(), meta, res.Usage, nil
 }
 
+// materialImageURL 校验素材属于该工作台且为图片,返回其 URL;不合法返回空串(当没传处理)。
+func (s *AgentService) materialImageURL(ctx context.Context, wsID, materialID uuid.UUID) string {
+	var m model.Material
+	if err := s.db.WithContext(ctx).
+		Where("id = ? AND workspace_id = ? AND type = ?", materialID, wsID, "IMAGE").
+		First(&m).Error; err != nil {
+		return ""
+	}
+	return strings.TrimSpace(m.URL)
+}
+
 // directorDraft 是 DIRECTOR 任务 metadata 里的脚本草稿(runDirector 写入,ConfirmVideo 消费)。
 type directorDraft struct {
-	Title         string `json:"title"`
-	Script        string `json:"script"`
-	Style         string `json:"style"`
-	VideoPrompt   string `json:"videoPrompt"`
-	DurationSec   int    `json:"durationSec"`
-	AspectRatio   string `json:"aspectRatio"`
-	ProductID     string `json:"productId"`
-	FirstFrameURL string `json:"firstFrameUrl"`
-	VideoID       string `json:"videoId"`
-	Draft         bool   `json:"draft"`
+	Title              string `json:"title"`
+	Script             string `json:"script"`
+	Style              string `json:"style"`
+	VideoPrompt        string `json:"videoPrompt"`
+	DurationSec        int    `json:"durationSec"`
+	AspectRatio        string `json:"aspectRatio"`
+	ProductID          string `json:"productId"`
+	FirstFrameURL      string `json:"firstFrameUrl"`
+	PreferredPersonaID string `json:"preferredPersonaId"` // 派活时预选的人设,ConfirmVideo 未指定时沿用
+	VideoID            string `json:"videoId"`
+	Draft              bool   `json:"draft"`
 }
 
 // personaPrompt 把人设资产压成视频 prompt 注入段 + 兜底首帧图。
@@ -260,6 +303,12 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID,
 	}
 	if !d.Draft || strings.TrimSpace(d.VideoPrompt) == "" {
 		return nil, apperr.BadRequest("脚本草稿缺失,请重新派活生成脚本")
+	}
+	// 确认时没选人设,回落派活阶段预选的(创作页 composer 选过就不必再选一遍)。
+	if personaID == nil && d.PreferredPersonaID != "" {
+		if pid, e := uuid.Parse(d.PreferredPersonaID); e == nil {
+			personaID = &pid
+		}
 	}
 
 	// 原子认领草稿:并发/双击时只有一个请求能翻掉 draft 标记。

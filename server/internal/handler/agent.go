@@ -33,8 +33,12 @@ func (h *AgentHandler) List(c *gin.Context) {
 type agentCreateReq struct {
 	Agent string `json:"agent" binding:"required"`
 	Input string `json:"input" binding:"required"`
-	// ProductID 选品库商品 ID(可选):DIRECTOR 据此注入真实商品数据并关联产出视频。
+	// ProductID 选品库商品 ID(可选):DIRECTOR/LISTING 据此注入真实商品数据并关联产出。
 	ProductID string `json:"productId"`
+	// ModelAssetID 出镜人设 ID(可选,DIRECTOR):脚本贴合人设,确认出片时默认沿用。
+	ModelAssetID string `json:"modelAssetId"`
+	// MaterialID 素材库图片 ID(可选):视频首帧 / Listing 出图参考。
+	MaterialID string `json:"materialId"`
 }
 
 func (h *AgentHandler) Create(c *gin.Context) {
@@ -47,16 +51,29 @@ func (h *AgentHandler) Create(c *gin.Context) {
 		_ = c.Error(apperr.BadRequest("参数缺失:需要 agent 和 input"))
 		return
 	}
-	var pid *uuid.UUID
-	if in.ProductID != "" {
-		v, err := uuid.Parse(in.ProductID)
-		if err != nil {
-			_ = c.Error(apperr.BadRequest("productId 无效"))
-			return
+	parseOpt := func(raw, label string) (*uuid.UUID, bool) {
+		if raw == "" {
+			return nil, true
 		}
-		pid = &v
+		v, err := uuid.Parse(raw)
+		if err != nil {
+			_ = c.Error(apperr.BadRequest(label + " 无效"))
+			return nil, false
+		}
+		return &v, true
 	}
-	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input, pid)
+	var opts service.AgentCreateOpts
+	var valid bool
+	if opts.ProductID, valid = parseOpt(in.ProductID, "productId"); !valid {
+		return
+	}
+	if opts.PersonaID, valid = parseOpt(in.ModelAssetID, "modelAssetId"); !valid {
+		return
+	}
+	if opts.MaterialID, valid = parseOpt(in.MaterialID, "materialId"); !valid {
+		return
+	}
+	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input, opts)
 	if err != nil {
 		_ = c.Error(err)
 		return

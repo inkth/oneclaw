@@ -15,6 +15,7 @@ import { type ReviewResult } from "@/lib/review/types";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { type StreamTask } from "./task-stream";
+import { AssetChips } from "./create/asset-chips";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
 export type ComposerKind = "ANALYST" | "DIRECTOR" | "LISTING" | "REVIEW";
@@ -40,13 +41,24 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 export function AgentPills({
   active,
   onChange,
+  kinds,
+  align = "center",
 }: {
   active: ComposerKind;
   onChange: (k: ComposerKind) => void;
+  /** 本页可派活的 Agent 子集(如创作页只挂 DIRECTOR/LISTING),不传则全量。 */
+  kinds?: ComposerKind[];
+  /** 居中(创作页 hero 布局)或左对齐(工作台驾驶舱)。 */
+  align?: "center" | "start";
 }) {
+  const pills = kinds ? PILL_AGENTS.filter((a) => kinds.includes(a.kind)) : PILL_AGENTS;
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      {PILL_AGENTS.map((a) => {
+    <div
+      className={`flex flex-wrap items-center gap-2 ${
+        align === "center" ? "justify-center" : "justify-start"
+      }`}
+    >
+      {pills.map((a) => {
         const isActive = a.kind === active;
         return (
           <button
@@ -82,8 +94,15 @@ export function AgentComposer({
   onInputChange,
   productId,
   onClearProduct,
+  onProductChange,
+  personaId,
+  onPersonaChange,
+  materialId,
+  onMaterialChange,
+  showAssetChips = false,
   textareaRef,
   onDispatched,
+  allowReview = true,
 }: {
   workspaceId: string;
   isGuest?: boolean;
@@ -94,9 +113,19 @@ export function AgentComposer({
   /** 选品库接力带入的商品 ID:DIRECTOR/LISTING 派活时一并提交,后端注入真实商品数据并关联产出。 */
   productId?: string | null;
   onClearProduct?: () => void;
+  /** 创作页工具链:商品/人设/素材选择(状态由 Workbench 持有,派活即清空)。 */
+  onProductChange?: (id: string | null) => void;
+  personaId?: string | null;
+  onPersonaChange?: (id: string | null) => void;
+  materialId?: string | null;
+  onMaterialChange?: (id: string | null) => void;
+  /** 是否在底栏展示资产选择器(创作页开)。 */
+  showAssetChips?: boolean;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   /** 任务创建成功(异步派活或同步复盘落库),新任务立即插入会话流。 */
   onDispatched?: (task: StreamTask) => void;
+  /** 本页是否提供「上传报表复盘」入口(创作页没有 REVIEW,关掉附件按钮与拖拽)。 */
+  allowReview?: boolean;
 }) {
   const [submitting, setSubmitting] = useState(false);
 
@@ -124,6 +153,7 @@ export function AgentComposer({
   }
 
   function attach(f: File) {
+    if (!allowReview) return;
     if (!REVIEW_EXTENSIONS.test(f.name)) {
       toast("暂仅支持投放报表(.csv / .tsv / .xlsx),图片素材即将支持");
       return;
@@ -149,6 +179,12 @@ export function AgentComposer({
         // 只在创作类 Agent 下携带:后端据此注入选品库真实数据并关联产出(视频/Listing)
         ...((activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId
           ? { productId }
+          : {}),
+        // 出镜人设(短视频):脚本贴合人设,确认出片默认沿用
+        ...(activeAgent === "DIRECTOR" && personaId ? { modelAssetId: personaId } : {}),
+        // 首帧/出图参考素材
+        ...((activeAgent === "DIRECTOR" || activeAgent === "LISTING") && materialId
+          ? { materialId }
           : {}),
       }),
     });
@@ -226,8 +262,8 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
-        {/* 关联商品 chip:选品库「为它做视频/为它做 Listing」接力带入,派活时注入真实商品数据 */}
-        {(activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
+        {/* 关联商品 chip:选品库接力带入(创作页有 AssetChips 时由选择器展示,不重复出 chip) */}
+        {!showAssetChips && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-2 pr-1 text-xs font-medium text-brand-700">
               <Package className="h-3.5 w-3.5" />
@@ -284,27 +320,46 @@ export function AgentComposer({
           className="w-full resize-none bg-transparent px-4 py-3.5 text-sm leading-relaxed outline-none placeholder:text-zinc-400"
         />
 
-        {/* 底栏:左「+ 添加」附件,右黑色发送 */}
+        {/* 底栏:左「+ 添加」附件(仅含复盘的页面),右黑色发送 */}
         <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,.tsv,.xlsx,text/csv"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) attach(f);
-              e.target.value = "";
-            }}
-          />
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
-            title="上传 GMVMax 投放报表触发复盘"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            添加
-          </button>
+          {allowReview && (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,.tsv,.xlsx,text/csv"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) attach(f);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
+                title="上传 GMVMax 投放报表触发复盘"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                添加
+              </button>
+            </>
+          )}
+
+          {/* 创作工具链:商品 / 出镜人设 / 首帧素材 */}
+          {showAssetChips && (
+            <AssetChips
+              workspaceId={workspaceId}
+              activeAgent={activeAgent}
+              productId={productId ?? null}
+              onProductChange={(id) => onProductChange?.(id)}
+              personaId={personaId ?? null}
+              onPersonaChange={(id) => onPersonaChange?.(id)}
+              materialId={materialId ?? null}
+              onMaterialChange={(id) => onMaterialChange?.(id)}
+              gate={gateGuest}
+            />
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 发送</span>

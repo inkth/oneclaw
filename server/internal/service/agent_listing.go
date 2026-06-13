@@ -62,23 +62,28 @@ type listingOut struct {
 	Hashtags     []string `json:"hashtags"`
 }
 
-func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input string, productID *uuid.UUID) (string, any, llm.Usage, error) {
+func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请设置 OPENROUTER_API_KEY")
 	}
+	productID := opts.ProductID
 	user := input
 	coverURL := ""
 	if productID != nil {
 		if facts, cover, ok := s.productFacts(ctx, wsID, *productID); ok {
 			user = fmt.Sprintf("%s\n\n商品档案(选品库真实数据):\n%s", input, facts)
 			coverURL = cover
-			if coverURL != "" {
-				user += "\n注:该商品已有实拍主图,出图时会作为参考让真货入画;imagePrompts 请围绕这个商品本身设计构图(白底/场景/细节/对比)。"
-			}
 		} else {
 			// 商品查不到就当没传,避免把产出挂到无效商品上
 			productID = nil
 		}
+	}
+	// 出图参考优先商品实拍主图(真货入画);没有商品图时用用户指定的素材图兜底。
+	if coverURL == "" && opts.MaterialID != nil {
+		coverURL = s.materialImageURL(ctx, wsID, *opts.MaterialID)
+	}
+	if coverURL != "" {
+		user += "\n注:已有实拍参考图,出图时会作为参考让真货入画;imagePrompts 请围绕这个商品本身设计构图(白底/场景/细节/对比)。"
 	}
 	res, err := s.llm.Chat(ctx, listingSystem, user, true, 2200)
 	if err != nil {

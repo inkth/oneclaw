@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -15,7 +15,6 @@ import {
   Star,
   UserRound,
 } from "lucide-react";
-import { apiBrowser } from "@/lib/api-browser";
 import { Badge } from "@/components/ui/Badge";
 import {
   AGENT_IDENTITY,
@@ -26,6 +25,7 @@ import {
 import { type ReviewResult } from "@/lib/review/types";
 import { ReviewResults } from "./review-panel";
 import { ListingResults } from "./listing-results";
+import { usePersonas } from "./use-personas";
 
 export type StreamTask = {
   id: string;
@@ -53,9 +53,10 @@ export type StreamTask = {
     videoId?: string;
     durationSec?: number;
     aspectRatio?: string;
-    /** 确认出片时选择的人设(后端回写)。 */
+    /** 确认出片时选择的人设(后端回写);preferredPersonaId 是派活时预选的,作确认默认值。 */
     personaId?: string;
     personaName?: string;
+    preferredPersonaId?: string;
     /** LISTING 任务:结构化 Listing 内容;imagesStatus 驱动主图确认生成流程(同出片确认)。 */
     title?: string;
     sellingPoints?: string[];
@@ -186,14 +187,6 @@ function ProductChips({ products }: { products: NonNullable<NonNullable<StreamTa
   );
 }
 
-type PersonaOption = {
-  id: string;
-  name: string;
-  isPreset: boolean;
-  avatarUrl?: string | null;
-  style?: string | null;
-};
-
 /** 出片人设选择:默认「不用人设」,可选预置数字人 / 自有模特(头像 chip 横排)。 */
 function PersonaPicker({
   workspaceId,
@@ -204,21 +197,7 @@ function PersonaPicker({
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
-  const [options, setOptions] = useState<PersonaOption[] | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    apiBrowser<{ models: PersonaOption[] }>(`/workspaces/${workspaceId}/models`)
-      .then((d) => {
-        if (alive) setOptions(d.models ?? []);
-      })
-      .catch(() => {
-        if (alive) setOptions([]);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [workspaceId]);
+  const options = usePersonas(workspaceId);
 
   if (!options || options.length === 0) return null;
 
@@ -287,7 +266,10 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   const isDirector = task.agent === "DIRECTOR";
   const [confirming, setConfirming] = useState(false);
   const [localVideoId, setLocalVideoId] = useState<string | null>(null);
-  const [personaId, setPersonaId] = useState<string | null>(null);
+  // 派活时在创作页预选过人设的,确认出片默认沿用(仍可换/取消)
+  const [personaId, setPersonaId] = useState<string | null>(
+    task.metadata?.preferredPersonaId ?? null,
+  );
   const videoId = localVideoId ?? task.metadata?.videoId ?? null;
   const awaitingConfirm =
     isDirector && task.status === "DONE" && !!task.metadata?.draft && !videoId;

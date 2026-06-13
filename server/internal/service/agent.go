@@ -41,9 +41,15 @@ var validAgents = map[string]bool{
 	model.AgentListing:  true,
 }
 
+// AgentCreateOpts 派活时的可选关联资产,创作类 Agent 按需消费。
+type AgentCreateOpts struct {
+	ProductID  *uuid.UUID // 选品库商品:注入真实数据,产出关联到该商品
+	PersonaID  *uuid.UUID // 出镜人设(DIRECTOR):脚本贴合人设,确认出片时默认沿用
+	MaterialID *uuid.UUID // 素材库图片:视频首帧(优先于商品主图)/ Listing 出图参考(兜底)
+}
+
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
-// productID(可选)供 DIRECTOR / LISTING 使用:注入选品库真实数据,产出关联到该商品。
-func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input string, productID *uuid.UUID) (*model.AgentTask, error) {
+func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input string, opts AgentCreateOpts) (*model.AgentTask, error) {
 	agent = strings.ToUpper(strings.TrimSpace(agent))
 	if !validAgents[agent] {
 		return nil, apperr.BadRequest("未知的 agent 类型")
@@ -61,7 +67,7 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建任务失败", err)
 	}
 	// 异步执行:独立 context(请求结束不取消),沿用 service 的 db/llm。
-	go s.execute(t.ID, wsID, agent, input, productID)
+	go s.execute(t.ID, wsID, agent, input, opts)
 	return &t, nil
 }
 
@@ -90,7 +96,7 @@ func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.
 }
 
 // execute 后台执行单个任务。任何 panic/错误都落库为 FAILED。
-func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, productID *uuid.UUID) {
+func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts AgentCreateOpts) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	defer func() {
@@ -113,9 +119,9 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, prod
 	case model.AgentAnalyst:
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input)
 	case model.AgentDirector:
-		output, meta, usage, err = s.runDirector(ctx, wsID, input, productID)
+		output, meta, usage, err = s.runDirector(ctx, wsID, input, opts)
 	case model.AgentListing:
-		output, meta, usage, err = s.runListing(ctx, wsID, input, productID)
+		output, meta, usage, err = s.runListing(ctx, wsID, input, opts)
 	default:
 		err = fmt.Errorf("agent %s 尚未在 Go 端实现", agent)
 	}
