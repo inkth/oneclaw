@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/google/uuid"
@@ -152,4 +153,76 @@ func (s *ProductService) Delete(ctx context.Context, wsID, pid uuid.UUID) error 
 		return apperr.NotFound("商品不存在")
 	}
 	return nil
+}
+
+// ── 出海包:把一个商品「手动发到 TikTok Shop」要用的料聚到一处 ──────────────
+
+type PublishKitVideo struct {
+	ID           uuid.UUID `json:"id"`
+	Title        string    `json:"title"`
+	VideoURL     *string   `json:"videoUrl,omitempty"`
+	ThumbnailURL *string   `json:"thumbnailUrl,omitempty"`
+}
+
+type PublishKitListing struct {
+	Title         string   `json:"title"`
+	SellingPoints []string `json:"sellingPoints"`
+	Hashtags      []string `json:"hashtags"`
+	Images        []string `json:"images,omitempty"`
+}
+
+type PublishKit struct {
+	Product struct {
+		ID     uuid.UUID `json:"id"`
+		Title  string    `json:"title"`
+		Emoji  *string   `json:"emoji,omitempty"`
+		Status string    `json:"status"`
+	} `json:"product"`
+	Videos  []PublishKitVideo  `json:"videos"`
+	Listing *PublishKitListing `json:"listing,omitempty"`
+}
+
+// PublishKit 聚合一个商品的发布素材:已出片的成片 + 最近一条 Listing(标题/五点/标签/主图)。
+// 产品不真发布,这里是把用户「手动发」要用的东西一次给齐(下载 + 一键复制)。
+func (s *ProductService) PublishKit(ctx context.Context, wsID, pid uuid.UUID) (*PublishKit, error) {
+	p, err := s.get(ctx, wsID, pid)
+	if err != nil {
+		return nil, err
+	}
+	kit := &PublishKit{}
+	kit.Product.ID = p.ID
+	kit.Product.Title = p.Title
+	kit.Product.Emoji = p.Emoji
+	kit.Product.Status = p.Status
+
+	// 该商品已出片的成片(可下载),新→旧。
+	var vids []model.Video
+	s.db.WithContext(ctx).
+		Where("workspace_id = ? AND product_id = ? AND processing = ?", wsID, pid, model.VideoCompleted).
+		Order("created_at DESC").Find(&vids)
+	for _, v := range vids {
+		kit.Videos = append(kit.Videos, PublishKitVideo{
+			ID: v.ID, Title: v.Title, VideoURL: v.VideoURL, ThumbnailURL: v.ThumbnailURL,
+		})
+	}
+
+	// 该商品最近一条 Listing —— LISTING 任务把 productId 存在 metadata 里。
+	var lt model.AgentTask
+	if e := s.db.WithContext(ctx).
+		Where("workspace_id = ? AND agent = ? AND status = ? AND metadata->>'productId' = ?",
+			wsID, model.AgentListing, model.TaskDone, pid.String()).
+		Order("created_at DESC").First(&lt).Error; e == nil && len(lt.Metadata) > 0 {
+		var m struct {
+			Title         string   `json:"title"`
+			SellingPoints []string `json:"sellingPoints"`
+			Hashtags      []string `json:"hashtags"`
+			Images        []string `json:"images"`
+		}
+		if json.Unmarshal(lt.Metadata, &m) == nil && m.Title != "" {
+			kit.Listing = &PublishKitListing{
+				Title: m.Title, SellingPoints: m.SellingPoints, Hashtags: m.Hashtags, Images: m.Images,
+			}
+		}
+	}
+	return kit, nil
 }

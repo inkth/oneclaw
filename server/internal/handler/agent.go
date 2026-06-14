@@ -148,6 +148,32 @@ func (h *AgentHandler) RedraftVideo(c *gin.Context) {
 	OK(c, gin.H{"task": t})
 }
 
+type rewriteReq struct {
+	// Instruction 可选的一句话调整指令;留空 = 直接换一版(重新生成草稿)。
+	Instruction string `json:"instruction"`
+}
+
+// RewriteVideo 确认卡上「一句话重写」:沿用当前市场/商品/人设,按可选指令重生成脚本草稿(不消耗视频额度)。
+func (h *AgentHandler) RewriteVideo(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	tid, err := uuid.Parse(c.Param("tid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("任务 ID 无效"))
+		return
+	}
+	var in rewriteReq
+	_ = c.ShouldBindJSON(&in) // body 可为空(直接换一版)
+	t, err := h.agents.RewriteVideoScript(c.Request.Context(), wid, tid, in.Instruction)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"task": t})
+}
+
 // GenerateImages 用户在任务流里确认 LISTING 主图方案,触发真正的出图(消耗生成额度)。
 func (h *AgentHandler) GenerateImages(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)

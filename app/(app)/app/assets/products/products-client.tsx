@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package } from "lucide-react";
+import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package, Rocket } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
+import { PublishKitDrawer } from "./publish-kit-drawer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
@@ -63,6 +64,7 @@ export function ProductsClient({
   const [filter, setFilter] = useState<"ALL" | Status>("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [kitProductId, setKitProductId] = useState<string | null>(null);
 
   const visible =
     filter === "ALL" ? products : products.filter((p) => p.status === filter);
@@ -229,6 +231,14 @@ export function ProductsClient({
                             <LayoutList className="h-2.5 w-2.5" />
                             为它做 Listing
                           </button>
+                          <button
+                            onClick={() => setKitProductId(p.id)}
+                            className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2 py-1 text-2xs font-medium text-fuchsia-700 hover:bg-fuchsia-100"
+                            title="出海包:成片 + 主图 + 文案 + 发布清单聚到一处,照着发到 TikTok Shop"
+                          >
+                            <Rocket className="h-2.5 w-2.5" />
+                            去发布
+                          </button>
                         </>
                       )}
                       {p.status === "ARCHIVED" ? (
@@ -266,6 +276,14 @@ export function ProductsClient({
         </TableWrap>
       )}
 
+      {kitProductId && (
+        <PublishKitDrawer
+          key={kitProductId}
+          workspaceId={workspaceId}
+          productId={kitProductId}
+          onClose={() => setKitProductId(null)}
+        />
+      )}
     </div>
   );
 }

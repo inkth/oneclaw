@@ -19,8 +19,6 @@ type Video = {
   script: string | null;
   processing: Processing;
   errorMessage?: string | null;
-  views: number;
-  likes: number;
   productTitle: string | null;
   createdAt: string;
 };
@@ -102,6 +100,15 @@ export function VideosClient({
       setVideos((prev) =>
         prev.map((v) => (v.id === id ? { ...v, ...json.data.video } : v)),
       );
+    }
+  }
+
+  // 重出后重新拉全量列表:新片(GENERATING)即时上墙,既有轮询接管后续状态。
+  async function reload() {
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/videos`);
+    const json = await res.json().catch(() => null);
+    if (res.ok && json?.ok && Array.isArray(json.data?.videos)) {
+      setVideos(json.data.videos as Video[]);
     }
   }
 
@@ -194,9 +201,6 @@ export function VideosClient({
 
               <div className="absolute inset-x-0 bottom-0 p-3 text-white pointer-events-none">
                 <div className="text-xs font-semibold truncate">{v.title}</div>
-                <div className="mt-0.5 text-2xs opacity-90 nums">
-                  {v.views.toLocaleString()} 播放 · {v.likes.toLocaleString()} 赞
-                </div>
               </div>
             </div>
 
@@ -280,6 +284,7 @@ export function VideosClient({
           videoId={drawerVideoId}
           onClose={() => setDrawerVideoId(null)}
           onDeleted={(id) => setVideos((prev) => prev.filter((v) => v.id !== id))}
+          onRerendered={reload}
         />
       )}
     </div>

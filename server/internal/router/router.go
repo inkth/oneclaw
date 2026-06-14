@@ -95,6 +95,7 @@ func New(d Deps) *gin.Engine {
 		priv.GET("/workspaces/default", wsH.GetDefault)
 
 		priv.GET("/workspaces/:wid/products", prodH.List)
+		priv.GET("/workspaces/:wid/products/:pid/publish-kit", prodH.PublishKit)
 		priv.POST("/workspaces/:wid/products", prodH.Create)
 		priv.PATCH("/workspaces/:wid/products/:pid", prodH.Update)
 		priv.DELETE("/workspaces/:wid/products/:pid", prodH.Delete)
@@ -129,12 +130,15 @@ func New(d Deps) *gin.Engine {
 		priv.GET("/workspaces/:wid/agent-tasks/:tid", agentH.Get)
 		priv.POST("/workspaces/:wid/agent-tasks/:tid/video", agentH.ConfirmVideo)
 		priv.POST("/workspaces/:wid/agent-tasks/:tid/redraft", agentH.RedraftVideo)
+		priv.POST("/workspaces/:wid/agent-tasks/:tid/rewrite", agentH.RewriteVideo)
 		priv.POST("/workspaces/:wid/agent-tasks/:tid/images", agentH.GenerateImages)
 
 		priv.GET("/workspaces/:wid/videos", videoH.List)
+		priv.GET("/workspaces/:wid/videos/:vid", videoH.Detail)
 		priv.POST("/workspaces/:wid/videos", videoH.Create)
 		priv.POST("/workspaces/:wid/videos/:vid/refresh", videoH.Refresh)
 		priv.POST("/workspaces/:wid/videos/:vid/retry", videoH.Retry)
+		priv.POST("/workspaces/:wid/videos/:vid/rerender", videoH.Rerender)
 		priv.DELETE("/workspaces/:wid/videos/:vid", videoH.Delete)
 
 		priv.GET("/workspaces/:wid/usage", billH.Usage)

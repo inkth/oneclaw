@@ -21,6 +21,7 @@ import {
   Film,
   Music,
   Tag,
+  RefreshCw,
 } from "lucide-react";
 
 type Processing = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
@@ -31,8 +32,6 @@ type VideoFull = {
   style: string;
   processing: Processing;
   engine: string | null;
-  falModel: string | null;
-  falRequestId: string | null;
   aspectRatio: string | null;
   durationSec: number;
   prompt: string | null;
@@ -41,13 +40,9 @@ type VideoFull = {
   videoUrl: string | null;
   costCents: number;
   errorMessage: string | null;
-  views: number;
-  likes: number;
-  saves: number;
-  revenueCents: number;
   createdAt: string;
   updatedAt: string;
-  referenceMaterialIds: string[];
+  referenceMaterialIds?: string[];
   product?: { id: string; title: string; emoji: string | null; status: string } | null;
   modelAsset?: {
     id: string;
@@ -105,11 +100,13 @@ export function VideoDetailDrawer({
   videoId,
   onClose,
   onDeleted,
+  onRerendered,
 }: {
   workspaceId: string;
   videoId: string;
   onClose: () => void;
   onDeleted?: (id: string) => void;
+  onRerendered?: () => void;
 }) {
   const router = useRouter();
   const [video, setVideo] = useState<VideoFull | null>(null);
@@ -152,7 +149,7 @@ export function VideoDetailDrawer({
   }, [onClose]);
 
   async function refresh() {
-    if (!video?.falRequestId) return;
+    if (!video) return;
     setBusy(true);
     const r = await fetch(
       `/api/v1/workspaces/${workspaceId}/videos/${videoId}/refresh`,
@@ -204,10 +201,27 @@ export function VideoDetailDrawer({
     if (video.product?.id) params.set("product", video.product.id);
     if (video.modelAsset?.id) params.set("model", video.modelAsset.id);
     if (video.template?.id) params.set("template", video.template.id);
-    if (video.referenceMaterialIds.length > 0) {
+    if (video.referenceMaterialIds?.length) {
       params.set("materials", video.referenceMaterialIds.join(","));
     }
     router.push(`/app/create?${params.toString()}`);
+  }
+
+  async function rerender() {
+    if (!video || busy) return;
+    setBusy(true);
+    const r = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}/rerender`, {
+      method: "POST",
+    });
+    const j = await r.json().catch(() => null);
+    setBusy(false);
+    if (r.ok && j?.ok) {
+      toast.success("已提交新版本,约 1-2 分钟出片");
+      onRerendered?.();
+      onClose();
+    } else {
+      toast.error(j?.error?.message || j?.message || "重出失败,稍后再试");
+    }
   }
 
   return (
@@ -315,7 +329,18 @@ export function VideoDetailDrawer({
                     </button>
                   </>
                 )}
-                {video.processing === "GENERATING" && video.falRequestId && (
+                {video.processing === "COMPLETED" && (
+                  <button
+                    onClick={rerender}
+                    disabled={busy}
+                    className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-3 py-1.5 text-2xs font-medium text-fuchsia-700 hover:bg-fuchsia-100 disabled:opacity-50"
+                    title="沿用同一脚本换一版重新出片(消耗一次出片积分,不动原片)"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    换一版重出
+                  </button>
+                )}
+                {video.processing === "GENERATING" && (
                   <button
                     onClick={refresh}
                     disabled={busy}
@@ -443,8 +468,6 @@ export function VideoDetailDrawer({
               <Section title="技术参数">
                 <dl className="grid grid-cols-2 gap-2 text-2xs">
                   <KV label="引擎 key" value={video.engine ?? "—"} mono />
-                  <KV label="模型" value={video.falModel ?? "—"} mono />
-                  <KV label="请求 ID" value={video.falRequestId ?? "—"} mono />
                   <KV label="比例" value={video.aspectRatio ?? "—"} />
                   <KV label="时长" value={`${video.durationSec}s`} />
                   <KV
@@ -462,20 +485,6 @@ export function VideoDetailDrawer({
                 </dl>
               </Section>
 
-              {/* 数据指标 */}
-              {(video.views > 0 || video.likes > 0 || video.revenueCents > 0) && (
-                <Section title="发布数据">
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <Metric label="播放" value={video.views.toLocaleString()} />
-                    <Metric label="点赞" value={video.likes.toLocaleString()} />
-                    <Metric label="收藏" value={video.saves.toLocaleString()} />
-                    <Metric
-                      label="GMV"
-                      value={`¢${video.revenueCents.toLocaleString()}`}
-                    />
-                  </div>
-                </Section>
-              )}
             </>
           )}
         </div>
@@ -603,11 +612,4 @@ function KV({ label, value, mono }: { label: string; value: string; mono?: boole
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-2 py-1.5">
-      <div className="text-sm font-bold tabular-nums">{value}</div>
-      <div className="text-2xs text-zinc-500">{label}</div>
-    </div>
-  );
-}
+// 注:成片的 播放/点赞/GMV 等发布数据无 TikTok 回流来源,已不在详情里展示。

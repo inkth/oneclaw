@@ -13,6 +13,7 @@ import {
   Globe,
   Loader2,
   Package,
+  RefreshCw,
   Star,
   UserRound,
 } from "lucide-react";
@@ -278,6 +279,9 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   const [redrafting, setRedrafting] = useState(false);
   // 重写期间提示用的目标语言(选中市场的母语)
   const [pendingLang, setPendingLang] = useState("");
+  // 一句话重写:输入框文本 + 重写中状态(留空=直接换一版)
+  const [rewriteText, setRewriteText] = useState("");
+  const [rewriting, setRewriting] = useState(false);
   // 派活时在创作页预选过人设的,确认出片默认沿用(仍可换/取消)
   const [personaId, setPersonaId] = useState<string | null>(
     task.metadata?.preferredPersonaId ?? null,
@@ -291,7 +295,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
 
   // 改目标市场 → 用新市场母语重写脚本草稿(纯文本调用,不消耗积分)→ 轮询取回新脚本。
   async function changeMarket(region: Region) {
-    if (redrafting || confirming || region === market) return;
+    if (redrafting || confirming || rewriting || region === market) return;
     const lang = REGION_LANG[region];
     setRedrafting(true);
     setPendingLang(lang);
@@ -364,6 +368,57 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
     }
   }
 
+  // 一句话重写:同市场/商品/人设按指令重生成草稿(留空=直接换一版),不烧视频额度。
+  // 成功与否后端都回 DONE(失败回滚原脚本),故按 output 是否变化判定。
+  async function rewrite() {
+    if (rewriting || redrafting || confirming) return;
+    const prevOutput = t.output ?? "";
+    setRewriting(true);
+    try {
+      const res = await fetch(
+        `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/rewrite`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ instruction: rewriteText.trim() }),
+        },
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.message || json?.error?.message || "重写失败,稍后再试");
+        return;
+      }
+      for (let i = 0; i < 24; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const cur = await fetch(
+          `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`,
+          { credentials: "include" },
+        );
+        const cj = await cur.json().catch(() => null);
+        const nt = cj?.data?.task as StreamTask | undefined;
+        if (!nt || ACTIVE_STATUSES.has(nt.status)) continue;
+        if (nt.status === "DONE") {
+          setLocalTask({ ...task, status: nt.status, output: nt.output, metadata: nt.metadata });
+          if ((nt.output ?? "") !== prevOutput) {
+            setRewriteText("");
+            toast.success("已换一版脚本");
+          } else {
+            toast.error("重写失败,已保留原脚本");
+          }
+        } else {
+          toast.error(nt.errorMessage || "重写失败,请重新派活");
+        }
+        return;
+      }
+      toast.message("脚本仍在重写", { description: "稍后刷新页面查看" });
+    } catch {
+      toast.error("网络异常,稍后再试");
+    } finally {
+      setRewriting(false);
+    }
+  }
+
   return (
     <div className="space-y-2">
       <UserBubble>{task.input}</UserBubble>
@@ -409,7 +464,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                       <select
                         value={market}
                         onChange={(e) => changeMarket(e.target.value as Region)}
-                        disabled={confirming}
+                        disabled={confirming || rewriting}
                         className="h-6 shrink-0 rounded-full border border-black/10 bg-white pl-2 pr-1 text-2xs font-medium text-zinc-700 outline-none transition-colors hover:border-zinc-300 focus:border-brand-400"
                       >
                         {REGIONS.map((r) => (
@@ -429,10 +484,35 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
                   value={personaId}
                   onChange={setPersonaId}
                 />
+                {/* 一句话重写:留空=换一版,填一句=定向重写;不烧视频额度,可反复调 */}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    value={rewriteText}
+                    onChange={(e) => setRewriteText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") rewrite();
+                    }}
+                    disabled={rewriting || redrafting || confirming}
+                    placeholder="不满意?说一句怎么改,留空=直接换一版"
+                    className="h-7 min-w-0 flex-1 rounded-full border border-black/10 bg-white px-3 text-2xs text-zinc-700 outline-none transition-colors placeholder:text-zinc-400 hover:border-zinc-300 focus:border-brand-400 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={rewrite}
+                    disabled={rewriting || redrafting || confirming}
+                    className="press inline-flex shrink-0 items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1.5 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {rewriting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" />
+                    )}
+                    {rewriting ? "重写中…" : "重写"}
+                  </button>
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={confirmVideo}
-                    disabled={confirming || redrafting}
+                    disabled={confirming || redrafting || rewriting}
                     className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {confirming ? (

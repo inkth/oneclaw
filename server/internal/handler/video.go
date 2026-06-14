@@ -84,6 +84,44 @@ func (h *VideoHandler) Retry(c *gin.Context) {
 	OK(c, gin.H{"video": v})
 }
 
+// Detail 取单条视频详情(含关联商品/人设/模板),供成片详情抽屉用。
+func (h *VideoHandler) Detail(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	vid, err := uuid.Parse(c.Param("vid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("视频 ID 无效"))
+		return
+	}
+	v, err := h.videos.Detail(c.Request.Context(), wid, vid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"video": v})
+}
+
+// Rerender 用一条成片的原参数克隆出新的一条(成片不满意,换一版重出)。
+func (h *VideoHandler) Rerender(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	vid, err := uuid.Parse(c.Param("vid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("视频 ID 无效"))
+		return
+	}
+	v, err := h.videos.Rerender(c.Request.Context(), wid, vid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	Created(c, gin.H{"video": v})
+}
+
 func (h *VideoHandler) Refresh(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {

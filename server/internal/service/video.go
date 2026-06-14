@@ -45,13 +45,44 @@ type VideoInput struct {
 	ModelAssetID *uuid.UUID `json:"-"`
 }
 
-func (s *VideoService) List(ctx context.Context, wsID uuid.UUID) ([]model.Video, error) {
-	var items []model.Video
+// VideoListItem = 一条视频 + 墙上展示用的关联商品标题(避免前端再逐条查)。
+type VideoListItem struct {
+	model.Video
+	ProductTitle *string `json:"productTitle,omitempty"`
+}
+
+func (s *VideoService) List(ctx context.Context, wsID uuid.UUID) ([]VideoListItem, error) {
+	var vids []model.Video
 	if err := s.db.WithContext(ctx).
 		Where("workspace_id = ?", wsID).
 		Order("created_at DESC").Limit(60).
-		Find(&items).Error; err != nil {
+		Find(&vids).Error; err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询视频失败", err)
+	}
+	// 批量取关联商品标题:一次 IN 查询补全,避免逐条 N+1。
+	titles := map[uuid.UUID]string{}
+	var pids []uuid.UUID
+	for _, v := range vids {
+		if v.ProductID != nil {
+			pids = append(pids, *v.ProductID)
+		}
+	}
+	if len(pids) > 0 {
+		var prods []model.Product
+		s.db.WithContext(ctx).Select("id", "title").Where("id IN ?", pids).Find(&prods)
+		for _, p := range prods {
+			titles[p.ID] = p.Title
+		}
+	}
+	items := make([]VideoListItem, len(vids))
+	for i, v := range vids {
+		items[i] = VideoListItem{Video: v}
+		if v.ProductID != nil {
+			if t, ok := titles[*v.ProductID]; ok {
+				tcopy := t
+				items[i].ProductTitle = &tcopy
+			}
+		}
 	}
 	return items, nil
 }
@@ -77,6 +108,94 @@ func (s *VideoService) Get(ctx context.Context, wsID, vid uuid.UUID) (*model.Vid
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询视频失败", err)
 	}
 	return &v, nil
+}
+
+// VideoRelProduct/Model/Template 是详情页「关联」区要展示的精简关联对象。
+type VideoRelProduct struct {
+	ID     uuid.UUID `json:"id"`
+	Title  string    `json:"title"`
+	Emoji  *string   `json:"emoji,omitempty"`
+	Status string    `json:"status"`
+}
+type VideoRelModel struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	AvatarURL *string   `json:"avatarUrl,omitempty"`
+	Kind      string    `json:"kind"`
+	Gender    string    `json:"gender"`
+	Style     *string   `json:"style,omitempty"`
+}
+type VideoRelTemplate struct {
+	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name"`
+	Emoji *string   `json:"emoji,omitempty"`
+}
+
+// VideoDetail = 一条视频 + 详情页要展示的关联对象(商品/人设/模板)。
+type VideoDetail struct {
+	model.Video
+	Product    *VideoRelProduct  `json:"product,omitempty"`
+	ModelAsset *VideoRelModel    `json:"modelAsset,omitempty"`
+	Template   *VideoRelTemplate `json:"template,omitempty"`
+}
+
+// Detail 取单条视频,并补上「关联」区要展示的商品/人设/模板(各一次 best-effort 查询)。
+func (s *VideoService) Detail(ctx context.Context, wsID, vid uuid.UUID) (*VideoDetail, error) {
+	v, err := s.Get(ctx, wsID, vid)
+	if err != nil {
+		return nil, err
+	}
+	d := &VideoDetail{Video: *v}
+	if v.ProductID != nil {
+		var p model.Product
+		if e := s.db.WithContext(ctx).
+			First(&p, "id = ? AND workspace_id = ?", *v.ProductID, wsID).Error; e == nil {
+			d.Product = &VideoRelProduct{ID: p.ID, Title: p.Title, Emoji: p.Emoji, Status: p.Status}
+		}
+	}
+	if v.ModelAssetID != nil {
+		// 人设可能是全局预置(workspace_id 为空),按 id 查即可。
+		var m model.ModelAsset
+		if e := s.db.WithContext(ctx).First(&m, "id = ?", *v.ModelAssetID).Error; e == nil {
+			d.ModelAsset = &VideoRelModel{ID: m.ID, Name: m.Name, AvatarURL: m.AvatarURL, Kind: m.Kind, Gender: m.Gender, Style: m.Style}
+		}
+	}
+	if v.TemplateID != nil {
+		var t model.CreationTemplate
+		if e := s.db.WithContext(ctx).
+			First(&t, "id = ? AND workspace_id = ?", *v.TemplateID, wsID).Error; e == nil {
+			d.Template = &VideoRelTemplate{ID: t.ID, Name: t.Name, Emoji: t.Emoji}
+		}
+	}
+	return d, nil
+}
+
+// Rerender 用一条成片的原参数克隆出「新的一条」(保留原片),复用 Create 的配额/分发/失败退回链路。
+// 面向「成片不满意,换一版重出」:同脚本重新生成,不动原片。
+func (s *VideoService) Rerender(ctx context.Context, wsID, vid uuid.UUID) (*model.Video, error) {
+	src, err := s.Get(ctx, wsID, vid)
+	if err != nil {
+		return nil, err
+	}
+	if src.Prompt == nil || strings.TrimSpace(*src.Prompt) == "" {
+		return nil, apperr.BadRequest("缺少原始提示词,无法重出")
+	}
+	in := VideoInput{
+		Title:        src.Title,
+		Prompt:       *src.Prompt,
+		DurationSec:  src.DurationSec,
+		AspectRatio:  src.AspectRatio,
+		Style:        src.Style,
+		ModelAssetID: src.ModelAssetID,
+	}
+	if src.ProductID != nil {
+		pid := src.ProductID.String()
+		in.ProductID = &pid
+	}
+	if src.FirstFrameURL != nil {
+		in.FirstFrameURL = *src.FirstFrameURL
+	}
+	return s.Create(ctx, wsID, in)
 }
 
 // Create 建记录 → 提交 OpenRouter 视频任务 → 起 goroutine 轮询。立即返回 GENERATING 记录。

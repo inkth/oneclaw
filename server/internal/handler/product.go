@@ -87,3 +87,22 @@ func (h *ProductHandler) Delete(c *gin.Context) {
 	}
 	OK(c, gin.H{"deleted": true})
 }
+
+// PublishKit 出海包:一个商品的成片 + Listing 文案/主图,供「发布助手」一站式手动发布。
+func (h *ProductHandler) PublishKit(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	pid, err := uuid.Parse(c.Param("pid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("商品 ID 无效"))
+		return
+	}
+	kit, err := h.products.PublishKit(c.Request.Context(), wid, pid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"kit": kit})
+}

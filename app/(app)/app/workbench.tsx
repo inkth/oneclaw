@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AgentComposer, AgentPills, type ComposerKind } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
+import { ReviewTrend } from "./review-trend";
 import { industryPresets } from "@/components/OnboardingCard";
 
 const POLL_MS = 5000;
@@ -153,6 +154,9 @@ export function Workbench({
           }}
         />
       </div>
+
+      {/* 复盘趋势:历次投流复盘的大盘走向,仅在 REVIEW 可派活的工作台出现(≥2 次才渲染)。 */}
+      {(!agents || agents.includes("REVIEW")) && <ReviewTrend tasks={tasks} />}
 
       <TaskStream items={visibleTasks} limit={streamLimit} moreHref="/app/agents" />
 

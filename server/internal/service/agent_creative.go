@@ -130,6 +130,7 @@ type directorContext struct {
 	firstFrameURL string
 	persona       *model.ModelAsset
 	region        string // 已归一的目标市场 code(voiceFor 处理过)
+	instruction   string // 可选:一句话重写指令(空表示直接换一版)
 }
 
 func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
@@ -189,6 +190,9 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 		user += fmt.Sprintf(
 			"\n出镜人设:%s%s。分镜与口播请按这位真人创作者第一人称出镜设计,口吻贴合人设;不要在 videoPrompt 里描述其外貌,系统出片时会自动注入。",
 			dc.persona.Name, tone)
+	}
+	if ins := strings.TrimSpace(dc.instruction); ins != "" {
+		user += fmt.Sprintf("\n\n本次只做局部调整(商品、目标市场、出镜人设保持不变),据此重写脚本与 videoPrompt:%s", ins)
 	}
 
 	res, err := s.llm.Chat(ctx, directorSystemFor(voice), user, true, 2200)
@@ -285,6 +289,18 @@ func (s *AgentService) RedraftVideoScript(ctx context.Context, wsID, taskID uuid
 	if _, ok := regionVoices[strings.ToUpper(strings.TrimSpace(region))]; !ok {
 		return nil, apperr.BadRequest("目标市场无效")
 	}
+	return s.regenDraft(ctx, wsID, taskID, region, "")
+}
+
+// RewriteVideoScript 确认卡上「一句话重写」:沿用草稿当前市场/商品/人设,按可选指令重生成脚本草稿
+// (指令留空 = 直接换一版)。纯文本 LLM 调用,不计额度;出片前可反复改。
+func (s *AgentService) RewriteVideoScript(ctx context.Context, wsID, taskID uuid.UUID, instruction string) (*model.AgentTask, error) {
+	return s.regenDraft(ctx, wsID, taskID, "", strings.TrimSpace(instruction))
+}
+
+// regenDraft 是「换市场」与「一句话重写」共用的重生成流程:校验仍是待确认草稿 → 原子认领
+// DONE→RUNNING(防连点)→ 后台重跑脚本生成。region 留空表示沿用草稿当前市场(重写场景)。
+func (s *AgentService) regenDraft(ctx context.Context, wsID, taskID uuid.UUID, region, instruction string) (*model.AgentTask, error) {
 	var t model.AgentTask
 	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", taskID, wsID).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -301,7 +317,10 @@ func (s *AgentService) RedraftVideoScript(ctx context.Context, wsID, taskID uuid
 		_ = json.Unmarshal(t.Metadata, &d)
 	}
 	if !d.Draft || d.VideoID != "" {
-		return nil, apperr.BadRequest("视频已生成,无法重写脚本;想换市场请重新派活")
+		return nil, apperr.BadRequest("视频已生成,无法重写脚本;想换方向请重新派活")
+	}
+	if strings.TrimSpace(region) == "" {
+		region = d.Region // 重写沿用草稿当前市场
 	}
 
 	// 原子认领:并发/双击时只有一个请求能把 DONE 翻成 RUNNING。
@@ -315,14 +334,14 @@ func (s *AgentService) RedraftVideoScript(ctx context.Context, wsID, taskID uuid
 		return nil, apperr.BadRequest("脚本正在重写中,请稍候")
 	}
 
-	go s.redraftExecute(taskID, wsID, t.Input, d, region)
+	go s.redraftExecute(taskID, wsID, t.Input, d, region, instruction)
 	t.Status = model.TaskRunning
 	return &t, nil
 }
 
 // redraftExecute 后台重跑脚本生成。已知边界:中途服务重启时 RecoverStartup 会把 RUNNING 翻 FAILED,
 // 用户需重新派活(与普通任务一致)。注意失败不走 fail():那会退还原派活的 UsageAgentTask 额度。
-func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d directorDraft, region string) {
+func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d directorDraft, region, instruction string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	restore := func(reason string) {
@@ -337,7 +356,7 @@ func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d di
 		}
 	}()
 
-	dc := directorContext{firstFrameURL: d.FirstFrameURL}
+	dc := directorContext{firstFrameURL: d.FirstFrameURL, instruction: instruction}
 	dc.region, _ = voiceFor(region)
 	if d.ProductID != "" {
 		if pid, e := uuid.Parse(d.ProductID); e == nil {
