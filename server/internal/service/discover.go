@@ -427,7 +427,7 @@ func (s *DiscoverService) ImportProduct(ctx context.Context, wsID uuid.UUID, ext
 		categoryLabel = "TikTok Shop 爆品"
 	}
 	priceCents := dp.AvgPriceCents
-	costCents := echotik.EstimateCostCents(priceCents)
+	costCents := echotik.EstimateLandedCost(priceCents, dp.Name, dp.Region).TotalCents
 	emoji := echotik.GuessEmoji(dp.Name)
 	dpID := dp.ID
 	note := "来自 EchoTik · 区域 " + dp.Region
@@ -439,6 +439,7 @@ func (s *DiscoverService) ImportProduct(ctx context.Context, wsID uuid.UUID, ext
 		Emoji:             &emoji,
 		PriceCents:        priceCents,
 		CostCents:         costCents,
+		CostSource:        model.CostSourceEstimate,
 		MarginPct:         echotik.EstimateMarginPct(priceCents, costCents),
 		RoiScore:          echotik.RoiScore(dp.TotalSaleCnt, dp.TotalIflCnt),
 		MonthlySales:      dp.TotalSaleCnt,

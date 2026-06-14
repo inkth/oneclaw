@@ -314,9 +314,9 @@ func (s *DiscoverService) scoreProduct(dp *model.DiscoverProduct, ex *detailExtr
 	mSub, mSig := momentumSignal(trend)
 	signals = append(signals, mSig)
 
-	// 2. 利润 margin:估算毛利(成本默认 25%)再扣佣金。
-	cost := echotik.EstimateCostCents(dp.AvgPriceCents)
-	grossPct := echotik.EstimateMarginPct(dp.AvgPriceCents, cost) // ≈75
+	// 2. 利润 margin:按品类/市场估算落地成本(货价+物流)再扣佣金。
+	cb := echotik.EstimateLandedCost(dp.AvgPriceCents, dp.Name, dp.Region)
+	grossPct := echotik.EstimateMarginPct(dp.AvgPriceCents, cb.TotalCents)
 	netPct := float64(grossPct) - dp.CommissionRate*100
 	marginSub := clamp01((netPct - 20) / 50) // 20%→0,70%→1
 	marginTone := "success"
@@ -328,7 +328,8 @@ func (s *DiscoverService) scoreProduct(dp *model.DiscoverProduct, ex *detailExtr
 	signals = append(signals, SignalDTO{
 		Key: "margin", Label: "利润空间", Tone: marginTone,
 		Value: itoaPct(netPct),
-		Hint:  "估算毛利率(成本按售价25%,已扣佣金 " + itoaPct(dp.CommissionRate*100) + ")",
+		Hint: "估算落地成本(「" + cb.Archetype + "」货价≈" + itoaPct(cb.GoodsRatio*100) +
+			" + 物流≈" + itoaPct(cb.LogisticsRatio*100) + "),已扣佣金 " + itoaPct(dp.CommissionRate*100) + ";建议导入后回填真实进货价",
 	})
 
 	// 3. 竞争饱和度 competition:用累计带货视频数当代理(优先详情的权威口径)。

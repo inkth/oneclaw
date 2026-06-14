@@ -10,6 +10,7 @@ type GoProduct = {
   emoji: string | null;
   priceCents: number;
   costCents: number;
+  costSource: "ESTIMATE" | "MANUAL" | "SOURCED";
   marginPct: number;
   roiScore: number;
   monthlySales: number;
@@ -45,6 +46,7 @@ export default async function ProductsPage() {
         emoji: p.emoji,
         priceCents: p.priceCents,
         costCents: p.costCents,
+        costSource: p.costSource,
         marginPct: p.marginPct,
         roiScore: p.roiScore,
         monthlySales: p.monthlySales,

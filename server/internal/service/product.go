@@ -10,6 +10,7 @@ import (
 
 	apperr "github.com/oneclaw/server/internal/errors"
 	"github.com/oneclaw/server/internal/model"
+	"github.com/oneclaw/server/internal/service/echotik"
 )
 
 type ProductService struct {
@@ -117,8 +118,22 @@ func (s *ProductService) Update(ctx context.Context, wsID, pid uuid.UUID, patch 
 	}
 	if patch.CostCents != nil {
 		updates["cost_cents"] = *patch.CostCents
+		// 用户回填真实进货价:标记成本来源为「真实」。
+		updates["cost_source"] = model.CostSourceManual
 	}
-	if patch.MarginPct != nil {
+	// 成本或售价变化时,服务端据最新值重算毛利(忽略客户端传入的 margin,服务端为准);
+	// 仅当二者都未变才尊重显式 margin 覆盖。
+	if patch.CostCents != nil || patch.PriceCents != nil {
+		price := p.PriceCents
+		if patch.PriceCents != nil {
+			price = *patch.PriceCents
+		}
+		cost := p.CostCents
+		if patch.CostCents != nil {
+			cost = *patch.CostCents
+		}
+		updates["margin_pct"] = echotik.EstimateMarginPct(price, cost)
+	} else if patch.MarginPct != nil {
 		updates["margin_pct"] = *patch.MarginPct
 	}
 	if patch.RoiScore != nil {

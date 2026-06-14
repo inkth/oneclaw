@@ -38,10 +38,7 @@ func GuessEmoji(name string) string {
 // DollarsToCents 美元→分(四舍五入)。
 func DollarsToCents(v float64) int { return int(math.Round(v * 100)) }
 
-// EstimateCostCents 估算采购成本:默认售价 25%。
-func EstimateCostCents(priceCents int) int { return int(math.Round(float64(priceCents) * 0.25)) }
-
-// EstimateMarginPct 估算毛利率。
+// EstimateMarginPct 估算毛利率(按落地成本,见 cost_model.go)。
 func EstimateMarginPct(priceCents, costCents int) int {
 	if priceCents <= 0 {
 		return 0

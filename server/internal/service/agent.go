@@ -395,7 +395,7 @@ func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input str
 				status = model.ProductRecommended
 			}
 			priceCents := dp.AvgPriceCents
-			costCents := echotik.EstimateCostCents(priceCents)
+			costCents := echotik.EstimateLandedCost(priceCents, dp.Name, dp.Region).TotalCents
 			roi := echotik.RoiScore(dp.TotalSaleCnt, dp.TotalIflCnt)
 			note := p.reason + " · 来自 EchoTik " + dp.Region
 			emoji := echotik.GuessEmoji(dp.Name)
@@ -424,6 +424,7 @@ func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input str
 					Emoji:             &emoji,
 					PriceCents:        priceCents,
 					CostCents:         costCents,
+					CostSource:        model.CostSourceEstimate,
 					MarginPct:         echotik.EstimateMarginPct(priceCents, costCents),
 					RoiScore:          roi,
 					MonthlySales:      dp.TotalSaleCnt,

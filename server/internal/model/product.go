@@ -18,6 +18,7 @@ type Product struct {
 	Emoji             *string    `gorm:"default:'📦'" json:"emoji,omitempty"`
 	PriceCents        int        `gorm:"default:0" json:"priceCents"`
 	CostCents         int        `gorm:"default:0" json:"costCents"`
+	CostSource        string     `gorm:"default:'ESTIMATE'" json:"costSource"` // ESTIMATE | MANUAL | SOURCED
 	MarginPct         int        `gorm:"default:0" json:"marginPct"`
 	RoiScore          int        `gorm:"default:0" json:"roiScore"`
 	MonthlySales      int        `gorm:"default:0" json:"monthlySales"`

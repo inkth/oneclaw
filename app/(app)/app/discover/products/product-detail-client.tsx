@@ -29,6 +29,8 @@ import {
   Heart,
   ShieldCheck,
   Truck,
+  Search,
+  ExternalLink,
 } from "lucide-react";
 
 type Signal = { key: string; label: string; tone: string; value: string; hint: string };
@@ -92,6 +94,30 @@ export type DetailProduct = {
 function asTone(t: string): Tone {
   const ok: Tone[] = ["brand", "neutral", "success", "warning", "danger", "info", "violet", "fuchsia"];
   return (ok as string[]).includes(t) ? (t as Tone) : "neutral";
+}
+
+// 搜同款货源:按品名关键词直达各平台(纯 deep-link,无需 API/凭证)。
+// 完整标题搜不出货源,取前几个词作关键词。1688/CJ 的「按图搜」需签名 API,见后续 P3。
+function sourcingKeyword(name: string): string {
+  return name
+    .replace(/[|/–—\-_,]+/g, " ") // 分隔符/标点当空格
+    .split(/\s+/)
+    .filter((w) => /[a-z0-9一-龥]/i.test(w)) // 丢掉纯符号 token
+    .slice(0, 5)
+    .join(" ");
+}
+
+function sourcingLinks(name: string): { label: string; href: string; note: string }[] {
+  const q = encodeURIComponent(sourcingKeyword(name));
+  return [
+    { label: "1688 搜同款", href: `https://s.1688.com/selloffer/offer_search.htm?keywords=${q}`, note: "国内货源 · 批发价" },
+    {
+      label: "CJ 搜同款",
+      href: `https://cjdropshipping.com/list/wholesale-all-categories-l-all.html?keyWord=${q}`,
+      note: "跨境一件代发",
+    },
+    { label: "AliExpress 搜同款", href: `https://www.aliexpress.com/wholesale?SearchText=${q}`, note: "速卖通零售对比" },
+  ];
 }
 
 /** 图片(签名 URL),加载失败回退渐变占位。 */
@@ -379,6 +405,36 @@ export function ProductDetailClient({
           </div>
         </Card>
       )}
+
+      {/* 货源比价 · 搜同款(deep-link,无 API) */}
+      <Card>
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-brand-600" />
+          <span className="text-sm font-medium text-zinc-900">搜同款 · 比价拿真实货价</span>
+        </div>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+          评分里的成本/利润是按品类估算的。去货源平台搜「<span className="font-medium text-zinc-700">{sourcingKeyword(p.name)}</span>
+          」找同款,拿到真实进货价后加入选品库回填,毛利率就准了。
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {sourcingLinks(p.name).map((l) => (
+            <a
+              key={l.label}
+              href={l.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={l.note}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+            >
+              {l.label}
+              <ExternalLink className="h-3 w-3 opacity-50" />
+            </a>
+          ))}
+        </div>
+        <p className="mt-2 text-2xs text-zinc-400">
+          按图搜同款最准:保存上方商品主图,到平台点相机图标上传(自动按图比价为后续功能)。
+        </p>
+      </Card>
 
       {/* 核心指标 */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

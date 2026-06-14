@@ -20,6 +20,11 @@ const (
 	ProductEvaluating  = "EVALUATING"
 	ProductArchived    = "ARCHIVED"
 
+	// 商品成本来源:系统按品类/市场估算、用户回填真实成本、货源比价回填(预留)。
+	CostSourceEstimate = "ESTIMATE"
+	CostSourceManual   = "MANUAL"
+	CostSourceSourced  = "SOURCED"
+
 	ShopStatusConnected    = "CONNECTED"
 	ShopStatusPending      = "PENDING"
 	ShopStatusDisconnected = "DISCONNECTED"
