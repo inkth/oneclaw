@@ -93,15 +93,14 @@ export function DiscoverClient({
 }) {
   const router = useRouter();
   const [importing, setImporting] = useState<Set<string>>(new Set());
-  const [analyzing, setAnalyzing] = useState<Set<string>>(new Set());
   const { open: openAuthModal } = useAuthModal();
 
-  // 游客触发「导入/收藏/分析」时拦下来弹登录浮层。返回 true 表示已拦截。
+  // 游客触发「导入/收藏」时拦下来弹登录浮层。返回 true 表示已拦截。
   function gateGuest(): boolean {
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可操作",
-      desc: "导入选品、收藏、AI 分析都需要账号。趋势榜随便逛,登录后一键操作。",
+      desc: "导入选品、收藏都需要账号。趋势榜随便逛,登录后一键操作。",
     });
     return true;
   }
@@ -163,46 +162,6 @@ export function DiscoverClient({
       toast.error("收藏失败");
     } finally {
       setStarring((prev) => {
-        const n = new Set(prev);
-        n.delete(p.productId);
-        return n;
-      });
-    }
-  }
-
-  // AI 可行性分析:派发 ANALYST 任务 → 轮询 → 弹出判定结果。
-  async function analyzeProduct(p: DiscoverProduct) {
-    if (analyzing.has(p.productId)) return;
-    if (gateGuest()) return;
-    setAnalyzing((prev) => new Set(prev).add(p.productId));
-    try {
-      const start = await apiBrowser<{ task: { id: string } }>(
-        `/workspaces/${workspaceId}/discover/analyze`,
-        { method: "POST", body: JSON.stringify({ productId: p.productId, region: p.region }) },
-      );
-      const taskId = start.task.id;
-      for (let i = 0; i < 24; i++) {
-        await new Promise((r) => setTimeout(r, 2500));
-        const cur = await apiBrowser<{ task: { status: string; output: string | null } }>(
-          `/workspaces/${workspaceId}/agent-tasks/${taskId}`,
-        );
-        if (cur.task.status === "DONE") {
-          toast.success(`分析完成：${p.productName.slice(0, 20)}…`, {
-            description: cur.task.output ?? undefined,
-            duration: 12000,
-          });
-          return;
-        }
-        if (cur.task.status === "FAILED") {
-          toast.error("分析失败", { description: cur.task.output ?? "请稍后重试" });
-          return;
-        }
-      }
-      toast.message("分析仍在进行", { description: "稍后可在工作台查看结果" });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "分析失败");
-    } finally {
-      setAnalyzing((prev) => {
         const n = new Set(prev);
         n.delete(p.productId);
         return n;
@@ -328,21 +287,6 @@ export function DiscoverClient({
                 <Td align="right">{fmt(p.totalVideoCnt)}</Td>
                 <Td align="right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Button
-                      variant="subtle"
-                      size="sm"
-                      onClick={() => analyzeProduct(p)}
-                      disabled={analyzing.has(p.productId)}
-                      className="rounded-full px-2.5"
-                      title="让分析师 Agent 基于真实数据做深度分析"
-                    >
-                      {analyzing.has(p.productId) ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3 w-3" />
-                      )}
-                      AI 分析
-                    </Button>
                     {p.importedProductId ? (
                       <ButtonLink
                         href="/app/assets/products"
