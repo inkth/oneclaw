@@ -420,7 +420,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   }
 
   return (
-    <div className="space-y-2">
+    <div id={`task-${task.id}`} className="space-y-2 scroll-mt-24">
       <UserBubble>{task.input}</UserBubble>
       <AgentBubble agent={t.agent} status={t.status}>
         {active ? (

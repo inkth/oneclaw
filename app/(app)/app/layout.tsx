@@ -5,6 +5,7 @@ import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import { SidebarLoginButton } from "@/components/auth/SidebarLoginButton";
 import { Sparkles } from "lucide-react";
 import { SidebarNav, BoardTabs } from "./_nav";
+import { ConversationRail } from "./conversation-rail";
 
 export default async function AppLayout({
   children,
@@ -48,6 +49,9 @@ export default async function AppLayout({
           )}
         </div>
       </aside>
+
+      {/* 会话列表面板:仅「工作台」板块出现(自身按路由判断,其它板块返回 null) */}
+      <ConversationRail workspaceId={workspace?.id ?? ""} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-black/5 bg-background">
