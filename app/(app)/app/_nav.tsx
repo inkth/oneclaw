@@ -29,13 +29,16 @@ type Board = {
 // 所有现有页面都归进某个板块，子页面收进板块内 Tab，侧边栏永远只有这 5 行 + 设置。
 const BOARDS: Board[] = [
   {
-    // 工作台的核心是 Agent：首页直接呈现派活聊天框与最近任务，不用 Tab 切换。
+    // 工作台即「对话板块」：首页是派活聊天框 + 最近对话，二级 Tab「全部对话」收纳全量记录。
     key: "workspace",
     label: "工作台",
     icon: LayoutDashboard,
     href: "/app",
-    paths: ["/app"],
-    tabs: [],
+    paths: ["/app", "/app/agents"],
+    tabs: [
+      { label: "工作台", href: "/app" },
+      { label: "全部对话", href: "/app/agents" },
+    ],
   },
   {
     key: "discover",

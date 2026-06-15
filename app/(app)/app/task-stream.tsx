@@ -112,7 +112,7 @@ export function TaskStream({
             href={moreHref}
             className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-ink"
           >
-            查看全部 {items.length} 条任务 <ArrowRight className="h-3 w-3" />
+            查看全部 {items.length} 条对话 <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       )}

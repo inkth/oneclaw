@@ -2,9 +2,9 @@ import { getMe, apiServer } from "@/lib/api-client";
 import { Workbench } from "../workbench";
 import { type StreamTask } from "../task-stream";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Bot } from "lucide-react";
+import { MessagesSquare } from "lucide-react";
 
-export const metadata = { title: "Agent · OneClaw" };
+export const metadata = { title: "全部对话 · OneClaw" };
 
 export default async function AgentsPage() {
   const me = await getMe();
@@ -21,13 +21,18 @@ export default async function AgentsPage() {
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2">
-            <Bot className="h-5 w-5 text-brand-500" />
-            AI Agent
+            <MessagesSquare className="h-5 w-5 text-brand-500" />
+            全部对话
           </span>
         }
-        description="选品分析 / 短视频创作 / Listing 内容 / 投放复盘,全部任务历史都在这里。"
+        description="选品分析 / 做视频 / Listing / 投放复盘——你和 AI 的所有对话都在这里。"
       />
-      <Workbench workspaceId={ws?.id ?? ""} isGuest={!ws} initialTasks={tasks} />
+      <Workbench
+        workspaceId={ws?.id ?? ""}
+        isGuest={!ws}
+        initialTasks={tasks}
+        agents={["ANALYST", "REVIEW"]}
+      />
     </div>
   );
 }
