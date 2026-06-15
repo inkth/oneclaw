@@ -58,7 +58,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   if (!visible) return null;
 
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-64 shrink-0 flex-col self-start border-r border-black/5 bg-transparent">
+    <aside className="hidden md:flex sticky top-0 h-screen w-56 shrink-0 flex-col self-start border-r border-black/5 bg-transparent">
       <div className="flex items-center justify-between px-3 py-4">
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
           <MessagesSquare className="h-4 w-4 text-brand-500" /> 对话
