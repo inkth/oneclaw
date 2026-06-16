@@ -2,22 +2,28 @@
 
 import Link from "next/link";
 import { Sparkles, User } from "lucide-react";
-import { LogoutButton } from "@/components/LogoutButton";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { BoardHeaderNav } from "./_nav";
+import { AccountMenu } from "./account-menu";
 
 /**
  * 右侧主区的常驻顶栏：磨砂玻璃、无分界线，随页面一起下滑时贴顶。
  * 左：移动端品牌 / 桌面端当前板块名(轻量上下文锚点，不重复页面 H1)。
- * 右：账户区——从侧栏底部上移到右上角，符合 SaaS 习惯；游客显示登录入口。
+ * 右：账户区——积分余额 + 升级会员 + 头像菜单(AccountMenu);游客显示登录入口。
  * 刻意不画 border，仅靠半透明 + backdrop-blur 与内容自然过渡。
  */
 export function AppHeader({
   loggedIn,
   display,
+  plan,
+  creditsUsed,
+  creditsLimit,
 }: {
   loggedIn: boolean;
   display: string;
+  plan: string | null;
+  creditsUsed: number | null;
+  creditsLimit: number | null;
 }) {
   const { open } = useAuthModal();
 
@@ -36,15 +42,12 @@ export function AppHeader({
 
       <div className="flex items-center gap-2">
         {loggedIn ? (
-          <>
-            <div
-              title={display}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-violet-500 text-xs font-semibold text-white"
-            >
-              {display.charAt(0).toUpperCase()}
-            </div>
-            <LogoutButton />
-          </>
+          <AccountMenu
+            display={display}
+            plan={plan}
+            creditsUsed={creditsUsed}
+            creditsLimit={creditsLimit}
+          />
         ) : (
           <button
             onClick={() => open()}

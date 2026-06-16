@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { getMe } from "@/lib/api-client";
+import { getMe, apiServer } from "@/lib/api-client";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import { Sparkles } from "lucide-react";
 import { SidebarNav, BoardTabs } from "./_nav";
 import { ConversationRail } from "./conversation-rail";
 import { AppHeader } from "./app-header";
+import type { Usage } from "./settings/settings-client";
 
 export default async function AppLayout({
   children,
@@ -16,6 +17,17 @@ export default async function AppLayout({
   const user = me?.user ?? null;
   const workspace = me?.workspace ?? null;
   const display = user?.name || user?.phone || user?.email || "游客";
+
+  // 顶栏要显示积分余额/套餐:登录后取用量;失败则降级(不显示积分,仍可升级)。
+  let usage: Usage | null = null;
+  if (workspace) {
+    try {
+      const d = await apiServer<{ usage: Usage }>(`/workspaces/${workspace.id}/usage`);
+      usage = d.usage;
+    } catch {
+      usage = null;
+    }
+  }
 
   return (
     <AuthModalProvider>
@@ -37,7 +49,13 @@ export default async function AppLayout({
       <ConversationRail workspaceId={workspace?.id ?? ""} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <AppHeader loggedIn={!!user} display={display} />
+        <AppHeader
+          loggedIn={!!user}
+          display={display}
+          plan={usage?.plan ?? null}
+          creditsUsed={usage?.credits.used ?? null}
+          creditsLimit={usage?.credits.limit ?? null}
+        />
         <main className="relative flex-1 p-4 sm:p-8">
           {/* 活力氛围:全工作台顶部极淡 violet/fuchsia 柔光,统一去「纯白感」 */}
           <div
