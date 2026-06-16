@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Compass,
-  Clapperboard,
+  MessagesSquare,
   Boxes,
   LayoutGrid,
   Settings,
@@ -24,18 +24,18 @@ type Board = {
   soon?: boolean; // 功能尚未完成，标「即将上线」
 };
 
-// TikTok 电商全流程的五大板块：工作台 → 选品 → 创作 → 资产 → 服务。
-// 复盘已并入工作台的「店铺投流数据分析」Agent，不再单列板块。
+// TikTok 电商全流程的五大板块：工作台 → 选品 → 会话 → 资产 → 服务。
+// 工作台是统一派活台(四个 Agent 同处一框)；会话板块收纳你和 AI 的全部对话历史。
 // 所有现有页面都归进某个板块，子页面收进板块内 Tab，侧边栏永远只有这 5 行 + 设置。
 const BOARDS: Board[] = [
   {
-    // 工作台即「对话板块」：首页是派活聊天框 + 最近对话，左侧会话列表面板贯穿全部对话，不再挂顶部 Tab。
-    // /app/agents(全部对话流)归到本板块,从左侧会话面板进入,侧边栏继续高亮工作台。
+    // 工作台即统一派活台：做视频 / 写 Listing / 选品分析 / 投放复盘 四个 Agent 同处一框，不挂顶部 Tab。
+    // 会话历史挪到「会话」板块(/app/agents)，工作台不再带左侧会话列表。
     key: "workspace",
     label: "工作台",
     icon: LayoutDashboard,
     href: "/app",
-    paths: ["/app", "/app/agents"],
+    paths: ["/app"],
     tabs: [],
   },
   {
@@ -53,26 +53,25 @@ const BOARDS: Board[] = [
     ],
   },
   {
-    // 创作是单一聚焦流程，不挂二级 Tab；生成的成片归到「资产 · 短视频」。
-    key: "create",
-    label: "创作",
-    icon: Clapperboard,
-    href: "/app/create",
-    paths: ["/app/create"],
+    // 会话板块：左侧窄会话列表(ConversationRail) + 右侧会话内容，汇总你和各 Agent 的全部对话。
+    key: "conversations",
+    label: "会话",
+    icon: MessagesSquare,
+    href: "/app/agents",
+    paths: ["/app/agents"],
     tabs: [],
   },
   {
     key: "assets",
     label: "资产",
     icon: Boxes,
-    href: "/app/assets/shops",
+    href: "/app/videos",
     paths: ["/app/assets", "/app/videos"],
     tabs: [
-      { label: "店铺", href: "/app/assets/shops" },
+      { label: "作品", href: "/app/videos" },
       { label: "商品", href: "/app/assets/products" },
       { label: "模特", href: "/app/assets/models" },
       { label: "素材库", href: "/app/assets/materials" },
-      { label: "短视频", href: "/app/videos" },
     ],
   },
   {
@@ -97,6 +96,33 @@ function activeBoard(pathname: string): Board | undefined {
   if (pathname === "/app") return BOARDS[0];
   return BOARDS.find((b) =>
     b.paths.some((p) => p !== "/app" && matchPath(p, pathname))
+  );
+}
+
+/** 取当前板块内匹配到的 Tab href（取最长匹配，避免父级 href 在子页面上也被点亮）。 */
+function activeTabHref(board: Board, pathname: string): string | undefined {
+  return board.tabs
+    .filter((t) => matchPath(t.href, pathname))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+}
+
+/** 右侧顶栏左区的导航：有二级 Tab 的板块直接把 Tab 融进顶栏（无 hairline），
+ *  其余板块显示板块名作轻量上下文锚点。桌面端用，移动端走 BoardTabs 行。 */
+export function BoardHeaderNav() {
+  const pathname = usePathname();
+  const board = activeBoard(pathname);
+  if (!board) return null;
+  if (board.tabs.length < 2) {
+    return (
+      <span className="hidden truncate text-sm font-medium text-ink md:block">
+        {board.label}
+      </span>
+    );
+  }
+  return (
+    <div className="hidden md:block">
+      <Tabs items={board.tabs} activeHref={activeTabHref(board, pathname)} bare />
+    </div>
   );
 }
 
@@ -168,17 +194,13 @@ export function SidebarNav() {
   );
 }
 
-// 板块内的二级 Tab 栏，放在主内容区顶部。根据当前路由自动显示对应板块的 Tab，
-// 单 Tab 板块（如选品）不渲染，避免冗余。
+// 板块内的二级 Tab 栏，仅移动端用（桌面端 Tab 已融进顶栏 BoardHeaderNav）。
+// 单 Tab 板块（如工作台/会话）不渲染，避免冗余。
 export function BoardTabs() {
   const pathname = usePathname();
   const board = activeBoard(pathname);
   if (!board || board.tabs.length < 2) return null;
-
-  // 取匹配到的最长 href 作为当前 Tab，避免父级 href 在子页面上也被点亮。
-  const activeTabHref = board.tabs
-    .filter((t) => matchPath(t.href, pathname))
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
-
-  return <Tabs items={board.tabs} activeHref={activeTabHref} className="mb-6" />;
+  return (
+    <Tabs items={board.tabs} activeHref={activeTabHref(board, pathname)} className="mb-6" />
+  );
 }

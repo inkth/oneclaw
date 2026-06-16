@@ -173,7 +173,7 @@ export function PublishKitDrawer({
                     ))}
                   </div>
                 ) : (
-                  <EmptyHint href={`/app/create?agent=DIRECTOR&productId=${productId}`} label="还没出片 · 为它做视频" />
+                  <EmptyHint href={`/app?agent=DIRECTOR&productId=${productId}`} label="还没出片 · 为它做视频" />
                 )}
               </Section>
 
@@ -204,7 +204,7 @@ export function PublishKitDrawer({
                   </div>
                 ) : (
                   <EmptyHint
-                    href={`/app/create?agent=LISTING&productId=${productId}`}
+                    href={`/app?agent=LISTING&productId=${productId}`}
                     label="还没出主图 · 为它做 Listing"
                   />
                 )}
@@ -256,7 +256,7 @@ export function PublishKitDrawer({
                   </div>
                 ) : (
                   <EmptyHint
-                    href={`/app/create?agent=LISTING&productId=${productId}`}
+                    href={`/app?agent=LISTING&productId=${productId}`}
                     label="还没做 Listing · 去生成文案"
                   />
                 )}

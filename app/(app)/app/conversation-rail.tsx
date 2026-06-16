@@ -7,9 +7,9 @@ import { Plus, MessagesSquare } from "lucide-react";
 import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
 import { type StreamTask } from "./task-stream";
 
-// 会话列表面板只在「工作台」板块出现:工作台首页(/app)+ 全部对话(/app/agents)。
-// 其它板块(选品/创作/资产/服务)返回 null,侧栏布局不变。
-const VISIBLE_PATHS = ["/app", "/app/agents"];
+// 会话列表面板只在「会话」板块出现(/app/agents)，作为该板块的左侧窄列表。
+// 其它板块(工作台/选品/资产/服务)返回 null，侧栏布局不变。
+const VISIBLE_PATHS = ["/app/agents"];
 
 function relTime(iso: string): string {
   const t = new Date(iso).getTime();

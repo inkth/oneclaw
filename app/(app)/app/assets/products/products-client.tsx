@@ -322,7 +322,7 @@ export function ProductsClient({
                           <button
                             onClick={() =>
                               router.push(
-                                `/app/create?agent=DIRECTOR&productId=${p.id}&prompt=${encodeURIComponent(videoPromptFor(p))}`,
+                                `/app?agent=DIRECTOR&productId=${p.id}&prompt=${encodeURIComponent(videoPromptFor(p))}`,
                               )
                             }
                             className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-2xs font-medium text-brand-700 hover:bg-brand-100"
@@ -334,7 +334,7 @@ export function ProductsClient({
                           <button
                             onClick={() =>
                               router.push(
-                                `/app/create?agent=LISTING&productId=${p.id}&prompt=${encodeURIComponent(listingPromptFor(p))}`,
+                                `/app?agent=LISTING&productId=${p.id}&prompt=${encodeURIComponent(listingPromptFor(p))}`,
                               )
                             }
                             className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 text-2xs font-medium text-sky-700 hover:bg-sky-100"

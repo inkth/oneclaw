@@ -204,7 +204,7 @@ export function VideoDetailDrawer({
     if (video.referenceMaterialIds?.length) {
       params.set("materials", video.referenceMaterialIds.join(","));
     }
-    router.push(`/app/create?${params.toString()}`);
+    router.push(`/app?${params.toString()}`);
   }
 
   async function rerender() {
@@ -401,7 +401,7 @@ export function VideoDetailDrawer({
                         emoji={video.template.emoji}
                         label="模板"
                         value={video.template.name}
-                        href={`/app/create`}
+                        href={`/app`}
                       />
                     )}
                     {video.product && (

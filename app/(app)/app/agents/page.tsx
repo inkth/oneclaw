@@ -31,7 +31,6 @@ export default async function AgentsPage() {
         workspaceId={ws?.id ?? ""}
         isGuest={!ws}
         initialTasks={tasks}
-        agents={["ANALYST", "REVIEW"]}
       />
     </div>
   );
