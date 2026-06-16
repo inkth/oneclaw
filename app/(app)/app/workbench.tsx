@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { AgentComposer, AgentPills, type ComposerKind } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
@@ -27,6 +29,7 @@ export function Workbench({
   streamAgents,
   showQuickActions = false,
   showAssetChips = false,
+  showStream = true,
   align = "center",
 }: {
   workspaceId: string;
@@ -52,6 +55,8 @@ export function Workbench({
   showAssetChips?: boolean;
   /** 胶囊行与预设行的对齐:创作页居中 hero,工作台驾驶舱左对齐。 */
   align?: "center" | "start";
+  /** 是否在输入框下方挂对话流(任务消息流)。工作台关掉:派活后只提示去「会话」看进展与结果。 */
+  showStream?: boolean;
 }) {
   const [activeAgent, setActiveAgent] = useState<ComposerKind>(
     initialAgent ?? agents?.[0] ?? "ANALYST",
@@ -64,6 +69,7 @@ export function Workbench({
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter();
 
   // 轮询拉的是工作区全量任务,本页只看 streamAgents 的(创作页只看视频/Listing)。
   const visibleTasks = streamAgents
@@ -79,7 +85,7 @@ export function Workbench({
   // 有排队/执行中的任务时轮询,全部到达终态自动停。
   const hasActive = tasks.some((t) => t.status === "QUEUED" || t.status === "RUNNING");
   useEffect(() => {
-    if (!hasActive || !workspaceId) return;
+    if (!hasActive || !workspaceId || !showStream) return;
     const timer = setInterval(async () => {
       try {
         const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`);
@@ -91,7 +97,7 @@ export function Workbench({
       }
     }, POLL_MS);
     return () => clearInterval(timer);
-  }, [hasActive, workspaceId]);
+  }, [hasActive, workspaceId, showStream]);
 
   function focusInput(text: string) {
     setInput(text);
@@ -144,7 +150,14 @@ export function Workbench({
           textareaRef={textareaRef}
           allowReview={!agents || agents.includes("REVIEW")}
           onDispatched={(task) => {
-            setTasks((prev) => [task, ...prev]);
+            if (showStream) {
+              setTasks((prev) => [task, ...prev]);
+            } else {
+              // 工作台不挂对话流:派活后提示去「会话」看进展与结果
+              toast.success("已派活，进展和结果都在「会话」里", {
+                action: { label: "去会话", onClick: () => router.push("/app/agents") },
+              });
+            }
             // 关联资产是一次性的:派活成功即消费,避免下一条任务误带上一次的选择
             if (task.agent === "DIRECTOR" || task.agent === "LISTING") {
               setProductId(null);
@@ -155,10 +168,12 @@ export function Workbench({
         />
       </div>
 
-      {/* 复盘趋势:历次投流复盘的大盘走向,仅在 REVIEW 可派活的工作台出现(≥2 次才渲染)。 */}
-      {(!agents || agents.includes("REVIEW")) && <ReviewTrend tasks={tasks} />}
+      {/* 复盘趋势:历次投流复盘的大盘走向,仅在 REVIEW 可派活且挂对话流的页面出现(≥2 次才渲染)。 */}
+      {showStream && (!agents || agents.includes("REVIEW")) && <ReviewTrend tasks={tasks} />}
 
-      <TaskStream items={visibleTasks} limit={streamLimit} moreHref="/app/agents" />
+      {showStream && (
+        <TaskStream items={visibleTasks} limit={streamLimit} moreHref="/app/agents" />
+      )}
 
       {showQuickActions && <QuickActionCards onPick={pickQuickAction} />}
 

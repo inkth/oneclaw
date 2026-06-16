@@ -1,7 +1,6 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { Workbench } from "./workbench";
 import { type ComposerKind } from "./agent-composer";
-import { type StreamTask } from "./task-stream";
 import { RecentVideos, type RecentVideo } from "./create/recent-videos";
 
 export const metadata = { title: "工作台 · OneClaw" };
@@ -27,18 +26,11 @@ export default async function DashboardPage({
   const user = me?.user ?? null;
   const workspace = me?.workspace ?? null;
 
-  let tasks: StreamTask[] = [];
   let videos: RecentVideo[] = [];
   if (workspace) {
-    const [ts, vs] = await Promise.all([
-      apiServer<{ tasks: StreamTask[] }>(`/workspaces/${workspace.id}/agent-tasks`).catch(
-        () => ({ tasks: [] as StreamTask[] }),
-      ),
-      apiServer<{ videos: RecentVideo[] }>(`/workspaces/${workspace.id}/videos`).catch(
-        () => ({ videos: [] as RecentVideo[] }),
-      ),
-    ]);
-    tasks = ts.tasks ?? [];
+    const vs = await apiServer<{ videos: RecentVideo[] }>(
+      `/workspaces/${workspace.id}/videos`,
+    ).catch(() => ({ videos: [] as RecentVideo[] }));
     videos = (vs.videos ?? []).slice(0, 6);
   }
 
@@ -51,7 +43,7 @@ export default async function DashboardPage({
         <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-500">
           {!workspace
             ? "选个 Agent —— 做视频、写 Listing、选品分析、投放复盘，写一句指令就能开干。登录后产出会存进你的资产库。"
-            : "做视频、写 Listing、选品分析、投放复盘，都在这一框。短视频成片归「资产 · 作品」，其余结果留在下方对话里。"}
+            : "做视频、写 Listing、选品分析、投放复盘，都在这一框。短视频成片归「资产 · 作品」，分析与复盘的对话和结果都在「会话」里。"}
         </p>
       </div>
 
@@ -60,8 +52,7 @@ export default async function DashboardPage({
         key={user?.id ?? "guest"}
         workspaceId={workspace?.id ?? ""}
         isGuest={!workspace}
-        initialTasks={tasks}
-        streamLimit={8}
+        showStream={false}
         initialAgent={initialAgent}
         initialInput={initialInput}
         initialProductId={initialProductId}
