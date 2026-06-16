@@ -1,7 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Compass,
@@ -105,6 +107,62 @@ function activeTabHref(board: Board, pathname: string): string | undefined {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 }
 
+/** 选品板块:把当前 region/category_id 带到各 Tab href 上,切榜不丢筛选
+ *  (同一地区下 4 个榜共用同一份类目,带 category 恒有效;收藏页忽略未知 query)。
+ *  返回 query 后缀,activeHref 也需拼上它——Tabs 按 href 全等判断激活态。 */
+function discoverTabSuffix(sp: ReadonlyURLSearchParams): string {
+  const p = new URLSearchParams();
+  const region = sp.get("region");
+  const category = sp.get("category_id");
+  if (region) p.set("region", region);
+  if (category) p.set("category_id", category);
+  const qs = p.toString();
+  return qs ? `?${qs}` : "";
+}
+
+/** 选品 Tab:把当前筛选带进各 Tab href。单独抽出且仅在选品板块渲染,
+ *  使 useSearchParams 只跑在动态的选品路由上——否则会让被静态预渲染的其它板块页
+ *  触发 CSR bailout(需 Suspense)。 */
+function DiscoverTabs({ board, pathname, bare, className }: DiscoverTabsProps) {
+  const sp = useSearchParams();
+  const suffix = discoverTabSuffix(sp);
+  const activeBare = activeTabHref(board, pathname);
+  return (
+    <Tabs
+      items={suffix ? board.tabs.map((t) => ({ ...t, href: t.href + suffix })) : board.tabs}
+      activeHref={activeBare ? activeBare + suffix : undefined}
+      bare={bare}
+      className={className}
+    />
+  );
+}
+
+type DiscoverTabsProps = {
+  board: Board;
+  pathname: string;
+  bare?: boolean;
+  className?: string;
+};
+
+/** useSearchParams 在静态预渲染页(收藏页无 searchParams,会被静态化)需 Suspense 兜底。
+ *  fallback 用不带 query 的裸 Tab——标签/激活态一致,客户端再补上筛选后缀,视觉无差异。 */
+function DiscoverTabsBoundary({ board, pathname, bare, className }: DiscoverTabsProps) {
+  return (
+    <Suspense
+      fallback={
+        <Tabs
+          items={board.tabs}
+          activeHref={activeTabHref(board, pathname)}
+          bare={bare}
+          className={className}
+        />
+      }
+    >
+      <DiscoverTabs board={board} pathname={pathname} bare={bare} className={className} />
+    </Suspense>
+  );
+}
+
 /** 右侧顶栏左区的导航：有二级 Tab 的板块直接把 Tab 融进顶栏（无 hairline），
  *  其余板块显示板块名作轻量上下文锚点。桌面端用，移动端走 BoardTabs 行。 */
 export function BoardHeaderNav() {
@@ -120,7 +178,11 @@ export function BoardHeaderNav() {
   }
   return (
     <div className="hidden md:block">
-      <Tabs items={board.tabs} activeHref={activeTabHref(board, pathname)} bare />
+      {board.key === "discover" ? (
+        <DiscoverTabsBoundary board={board} pathname={pathname} bare />
+      ) : (
+        <Tabs items={board.tabs} activeHref={activeTabHref(board, pathname)} bare />
+      )}
     </div>
   );
 }
@@ -199,7 +261,9 @@ export function BoardTabs() {
   const pathname = usePathname();
   const board = activeBoard(pathname);
   if (!board || board.tabs.length < 2) return null;
-  return (
+  return board.key === "discover" ? (
+    <DiscoverTabsBoundary board={board} pathname={pathname} className="mb-6" />
+  ) : (
     <Tabs items={board.tabs} activeHref={activeTabHref(board, pathname)} className="mb-6" />
   );
 }

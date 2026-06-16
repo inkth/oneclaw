@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Globe, ChevronDown, ChevronUp } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
 import { REGIONS, type Region } from "./regions";
+import { useDiscoverFilterMemory } from "./filter-memory";
 
 export type { Region };
 export { REGIONS };
@@ -33,6 +34,10 @@ export function FilterBar({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  // 在选品内记住地区/类别(localStorage):切榜由 Tab 带参,这里管刷新/裸进入回填。
+  // categories 非空=该榜支持类目(商品/店铺);视频/达人榜无类目,只记地区不擦类目。
+  useDiscoverFilterMemory(basePath, region, categoryId, categories.length > 0);
+
   function navigate(patch: { region?: Region; rank_type?: number; field?: number; category_id?: string | null }) {
     const p = new URLSearchParams();
     p.set("region", patch.region ?? region);
@@ -51,7 +56,11 @@ export function FilterBar({
     >
       <PillRow label={<><Globe className="h-3.5 w-3.5" />国家/地区</>}>
         {REGIONS.map((r) => (
-          <Pill key={r.code} active={region === r.code} onClick={() => navigate({ region: r.code })}>
+          <Pill
+            key={r.code}
+            active={region === r.code}
+            onClick={() => navigate({ region: r.code, category_id: null })}
+          >
             <span className="mr-1">{r.flag}</span>
             {r.cn}
           </Pill>
