@@ -69,19 +69,31 @@ type VideoDTO struct {
 	TotalVideoSaleGmvAmt float64 `json:"totalVideoSaleGmvAmt"`
 }
 
-// SellerRanklist 店铺榜(缓存优先)。
+// SellerRanklist 店铺榜(缓存优先);带关键词时走搜索(不缓存)。
 func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[SellerDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
+	if p.Keyword != "" {
+		return entitySearch(s.echo.Configured(),
+			func() []SellerDTO { return s.signMapSellers(ctx, echotik.MockSearchSellers(p.Region, p.Keyword, p.PageSize)) },
+			func() ([]SellerDTO, error) {
+				raw, err := s.echo.SearchSellers(ctx, p.Keyword, p.Region, p.PageSize)
+				if err != nil {
+					return nil, err
+				}
+				// 搜索响应店铺无 region 字段(只回 priority_region/seller_location),回填查询 region。
+				for i := range raw {
+					if raw[i].Region == "" {
+						raw[i].Region = p.Region
+					}
+				}
+				return s.signMapSellers(ctx, raw), nil
+			},
+		)
+	}
 	return cachedEntity(s, ctx, entityCacheKey("seller", p), s.echo.Configured(),
-		func() []SellerDTO {
-			rows := make([]SellerDTO, 0)
-			for _, it := range echotik.MockSellers(p.Region, p.PageSize) {
-				rows = append(rows, mapSeller(it, nil))
-			}
-			return rows
-		},
+		func() []SellerDTO { return s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize)) },
 		func() ([]SellerDTO, error) { return s.fetchSellerRows(ctx, p) },
 	)
 }
@@ -92,6 +104,11 @@ func (s *DiscoverService) fetchSellerRows(ctx context.Context, p echotik.Ranklis
 	if err != nil {
 		return nil, err
 	}
+	return s.signMapSellers(ctx, raw), nil
+}
+
+// signMapSellers 签封面 + 映射 DTO(榜单 / 搜索共用)。
+func (s *DiscoverService) signMapSellers(ctx context.Context, raw []echotik.SellerListItem) []SellerDTO {
 	imgs := make([]string, 0, len(raw))
 	for _, it := range raw {
 		imgs = append(imgs, it.CoverURL)
@@ -101,22 +118,28 @@ func (s *DiscoverService) fetchSellerRows(ctx context.Context, p echotik.Ranklis
 	for _, it := range raw {
 		rows = append(rows, mapSeller(it, signed))
 	}
-	return rows, nil
+	return rows
 }
 
-// InfluencerRanklist 达人榜(缓存优先)。
+// InfluencerRanklist 达人榜(缓存优先);带关键词时走搜索(不缓存)。
 func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[InfluencerDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
+	if p.Keyword != "" {
+		return entitySearch(s.echo.Configured(),
+			func() []InfluencerDTO { return s.signMapInfluencers(ctx, echotik.MockSearchInfluencers(p.Region, p.Keyword, p.PageSize)) },
+			func() ([]InfluencerDTO, error) {
+				raw, err := s.echo.SearchInfluencers(ctx, p.Keyword, p.Region, p.PageSize)
+				if err != nil {
+					return nil, err
+				}
+				return s.signMapInfluencers(ctx, raw), nil
+			},
+		)
+	}
 	return cachedEntity(s, ctx, entityCacheKey("influencer", p), s.echo.Configured(),
-		func() []InfluencerDTO {
-			rows := make([]InfluencerDTO, 0)
-			for _, it := range echotik.MockInfluencers(p.Region, p.PageSize) {
-				rows = append(rows, mapInfluencer(it, nil))
-			}
-			return rows
-		},
+		func() []InfluencerDTO { return s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize)) },
 		func() ([]InfluencerDTO, error) { return s.fetchInfluencerRows(ctx, p) },
 	)
 }
@@ -127,6 +150,11 @@ func (s *DiscoverService) fetchInfluencerRows(ctx context.Context, p echotik.Ran
 	if err != nil {
 		return nil, err
 	}
+	return s.signMapInfluencers(ctx, raw), nil
+}
+
+// signMapInfluencers 签头像 + 映射 DTO(榜单 / 搜索共用)。
+func (s *DiscoverService) signMapInfluencers(ctx context.Context, raw []echotik.InfluencerListItem) []InfluencerDTO {
 	imgs := make([]string, 0, len(raw))
 	for _, it := range raw {
 		imgs = append(imgs, it.Avatar)
@@ -136,22 +164,28 @@ func (s *DiscoverService) fetchInfluencerRows(ctx context.Context, p echotik.Ran
 	for _, it := range raw {
 		rows = append(rows, mapInfluencer(it, signed))
 	}
-	return rows, nil
+	return rows
 }
 
-// VideoRanklist 带货视频榜(缓存优先)。
+// VideoRanklist 带货视频榜(缓存优先);带关键词时走搜索(不缓存)。
 func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
+	if p.Keyword != "" {
+		return entitySearch(s.echo.Configured(),
+			func() []VideoDTO { return s.signMapVideos(ctx, echotik.MockSearchVideos(p.Region, p.Keyword, p.PageSize)) },
+			func() ([]VideoDTO, error) {
+				raw, err := s.echo.SearchVideos(ctx, p.Keyword, p.Region, p.PageSize)
+				if err != nil {
+					return nil, err
+				}
+				return s.signMapVideos(ctx, raw), nil
+			},
+		)
+	}
 	return cachedEntity(s, ctx, entityCacheKey("video", p), s.echo.Configured(),
-		func() []VideoDTO {
-			rows := make([]VideoDTO, 0)
-			for _, it := range echotik.MockVideos(p.Region, p.PageSize) {
-				rows = append(rows, mapVideo(it, nil))
-			}
-			return rows
-		},
+		func() []VideoDTO { return s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize)) },
 		func() ([]VideoDTO, error) { return s.fetchVideoRows(ctx, p) },
 	)
 }
@@ -162,6 +196,11 @@ func (s *DiscoverService) fetchVideoRows(ctx context.Context, p echotik.Ranklist
 	if err != nil {
 		return nil, err
 	}
+	return s.signMapVideos(ctx, raw), nil
+}
+
+// signMapVideos 签封面/头像 + 映射 DTO(榜单 / 搜索共用)。
+func (s *DiscoverService) signMapVideos(ctx context.Context, raw []echotik.VideoListItem) []VideoDTO {
 	imgs := make([]string, 0, len(raw)*2)
 	for _, it := range raw {
 		imgs = append(imgs, it.ReflowCover, it.Avatar)
@@ -171,7 +210,7 @@ func (s *DiscoverService) fetchVideoRows(ctx context.Context, p echotik.Ranklist
 	for _, it := range raw {
 		rows = append(rows, mapVideo(it, signed))
 	}
-	return rows, nil
+	return rows
 }
 
 // PrewarmEntities 供定时任务预热店铺/达人/视频三榜:强制拉取并回写缓存(绕过读缓存,
@@ -214,7 +253,7 @@ func mapSeller(it echotik.SellerListItem, signed map[string]string) SellerDTO {
 		SellerName:      it.SellerName,
 		Region:          it.Region,
 		CoverURL:        signedURL(it.CoverURL, signed),
-		Rating:          it.Rating,
+		Rating:          it.Rating.Float(),
 		Categories:      parseCategoryNames(it.MostProductCategoryList, 2),
 		TotalProductCnt: it.TotalProductCnt,
 		TotalSaleCnt:    it.TotalSaleCnt,

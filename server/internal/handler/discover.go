@@ -74,6 +74,7 @@ func (h *DiscoverHandler) Ranklist(c *gin.Context) {
 		PageSize:   defaultInt(c.Query("page_size"), 12),
 		PageNum:    pageNumParam(c),
 		Date:       c.Query("date"),
+		Keyword:    c.Query("keyword"),
 	}
 	res, err := h.discover.Ranklist(c.Request.Context(), wid, p)
 	if err != nil {
@@ -93,6 +94,7 @@ func (h *DiscoverHandler) RanklistPublic(c *gin.Context) {
 		PageSize:   defaultInt(c.Query("page_size"), 12),
 		PageNum:    pageNumParam(c),
 		Date:       c.Query("date"),
+		Keyword:    c.Query("keyword"),
 	}
 	res, err := h.discover.Ranklist(c.Request.Context(), uuid.Nil, p)
 	if err != nil {

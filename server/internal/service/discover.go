@@ -64,6 +64,10 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 	if p.PageSize <= 0 {
 		p.PageSize = 10
 	}
+	// 带关键词=搜索:走独立路径(不命中/不写榜单缓存,结果多变)。
+	if p.Keyword != "" {
+		return s.searchProducts(ctx, wsID, p), nil
+	}
 
 	// 全局榜单缓存键不含 category/页码,按类目筛选或翻页(第 2 页起)时绕过缓存(实时拉、不写缓存)。
 	useCache := p.CategoryID == "" && p.PageNum <= 1
@@ -86,13 +90,45 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 	}
 
 	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live 且非类目筛选)。
-	dps := s.persist(ctx, p, raw, state == "live" && useCache)
+	dps := s.persist(ctx, p, raw, state == "live" && useCache, state == "live" && useCache)
 	var fetchedAt *time.Time
 	if state == "live" {
 		now := time.Now()
 		fetchedAt = &now
 	}
 	return &RanklistResult{State: state, FetchedAt: fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
+}
+
+// searchProducts 关键词搜商品:不进/不写榜单缓存(结果多变),但仍 upsert DiscoverProduct
+// 以支持收藏/导入,并对 live 结果补取封面(同榜单经 product/detail 签名)。
+func (s *DiscoverService) searchProducts(ctx context.Context, wsID uuid.UUID, p echotik.RanklistParams) *RanklistResult {
+	state := "live"
+	var raw []echotik.ProductListItem
+	if !s.echo.Configured() {
+		state = "mock"
+		raw = echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
+	} else if rows, err := s.echo.SearchProducts(ctx, p.Keyword, p.Region, p.PageSize); err != nil {
+		logger.Warn("选品搜索失败,降级 mock", logger.String("keyword", p.Keyword), logger.Err(err))
+		state = "error"
+		raw = echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
+	} else {
+		raw = rows
+	}
+
+	// 搜索响应可能回 priority_region 而非 region,导致行 region 为空;回填查询 region(详情链接/落库要用)。
+	for i := range raw {
+		if raw[i].Region == "" {
+			raw[i].Region = p.Region
+		}
+	}
+
+	dps := s.persist(ctx, p, raw, false, state == "live")
+	var fetchedAt *time.Time
+	if state == "live" {
+		now := time.Now()
+		fetchedAt = &now
+	}
+	return &RanklistResult{State: state, FetchedAt: fetchedAt, Products: s.decorate(ctx, wsID, dps)}
 }
 
 // RefreshRanklist 强制拉取并落库(定时预热用):跳过缓存检查、不做工作台装饰。
@@ -108,7 +144,7 @@ func (s *DiscoverService) RefreshRanklist(ctx context.Context, p echotik.Ranklis
 	if err != nil {
 		return 0, err
 	}
-	dps := s.persist(ctx, p, raw, p.CategoryID == "")
+	dps := s.persist(ctx, p, raw, p.CategoryID == "", p.CategoryID == "")
 	return len(dps), nil
 }
 
@@ -156,14 +192,16 @@ func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistPar
 	return ordered, entry.FetchedAt, true
 }
 
-func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams, raw []echotik.ProductListItem, writeCache bool) []model.DiscoverProduct {
+// persist 落库 DiscoverProduct(永远 upsert,支持导入);writeCache 控制是否写榜单缓存+快照
+// (搜索/类目筛选/翻页时为 false);enrichCover 控制是否补取封面(与缓存解耦,搜索 live 也补图)。
+func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams, raw []echotik.ProductListItem, writeCache, enrichCover bool) []model.DiscoverProduct {
 	today := time.Now().Format("2006-01-02")
 	out := make([]model.DiscoverProduct, 0, len(raw))
 	externalIDs := make([]string, 0, len(raw))
 
 	// 商品榜接口不带封面;仅 live 拉取时补取并签名(防盗链),避免给 mock/error 数据空跑。
 	var coverByID map[string]model.JSONB
-	if writeCache {
+	if enrichCover {
 		coverByID = s.enrichCovers(ctx, p.Region, raw)
 	}
 

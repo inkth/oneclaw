@@ -31,6 +31,7 @@ export function SellersClient({
   field,
   categoryId,
   categories,
+  keyword = "",
   state,
   sellers,
   page,
@@ -41,11 +42,13 @@ export function SellersClient({
   field: number;
   categoryId: string | null;
   categories: CategoryOption[];
+  keyword?: string;
   state: DiscoverState;
   sellers: Seller[];
   page: number;
   hasNext: boolean;
 }) {
+  const searching = keyword.trim().length > 0;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -65,10 +68,18 @@ export function SellersClient({
         field={field}
         categoryId={categoryId}
         categories={categories}
+        keyword={keyword}
+        searchPlaceholder="搜索店铺名…"
       />
 
       {state === "empty" || sellers.length === 0 ? (
-        <EmptyState />
+        <EmptyState
+          hint={
+            searching
+              ? `没找到与「${keyword}」相关的店铺。换个关键词,或切换国家 / 地区再搜。`
+              : undefined
+          }
+        />
       ) : (
         <TableWrap>
           <THead>
@@ -132,7 +143,7 @@ export function SellersClient({
         </TableWrap>
       )}
 
-      <Pagination page={page} hasNext={hasNext} />
+      {!searching && <Pagination page={page} hasNext={hasNext} />}
     </div>
   );
 }

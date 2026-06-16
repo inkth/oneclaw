@@ -1,5 +1,31 @@
 package echotik
 
+import "strings"
+
+// filterMock 按 name 子串过滤 mock 数据(没配凭证时的搜索 fallback);
+// 关键词没命中就返回全部,避免本地 dev 搜索空屏。
+func filterMock[T any](items []T, keyword string, limit int, name func(T) string) []T {
+	kw := strings.ToLower(strings.TrimSpace(keyword))
+	out := make([]T, 0, len(items))
+	for _, it := range items {
+		if kw == "" || strings.Contains(strings.ToLower(name(it)), kw) {
+			out = append(out, it)
+		}
+	}
+	if len(out) == 0 {
+		out = items
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out
+}
+
+// MockSearchProducts 没配凭证时的商品搜索 fallback(按商品名过滤 mock 榜)。
+func MockSearchProducts(region, keyword string, limit int) []ProductListItem {
+	return filterMock(MockRanklist(region, 0), keyword, limit, func(p ProductListItem) string { return p.ProductName })
+}
+
 // MockRanklist 没配 ECHOTIK 凭证时的 fallback 数据,便于 UI 演示。
 func MockRanklist(region string, limit int) []ProductListItem {
 	if limit <= 0 || limit > len(mockTemplates) {

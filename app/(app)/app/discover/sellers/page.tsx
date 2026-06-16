@@ -19,11 +19,16 @@ export default async function DiscoverSellersPage({
   const field = Number(sp.field) === 2 ? 2 : 1;
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
+  const q = (sp.q ?? "").trim();
+  // 搜索:走 EchoTik 关键词搜索(只认 region,单次 ≤30、无分页);否则正常榜单+分页。
+  const query = q
+    ? `region=${region}&field=${field}&page_size=30&keyword=${encodeURIComponent(q)}`
+    : `region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=20&page_num=${page}`;
 
   const [result, categories] = await Promise.all([
-    apiServer<Result>(
-      `/discover/seller-ranklist?region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=20&page_num=${page}`,
-    ).catch((): Result => ({ state: "error", fetchedAt: null, rows: [] })),
+    apiServer<Result>(`/discover/seller-ranklist?${query}`).catch(
+      (): Result => ({ state: "error", fetchedAt: null, rows: [] }),
+    ),
     fetchCategories(region),
   ]);
 
@@ -34,10 +39,11 @@ export default async function DiscoverSellersPage({
       field={field}
       categoryId={categoryId}
       categories={categories}
+      keyword={q}
       state={result.state}
       sellers={result.rows}
       page={page}
-      hasNext={result.rows.length >= 20 && page < 10}
+      hasNext={!q && result.rows.length >= 20 && page < 10}
     />
   );
 }

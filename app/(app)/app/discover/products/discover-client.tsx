@@ -77,6 +77,7 @@ export function DiscoverClient({
   field,
   categoryId,
   categories,
+  keyword = "",
   products,
   page,
   hasNext,
@@ -88,6 +89,7 @@ export function DiscoverClient({
   field: Field;
   categoryId: string | null;
   categories: CategoryOption[];
+  keyword?: string;
   state: DiscoverState;
   fetchedAt: string | null;
   products: DiscoverProduct[];
@@ -95,6 +97,7 @@ export function DiscoverClient({
   hasNext: boolean;
   isGuest?: boolean;
 }) {
+  const searching = keyword.trim().length > 0;
   const router = useRouter();
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const { open: openAuthModal } = useAuthModal();
@@ -193,15 +196,25 @@ export function DiscoverClient({
         fields={PRODUCT_FIELDS}
         categoryId={categoryId}
         categories={categories}
+        keyword={keyword}
+        searchPlaceholder="搜索商品名 / 关键词…"
       />
 
       {/* Main table — 无数据时不渲染裸表头,改用统一空态 */}
       {products.length === 0 ? (
-        <EmptyState
-          icon={PackageSearch}
-          title="该榜单暂无数据"
-          description="这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜,或者换个国家 / 地区再看看。"
-        />
+        searching ? (
+          <EmptyState
+            icon={PackageSearch}
+            title={`没找到与「${keyword}」相关的商品`}
+            description="换个关键词,或切换国家 / 地区再搜。也可以清空搜索回到爆品榜。"
+          />
+        ) : (
+          <EmptyState
+            icon={PackageSearch}
+            title="该榜单暂无数据"
+            description="这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜,或者换个国家 / 地区再看看。"
+          />
+        )
       ) : (
         <TableWrap>
           <THead>
@@ -326,7 +339,7 @@ export function DiscoverClient({
         </TableWrap>
       )}
 
-      <Pagination page={page} hasNext={hasNext} />
+      {!searching && <Pagination page={page} hasNext={hasNext} />}
     </div>
   );
 }
