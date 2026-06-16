@@ -192,6 +192,7 @@ export function Workbench({
 
       {showQuickActions && (
         <QuickActionCards
+          activeAgent={activeAgent}
           onPick={pickQuickAction}
           onTryOn={() =>
             isGuest
