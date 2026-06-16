@@ -42,6 +42,19 @@ func MockVideos(region string, limit int) []VideoListItem {
 	return out
 }
 
+// MockSearch* 没配凭证时的店铺/达人/视频搜索 fallback(按名称/文案过滤 mock 榜)。
+func MockSearchSellers(region, keyword string, limit int) []SellerListItem {
+	return filterMock(MockSellers(region, 0), keyword, limit, func(s SellerListItem) string { return s.SellerName })
+}
+
+func MockSearchInfluencers(region, keyword string, limit int) []InfluencerListItem {
+	return filterMock(MockInfluencers(region, 0), keyword, limit, func(i InfluencerListItem) string { return i.NickName })
+}
+
+func MockSearchVideos(region, keyword string, limit int) []VideoListItem {
+	return filterMock(MockVideos(region, 0), keyword, limit, func(v VideoListItem) string { return v.VideoDesc })
+}
+
 var mockSellers = []SellerListItem{
 	{SellerID: "mock-shop-glow", SellerName: "GlowUp Beauty Official", CoverURL: "", Rating: 4.8, MostProductCategoryList: `[{"category_name":"Beauty"},{"category_name":"Skincare"}]`, TotalProductCnt: 320, TotalSaleCnt: 482000, TotalSaleGmvAmt: 9640000, TotalIflCnt: 1240, TotalVideoCnt: 5800, TotalLiveCnt: 420},
 	{SellerID: "mock-shop-homify", SellerName: "Homify Living", CoverURL: "", Rating: 4.6, MostProductCategoryList: `[{"category_name":"Home"},{"category_name":"Kitchen"}]`, TotalProductCnt: 210, TotalSaleCnt: 351000, TotalSaleGmvAmt: 5265000, TotalIflCnt: 820, TotalVideoCnt: 3200, TotalLiveCnt: 180},

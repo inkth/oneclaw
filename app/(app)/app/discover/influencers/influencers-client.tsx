@@ -31,6 +31,7 @@ export function InfluencersClient({
   region,
   rankType,
   field,
+  keyword = "",
   state,
   influencers,
   page,
@@ -39,11 +40,13 @@ export function InfluencersClient({
   region: Region;
   rankType: number;
   field: number;
+  keyword?: string;
   state: DiscoverState;
   influencers: Influencer[];
   page: number;
   hasNext: boolean;
 }) {
+  const searching = keyword.trim().length > 0;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -61,10 +64,18 @@ export function InfluencersClient({
         region={region}
         rankType={rankType}
         field={field}
+        keyword={keyword}
+        searchPlaceholder="搜索达人昵称 / @handle…"
       />
 
       {state === "empty" || influencers.length === 0 ? (
-        <EmptyState />
+        <EmptyState
+          hint={
+            searching
+              ? `没找到与「${keyword}」相关的达人。换个关键词,或切换国家 / 地区再搜。`
+              : undefined
+          }
+        />
       ) : (
         <TableWrap minWidth={940}>
           <THead>
@@ -126,7 +137,7 @@ export function InfluencersClient({
         </TableWrap>
       )}
 
-      <Pagination page={page} hasNext={hasNext} />
+      {!searching && <Pagination page={page} hasNext={hasNext} />}
     </div>
   );
 }

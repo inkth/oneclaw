@@ -94,3 +94,33 @@ func cachedEntity[T any](
 	res.Rows = rows
 	return res
 }
+
+// entitySearch 三榜关键词搜索的统一流程(不缓存:搜索结果多变)。
+// configured=false → mock;live() 失败 → error + mock;空结果 → empty。
+func entitySearch[T any](
+	configured bool,
+	mock func() []T,
+	live func() ([]T, error),
+) *EntityRanklistResult[T] {
+	res := &EntityRanklistResult[T]{Rows: []T{}}
+	if !configured {
+		res.State = "mock"
+		res.Rows = mock()
+		return res
+	}
+	rows, err := live()
+	if err != nil {
+		res.State = "error"
+		res.Rows = mock()
+		return res
+	}
+	if len(rows) == 0 {
+		res.State = "empty"
+		return res
+	}
+	now := time.Now()
+	res.State = "live"
+	res.FetchedAt = &now
+	res.Rows = rows
+	return res
+}

@@ -209,6 +209,7 @@ type RanklistParams struct {
 	Date       string // YYYY-MM-DD,空则自动回退到昨天
 	PageNum    int
 	PageSize   int
+	Keyword    string // 非空=走关键词搜索(/echotik/search/items)而非榜单
 }
 
 // Category 一级类目行。
@@ -218,20 +219,20 @@ type Category struct {
 	ParentID     string `json:"parent_id"`
 }
 
-// SellerListItem 店铺榜行。
+// SellerListItem 店铺榜 / 搜索行。
 type SellerListItem struct {
-	SellerID                string  `json:"seller_id"`
-	SellerName              string  `json:"seller_name"`
-	Region                  string  `json:"region"`
-	CoverURL                string  `json:"cover_url"` // 防盗链原始 URL,需签名
-	Rating                  float64 `json:"rating"`
-	MostProductCategoryList string  `json:"most_product_category_list"` // stringified JSON: [{category_name,...}]
-	TotalProductCnt         int     `json:"total_product_cnt"`
-	TotalSaleCnt            int     `json:"total_sale_cnt"`
-	TotalSaleGmvAmt         float64 `json:"total_sale_gmv_amt"`
-	TotalIflCnt             int     `json:"total_ifl_cnt"`
-	TotalVideoCnt           int     `json:"total_video_cnt"`
-	TotalLiveCnt            int     `json:"total_live_cnt"`
+	SellerID                string    `json:"seller_id"`
+	SellerName              string    `json:"seller_name"`
+	Region                  string    `json:"region"`
+	CoverURL                string    `json:"cover_url"`                  // 防盗链原始 URL,需签名
+	Rating                  FlexFloat `json:"rating"`                     // 榜单回数字、搜索回字符串("4.4"),用 FlexFloat 兼容
+	MostProductCategoryList string    `json:"most_product_category_list"` // stringified JSON: [{category_name,...}]
+	TotalProductCnt         int       `json:"total_product_cnt"`
+	TotalSaleCnt            int       `json:"total_sale_cnt"`
+	TotalSaleGmvAmt         float64   `json:"total_sale_gmv_amt"`
+	TotalIflCnt             int       `json:"total_ifl_cnt"`
+	TotalVideoCnt           int       `json:"total_video_cnt"`
+	TotalLiveCnt            int       `json:"total_live_cnt"`
 }
 
 // InfluencerListItem 达人榜行。

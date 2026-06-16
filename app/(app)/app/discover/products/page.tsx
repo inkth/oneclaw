@@ -45,7 +45,11 @@ export default async function DiscoverProductsPage({
   const field = Number(sp.field) || 1;
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
-  const query = `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16&page_num=${page}`;
+  const q = (sp.q ?? "").trim();
+  // 搜索:走 EchoTik 关键词搜索(只认 region,单次 ≤30、无分页);否则正常榜单+分页。
+  const query = q
+    ? `region=${region}&product_rank_field=${field}&page_size=30&keyword=${encodeURIComponent(q)}`
+    : `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16&page_num=${page}`;
 
   const [result, categories] = await Promise.all([
     apiServer<RanklistResult>(
@@ -65,6 +69,7 @@ export default async function DiscoverProductsPage({
       field={field as 1 | 2 | 3}
       categoryId={categoryId}
       categories={categories}
+      keyword={q}
       state={result.state as "live" | "cached" | "empty" | "mock" | "error"}
       fetchedAt={result.fetchedAt ?? null}
       products={result.products.map((p) => ({
@@ -87,7 +92,7 @@ export default async function DiscoverProductsPage({
         interaction: p.interaction,
       }))}
       page={page}
-      hasNext={result.products.length >= 16 && page < 10}
+      hasNext={!q && result.products.length >= 16 && page < 10}
     />
   );
 }

@@ -32,6 +32,7 @@ export function VideosClient({
   region,
   rankType,
   field,
+  keyword = "",
   state,
   videos,
   page,
@@ -40,11 +41,13 @@ export function VideosClient({
   region: Region;
   rankType: number;
   field: number;
+  keyword?: string;
   state: DiscoverState;
   videos: Video[];
   page: number;
   hasNext: boolean;
 }) {
+  const searching = keyword.trim().length > 0;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -62,10 +65,18 @@ export function VideosClient({
         region={region}
         rankType={rankType}
         field={field}
+        keyword={keyword}
+        searchPlaceholder="搜索视频文案 / 话题…"
       />
 
       {state === "empty" || videos.length === 0 ? (
-        <EmptyState />
+        <EmptyState
+          hint={
+            searching
+              ? `没找到与「${keyword}」相关的视频。换个关键词,或切换国家 / 地区再搜。`
+              : undefined
+          }
+        />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {videos.map((v, idx) => (
@@ -74,7 +85,7 @@ export function VideosClient({
         </div>
       )}
 
-      <Pagination page={page} hasNext={hasNext} />
+      {!searching && <Pagination page={page} hasNext={hasNext} />}
     </div>
   );
 }
