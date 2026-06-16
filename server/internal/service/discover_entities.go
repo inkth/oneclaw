@@ -82,23 +82,26 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 			}
 			return rows
 		},
-		func() ([]SellerDTO, error) {
-			raw, err := s.echo.GetSellerRanklist(ctx, p)
-			if err != nil {
-				return nil, err
-			}
-			imgs := make([]string, 0, len(raw))
-			for _, it := range raw {
-				imgs = append(imgs, it.CoverURL)
-			}
-			signed := s.echo.SignCovers(ctx, imgs)
-			rows := make([]SellerDTO, 0, len(raw))
-			for _, it := range raw {
-				rows = append(rows, mapSeller(it, signed))
-			}
-			return rows, nil
-		},
+		func() ([]SellerDTO, error) { return s.fetchSellerRows(ctx, p) },
 	)
+}
+
+// fetchSellerRows 拉店铺榜 → 签封面 → 映射 DTO。缓存 live 路径与定时预热共用。
+func (s *DiscoverService) fetchSellerRows(ctx context.Context, p echotik.RanklistParams) ([]SellerDTO, error) {
+	raw, err := s.echo.GetSellerRanklist(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	imgs := make([]string, 0, len(raw))
+	for _, it := range raw {
+		imgs = append(imgs, it.CoverURL)
+	}
+	signed := s.echo.SignCovers(ctx, imgs)
+	rows := make([]SellerDTO, 0, len(raw))
+	for _, it := range raw {
+		rows = append(rows, mapSeller(it, signed))
+	}
+	return rows, nil
 }
 
 // InfluencerRanklist 达人榜(缓存优先)。
@@ -114,23 +117,26 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 			}
 			return rows
 		},
-		func() ([]InfluencerDTO, error) {
-			raw, err := s.echo.GetInfluencerRanklist(ctx, p)
-			if err != nil {
-				return nil, err
-			}
-			imgs := make([]string, 0, len(raw))
-			for _, it := range raw {
-				imgs = append(imgs, it.Avatar)
-			}
-			signed := s.echo.SignCovers(ctx, imgs)
-			rows := make([]InfluencerDTO, 0, len(raw))
-			for _, it := range raw {
-				rows = append(rows, mapInfluencer(it, signed))
-			}
-			return rows, nil
-		},
+		func() ([]InfluencerDTO, error) { return s.fetchInfluencerRows(ctx, p) },
 	)
+}
+
+// fetchInfluencerRows 拉达人榜 → 签头像 → 映射 DTO。缓存 live 路径与定时预热共用。
+func (s *DiscoverService) fetchInfluencerRows(ctx context.Context, p echotik.RanklistParams) ([]InfluencerDTO, error) {
+	raw, err := s.echo.GetInfluencerRanklist(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	imgs := make([]string, 0, len(raw))
+	for _, it := range raw {
+		imgs = append(imgs, it.Avatar)
+	}
+	signed := s.echo.SignCovers(ctx, imgs)
+	rows := make([]InfluencerDTO, 0, len(raw))
+	for _, it := range raw {
+		rows = append(rows, mapInfluencer(it, signed))
+	}
+	return rows, nil
 }
 
 // VideoRanklist 带货视频榜(缓存优先)。
@@ -146,23 +152,59 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 			}
 			return rows
 		},
-		func() ([]VideoDTO, error) {
-			raw, err := s.echo.GetVideoRanklist(ctx, p)
-			if err != nil {
-				return nil, err
-			}
-			imgs := make([]string, 0, len(raw)*2)
-			for _, it := range raw {
-				imgs = append(imgs, it.ReflowCover, it.Avatar)
-			}
-			signed := s.echo.SignCovers(ctx, imgs)
-			rows := make([]VideoDTO, 0, len(raw))
-			for _, it := range raw {
-				rows = append(rows, mapVideo(it, signed))
-			}
-			return rows, nil
-		},
+		func() ([]VideoDTO, error) { return s.fetchVideoRows(ctx, p) },
 	)
+}
+
+// fetchVideoRows 拉视频榜 → 签封面/头像 → 映射 DTO。缓存 live 路径与定时预热共用。
+func (s *DiscoverService) fetchVideoRows(ctx context.Context, p echotik.RanklistParams) ([]VideoDTO, error) {
+	raw, err := s.echo.GetVideoRanklist(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	imgs := make([]string, 0, len(raw)*2)
+	for _, it := range raw {
+		imgs = append(imgs, it.ReflowCover, it.Avatar)
+	}
+	signed := s.echo.SignCovers(ctx, imgs)
+	rows := make([]VideoDTO, 0, len(raw))
+	for _, it := range raw {
+		rows = append(rows, mapVideo(it, signed))
+	}
+	return rows, nil
+}
+
+// PrewarmEntities 供定时任务预热店铺/达人/视频三榜:强制拉取并回写缓存(绕过读缓存,
+// 确保 TTL 过期前主动刷新)。p.PageSize 必须与前端一致(20),否则缓存键含 page_size
+// 不匹配、预热失效。三榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
+func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.RanklistParams) error {
+	if !s.echo.Configured() {
+		return nil
+	}
+	if p.PageSize <= 0 {
+		p.PageSize = 20
+	}
+	var firstErr error
+	if rows, err := s.fetchSellerRows(ctx, p); err != nil {
+		firstErr = err
+	} else if len(rows) > 0 {
+		s.cacheSetJSON(ctx, entityCacheKey("seller", p), rows)
+	}
+	if rows, err := s.fetchInfluencerRows(ctx, p); err != nil {
+		if firstErr == nil {
+			firstErr = err
+		}
+	} else if len(rows) > 0 {
+		s.cacheSetJSON(ctx, entityCacheKey("influencer", p), rows)
+	}
+	if rows, err := s.fetchVideoRows(ctx, p); err != nil {
+		if firstErr == nil {
+			firstErr = err
+		}
+	} else if len(rows) > 0 {
+		s.cacheSetJSON(ctx, entityCacheKey("video", p), rows)
+	}
+	return firstErr
 }
 
 func mapSeller(it echotik.SellerListItem, signed map[string]string) SellerDTO {

@@ -81,9 +81,16 @@ func (j *DiscoverSync) runOnce(ctx context.Context) {
 	}
 }
 
+// entityPrewarmPageSize 预热店铺/达人/视频三榜的条数,必须与前端各 entity 页请求的
+// page_size 一致(20),否则缓存键含 page_size 不匹配、预热白做。
+const entityPrewarmPageSize = 20
+
 func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
-	cctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	// 商品榜 + 店铺/达人/视频三榜串行(视频榜还要批量签封面),留足跨境拉取时间。
+	cctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
+
+	// 1. 商品榜:落库 + 每日快照 + 预热 RanklistCacheEntry。
 	start := time.Now()
 	n, err := j.discover.RefreshRanklist(cctx, echotik.RanklistParams{
 		Region:    c.Region,
@@ -92,15 +99,32 @@ func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
 		PageSize:  j.cfg.PageSize,
 	})
 	if err != nil {
-		logger.Warn("[job] 榜单同步失败",
+		logger.Warn("[job] 商品榜同步失败",
 			logger.String("region", c.Region),
 			logger.Int("rankType", c.RankType),
 			logger.Err(err))
-		return
+	} else {
+		logger.Info("[job] 商品榜同步",
+			logger.String("region", c.Region),
+			logger.Int("rankType", c.RankType),
+			logger.Int("count", n),
+			logger.String("duration", time.Since(start).Round(time.Millisecond).String()))
 	}
-	logger.Info("[job] 榜单同步",
-		logger.String("region", c.Region),
-		logger.Int("rankType", c.RankType),
-		logger.Int("count", n),
-		logger.String("duration", time.Since(start).Round(time.Millisecond).String()))
+
+	// 2. 店铺/达人/视频三榜:预热 DiscoverCache,否则每 6h TTL 过期后首个用户冷启动慢。
+	estart := time.Now()
+	if err := j.discover.PrewarmEntities(cctx, echotik.RanklistParams{
+		Region:    c.Region,
+		RankType:  c.RankType,
+		RankField: c.RankField,
+		PageSize:  entityPrewarmPageSize,
+	}); err != nil {
+		logger.Warn("[job] entity 榜预热失败",
+			logger.String("region", c.Region),
+			logger.Err(err))
+	} else {
+		logger.Info("[job] entity 榜预热",
+			logger.String("region", c.Region),
+			logger.String("duration", time.Since(estart).Round(time.Millisecond).String()))
+	}
 }
