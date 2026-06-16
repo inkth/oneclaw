@@ -15,6 +15,8 @@ export type QuickAction = {
   status: "live" | "soon";
   agent?: ComposerKind;
   promptTemplate?: string;
+  /** "tryon" 走专用弹窗(选模特 + 服饰图),不预填 composer。 */
+  flow?: "composer" | "tryon";
 };
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -35,7 +37,8 @@ const QUICK_ACTIONS: QuickAction[] = [
     desc: "模特上身图,服饰类专用",
     icon: Shirt,
     thumb: "from-sky-400 to-cyan-400",
-    status: "soon",
+    status: "live",
+    flow: "tryon",
   },
   {
     key: "aplus",
@@ -60,8 +63,14 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
 ];
 
-/** 对标竞品的快捷功能卡行:点 live 卡选中对应 Agent 并预填模板;soon 卡提示打磨中。 */
-export function QuickActionCards({ onPick }: { onPick: (a: QuickAction) => void }) {
+/** 对标竞品的快捷功能卡行:点 live 卡选中对应 Agent 并预填模板;tryon 卡开专用弹窗;soon 卡提示打磨中。 */
+export function QuickActionCards({
+  onPick,
+  onTryOn,
+}: {
+  onPick: (a: QuickAction) => void;
+  onTryOn?: () => void;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {QUICK_ACTIONS.map((a) => {
@@ -71,7 +80,11 @@ export function QuickActionCards({ onPick }: { onPick: (a: QuickAction) => void 
             key={a.key}
             onClick={() => {
               if (soon) {
-                toast("虚拟试穿打磨中,先去「资产 → 模特」准备素材");
+                toast("该功能打磨中,敬请期待");
+                return;
+              }
+              if (a.flow === "tryon") {
+                onTryOn?.();
                 return;
               }
               onPick(a);

@@ -39,6 +39,7 @@ const (
 	AgentAnalyst  = "ANALYST"
 	AgentDirector = "DIRECTOR"
 	AgentListing  = "LISTING"
+	AgentTryOn    = "TRYON" // 虚拟试穿:模特图 + 服饰图 → 上身图(纯出图,不走 LLM)
 	// REVIEW 由 review/analyze 同步产出后落库(不走异步队列,不在 validAgents 内)。
 	AgentReview = "REVIEW"
 

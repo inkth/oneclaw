@@ -110,6 +110,30 @@ func (c *Client) GenerateImageQueued(ctx context.Context, modelPath, prompt, ima
 	if len(refImageURLs) > 0 {
 		payload["image_urls"] = refImageURLs
 	}
+	return c.queueRun(ctx, modelPath, payload)
+}
+
+// TryOn 虚拟试穿:把 garment(服饰平铺/挂拍图)穿到 model(模特/真人)身上,出上身图。
+// 走 fal 专用试穿模型(如 fashn/tryon),入参与出图模型不同(model_image + garment_image),
+// 同样走队列 API,跨境不被长连接卡死。
+func (c *Client) TryOn(ctx context.Context, modelImageURL, garmentImageURL string) ([]byte, string, error) {
+	if !c.Configured() {
+		return nil, "", fmt.Errorf("fal: FALAI_API_KEY 未配置")
+	}
+	modelPath := c.cfg.TryOnModel
+	if modelPath == "" {
+		modelPath = "fal-ai/fashn/tryon/v1.6"
+	}
+	payload := map[string]any{
+		"model_image":   modelImageURL,
+		"garment_image": garmentImageURL,
+		"category":      "auto", // 自动判断上装/下装/连体
+	}
+	return c.queueRun(ctx, modelPath, payload)
+}
+
+// queueRun 提交任意 payload 到 fal 队列 API → 轮询状态 → 完成后取首图字节 + content-type。
+func (c *Client) queueRun(ctx context.Context, modelPath string, payload map[string]any) ([]byte, string, error) {
 	body, _ := json.Marshal(payload)
 
 	var job struct {

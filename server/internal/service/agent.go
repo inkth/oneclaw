@@ -39,6 +39,7 @@ var validAgents = map[string]bool{
 	model.AgentAnalyst:  true,
 	model.AgentDirector: true,
 	model.AgentListing:  true,
+	model.AgentTryOn:    true,
 }
 
 // AgentCreateOpts 派活时的可选关联资产,创作类 Agent 按需消费。
@@ -123,6 +124,8 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 		output, meta, usage, err = s.runDirector(ctx, wsID, input, opts)
 	case model.AgentListing:
 		output, meta, usage, err = s.runListing(ctx, wsID, input, opts)
+	case model.AgentTryOn:
+		output, meta, usage, err = s.runTryOn(ctx, taskID, wsID, opts)
 	default:
 		err = fmt.Errorf("agent %s 尚未在 Go 端实现", agent)
 	}

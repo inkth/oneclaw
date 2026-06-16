@@ -142,6 +142,7 @@ type FalConfig struct {
 	APIKey     string
 	BaseURL    string // 默认 https://fal.run
 	ImageModel string // 默认 fal-ai/flux/schnell
+	TryOnModel string // 虚拟试穿:默认 fal-ai/fashn/tryon/v1.6
 }
 
 func (f FalConfig) Configured() bool { return f.APIKey != "" }
@@ -226,6 +227,7 @@ func Load() *Config {
 			APIKey:     getEnv("FALAI_API_KEY", ""),
 			BaseURL:    getEnv("FALAI_BASE_URL", "https://fal.run"),
 			ImageModel: getEnv("FALAI_DEFAULT_IMAGE_MODEL", "fal-ai/flux/schnell"),
+			TryOnModel: getEnv("FALAI_TRYON_MODEL", "fal-ai/fashn/tryon/v1.6"),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

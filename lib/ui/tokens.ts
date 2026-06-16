@@ -5,6 +5,7 @@ import {
   BarChart3,
   Clapperboard,
   LayoutList,
+  Shirt,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -34,6 +35,7 @@ export const AGENT_IDENTITY = {
   DIRECTOR: { label: "短视频创作", icon: Clapperboard as LucideIcon, tone: "violet" as Tone, dot: "bg-violet-500" },
   LISTING: { label: "Listing 内容", icon: LayoutList as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },
   REVIEW: { label: "投放复盘", icon: BarChart3 as LucideIcon, tone: "success" as Tone, dot: "bg-emerald-500" },
+  TRYON: { label: "虚拟试穿", icon: Shirt as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },
 } as const;
 
 export type AgentKey = keyof typeof AGENT_IDENTITY;

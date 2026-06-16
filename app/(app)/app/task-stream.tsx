@@ -30,6 +30,7 @@ import { type ReviewResult } from "@/lib/review/types";
 import { REGIONS, REGION_LANG, type Region } from "./discover/_components/regions";
 import { ReviewResults } from "./review-panel";
 import { ListingResults } from "./listing-results";
+import { TryOnResult } from "./try-on-result";
 import { usePersonas } from "./use-personas";
 
 export type StreamTask = {
@@ -74,6 +75,9 @@ export type StreamTask = {
     images?: string[];
     imagesStatus?: "PENDING" | "RUNNING" | "DONE" | "FAILED";
     coverUrl?: string;
+    /** TRYON 任务:试穿输入图(模特 / 服饰),结果图落 images。 */
+    modelUrl?: string;
+    garmentUrl?: string;
   } | null;
   createdAt: string;
 };
@@ -272,6 +276,9 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   // LISTING 结果有结构化 metadata 时用卡片组渲染(可逐区复制/确认出主图),不再铺纯文本。
   const isListing = t.agent === "LISTING" && t.status === "DONE" && !!t.metadata?.title;
 
+  // TRYON 虚拟试穿:DONE 后异步出图,按 imagesStatus 自轮询展示上身图。
+  const isTryOn = t.agent === "TRYON" && t.status === "DONE";
+
   // DIRECTOR 脚本草稿:确认后才真正出片。本地 videoId 覆盖 metadata(确认成功立即切换 UI)。
   const isDirector = t.agent === "DIRECTOR";
   const [confirming, setConfirming] = useState(false);
@@ -434,6 +441,8 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
           </div>
         ) : isListing ? (
           <ListingResults task={t} />
+        ) : isTryOn ? (
+          <TryOnResult task={t} />
         ) : (
           <>
             <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">

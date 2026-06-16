@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AgentComposer, AgentPills, type ComposerKind } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
+import { TryOnModal } from "./create/try-on-modal";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { TaskStream, type StreamTask } from "./task-stream";
 import { ReviewTrend } from "./review-trend";
 import { industryPresets } from "@/components/OnboardingCard";
@@ -68,8 +70,21 @@ export function Workbench({
   const [materialId, setMaterialId] = useState<string | null>(null);
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
+  const [tryOnOpen, setTryOnOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
+  const { open: openAuthModal } = useAuthModal();
+
+  // 派活成功后落流(挂流的页面直接显示气泡;否则提示去「会话」看进展)。
+  function handleCreated(task: StreamTask) {
+    if (showStream) {
+      setTasks((prev) => [task, ...prev]);
+    } else {
+      toast.success("已派活，进展和结果都在「会话」里", {
+        action: { label: "去会话", onClick: () => router.push("/app/agents") },
+      });
+    }
+  }
 
   // 轮询拉的是工作区全量任务,本页只看 streamAgents 的(创作页只看视频/Listing)。
   const visibleTasks = streamAgents
@@ -175,7 +190,27 @@ export function Workbench({
         <TaskStream items={visibleTasks} limit={streamLimit} moreHref="/app/agents" />
       )}
 
-      {showQuickActions && <QuickActionCards onPick={pickQuickAction} />}
+      {showQuickActions && (
+        <QuickActionCards
+          onPick={pickQuickAction}
+          onTryOn={() =>
+            isGuest
+              ? openAuthModal({
+                  title: "登录后即可使用虚拟试穿",
+                  desc: "选模特、出上身图需要账号。",
+                })
+              : setTryOnOpen(true)
+          }
+        />
+      )}
+
+      {tryOnOpen && (
+        <TryOnModal
+          workspaceId={workspaceId}
+          onClose={() => setTryOnOpen(false)}
+          onCreated={handleCreated}
+        />
+      )}
 
       {showPresets && (
         <div
