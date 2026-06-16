@@ -304,7 +304,7 @@ export function TemplateOptimizerModal({
                           {p.promptTemplate}
                         </pre>
                         <p className="mt-2 text-2xs text-zinc-500 leading-relaxed">
-                          💡 {p.rationale}
+                          {p.rationale}
                         </p>
                       </div>
                     ))
@@ -343,7 +343,7 @@ export function TemplateOptimizerModal({
                         </pre>
                         {imp.rationale && (
                           <p className="mt-2 text-2xs text-zinc-500">
-                            💡 {imp.rationale}
+                            {imp.rationale}
                           </p>
                         )}
                       </div>

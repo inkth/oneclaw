@@ -197,20 +197,31 @@ export default function ServicesPage() {
         </p>
       ) : (
         <div className="space-y-8">
-          {shown.map((c) => (
-            <section key={c.key} className="space-y-3">
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-900">{c.label}</h2>
-                <p className="mt-0.5 text-xs text-zinc-400">{c.desc}</p>
-              </div>
+          {shown.map((c) => {
+            // 只把 live / beta 的真实能力陈列成卡;soon 折叠成一行小字，避免「满屏即将上线」。
+            const cards = c.services.filter((s) => s.status !== "soon");
+            const soon = c.services.filter((s) => s.status === "soon").map((s) => s.label);
+            return (
+              <section key={c.key} className="space-y-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-zinc-900">{c.label}</h2>
+                  <p className="mt-0.5 text-xs text-zinc-400">{c.desc}</p>
+                </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {c.services.map((svc) => (
-                  <ServiceCard key={svc.label} service={svc} />
-                ))}
-              </div>
-            </section>
-          ))}
+                {cards.length > 0 && (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {cards.map((svc) => (
+                      <ServiceCard key={svc.label} service={svc} />
+                    ))}
+                  </div>
+                )}
+
+                {soon.length > 0 && (
+                  <p className="text-2xs text-zinc-400">更多能力陆续开放:{soon.join(" · ")}</p>
+                )}
+              </section>
+            );
+          })}
         </div>
       )}
     </div>

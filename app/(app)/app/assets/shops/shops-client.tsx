@@ -46,14 +46,14 @@ type Shop = {
   lastSyncAt: string | null;
 };
 
-const platformMeta: Record<Platform, { cn: string; emoji: string; available: boolean }> = {
-  TIKTOK_SHOP: { cn: "TikTok Shop", emoji: "🎵", available: true },
-  AMAZON: { cn: "Amazon", emoji: "📦", available: false },
-  SHOPIFY: { cn: "Shopify", emoji: "🛍️", available: false },
-  LAZADA: { cn: "Lazada", emoji: "🛒", available: false },
-  SHOPEE: { cn: "Shopee", emoji: "🛍️", available: false },
-  TEMU: { cn: "Temu", emoji: "📮", available: false },
-  OTHER: { cn: "其他", emoji: "🏬", available: true },
+const platformMeta: Record<Platform, { cn: string; available: boolean }> = {
+  TIKTOK_SHOP: { cn: "TikTok Shop", available: true },
+  AMAZON: { cn: "Amazon", available: false },
+  SHOPIFY: { cn: "Shopify", available: false },
+  LAZADA: { cn: "Lazada", available: false },
+  SHOPEE: { cn: "Shopee", available: false },
+  TEMU: { cn: "Temu", available: false },
+  OTHER: { cn: "其他", available: true },
 };
 
 const statusMeta: Record<Status, { cn: string; cls: string }> = {
@@ -152,8 +152,8 @@ export function ShopsClient({
                   <Tr key={s.id}>
                     <Td>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-zinc-100 flex items-center justify-center text-lg">
-                          {pm.emoji}
+                        <div className="h-9 w-9 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500">
+                          <Store className="h-4 w-4" />
                         </div>
                         <div>
                           <div className="font-medium">{s.name}</div>
@@ -325,31 +325,29 @@ function AddShopModal({
           <div>
             <label className="block text-xs font-medium text-zinc-700 mb-2">平台</label>
             <div className="grid grid-cols-2 gap-2">
-              {(Object.keys(platformMeta) as Platform[]).map((p) => {
-                const m = platformMeta[p];
-                const active = platform === p;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => m.available && setPlatform(p)}
-                    disabled={!m.available}
-                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
-                      active
-                        ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
-                        : "border-zinc-200/80 hover:border-zinc-300"
-                    } ${!m.available ? "opacity-40 cursor-not-allowed" : ""}`}
-                  >
-                    <span>{m.emoji}</span>
-                    <span className="text-left">
-                      {m.cn}
-                      {!m.available && (
-                        <span className="ml-1 text-2xs text-zinc-400">敬请期待</span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+              {(Object.keys(platformMeta) as Platform[])
+                .filter((p) => platformMeta[p].available)
+                .map((p) => {
+                  const m = platformMeta[p];
+                  const active = platform === p;
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPlatform(p)}
+                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
+                        active
+                          ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
+                          : "border-zinc-200/80 hover:border-zinc-300"
+                      }`}
+                    >
+                      <span className="text-left">{m.cn}</span>
+                    </button>
+                  );
+                })}
             </div>
+            <p className="mt-2 text-2xs text-zinc-400">
+              更多平台(Amazon / Shopify / Lazada…)开发中
+            </p>
           </div>
 
           <div>
@@ -379,7 +377,7 @@ function AddShopModal({
           </div>
 
           <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-3 text-2xs text-zinc-600 leading-relaxed">
-            🔌 真实平台对接（OAuth + 拉取订单 / 商品）正在开发中。
+            真实平台对接（OAuth + 拉取订单 / 商品）正在开发中。
             当前先以「待对接」状态保存，OneClaw 会把后续生成的 Agent 报告关联到对应店铺。
           </div>
 
