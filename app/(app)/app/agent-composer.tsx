@@ -153,7 +153,7 @@ export function AgentComposer({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可使用 Agent",
-      desc: "派活给选品分析、视频创作、投放复盘 Agent 需要账号。",
+      desc: "派活给选品分析、短视频创作、Listing、投放复盘 Agent 需要账号。",
     });
     return true;
   }
