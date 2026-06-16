@@ -57,8 +57,6 @@ const BOARDS: Board[] = [
       { label: "作品", href: "/app/videos" },
       { label: "模特", href: "/app/assets/models" },
       { label: "素材库", href: "/app/assets/materials" },
-      // 收藏放最后:复用选品的统一收藏视图(商品/店铺/达人/视频全类型)
-      { label: "收藏", href: "/app/assets/favorites" },
     ],
   },
   {
