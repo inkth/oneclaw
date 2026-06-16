@@ -17,7 +17,7 @@ import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { CreditCost } from "@/components/ui/CreditCost";
 import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
-import { AssetChips } from "./create/asset-chips";
+import { AssetChips, DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./create/asset-chips";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
 export type ComposerKind = "ANALYST" | "DIRECTOR" | "LISTING" | "REVIEW";
@@ -131,6 +131,10 @@ export function AgentComposer({
 }) {
   const [submitting, setSubmitting] = useState(false);
 
+  // 出片设置(目标市场/时长/比例):仅短视频用,作为「偏好」跨条沿用(不随派活清空),
+  // 选项面板挂在 AssetChips 的「设置」chip 里。
+  const [videoSettings, setVideoSettings] = useState<VideoSettings>(DEFAULT_VIDEO_SETTINGS);
+
   // 复盘附件状态:选中报表后自动切到 REVIEW,移除则回到之前的 Agent。
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [targetRoi, setTargetRoi] = useState("3.0");
@@ -187,6 +191,14 @@ export function AgentComposer({
         // 首帧/出图参考素材
         ...((activeAgent === "DIRECTOR" || activeAgent === "LISTING") && materialId
           ? { materialId }
+          : {}),
+        // 出片设置(仅短视频):市场/比例总是显式带上;时长「自动」(null)时不发,交给 AI 配速
+        ...(activeAgent === "DIRECTOR"
+          ? {
+              region: videoSettings.region,
+              ...(videoSettings.duration ? { durationSec: videoSettings.duration } : {}),
+              aspectRatio: videoSettings.aspect,
+            }
           : {}),
       }),
     });
@@ -359,6 +371,8 @@ export function AgentComposer({
               onPersonaChange={(id) => onPersonaChange?.(id)}
               materialId={materialId ?? null}
               onMaterialChange={(id) => onMaterialChange?.(id)}
+              videoSettings={videoSettings}
+              onVideoSettingsChange={setVideoSettings}
               gate={gateGuest}
             />
           )}

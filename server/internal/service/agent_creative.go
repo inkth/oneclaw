@@ -78,6 +78,31 @@ func normalizeStyle(s string) string {
 	return model.VideoStyleScene
 }
 
+// clampDuration 把用户在「设置」里指定的时长夹进 Seedance 2.0 支持的 4-15s;
+// 返回 0 表示「未指定」(交给调用方落 AI 自选/默认值)。
+func clampDuration(sec int) int {
+	switch {
+	case sec <= 0:
+		return 0
+	case sec < 4:
+		return 4
+	case sec > 15:
+		return 15
+	default:
+		return sec
+	}
+}
+
+// normalizeAspect 只放行 9:16 / 16:9 / 1:1;空或非法返回空串,表示「用 AI/默认值」。
+func normalizeAspect(ar string) string {
+	switch strings.TrimSpace(ar) {
+	case "9:16", "16:9", "1:1":
+		return strings.TrimSpace(ar)
+	default:
+		return ""
+	}
+}
+
 // productFacts 把选品库商品(及关联 EchoTik 市场数据)压成事实块,供 DIRECTOR/LISTING 注入创作上下文;
 // 同时返回商品实拍主图 URL(视频首帧 / Listing 出图参考,真货入画)和商品来源市场
 // (DiscoverProduct.Region,DIRECTOR 据此定口播语言;手动建的商品无来源市场,region 为空)。
@@ -131,6 +156,8 @@ type directorContext struct {
 	persona       *model.ModelAsset
 	region        string // 已归一的目标市场 code(voiceFor 处理过)
 	instruction   string // 可选:一句话重写指令(空表示直接换一版)
+	durationSec   int    // 用户在「设置」锁的时长(秒);0=AI 自选/默认 12s
+	aspectRatio   string // 用户在「设置」锁的比例(9:16/16:9/1:1);空=AI/默认 9:16
 }
 
 func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
@@ -165,6 +192,9 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 		region = prodRegion
 	}
 	dc.region, _ = voiceFor(region)
+	// 「设置」里锁的时长/比例随派活带入;非法值由 clampDuration/normalizeAspect 静默回退。
+	dc.durationSec = opts.DurationSec
+	dc.aspectRatio = opts.AspectRatio
 
 	return s.directorGenerate(ctx, wsID, input, dc)
 }
@@ -194,6 +224,13 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	if ins := strings.TrimSpace(dc.instruction); ins != "" {
 		user += fmt.Sprintf("\n\n本次只做局部调整(商品、目标市场、出镜人设保持不变),据此重写脚本与 videoPrompt:%s", ins)
 	}
+	// 用户在「设置」锁了时长/比例时作为硬约束写进提示,让脚本按这个时长配速、按该画幅构图。
+	if d := clampDuration(dc.durationSec); d > 0 {
+		user += fmt.Sprintf("\n本条视频时长锁定为 %d 秒,脚本与分镜请严格按这个时长配速,不要超时。", d)
+	}
+	if ar := normalizeAspect(dc.aspectRatio); ar != "" {
+		user += fmt.Sprintf("\n视频画幅锁定为 %s,运镜与构图按此比例设计。", ar)
+	}
 
 	res, err := s.llm.Chat(ctx, directorSystemFor(voice), user, true, 2200)
 	if err != nil {
@@ -206,16 +243,23 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	if strings.TrimSpace(out.VideoPrompt) == "" {
 		out.VideoPrompt = input
 	}
-	// 时长夹在 Seedance 2.0 支持的 4-15s;缺省给 12s(够放 3 个镜头)。
-	switch {
-	case out.DurationSec <= 0:
-		out.DurationSec = 12
-	case out.DurationSec < 4:
-		out.DurationSec = 4
-	case out.DurationSec > 15:
-		out.DurationSec = 15
+	// 时长:用户在「设置」显式锁的优先于 AI 自选;都没有时给 12s(够放 3 个镜头)。统一夹 Seedance 2.0 的 4-15s。
+	if d := clampDuration(dc.durationSec); d > 0 {
+		out.DurationSec = d
+	} else {
+		switch {
+		case out.DurationSec <= 0:
+			out.DurationSec = 12
+		case out.DurationSec < 4:
+			out.DurationSec = 4
+		case out.DurationSec > 15:
+			out.DurationSec = 15
+		}
 	}
-	if out.AspectRatio == "" {
+	// 比例:用户显式锁的优先,否则沿用 AI 值,空则默认竖屏 9:16。
+	if ar := normalizeAspect(dc.aspectRatio); ar != "" {
+		out.AspectRatio = ar
+	} else if out.AspectRatio == "" {
 		out.AspectRatio = "9:16"
 	}
 	title := out.Title
@@ -356,7 +400,12 @@ func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d di
 		}
 	}()
 
-	dc := directorContext{firstFrameURL: d.FirstFrameURL, instruction: instruction}
+	dc := directorContext{
+		firstFrameURL: d.FirstFrameURL,
+		instruction:   instruction,
+		durationSec:   d.DurationSec, // 改市场/重写时沿用用户原先锁的时长比例,不被 AI 重置
+		aspectRatio:   d.AspectRatio,
+	}
 	dc.region, _ = voiceFor(region)
 	if d.ProductID != "" {
 		if pid, e := uuid.Parse(d.ProductID); e == nil {
