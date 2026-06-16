@@ -25,7 +25,6 @@ import {
   Plus,
   Loader2,
   Star,
-  ArrowUpRight,
   CheckCircle2,
   PackageSearch,
 } from "lucide-react";
@@ -328,16 +327,6 @@ export function DiscoverClient({
       )}
 
       <Pagination page={page} hasNext={hasNext} />
-
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-xs text-zinc-600 flex items-center justify-between flex-wrap gap-2">
-        <span>点商品查看详情：销量趋势、Top 带货达人、关联视频与选品诊断评分。</span>
-        <Link
-          href="/app/agents"
-          className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 font-medium"
-        >
-          查看分析师 Agent 历史 <ArrowUpRight className="h-3 w-3" />
-        </Link>
-      </div>
     </div>
   );
 }
