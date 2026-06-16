@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Clapperboard, Play, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import { FilterBar, type Region } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { Pagination } from "../_components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { RankMedal } from "@/components/ui/RankMedal";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, stringToGradient, initial } from "../_components/format";
@@ -33,12 +34,16 @@ export function VideosClient({
   field,
   state,
   videos,
+  page,
+  hasNext,
 }: {
   region: Region;
   rankType: number;
   field: number;
   state: DiscoverState;
   videos: Video[];
+  page: number;
+  hasNext: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -68,6 +73,8 @@ export function VideosClient({
           ))}
         </div>
       )}
+
+      <Pagination page={page} hasNext={hasNext} />
     </div>
   );
 }

@@ -16,10 +16,11 @@ export default async function DiscoverVideosPage({
   const region = (REGION_CODES.includes(sp.region as Region) ? sp.region : "US") as Region;
   const rankType = Number(sp.rank_type) || 1;
   const field = Number(sp.field) === 2 ? 2 : 1;
+  const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
 
   // EchoTik 视频榜不支持按商品类目过滤,故不提供分类筛选(避免「点了没反应」的假筛选)。
   const result = await apiServer<Result>(
-    `/discover/video-ranklist?region=${region}&rank_type=${rankType}&field=${field}&page_size=20`,
+    `/discover/video-ranklist?region=${region}&rank_type=${rankType}&field=${field}&page_size=20&page_num=${page}`,
   ).catch((): Result => ({ state: "error", fetchedAt: null, rows: [] }));
 
   return (
@@ -29,6 +30,8 @@ export default async function DiscoverVideosPage({
       field={field}
       state={result.state}
       videos={result.rows}
+      page={page}
+      hasNext={result.rows.length >= 20 && page < 10}
     />
   );
 }

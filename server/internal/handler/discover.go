@@ -45,7 +45,22 @@ func (h *DiscoverHandler) Analyze(c *gin.Context) {
 	Created(c, gin.H{"task": t})
 }
 
-// Ranklist GET /workspaces/:wid/discover/ranklist?region&rank_type&product_rank_field&page_size
+// maxDiscoverPage 选品各榜的分页上限。
+const maxDiscoverPage = 10
+
+// pageNumParam 解析 page_num,夹在 1..maxDiscoverPage。
+func pageNumParam(c *gin.Context) int {
+	n := defaultInt(c.Query("page_num"), 1)
+	if n < 1 {
+		n = 1
+	}
+	if n > maxDiscoverPage {
+		n = maxDiscoverPage
+	}
+	return n
+}
+
+// Ranklist GET /workspaces/:wid/discover/ranklist?region&rank_type&product_rank_field&page_size&page_num
 func (h *DiscoverHandler) Ranklist(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {
@@ -57,6 +72,7 @@ func (h *DiscoverHandler) Ranklist(c *gin.Context) {
 		RankField:  defaultInt(c.Query("product_rank_field"), echotik.FieldSales),
 		CategoryID: c.Query("category_id"),
 		PageSize:   defaultInt(c.Query("page_size"), 12),
+		PageNum:    pageNumParam(c),
 		Date:       c.Query("date"),
 	}
 	res, err := h.discover.Ranklist(c.Request.Context(), wid, p)
@@ -75,6 +91,7 @@ func (h *DiscoverHandler) RanklistPublic(c *gin.Context) {
 		RankField:  defaultInt(c.Query("product_rank_field"), echotik.FieldSales),
 		CategoryID: c.Query("category_id"),
 		PageSize:   defaultInt(c.Query("page_size"), 12),
+		PageNum:    pageNumParam(c),
 		Date:       c.Query("date"),
 	}
 	res, err := h.discover.Ranklist(c.Request.Context(), uuid.Nil, p)

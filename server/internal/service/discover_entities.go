@@ -184,6 +184,7 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
+	p.PageNum = 1 // 预热第 1 页,与前端默认页缓存键对齐
 	var firstErr error
 	if rows, err := s.fetchSellerRows(ctx, p); err != nil {
 		firstErr = err

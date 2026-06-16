@@ -16,6 +16,7 @@ func entityParams(c *gin.Context) echotik.RanklistParams {
 		RankField:  entityField(c.Query("field")),
 		CategoryID: c.Query("category_id"),
 		PageSize:   defaultInt(c.Query("page_size"), 20),
+		PageNum:    pageNumParam(c),
 		Date:       c.Query("date"),
 	}
 }

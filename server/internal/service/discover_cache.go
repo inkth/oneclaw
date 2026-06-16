@@ -17,7 +17,7 @@ const entityCacheTTL = 6 * time.Hour
 
 // entityCacheKey 把榜单查询参数拼成缓存键(含类目/分页,避免串榜)。
 func entityCacheKey(kind string, p echotik.RanklistParams) string {
-	return fmt.Sprintf("%s:%s:%d:%d:%s:%d", kind, p.Region, p.RankType, p.RankField, p.CategoryID, p.PageSize)
+	return fmt.Sprintf("%s:%s:%d:%d:%s:%d:%d", kind, p.Region, p.RankType, p.RankField, p.CategoryID, p.PageSize, p.PageNum)
 }
 
 // cacheGetJSON 命中且未过期则反序列化进 out,返回缓存时间。db 为空(测试/devmock)时直接 miss。

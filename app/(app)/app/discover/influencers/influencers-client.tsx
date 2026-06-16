@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Users, Award } from "lucide-react";
 import { FilterBar, type Region } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { Pagination } from "../_components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { RankMedal } from "@/components/ui/RankMedal";
@@ -32,12 +33,16 @@ export function InfluencersClient({
   field,
   state,
   influencers,
+  page,
+  hasNext,
 }: {
   region: Region;
   rankType: number;
   field: number;
   state: DiscoverState;
   influencers: Influencer[];
+  page: number;
+  hasNext: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -120,6 +125,8 @@ export function InfluencersClient({
           </tbody>
         </TableWrap>
       )}
+
+      <Pagination page={page} hasNext={hasNext} />
     </div>
   );
 }

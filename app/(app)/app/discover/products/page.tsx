@@ -44,7 +44,8 @@ export default async function DiscoverProductsPage({
   const rankType = Number(sp.rank_type) || 1;
   const field = Number(sp.field) || 1;
   const categoryId = sp.category_id || null;
-  const query = `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16`;
+  const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
+  const query = `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16&page_num=${page}`;
 
   const [result, categories] = await Promise.all([
     apiServer<RanklistResult>(
@@ -85,6 +86,8 @@ export default async function DiscoverProductsPage({
         analysis: null,
         interaction: p.interaction,
       }))}
+      page={page}
+      hasNext={result.products.length >= 16 && page < 10}
     />
   );
 }

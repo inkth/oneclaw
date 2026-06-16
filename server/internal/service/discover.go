@@ -65,8 +65,8 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		p.PageSize = 10
 	}
 
-	// 全局榜单缓存键不含 category,按类目筛选时绕过缓存(实时拉、不写缓存)。
-	useCache := p.CategoryID == ""
+	// 全局榜单缓存键不含 category/页码,按类目筛选或翻页(第 2 页起)时绕过缓存(实时拉、不写缓存)。
+	useCache := p.CategoryID == "" && p.PageNum <= 1
 
 	// 1. 缓存命中?
 	if useCache {

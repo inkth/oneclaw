@@ -8,6 +8,7 @@ import { apiBrowser } from "@/lib/api-browser";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { FilterBar, type CategoryOption, type FieldOption } from "../_components/FilterBar";
 import { type Region } from "../_components/regions";
+import { Pagination } from "../_components/Pagination";
 import { Thumb } from "../_components/shared";
 import { fmt, fmtMoney } from "../_components/format";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -78,6 +79,8 @@ export function DiscoverClient({
   categoryId,
   categories,
   products,
+  page,
+  hasNext,
   isGuest = false,
 }: {
   workspaceId: string;
@@ -89,6 +92,8 @@ export function DiscoverClient({
   state: DiscoverState;
   fetchedAt: string | null;
   products: DiscoverProduct[];
+  page: number;
+  hasNext: boolean;
   isGuest?: boolean;
 }) {
   const router = useRouter();
@@ -321,6 +326,8 @@ export function DiscoverClient({
           </tbody>
         </TableWrap>
       )}
+
+      <Pagination page={page} hasNext={hasNext} />
 
       <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-xs text-zinc-600 flex items-center justify-between flex-wrap gap-2">
         <span>点商品查看详情：销量趋势、Top 带货达人、关联视频与选品诊断评分。</span>

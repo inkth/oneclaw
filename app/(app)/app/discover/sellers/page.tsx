@@ -18,10 +18,11 @@ export default async function DiscoverSellersPage({
   const rankType = Number(sp.rank_type) || 1;
   const field = Number(sp.field) === 2 ? 2 : 1;
   const categoryId = sp.category_id || null;
+  const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
 
   const [result, categories] = await Promise.all([
     apiServer<Result>(
-      `/discover/seller-ranklist?region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=20`,
+      `/discover/seller-ranklist?region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=20&page_num=${page}`,
     ).catch((): Result => ({ state: "error", fetchedAt: null, rows: [] })),
     fetchCategories(region),
   ]);
@@ -35,6 +36,8 @@ export default async function DiscoverSellersPage({
       categories={categories}
       state={result.state}
       sellers={result.rows}
+      page={page}
+      hasNext={result.rows.length >= 20 && page < 10}
     />
   );
 }

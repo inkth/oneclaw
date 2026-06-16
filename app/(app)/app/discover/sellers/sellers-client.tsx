@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Store, Star } from "lucide-react";
 import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
+import { Pagination } from "../_components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { RankMedal } from "@/components/ui/RankMedal";
@@ -32,6 +33,8 @@ export function SellersClient({
   categories,
   state,
   sellers,
+  page,
+  hasNext,
 }: {
   region: Region;
   rankType: number;
@@ -40,6 +43,8 @@ export function SellersClient({
   categories: CategoryOption[];
   state: DiscoverState;
   sellers: Seller[];
+  page: number;
+  hasNext: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -126,6 +131,8 @@ export function SellersClient({
           </tbody>
         </TableWrap>
       )}
+
+      <Pagination page={page} hasNext={hasNext} />
     </div>
   );
 }
