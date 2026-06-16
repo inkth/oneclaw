@@ -41,6 +41,10 @@ type agentCreateReq struct {
 	MaterialID string `json:"materialId"`
 	// Region 目标市场(可选,DIRECTOR):定口播语言;空则跟随商品来源市场,兜底 US。
 	Region string `json:"region"`
+	// DurationSec 视频时长秒(可选,DIRECTOR):用户在「设置」显式锁的优先于 AI 自选,夹 4-15s;0/缺省=AI 自定。
+	DurationSec int `json:"durationSec"`
+	// AspectRatio 画幅比例(可选,DIRECTOR):9:16 / 16:9 / 1:1;空=默认 9:16。
+	AspectRatio string `json:"aspectRatio"`
 }
 
 func (h *AgentHandler) Create(c *gin.Context) {
@@ -76,6 +80,9 @@ func (h *AgentHandler) Create(c *gin.Context) {
 		return
 	}
 	opts.Region = in.Region
+	// 时长/比例非法值不报错:由 service 的 clampDuration/normalizeAspect 静默回退,和 region 一致。
+	opts.DurationSec = in.DurationSec
+	opts.AspectRatio = in.AspectRatio
 	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input, opts)
 	if err != nil {
 		_ = c.Error(err)

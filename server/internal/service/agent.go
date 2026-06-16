@@ -44,10 +44,12 @@ var validAgents = map[string]bool{
 
 // AgentCreateOpts 派活时的可选关联资产,创作类 Agent 按需消费。
 type AgentCreateOpts struct {
-	ProductID  *uuid.UUID // 选品库商品:注入真实数据,产出关联到该商品
-	PersonaID  *uuid.UUID // 出镜人设(DIRECTOR):脚本贴合人设,确认出片时默认沿用
-	MaterialID *uuid.UUID // 素材库图片:视频首帧(优先于商品主图)/ Listing 出图参考(兜底)
-	Region     string     // 目标市场(DIRECTOR):定口播语言;空则跟随商品来源市场,兜底 US
+	ProductID   *uuid.UUID // 选品库商品:注入真实数据,产出关联到该商品
+	PersonaID   *uuid.UUID // 出镜人设(DIRECTOR):脚本贴合人设,确认出片时默认沿用
+	MaterialID  *uuid.UUID // 素材库图片:视频首帧(优先于商品主图)/ Listing 出图参考(兜底)
+	Region      string     // 目标市场(DIRECTOR):定口播语言;空则跟随商品来源市场,兜底 US
+	DurationSec int        // 视频时长秒(DIRECTOR):用户在「设置」显式锁的优先于 AI 自选,夹 4-15s;0=AI 自定
+	AspectRatio string     // 画幅比例(DIRECTOR):9:16/16:9/1:1;空=默认 9:16
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。

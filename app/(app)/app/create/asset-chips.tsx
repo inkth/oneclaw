@@ -3,11 +3,43 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Image as ImageIcon, Package, UserRound, X } from "lucide-react";
+import {
+  Check,
+  Globe,
+  Image as ImageIcon,
+  Package,
+  SlidersHorizontal,
+  UserRound,
+  X,
+} from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { Popover, ToolbarButton } from "@/components/ui/Popover";
 import { usePersonas } from "../use-personas";
+import { REGIONS } from "../discover/_components/regions";
 import type { ComposerKind } from "../agent-composer";
+
+/**
+ * 做视频「设置」里可调的三项:
+ * region 目标市场(决定口播母语,默认美国 US,总是一个明确市场——不做「自动跟随商品」)、
+ * duration=null 时由 AI 自选时长、aspect 默认竖屏 9:16。
+ * 市场→语言权威映射在 Go region_lang.go。
+ */
+export type VideoSettings = {
+  region: string;
+  duration: number | null;
+  aspect: string;
+};
+
+export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
+  region: "US",
+  duration: null,
+  aspect: "9:16",
+};
+
+// 时长候选:夹在 Seedance 2.0 支持的 4-15s 内,留「自动」让 AI 按脚本配速。
+const DURATION_OPTIONS = [8, 12, 15];
+// 画幅候选:竖屏优先(TikTok 主场景),保留横屏/方形。
+const ASPECT_OPTIONS = ["9:16", "16:9", "1:1"];
 
 type ProductOption = {
   id: string;
@@ -37,6 +69,8 @@ export function AssetChips({
   onPersonaChange,
   materialId,
   onMaterialChange,
+  videoSettings,
+  onVideoSettingsChange,
   gate,
 }: {
   workspaceId: string;
@@ -47,6 +81,9 @@ export function AssetChips({
   onPersonaChange: (id: string | null) => void;
   materialId: string | null;
   onMaterialChange: (id: string | null) => void;
+  /** 出片设置:目标市场(定口播语言)/ 时长 / 比例,仅短视频(DIRECTOR)用。 */
+  videoSettings: VideoSettings;
+  onVideoSettingsChange: (next: VideoSettings) => void;
   /** 游客拦截:返回 true 表示已弹登录,选择器不展开。 */
   gate: () => boolean;
 }) {
@@ -275,6 +312,91 @@ export function AssetChips({
         )}
       </GatedPopover>
 
+      {/* 出片设置:目标市场(定口播语言)/ 时长 / 比例 —— 仅短视频,不设就全交给 AI/后端 */}
+      {activeAgent === "DIRECTOR" && (
+        <Popover
+          align="start"
+          panelClassName="w-72"
+          trigger={({ open }) => (
+            <ToolbarButton
+              icon={SlidersHorizontal}
+              label={settingsSummary(videoSettings)}
+              open={open}
+              active={isVideoSettingsCustomized(videoSettings)}
+            />
+          )}
+        >
+          {() => (
+            <div className="space-y-3">
+              {/* 目标市场:决定口播母语(权威映射在后端 region_lang.go) */}
+              <div>
+                <div className="mb-1.5 flex items-center gap-1 text-2xs font-medium uppercase tracking-wider text-zinc-500">
+                  <Globe className="h-3 w-3" />
+                  目标市场 · 定口播语言
+                </div>
+                <div className="grid max-h-44 grid-cols-2 gap-1 overflow-y-auto">
+                  {REGIONS.map((r) => (
+                    <OptionButton
+                      key={r.code}
+                      className="w-full"
+                      active={videoSettings.region === r.code}
+                      onClick={() => onVideoSettingsChange({ ...videoSettings, region: r.code })}
+                    >
+                      <span className="truncate">
+                        {r.flag} {r.cn}
+                        <span className="text-zinc-400"> · {r.lang}</span>
+                      </span>
+                    </OptionButton>
+                  ))}
+                </div>
+              </div>
+
+              {/* 时长 */}
+              <div>
+                <div className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-zinc-500">
+                  时长
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <OptionButton
+                    active={videoSettings.duration === null}
+                    onClick={() => onVideoSettingsChange({ ...videoSettings, duration: null })}
+                  >
+                    自动
+                  </OptionButton>
+                  {DURATION_OPTIONS.map((d) => (
+                    <OptionButton
+                      key={d}
+                      active={videoSettings.duration === d}
+                      onClick={() => onVideoSettingsChange({ ...videoSettings, duration: d })}
+                    >
+                      {d}s
+                    </OptionButton>
+                  ))}
+                </div>
+              </div>
+
+              {/* 比例 */}
+              <div>
+                <div className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-zinc-500">
+                  比例
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {ASPECT_OPTIONS.map((a) => (
+                    <OptionButton
+                      key={a}
+                      active={videoSettings.aspect === a}
+                      onClick={() => onVideoSettingsChange({ ...videoSettings, aspect: a })}
+                    >
+                      {a}
+                    </OptionButton>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </Popover>
+      )}
+
       {/* 已选清除:一个 chip 一键全清,避免误带上一次的资产 */}
       {(productId || personaId || materialId) && (
         <button
@@ -324,6 +446,50 @@ function GatedPopover({
         {children}
       </Popover>
     </span>
+  );
+}
+
+// 工具栏「设置」chip 的标签:直接显示当前三项配置(默认值也照常显示,不用泛泛的「设置」)。
+// 例:默认「美国 · 自动 · 9:16」;选过则「日本 · 15s · 1:1」。
+function settingsSummary(v: VideoSettings): string {
+  const market = REGIONS.find((r) => r.code === v.region)?.cn ?? v.region;
+  const dur = v.duration ? `${v.duration}s` : "自动";
+  return `${market} · ${dur} · ${v.aspect}`;
+}
+
+// 是否已偏离默认(美国/自动/9:16):用于给 chip 加高亮,提示「已自定义」。
+function isVideoSettingsCustomized(v: VideoSettings): boolean {
+  return (
+    v.region !== DEFAULT_VIDEO_SETTINGS.region ||
+    v.duration !== DEFAULT_VIDEO_SETTINGS.duration ||
+    v.aspect !== DEFAULT_VIDEO_SETTINGS.aspect
+  );
+}
+
+/** 设置面板里的单选小按钮:选中 brand 浅底描边,未选灰描边。 */
+function OptionButton({
+  active,
+  onClick,
+  className = "",
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center overflow-hidden rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
+        active
+          ? "border-brand-500 bg-brand-50/60 font-medium text-brand-700"
+          : "border-zinc-200/80 text-zinc-600 hover:border-zinc-300"
+      } ${className}`}
+    >
+      {children}
+    </button>
   );
 }
 
