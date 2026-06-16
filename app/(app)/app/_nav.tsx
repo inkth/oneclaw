@@ -24,7 +24,7 @@ type Board = {
   soon?: boolean; // 功能尚未完成，标「即将上线」
 };
 
-// TikTok 电商全流程的五大板块：工作台 → 选品 → 会话 → 资产 → 服务。
+// TikTok 电商全流程的五大板块：工作台 → 会话 → 资产 → 选品 → 服务。
 // 工作台是统一派活台(四个 Agent 同处一框)；会话板块收纳你和 AI 的全部对话历史。
 // 所有现有页面都归进某个板块，子页面收进板块内 Tab，侧边栏永远只有这 5 行 + 设置。
 const BOARDS: Board[] = [
@@ -37,20 +37,6 @@ const BOARDS: Board[] = [
     href: "/app",
     paths: ["/app"],
     tabs: [],
-  },
-  {
-    key: "discover",
-    label: "选品",
-    icon: Compass,
-    href: "/app/discover/products",
-    paths: ["/app/discover"],
-    tabs: [
-      { label: "商品", href: "/app/discover/products" },
-      { label: "店铺", href: "/app/discover/sellers" },
-      { label: "达人", href: "/app/discover/influencers" },
-      { label: "视频", href: "/app/discover/videos" },
-      { label: "收藏", href: "/app/discover/favorites" },
-    ],
   },
   {
     // 会话板块：左侧窄会话列表(ConversationRail) + 右侧会话内容，汇总你和各 Agent 的全部对话。
@@ -69,9 +55,24 @@ const BOARDS: Board[] = [
     paths: ["/app/assets", "/app/videos"],
     tabs: [
       { label: "作品", href: "/app/videos" },
-      { label: "商品", href: "/app/assets/products" },
       { label: "模特", href: "/app/assets/models" },
       { label: "素材库", href: "/app/assets/materials" },
+      // 收藏放最后:复用选品的统一收藏视图(商品/店铺/达人/视频全类型)
+      { label: "收藏", href: "/app/assets/favorites" },
+    ],
+  },
+  {
+    key: "discover",
+    label: "选品",
+    icon: Compass,
+    href: "/app/discover/products",
+    paths: ["/app/discover"],
+    tabs: [
+      { label: "商品", href: "/app/discover/products" },
+      { label: "店铺", href: "/app/discover/sellers" },
+      { label: "达人", href: "/app/discover/influencers" },
+      { label: "视频", href: "/app/discover/videos" },
+      { label: "收藏", href: "/app/discover/favorites" },
     ],
   },
   {

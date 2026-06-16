@@ -44,17 +44,25 @@ function Img({ src, seed, className }: { src: string; seed: string; className: s
   return <img src={src} alt="" className={className} loading="lazy" onError={() => setFailed(true)} />;
 }
 
-export function FavoritesClient({ items }: { items: FavoriteItem[] }) {
+export function FavoritesClient({
+  items,
+  title = "选品 · 我的收藏",
+  description = "把看中的商品、店铺、达人、视频收在一处,方便随时回看对比。",
+}: {
+  items: FavoriteItem[];
+  title?: string;
+  description?: string;
+}) {
   return (
     <div className="space-y-6">
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2">
             <Bookmark className="h-5 w-5 text-brand-500" />
-            选品 · 我的收藏
+            {title}
           </span>
         }
-        description="把看中的商品、店铺、达人、视频收在一处,方便随时回看对比。"
+        description={description}
       />
 
       {items.length === 0 ? (
