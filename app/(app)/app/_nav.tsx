@@ -163,25 +163,26 @@ function DiscoverTabsBoundary({ board, pathname, bare, className }: DiscoverTabs
   );
 }
 
-/** 右侧顶栏左区的导航：有二级 Tab 的板块直接把 Tab 融进顶栏（无 hairline），
- *  其余板块显示板块名作轻量上下文锚点。桌面端用，移动端走 BoardTabs 行。 */
+/** 右侧顶栏左区的导航：统一走下划线 Tabs。有二级 Tab 的板块把整排 Tab 融进顶栏（无 hairline）；
+ *  无 Tab 的板块（工作台/会话/服务）渲染成单个激活项（自链接回板块落地页），与多 Tab 板块共用
+ *  同一排版/基线/激活下划线，避免「居中纯文字 vs 贴底下划线 Tab」两种 header-left 模式割裂。
+ *  桌面端用，移动端走 BoardTabs 行。 */
 export function BoardHeaderNav() {
   const pathname = usePathname();
   const board = activeBoard(pathname);
   if (!board) return null;
-  if (board.tabs.length < 2) {
-    return (
-      <span className="hidden truncate text-sm font-medium text-ink md:block">
-        {board.label}
-      </span>
-    );
-  }
+  // 无二级 Tab 时，把板块名本身当作唯一一个激活 Tab（href 指回板块落地页）。
+  const single = board.tabs.length < 2;
   return (
     <div className="hidden md:block">
       {board.key === "discover" ? (
         <DiscoverTabsBoundary board={board} pathname={pathname} bare />
       ) : (
-        <Tabs items={board.tabs} activeHref={activeTabHref(board, pathname)} bare />
+        <Tabs
+          items={single ? [{ label: board.label, href: board.href }] : board.tabs}
+          activeHref={single ? board.href : activeTabHref(board, pathname)}
+          bare
+        />
       )}
     </div>
   );

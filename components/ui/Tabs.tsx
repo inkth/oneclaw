@@ -27,7 +27,7 @@ export function Tabs({
             className={cn(
               "-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors",
               isActive
-                ? "border-ink font-medium text-ink"
+                ? "border-brand-600 font-medium text-ink"
                 : "border-transparent text-zinc-500 hover:text-ink"
             )}
           >
