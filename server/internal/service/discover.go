@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,6 +15,7 @@ import (
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/oneclaw/server/internal/storage"
 )
 
 const (
@@ -22,12 +24,19 @@ const (
 )
 
 type DiscoverService struct {
-	db   *gorm.DB
-	echo *echotik.Client
+	db        *gorm.DB
+	echo      *echotik.Client
+	storage   *storage.Storage
+	coverHTTP *http.Client
 }
 
-func NewDiscoverService(db *gorm.DB, echo *echotik.Client) *DiscoverService {
-	return &DiscoverService{db: db, echo: echo}
+func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage) *DiscoverService {
+	return &DiscoverService{
+		db:        db,
+		echo:      echo,
+		storage:   store,
+		coverHTTP: &http.Client{Timeout: 30 * time.Second},
+	}
 }
 
 // DecoratedProduct 给前端发现页用:商品 + 是否已导入 + 工作台收藏/标签。
@@ -89,8 +98,9 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		state = "mock"
 	}
 
-	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live 且非类目筛选)。
-	dps := s.persist(ctx, p, raw, state == "live" && useCache, state == "live" && useCache)
+	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live 且非类目筛选;
+	//    封面永久化对所有 live 数据都做——含类目筛选,修复"切分类后无图")。
+	dps := s.persist(ctx, p, raw, state == "live" && useCache, state == "live")
 	var fetchedAt *time.Time
 	if state == "live" {
 		now := time.Now()
@@ -333,9 +343,9 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 	return out
 }
 
-// enrichCovers 取商品榜封面并换成签名 URL,返回 productID -> JSONB([]string{signedURL})。
-// 流程:product/detail 拿防盗链原文 → batch/cover/download 签名(3 天有效)。
-// 前端只显示 coverUrls[0],故每个商品只签首图,省接口调用。
+// enrichCovers 取商品榜封面并永久化,返回 productID -> JSONB([]string{permanentURL})。
+// 流程:product/detail 拿防盗链原文 → rehostCovers 下载并转存 COS(永久,失败回退 3 天签名 URL)。
+// 前端只显示 coverUrls[0],故每个商品只处理首图,省接口调用。
 // 任一步出错只影响封面(降级为占位图),不阻断榜单返回。
 func (s *DiscoverService) enrichCovers(ctx context.Context, region string, raw []echotik.ProductListItem) map[string]model.JSONB {
 	out := map[string]model.JSONB{}
@@ -368,9 +378,9 @@ func (s *DiscoverService) enrichCovers(ctx context.Context, region string, raw [
 		return out
 	}
 
-	signed := s.echo.SignCovers(ctx, rawList)
+	rehosted := s.rehostCovers(ctx, rawList)
 	for pid, rawURL := range firstRaw {
-		su, ok := signed[rawURL]
+		su, ok := rehosted[rawURL]
 		if !ok {
 			continue
 		}

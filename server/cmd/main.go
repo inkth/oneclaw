@@ -57,6 +57,7 @@ func main() {
 		&model.RanklistCacheEntry{},
 		&model.DiscoverSnapshot{},
 		&model.DiscoverCache{},
+		&model.CoverAsset{},
 		&model.WorkspaceDiscoverInteraction{},
 		&model.WorkspaceDiscoverFavorite{},
 		&model.NewsletterSubscription{},
@@ -79,11 +80,11 @@ func main() {
 	wsSvc := service.NewWorkspaceService(db)
 	prodSvc := service.NewProductService(db)
 	echoClient := echotik.New(cfg.EchoTik)
-	discSvc := service.NewDiscoverService(db, echoClient)
+	store := storage.New(cfg.Storage)
+	discSvc := service.NewDiscoverService(db, echoClient, store)
 	mktSvc := service.NewMarketingService(db)
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
-	store := storage.New(cfg.Storage)
 	matSvc := service.NewMaterialService(db, store)
 	llmClient := llm.New(cfg.OpenRouter)
 	falClient := fal.New(cfg.Fal)

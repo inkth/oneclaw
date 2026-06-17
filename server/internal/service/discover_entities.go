@@ -113,7 +113,7 @@ func (s *DiscoverService) signMapSellers(ctx context.Context, raw []echotik.Sell
 	for _, it := range raw {
 		imgs = append(imgs, it.CoverURL)
 	}
-	signed := s.echo.SignCovers(ctx, imgs)
+	signed := s.rehostCovers(ctx, imgs)
 	rows := make([]SellerDTO, 0, len(raw))
 	for _, it := range raw {
 		rows = append(rows, mapSeller(it, signed))
@@ -159,7 +159,7 @@ func (s *DiscoverService) signMapInfluencers(ctx context.Context, raw []echotik.
 	for _, it := range raw {
 		imgs = append(imgs, it.Avatar)
 	}
-	signed := s.echo.SignCovers(ctx, imgs)
+	signed := s.rehostCovers(ctx, imgs)
 	rows := make([]InfluencerDTO, 0, len(raw))
 	for _, it := range raw {
 		rows = append(rows, mapInfluencer(it, signed))
@@ -205,7 +205,7 @@ func (s *DiscoverService) signMapVideos(ctx context.Context, raw []echotik.Video
 	for _, it := range raw {
 		imgs = append(imgs, it.ReflowCover, it.Avatar)
 	}
-	signed := s.echo.SignCovers(ctx, imgs)
+	signed := s.rehostCovers(ctx, imgs)
 	rows := make([]VideoDTO, 0, len(raw))
 	for _, it := range raw {
 		rows = append(rows, mapVideo(it, signed))
@@ -304,7 +304,7 @@ func mapVideo(it echotik.VideoListItem, signed map[string]string) VideoDTO {
 	}
 }
 
-// signedURL 把原始防盗链 URL 换成签名后的;签名缺失(mock / 非 TOS host)返回 nil → 前端走占位图。
+// signedURL 把原始防盗链 URL 换成永久(COS)/签名 URL;缺失(mock / 非 TOS host / 永久化失败)返回 nil → 前端走占位图。
 func signedURL(raw string, signed map[string]string) *string {
 	if raw == "" || signed == nil {
 		return nil

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { EmptyState as UIEmptyState } from "@/components/ui/EmptyState";
 import { stringToGradient, initial } from "./format";
 
@@ -31,10 +33,19 @@ export function Thumb({
   rounded?: boolean;
 }) {
   const shape = rounded ? className.replace(/rounded-\S+/, "rounded-full") : className;
-  if (src) {
+  // 图片加载失败(签名过期 / 防盗链 / 网络)时回退渐变占位,不露浏览器裂图。
+  // 记录失败的具体 src:换榜/翻页后 src 变化会自动重新尝试新图(纯 boolean 会卡在占位)。
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (src && failedSrc !== src) {
     // eslint-disable-next-line @next/next/no-img-element
     return (
-      <img src={src} alt="" className={`${shape} flex-shrink-0 bg-zinc-100 object-cover`} loading="lazy" />
+      <img
+        src={src}
+        alt=""
+        onError={() => setFailedSrc(src)}
+        className={`${shape} flex-shrink-0 bg-zinc-100 object-cover`}
+        loading="lazy"
+      />
     );
   }
   return (

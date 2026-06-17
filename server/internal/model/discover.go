@@ -138,3 +138,22 @@ func (w *WorkspaceDiscoverFavorite) BeforeCreate(*gorm.DB) error {
 	}
 	return nil
 }
+
+// CoverAsset EchoTik 防盗链封面永久化到 COS 后的映射(全局去重)。
+// 同一张图的原始 URL(raw_url)是稳定的,故按 raw_hash = sha1(raw_url) 去重:
+// 四榜(商品/店铺/达人/视频)跨 region、跨时间只下载/转存一次,后续命中直接复用 COS URL。
+// 这取代了原来"只签名、3 天过期"的方案——COS URL 永久有效,前端永不裂图。
+type CoverAsset struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	RawHash   string    `gorm:"column:raw_hash;not null;uniqueIndex:uq_cover_asset_hash" json:"rawHash"`
+	RawURL    string    `gorm:"column:raw_url;type:text" json:"rawUrl"`
+	CosURL    string    `gorm:"column:cos_url;type:text" json:"cosUrl"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (a *CoverAsset) BeforeCreate(*gorm.DB) error {
+	if a.ID == uuid.Nil {
+		a.ID = uuid.New()
+	}
+	return nil
+}
