@@ -87,7 +87,6 @@ export function SellersClient({
               <Th>#</Th>
               <Th>店铺</Th>
               <Th align="right">评分</Th>
-              <Th align="right">商品数</Th>
               <Th align="right">总销量</Th>
               <Th align="right">总 GMV</Th>
               <Th align="right">达人</Th>
@@ -131,7 +130,6 @@ export function SellersClient({
                     <span className="text-zinc-300">—</span>
                   )}
                 </Td>
-                <Td align="right">{fmt(s.totalProductCnt)}</Td>
                 <Td align="right" className="font-semibold text-zinc-900">{fmt(s.totalSaleCnt)}</Td>
                 <Td align="right">{fmtMoney(s.totalSaleGmvAmt)}</Td>
                 <Td align="right">{fmt(s.totalIflCnt)}</Td>
