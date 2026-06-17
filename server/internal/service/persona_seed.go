@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -193,10 +195,36 @@ func (s *PersonaSeeder) generateSet(ctx context.Context, p presetPersona) ([]str
 	return urls, nil
 }
 
+// putImage 把出图字节转 webp(体积约省 90%)后传 COS;转码失败回退原格式,不阻断 seed。
 func (s *PersonaSeeder) putImage(ctx context.Context, slug, key string, data []byte, ct string) (string, error) {
+	if webpData, err := toWebp(data); err == nil {
+		return s.st.Put(ctx, "models/presets/"+slug+"/"+key+".webp", webpData, "image/webp")
+	} else {
+		logger.Warn("[persona] webp 转码失败,存原图", logger.String("key", key), logger.Err(err))
+	}
 	ext := ".jpg"
 	if strings.Contains(ct, "png") {
 		ext = ".png"
 	}
 	return s.st.Put(ctx, "models/presets/"+slug+"/"+key+ext, data, ct)
+}
+
+// toWebp 用 cwebp(libwebp-tools,镜像内置)把图片字节转 webp(q82)。
+func toWebp(data []byte) ([]byte, error) {
+	tin, err := os.CreateTemp("", "persona-*.img")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tin.Name())
+	if _, err := tin.Write(data); err != nil {
+		tin.Close()
+		return nil, err
+	}
+	tin.Close()
+	tout := tin.Name() + ".webp"
+	defer os.Remove(tout)
+	if out, err := exec.Command("cwebp", "-q", "82", "-quiet", tin.Name(), "-o", tout).CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("cwebp: %v %s", err, out)
+	}
+	return os.ReadFile(tout)
 }

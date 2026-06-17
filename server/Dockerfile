@@ -11,7 +11,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/server ./cmd
 
 # —— 运行阶段 ——————————————————————————————————————————
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates tzdata wget && \
+RUN apk add --no-cache ca-certificates tzdata wget libwebp-tools && \
     addgroup -g 1000 app && \
     adduser -u 1000 -G app -D app
 WORKDIR /home/app
