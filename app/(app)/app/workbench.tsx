@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { MessagesSquare } from "lucide-react";
 import { AgentComposer, AgentPills, type ComposerKind } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TryOnModal } from "./create/try-on-modal";
@@ -23,7 +24,6 @@ export function Workbench({
   isGuest = false,
   showPresets = false,
   initialTasks = [],
-  streamLimit,
   initialAgent,
   initialInput,
   initialProductId,
@@ -40,8 +40,6 @@ export function Workbench({
   showPresets?: boolean;
   /** 服务端预取的任务历史(新→旧),作为会话流初始内容。 */
   initialTasks?: StreamTask[];
-  /** 流最多展示几条,溢出显示「查看全部」(首页传,全量页不传)。 */
-  streamLimit?: number;
   /** 从其他页面接力进来时预选的 Agent 与预填指令(如选品库「为它做视频」)。 */
   initialAgent?: ComposerKind;
   initialInput?: string;
@@ -75,14 +73,14 @@ export function Workbench({
   const router = useRouter();
   const { open: openAuthModal } = useAuthModal();
 
-  // 派活成功后落流(挂流的页面直接显示气泡;否则提示去「会话」看进展)。
-  function handleCreated(task: StreamTask) {
+  // 派活/复盘落库后的统一去处:聊天页(showStream)就地追加气泡并自动滚到底;
+  // launcher 首页则带你进入「会话」,在那条对话流里看进展与结果(一个框、一个去处)。
+  function ingest(task: StreamTask) {
     if (showStream) {
       setTasks((prev) => [task, ...prev]);
     } else {
-      toast.success("已派活，进展和结果都在「会话」里", {
-        action: { label: "去会话", onClick: () => router.push("/app/agents") },
-      });
+      toast.success("已派活，结果在「会话」里");
+      router.push("/app/agents");
     }
   }
 
@@ -114,6 +112,18 @@ export function Workbench({
     return () => clearInterval(timer);
   }, [hasActive, workspaceId, showStream]);
 
+  // 聊天页:新气泡到达 / 首次加载都把页面滚到底,最新一条紧贴底部输入框(对齐微信、ChatGPT 的方向)。
+  const prevCount = useRef(tasks.length);
+  useEffect(() => {
+    if (!showStream || typeof window === "undefined") return;
+    const grew = tasks.length > prevCount.current;
+    prevCount.current = tasks.length;
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: grew ? "smooth" : "auto",
+    });
+  }, [tasks.length, showStream]);
+
   function focusInput(text: string) {
     setInput(text);
     requestAnimationFrame(() => {
@@ -138,57 +148,98 @@ export function Workbench({
   }
 
 
+  const allowReview = !agents || agents.includes("REVIEW");
+
+  // 输入卡只定义一处,聊天页与首页 launcher 复用,避免两套 props 漂移。
+  const composer = (
+    <AgentComposer
+      workspaceId={workspaceId}
+      isGuest={isGuest}
+      activeAgent={activeAgent}
+      onAgentChange={setActiveAgent}
+      input={input}
+      onInputChange={setInput}
+      productId={productId}
+      onClearProduct={() => setProductId(null)}
+      onProductChange={setProductId}
+      personaId={personaId}
+      onPersonaChange={setPersonaId}
+      materialId={materialId}
+      onMaterialChange={setMaterialId}
+      showAssetChips={showAssetChips}
+      textareaRef={textareaRef}
+      allowReview={allowReview}
+      onDispatched={(task) => {
+        // 关联资产是一次性的:派活成功即消费,避免下一条任务误带上一次的选择
+        if (task.agent === "DIRECTOR" || task.agent === "LISTING") {
+          setProductId(null);
+          setPersonaId(null);
+          setMaterialId(null);
+        }
+        ingest(task);
+      }}
+    />
+  );
+
+  const pills = (
+    <AgentPills active={activeAgent} onChange={setActiveAgent} kinds={agents} align={align} />
+  );
+
+  // 聊天布局(会话页):会话流在上(正序,旧→新),对话框常驻底部 —— 与微信、ChatGPT 同方向。
+  if (showStream) {
+    return (
+      <>
+        <div className="flex min-h-[calc(100dvh-12rem)] flex-col">
+          <div className="flex-1 space-y-6">
+            {/* 复盘趋势:历次投流复盘的大盘走向,置顶作摘要(≥2 次才渲染)。 */}
+            {allowReview && <ReviewTrend tasks={tasks} />}
+
+            {visibleTasks.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 py-20 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-500">
+                  <MessagesSquare className="h-6 w-6" />
+                </span>
+                <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
+                  {isGuest
+                    ? "选个 Agent，在下面写一句指令试试。登录后对话会存进这里。"
+                    : "还没有对话。选个 Agent，在下面写一句指令开始。"}
+                </p>
+              </div>
+            ) : (
+              <TaskStream items={visibleTasks} chronological />
+            )}
+          </div>
+
+          {/* 底部常驻对话框:胶囊在上、超大输入卡在下;磨砂遮罩让会话流从下方滚过。 */}
+          <div className="sticky bottom-0 z-20 mt-3 bg-background/90 pb-2 pt-3 backdrop-blur-sm">
+            {pills}
+            <div className="mt-3">{composer}</div>
+          </div>
+        </div>
+
+        {tryOnOpen && (
+          <TryOnModal
+            workspaceId={workspaceId}
+            onClose={() => setTryOnOpen(false)}
+            onCreated={ingest}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Launcher 布局(首页):居中 hero —— 胶囊 + 超大输入卡 + 快捷卡/品类预设;派活后进入「会话」看结果。
   return (
     <div className="space-y-6">
-      <AgentPills active={activeAgent} onChange={setActiveAgent} kinds={agents} align={align} />
+      {pills}
 
       <div className="relative">
         <div
           aria-hidden
           className="dk-aura pointer-events-none absolute -inset-x-8 -top-6 bottom-0 -z-10"
         />
-        <AgentComposer
-          workspaceId={workspaceId}
-          isGuest={isGuest}
-          activeAgent={activeAgent}
-          onAgentChange={setActiveAgent}
-          input={input}
-          onInputChange={setInput}
-          productId={productId}
-          onClearProduct={() => setProductId(null)}
-          onProductChange={setProductId}
-          personaId={personaId}
-          onPersonaChange={setPersonaId}
-          materialId={materialId}
-          onMaterialChange={setMaterialId}
-          showAssetChips={showAssetChips}
-          textareaRef={textareaRef}
-          allowReview={!agents || agents.includes("REVIEW")}
-          onDispatched={(task) => {
-            if (showStream) {
-              setTasks((prev) => [task, ...prev]);
-            } else {
-              // 工作台不挂对话流:派活后提示去「会话」看进展与结果
-              toast.success("已派活，进展和结果都在「会话」里", {
-                action: { label: "去会话", onClick: () => router.push("/app/agents") },
-              });
-            }
-            // 关联资产是一次性的:派活成功即消费,避免下一条任务误带上一次的选择
-            if (task.agent === "DIRECTOR" || task.agent === "LISTING") {
-              setProductId(null);
-              setPersonaId(null);
-              setMaterialId(null);
-            }
-          }}
-        />
+        {composer}
       </div>
-
-      {/* 复盘趋势:历次投流复盘的大盘走向,仅在 REVIEW 可派活且挂对话流的页面出现(≥2 次才渲染)。 */}
-      {showStream && (!agents || agents.includes("REVIEW")) && <ReviewTrend tasks={tasks} />}
-
-      {showStream && (
-        <TaskStream items={visibleTasks} limit={streamLimit} moreHref="/app/agents" />
-      )}
 
       {showQuickActions && (
         <QuickActionCards
@@ -209,7 +260,7 @@ export function Workbench({
         <TryOnModal
           workspaceId={workspaceId}
           onClose={() => setTryOnOpen(false)}
-          onCreated={handleCreated}
+          onCreated={ingest}
         />
       )}
 

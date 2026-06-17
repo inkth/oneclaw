@@ -95,20 +95,29 @@ export function TaskStream({
   items,
   limit,
   moreHref,
+  chronological = false,
 }: {
   items: StreamTask[];
   /** 仅展示最近 N 条,溢出时显示「查看全部」链接(工作台首页用)。 */
   limit?: number;
   moreHref?: string;
+  /** 正序排列(旧→新,最新一条在底部),用于底部输入框的聊天布局;默认新→旧(倒序)。 */
+  chronological?: boolean;
 }) {
   if (items.length === 0) return null;
-  const visible = limit ? items.slice(0, limit) : items;
-  const overflow = limit ? items.length - visible.length : 0;
+  // items 传入为新→旧(状态顺序)。聊天布局反转为旧→新,最新一条排在最底、紧贴底部输入框。
+  const visible = chronological
+    ? [...items].reverse()
+    : limit
+      ? items.slice(0, limit)
+      : items;
+  const newestIndex = chronological ? visible.length - 1 : 0;
+  const overflow = !chronological && limit ? items.length - visible.length : 0;
 
   return (
     <div className="space-y-5">
       {visible.map((task, i) => (
-        <TaskBubble key={task.id} task={task} newest={i === 0} />
+        <TaskBubble key={task.id} task={task} newest={i === newestIndex} />
       ))}
       {overflow > 0 && moreHref && (
         <div className="text-center">
