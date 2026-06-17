@@ -12,7 +12,7 @@ import (
 
 // 店铺/达人/视频三榜与 product/ranklist 结构一致:region + rank_type +
 // <entity>_rank_field + date(T-1 回退)。这里用泛型复用 product 的并发+回退逻辑。
-func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldParam string, p RanklistParams) ([]T, error) {
+func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldParam, categoryParam string, p RanklistParams) ([]T, error) {
 	desired := p.PageSize
 	if desired <= 0 {
 		desired = 20
@@ -43,7 +43,7 @@ func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldPar
 					"region":      p.Region,
 					"rank_type":   strconv.Itoa(p.RankType),
 					fieldParam:    strconv.Itoa(p.RankField),
-					"category_id": p.CategoryID,
+					categoryParam: p.CategoryID,
 					"date":        date,
 					"page_size":   strconv.Itoa(pageSize),
 					"page_num":    strconv.Itoa(startPage + i),
@@ -80,19 +80,20 @@ func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldPar
 	return []T{}, nil
 }
 
-// GetSellerRanklist 店铺榜。
+// GetSellerRanklist 店铺榜。店铺榜的商品类目过滤参数名是 category_id。
 func (c *Client) GetSellerRanklist(ctx context.Context, p RanklistParams) ([]SellerListItem, error) {
-	return getEntityRanklist[SellerListItem](ctx, c, "/echotik/seller/ranklist", "seller_rank_field", p)
+	return getEntityRanklist[SellerListItem](ctx, c, "/echotik/seller/ranklist", "seller_rank_field", "category_id", p)
 }
 
-// GetInfluencerRanklist 达人榜。
+// GetInfluencerRanklist 达人榜。注意:按「带货商品类目」过滤的参数名是 product_category_id —— 不是
+// category_id(传 category_id 会被 EchoTik 忽略 → 切分类返回同一份榜单)。
 func (c *Client) GetInfluencerRanklist(ctx context.Context, p RanklistParams) ([]InfluencerListItem, error) {
-	return getEntityRanklist[InfluencerListItem](ctx, c, "/echotik/influencer/ranklist", "influencer_rank_field", p)
+	return getEntityRanklist[InfluencerListItem](ctx, c, "/echotik/influencer/ranklist", "influencer_rank_field", "product_category_id", p)
 }
 
-// GetVideoRanklist 带货视频榜。
+// GetVideoRanklist 带货视频榜。同达人榜:商品类目过滤参数名是 product_category_id(非 category_id)。
 func (c *Client) GetVideoRanklist(ctx context.Context, p RanklistParams) ([]VideoListItem, error) {
-	return getEntityRanklist[VideoListItem](ctx, c, "/echotik/video/ranklist", "video_rank_field", p)
+	return getEntityRanklist[VideoListItem](ctx, c, "/echotik/video/ranklist", "video_rank_field", "product_category_id", p)
 }
 
 // GetProductCovers 按 product_ids 批量取详情,返回 productID -> 封面原始 URL 列表(按 index 升序)。

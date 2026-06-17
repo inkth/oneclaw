@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Users, Award } from "lucide-react";
-import { FilterBar, type Region } from "../_components/FilterBar";
+import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { Pagination } from "../_components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -31,6 +31,8 @@ export function InfluencersClient({
   region,
   rankType,
   field,
+  categoryId,
+  categories,
   keyword = "",
   state,
   influencers,
@@ -40,6 +42,8 @@ export function InfluencersClient({
   region: Region;
   rankType: number;
   field: number;
+  categoryId: string | null;
+  categories: CategoryOption[];
   keyword?: string;
   state: DiscoverState;
   influencers: Influencer[];
@@ -64,6 +68,8 @@ export function InfluencersClient({
         region={region}
         rankType={rankType}
         field={field}
+        categoryId={categoryId}
+        categories={categories}
         keyword={keyword}
         searchPlaceholder="搜索达人昵称 / @handle…"
       />

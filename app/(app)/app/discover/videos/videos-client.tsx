@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Clapperboard, Play, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
-import { FilterBar, type Region } from "../_components/FilterBar";
+import { FilterBar, type Region, type CategoryOption } from "../_components/FilterBar";
 import { EmptyState, Thumb, type DiscoverState } from "../_components/shared";
 import { Pagination } from "../_components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -32,6 +32,8 @@ export function VideosClient({
   region,
   rankType,
   field,
+  categoryId,
+  categories,
   keyword = "",
   state,
   videos,
@@ -41,6 +43,8 @@ export function VideosClient({
   region: Region;
   rankType: number;
   field: number;
+  categoryId: string | null;
+  categories: CategoryOption[];
   keyword?: string;
   state: DiscoverState;
   videos: Video[];
@@ -65,6 +69,8 @@ export function VideosClient({
         region={region}
         rankType={rankType}
         field={field}
+        categoryId={categoryId}
+        categories={categories}
         keyword={keyword}
         searchPlaceholder="搜索视频文案 / 话题…"
       />
