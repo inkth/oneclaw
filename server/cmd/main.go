@@ -85,10 +85,10 @@ func main() {
 	mktSvc := service.NewMarketingService(db)
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
-	matSvc := service.NewMaterialService(db, store)
 	llmClient := llm.New(cfg.OpenRouter)
 	falClient := fal.New(cfg.Fal)
 	quotaSvc := service.NewQuotaService(db)
+	matSvc := service.NewMaterialService(db, store, falClient, quotaSvc)
 	billingSvc := service.NewBillingService(db, cfg.IsDev())
 	videoSvc := service.NewVideoService(db, llmClient, store, falClient, quotaSvc)
 	if falClient.Configured() {

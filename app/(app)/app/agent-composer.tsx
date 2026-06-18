@@ -6,7 +6,6 @@ import {
   FileSpreadsheet,
   Loader2,
   Package,
-  Plus,
   Send,
   Sparkles,
   X,
@@ -31,7 +30,7 @@ const PLACEHOLDERS: Record<ComposerKind, string> = {
   ANALYST: "例:从美国热销榜帮我挑 3 个高佣金潜力品(基于 EchoTik 真实榜单筛选)",
   DIRECTOR: "例:为推荐榜首产品生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感",
   LISTING: "例:为「便携榨汁杯」生成 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案",
-  REVIEW: "点左下角「+ 添加」上传 GMVMax 投放报表(.csv / .xlsx),即可开始复盘",
+  REVIEW: "点左下角「上传报表」上传 GMVMax 投放报表(.csv / .xlsx),即可开始复盘",
 };
 
 const REVIEW_EXTENSIONS = /\.(csv|tsv|xlsx)$/i;
@@ -259,7 +258,7 @@ export function AgentComposer({
       return;
     }
     if (isReview) {
-      toast("先点左下角「+ 添加」上传投放报表");
+      toast("先点左下角「上传报表」上传投放报表");
       return;
     }
     if (!input.trim()) return;
@@ -354,8 +353,8 @@ export function AgentComposer({
                 className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
                 title="上传 GMVMax 投放报表触发复盘"
               >
-                <Plus className="h-3.5 w-3.5" />
-                添加
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                上传报表
               </button>
             </>
           )}

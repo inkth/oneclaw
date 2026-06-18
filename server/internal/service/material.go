@@ -6,22 +6,26 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	apperr "github.com/oneclaw/server/internal/errors"
 	"github.com/oneclaw/server/internal/model"
+	"github.com/oneclaw/server/internal/service/fal"
 	"github.com/oneclaw/server/internal/storage"
 )
 
 type MaterialService struct {
 	db      *gorm.DB
 	storage *storage.Storage
+	fal     *fal.Client
+	quota   *QuotaService
 }
 
-func NewMaterialService(db *gorm.DB, st *storage.Storage) *MaterialService {
-	return &MaterialService{db: db, storage: st}
+func NewMaterialService(db *gorm.DB, st *storage.Storage, f *fal.Client, q *QuotaService) *MaterialService {
+	return &MaterialService{db: db, storage: st, fal: f, quota: q}
 }
 
 // MaterialUpload 是一次上传的入参(由 handler 从 multipart 解析)。
@@ -84,6 +88,64 @@ func (s *MaterialService) Upload(ctx context.Context, wsID uuid.UUID, in Materia
 	m.URL = url
 	m.StorageKey = &key
 	return &m, nil
+}
+
+// GenerateMaterial 用文字 prompt 调 fal 出一张图,存为该工作台的 IMAGE 素材,
+// 供「添加」弹窗的「AI 生成」tab 用。同步出图(队列 API 短请求轮询,跨境不卡死)。
+// 出图额度前置扣减,出图/落库失败时按 refID 退回。
+func (s *MaterialService) GenerateMaterial(ctx context.Context, wsID uuid.UUID, prompt, imageSize string) (*model.Material, error) {
+	prompt = strings.TrimSpace(prompt)
+	if prompt == "" {
+		return nil, apperr.BadRequest("请输入生成描述")
+	}
+	if !s.storage.Configured() {
+		return nil, apperr.New(apperr.CodeServiceUnavailable, "存储未配置")
+	}
+	if s.fal == nil || !s.fal.Configured() {
+		return nil, apperr.New(apperr.CodeServiceUnavailable, "出图服务未配置,请稍后再试")
+	}
+	if imageSize == "" {
+		imageSize = "square_hd"
+	}
+
+	refID := uuid.New()
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageImage, 1, &refID); err != nil {
+		return nil, err
+	}
+	refund := func() {
+		rctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		s.quota.Refund(rctx, refID, model.UsageImage)
+		cancel()
+	}
+
+	gctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	data, ct, err := s.fal.GenerateImageQueued(gctx, "", prompt, imageSize, nil)
+	if err != nil {
+		refund()
+		return nil, apperr.Wrap(apperr.CodeServiceUnavailable, "AI 出图失败,请重试", err)
+	}
+	if ct == "" {
+		ct = "image/jpeg"
+	}
+	ext := ".jpg"
+	if strings.Contains(strings.ToLower(ct), "png") {
+		ext = ".png"
+	}
+
+	m, err := s.Upload(ctx, wsID, MaterialUpload{
+		OriginalName: "ai-" + refID.String()[:8] + ext,
+		ContentType:  ct,
+		Size:         int64(len(data)),
+		Data:         data,
+		Tags:         []string{"AI 生成"},
+		Note:         &prompt,
+	})
+	if err != nil {
+		refund()
+		return nil, err
+	}
+	return m, nil
 }
 
 // Delete 删 DB 行,并尽力清理 COS 原始对象(清理失败不阻断删除)。

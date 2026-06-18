@@ -97,6 +97,30 @@ func (h *MaterialHandler) Upload(c *gin.Context) {
 	Created(c, gin.H{"material": m})
 }
 
+type generateMaterialReq struct {
+	Prompt    string `json:"prompt" binding:"required"`
+	ImageSize string `json:"imageSize"`
+}
+
+// Generate 用文字描述 AI 出一张参考图并存为素材(「添加」弹窗的「AI 生成」tab)。
+func (h *MaterialHandler) Generate(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	var in generateMaterialReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("请输入生成描述"))
+		return
+	}
+	m, err := h.materials.GenerateMaterial(c.Request.Context(), wid, in.Prompt, in.ImageSize)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	Created(c, gin.H{"material": m})
+}
+
 func (h *MaterialHandler) Delete(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {
