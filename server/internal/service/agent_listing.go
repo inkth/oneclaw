@@ -70,7 +70,7 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	user := input
 	coverURL := ""
 	if productID != nil {
-		if facts, cover, _, ok := s.productFacts(ctx, wsID, *productID); ok {
+		if facts, cover, _, _, ok := s.productFacts(ctx, wsID, *productID, false); ok {
 			user = fmt.Sprintf("%s\n\n商品档案(选品库真实数据):\n%s", input, facts)
 			coverURL = cover
 		} else {

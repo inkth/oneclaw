@@ -31,9 +31,11 @@ func directorSystemFor(v voiceSpec) string {
 - SCENE(场景):融入生活方式、使用场景出片的商品
 - BEFORE_AFTER(效果对比):使用前后有可见变化的商品
 不要硬套不合适的角度;分镜必须体现所选角度的叙事结构。
+若商品档案含「真实爆款参考」,优先提炼这些已验证卖货视频的开头钩子套路、叙事结构与卖点切入,据此设计本条 hook 与分镜(上面四种角度作为兜底分类);学结构、不照抄原文。
 
 如果用户消息附带「商品档案」,以档案里的真实卖点、价格、市场数据为准:
 口播要引用其中的具体信息(如价格、卖点),绝对不要编造数字;提及价格时沿用档案里的美元数字,不要自行换算汇率。
+档案里的「真实爆款参考」是同类已成交视频的文案,只用来学钩子与结构;口播仍按目标市场母语地道重写,不要搬运参考里的原话或语言。
 
 规则:
 - 视频总时长 4-15 秒,按镜头数合理分配(3 镜头约 9-12 秒),时间轴必须连续且与总时长一致
@@ -107,12 +109,12 @@ func normalizeAspect(ar string) string {
 // 同时返回商品实拍主图 URL(视频首帧 / Listing 出图参考,真货入画)和商品来源市场
 // (DiscoverProduct.Region,DIRECTOR 据此定口播语言;手动建的商品无来源市场,region 为空)。
 // 商品不存在或不属于该工作台时 ok=false。
-func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UUID) (facts, coverURL, region string, ok bool) {
+func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UUID, withHotVideos bool) (facts, coverURL, region string, hotCount int, ok bool) {
 	var p model.Product
 	if err := s.db.WithContext(ctx).
 		Where("id = ? AND workspace_id = ?", productID, wsID).
 		First(&p).Error; err != nil {
-		return "", "", "", false
+		return "", "", "", 0, false
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "商品:%s", p.Title)
@@ -142,9 +144,23 @@ func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UU
 					coverURL = strings.TrimSpace(urls[0])
 				}
 			}
+			// 真实爆款参考:该商品/品类已跑出销量的带货视频文案,供 DIRECTOR 逆向钩子与结构。
+			// 仅出视频(DIRECTOR)需要;LISTING/TRYON 不触网。best-effort + 限时,EchoTik 慢/失败都不拖累生成。
+			if withHotVideos {
+				hctx, hcancel := context.WithTimeout(ctx, 6*time.Second)
+				hot := s.discover.TopSellingVideos(hctx, dp.ExternalID, dp.Region, dp.CategoryID, 5)
+				hcancel()
+				if len(hot) > 0 {
+					b.WriteString("真实爆款参考(该商品/品类在 TikTok 已跑出销量的带货视频,学钩子与结构、勿抄原文):\n")
+					for i, h := range hot {
+						fmt.Fprintf(&b, "%d.「%s」— 卖出 %d 件 · $%.0f\n", i+1, firstN(h.Desc, 60), h.SaleCnt, float64(h.GmvCents)/100)
+					}
+					hotCount = len(hot)
+				}
+			}
 		}
 	}
-	return b.String(), coverURL, region, true
+	return b.String(), coverURL, region, hotCount, true
 }
 
 // directorContext 一次脚本生成所需的全部已解析素材。
@@ -158,6 +174,7 @@ type directorContext struct {
 	instruction   string // 可选:一句话重写指令(空表示直接换一版)
 	durationSec   int    // 用户在「设置」锁的时长(秒);0=AI 自选/默认 12s
 	aspectRatio   string // 用户在「设置」锁的比例(9:16/16:9/1:1);空=AI/默认 9:16
+	hotVideoCount int    // productFacts 注入的真实爆款参考条数(>0 时在草稿回显)
 }
 
 func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
@@ -169,8 +186,9 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 	}
 	prodRegion := ""
 	if dc.productID != nil {
-		if facts, cover, region, ok := s.productFacts(ctx, wsID, *dc.productID); ok {
+		if facts, cover, region, hot, ok := s.productFacts(ctx, wsID, *dc.productID, true); ok {
 			dc.facts = facts
+			dc.hotVideoCount = hot
 			prodRegion = region
 			if dc.firstFrameURL == "" {
 				dc.firstFrameURL = cover
@@ -288,6 +306,9 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	var b strings.Builder
 	fmt.Fprintf(&b, "🎬 %s · 角度:%s\n\n%s\n", title, styleLabels[style], out.Script)
 	fmt.Fprintf(&b, "\n🌍 目标市场:%s · 口播:%s(确认卡上可改市场)", voice.MarketCN, voice.LangCN)
+	if dc.hotVideoCount > 0 {
+		fmt.Fprintf(&b, "\n📈 已参考该商品 %d 条真实带货爆款的钩子套路。", dc.hotVideoCount)
+	}
 	if dc.firstFrameURL != "" {
 		b.WriteString("\n🖼 已取实拍图作为视频首帧,出镜的就是你的真货。")
 	}
@@ -409,9 +430,10 @@ func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d di
 	dc.region, _ = voiceFor(region)
 	if d.ProductID != "" {
 		if pid, e := uuid.Parse(d.ProductID); e == nil {
-			if facts, _, _, ok := s.productFacts(ctx, wsID, pid); ok {
+			if facts, _, _, hot, ok := s.productFacts(ctx, wsID, pid, true); ok {
 				dc.productID = &pid
 				dc.facts = facts
+				dc.hotVideoCount = hot
 			}
 		}
 	}

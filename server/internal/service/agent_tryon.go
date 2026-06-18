@@ -41,7 +41,7 @@ func (s *AgentService) runTryOn(ctx context.Context, taskID, wsID uuid.UUID, opt
 		garmentURL = s.materialImageURL(ctx, wsID, *opts.MaterialID)
 	}
 	if garmentURL == "" && opts.ProductID != nil {
-		if _, cover, _, ok := s.productFacts(ctx, wsID, *opts.ProductID); ok {
+		if _, cover, _, _, ok := s.productFacts(ctx, wsID, *opts.ProductID, false); ok {
 			garmentURL = cover
 		}
 	}
