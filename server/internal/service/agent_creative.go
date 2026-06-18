@@ -36,6 +36,7 @@ func directorSystemFor(v voiceSpec) string {
 如果用户消息附带「商品档案」,以档案里的真实卖点、价格、市场数据为准:
 口播要引用其中的具体信息(如价格、卖点),绝对不要编造数字;提及价格时沿用档案里的美元数字,不要自行换算汇率。
 档案里的「真实爆款参考」是同类已成交视频的文案,只用来学钩子与结构;口播仍按目标市场母语地道重写,不要搬运参考里的原话或语言。
+若用户消息含「本店投放经验」,据其漏斗短板优先调整(钩子弱就强化前 2 秒、转化弱就强化卖点+结尾 CTA),并让角度贴近其中列出的「跑赢角度」;这是本店真实成绩,优先级高于通用套路。
 
 规则:
 - 视频总时长 4-15 秒,按镜头数合理分配(3 镜头约 9-12 秒),时间轴必须连续且与总时长一致
@@ -175,6 +176,7 @@ type directorContext struct {
 	durationSec   int    // 用户在「设置」锁的时长(秒);0=AI 自选/默认 12s
 	aspectRatio   string // 用户在「设置」锁的比例(9:16/16:9/1:1);空=AI/默认 9:16
 	hotVideoCount int    // productFacts 注入的真实爆款参考条数(>0 时在草稿回显)
+	playbook      string // workspace 级「本店投放经验」(复盘蒸馏,空=无)
 }
 
 func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
@@ -213,6 +215,8 @@ func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input st
 	// 「设置」里锁的时长/比例随派活带入;非法值由 clampDuration/normalizeAspect 静默回退。
 	dc.durationSec = opts.DurationSec
 	dc.aspectRatio = opts.AspectRatio
+	// 本店投放经验(workspace 级复盘洞察):整店通用,与商品无关。
+	dc.playbook = s.workspacePlaybook(ctx, wsID)
 
 	return s.directorGenerate(ctx, wsID, input, dc)
 }
@@ -238,6 +242,9 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 		user += fmt.Sprintf(
 			"\n出镜人设:%s%s。分镜与口播请按这位真人创作者第一人称出镜设计,口吻贴合人设;不要在 videoPrompt 里描述其外貌,系统出片时会自动注入。",
 			dc.persona.Name, tone)
+	}
+	if pb := strings.TrimSpace(dc.playbook); pb != "" {
+		user += "\n\n" + pb
 	}
 	if ins := strings.TrimSpace(dc.instruction); ins != "" {
 		user += fmt.Sprintf("\n\n本次只做局部调整(商品、目标市场、出镜人设保持不变),据此重写脚本与 videoPrompt:%s", ins)
@@ -444,6 +451,7 @@ func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d di
 			}
 		}
 	}
+	dc.playbook = s.workspacePlaybook(ctx, wsID)
 
 	output, meta, usage, err := s.directorGenerate(ctx, wsID, input, dc)
 	if err != nil {
