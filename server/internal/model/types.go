@@ -16,8 +16,10 @@ const (
 	PlanPro  = "PRO"
 	PlanTeam = "TEAM"
 
-	ProductRecommended = "RECOMMENDED"
+	// 收藏夹内的推进台阶:候选(收藏默认,先存着)→ 评估中 → 推荐 → 归档。
+	ProductCandidate   = "CANDIDATE"
 	ProductEvaluating  = "EVALUATING"
+	ProductRecommended = "RECOMMENDED"
 	ProductArchived    = "ARCHIVED"
 
 	// 商品成本来源:系统按品类/市场估算、用户回填真实成本、货源比价回填(预留)。

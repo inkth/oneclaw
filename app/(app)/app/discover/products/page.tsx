@@ -19,7 +19,6 @@ type DecoratedProduct = {
   totalVideoCnt: number;
   coverUrls: string[];
   importedProductId: string | null;
-  interaction: { isStarred: boolean; tags: string[] } | null;
 };
 
 type RanklistResult = {
@@ -89,7 +88,6 @@ export default async function DiscoverProductsPage({
         trend7dPct: null,
         importedProductId: p.importedProductId,
         analysis: null,
-        interaction: p.interaction,
       }))}
       page={page}
       hasNext={!q && result.products.length >= 16 && page < 10}

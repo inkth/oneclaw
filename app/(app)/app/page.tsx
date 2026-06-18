@@ -13,7 +13,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  // 其他页面(如选品库「为它做视频 / 做 Listing」)带 ?agent=…&prompt=…&productId=… 接力进来。
+  // 其他页面(如收藏「为它做视频 / 做 Listing」)带 ?agent=…&prompt=…&productId=… 接力进来。
   const sp = await searchParams;
   const initialAgent = AGENT_KINDS.has(sp.agent ?? "")
     ? (sp.agent as ComposerKind)

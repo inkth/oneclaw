@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, Loader2, Plus, Sparkles } from "lucide-react";
+import { ArrowRight, BookmarkCheck, Loader2, Bookmark, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { RankMedal } from "@/components/ui/RankMedal";
@@ -23,8 +23,8 @@ export type HotPick = {
 };
 
 /**
- * 驾驶舱的今日爆品推荐:EchoTik 榜单前 3,带「导入选品 / AI 分析」接力。
- * 游客可看榜,操作走登录引导;交互与发现页同款(导入 → 选品库,分析 → ANALYST 任务轮询)。
+ * 驾驶舱的今日爆品推荐:EchoTik 榜单前 3,带「收藏 / AI 分析」接力。
+ * 游客可看榜,操作走登录引导;交互与发现页同款(收藏 → 选品候选,分析 → ANALYST 任务轮询)。
  */
 export function HotPicks({
   workspaceId,
@@ -46,7 +46,7 @@ export function HotPicks({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可操作",
-      desc: "导入选品、AI 分析都需要账号。榜单随便逛,登录后一键操作。",
+      desc: "收藏、AI 分析都需要账号。榜单随便逛,登录后一键操作。",
     });
     return true;
   }
@@ -68,8 +68,8 @@ export function HotPicks({
       );
       toast.success(
         data.alreadyExists
-          ? `选品库里已经有了：${p.name.slice(0, 24)}…`
-          : `已加入选品库：${p.name.slice(0, 24)}…`,
+          ? `已经收藏过了：${p.name.slice(0, 24)}…`
+          : `已收藏：${p.name.slice(0, 24)}…`,
       );
       router.refresh();
     } catch (e) {
@@ -161,7 +161,7 @@ export function HotPicks({
             <div className="mt-3 flex items-center gap-2">
               {p.importedProductId ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-medium text-emerald-700">
-                  <CheckCircle2 className="h-3 w-3" /> 已在选品库
+                  <BookmarkCheck className="h-3 w-3" /> 已收藏
                 </span>
               ) : (
                 <button
@@ -172,9 +172,9 @@ export function HotPicks({
                   {importing.has(p.productId) ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Plus className="h-3 w-3" />
+                    <Bookmark className="h-3 w-3" />
                   )}
-                  导入选品
+                  收藏
                 </button>
               )}
               <button

@@ -16,11 +16,10 @@ import { TrendChart } from "../_components/TrendChart";
 import { fmt, fmtMoney, initial, fmtUnixDate, stringToGradient } from "../_components/format";
 import {
   Sparkles,
-  Plus,
   Loader2,
-  Star,
+  Bookmark,
+  BookmarkCheck,
   ArrowLeft,
-  CheckCircle2,
   TrendingUp,
   DollarSign,
   Users,
@@ -88,7 +87,6 @@ export type DetailProduct = {
   trend: { dt: string; saleCnt: number; gmv: number }[];
   score: { score: number; verdict: string; signals: Signal[] } | null;
   importedProductId: string | null;
-  interaction: { isStarred: boolean; tags: string[] } | null;
 };
 
 function asTone(t: string): Tone {
@@ -148,8 +146,7 @@ export function ProductDetailClient({
 }) {
   const router = useRouter();
   const [gallery, setGallery] = useState(0);
-  const [starred, setStarred] = useState(p.interaction?.isStarred ?? false);
-  const [busy, setBusy] = useState<"" | "star" | "import" | "analyze">("");
+  const [busy, setBusy] = useState<"" | "import" | "analyze">("");
   const [imported, setImported] = useState<string | null>(p.importedProductId);
   const { open: openAuthModal } = useAuthModal();
 
@@ -157,28 +154,9 @@ export function ProductDetailClient({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可操作",
-      desc: "导入选品、收藏、AI 分析都需要账号。详情随便看,登录后一键操作。",
+      desc: "收藏、AI 分析都需要账号。详情随便看,登录后一键操作。",
     });
     return true;
-  }
-
-  async function toggleStar() {
-    if (busy || gateGuest()) return;
-    const next = !starred;
-    setStarred(next);
-    setBusy("star");
-    try {
-      await apiBrowser(`/workspaces/${workspaceId}/discover/interactions`, {
-        method: "POST",
-        body: JSON.stringify({ externalId: p.productId, region: p.region, isStarred: next }),
-      });
-      if (next) toast.success("已收藏");
-    } catch {
-      setStarred(!next);
-      toast.error("收藏失败");
-    } finally {
-      setBusy("");
-    }
   }
 
   async function importProduct() {
@@ -193,7 +171,7 @@ export function ProductDetailClient({
         },
       );
       setImported(data.product?.id ?? "added");
-      toast.success(data.alreadyExists ? "选品库里已经有了" : "已加入选品库");
+      toast.success(data.alreadyExists ? "已经收藏过了" : "已收藏");
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "加入失败");
@@ -266,22 +244,18 @@ export function ProductDetailClient({
         }
         actions={
           <>
-            <Button variant="secondary" size="sm" onClick={toggleStar} disabled={busy === "star"}>
-              <Star className={`h-3.5 w-3.5 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
-              {starred ? "已收藏" : "收藏"}
-            </Button>
             <Button variant="subtle" size="sm" onClick={analyzeProduct} disabled={busy === "analyze"}>
               {busy === "analyze" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               AI 深度分析
             </Button>
             {imported ? (
-              <Button variant="secondary" size="sm" onClick={() => router.push("/app/assets/products")}>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> 已加入
+              <Button variant="secondary" size="sm" onClick={() => router.push("/app/discover/favorites")}>
+                <BookmarkCheck className="h-3.5 w-3.5 text-emerald-600" /> 已收藏
               </Button>
             ) : (
               <Button variant="primary" size="sm" onClick={importProduct} disabled={busy === "import"}>
-                {busy === "import" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                加入选品库
+                {busy === "import" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bookmark className="h-3.5 w-3.5" />}
+                收藏
               </Button>
             )}
           </>
@@ -352,7 +326,7 @@ export function ProductDetailClient({
               <Badge tone="fuchsia">折扣 {p.discount}</Badge>
             )}
             {imported && (
-              <Badge tone="success" icon={<CheckCircle2 className="h-3 w-3" />}>已在选品库</Badge>
+              <Badge tone="success" icon={<BookmarkCheck className="h-3 w-3" />}>已收藏</Badge>
             )}
           </div>
 
@@ -414,7 +388,7 @@ export function ProductDetailClient({
         </div>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
           评分里的成本/利润是按品类估算的。去货源平台搜「<span className="font-medium text-zinc-700">{sourcingKeyword(p.name)}</span>
-          」找同款,拿到真实进货价后加入选品库回填,毛利率就准了。
+          」找同款,拿到真实进货价后在收藏夹回填,毛利率就准了。
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {sourcingLinks(p.name).map((l) => (

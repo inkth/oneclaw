@@ -4,7 +4,23 @@ import { AuthModalTrigger } from "@/components/auth/AuthModalTrigger";
 import { Bookmark } from "lucide-react";
 import { FavoritesClient, type FavoriteItem } from "./favorites-client";
 
-export const metadata = { title: "选品 · 我的收藏 · OneClaw" };
+export const metadata = { title: "收藏 · OneClaw" };
+
+type GoProduct = {
+  id: string;
+  title: string;
+  category: string;
+  emoji: string | null;
+  priceCents: number;
+  costCents: number;
+  costSource: "ESTIMATE" | "MANUAL" | "SOURCED";
+  marginPct: number;
+  roiScore: number;
+  monthlySales: number;
+  trendDelta: number;
+  status: "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
+  note: string | null;
+};
 
 export default async function FavoritesPage() {
   const me = await getMe();
@@ -32,11 +48,38 @@ export default async function FavoritesPage() {
     );
   }
 
-  const items = await apiServer<{ items: FavoriteItem[] }>(
-    `/workspaces/${workspace.id}/discover/favorites`,
-  )
-    .then((r) => r.items ?? [])
-    .catch(() => []);
+  // 商品收藏走选品 products 表;店铺/达人/视频走 discover/favorites。
+  const [products, items] = await Promise.all([
+    apiServer<{ products: GoProduct[] }>(`/workspaces/${workspace.id}/products`)
+      .then((r) => r.products ?? [])
+      .catch((): GoProduct[] => []),
+    apiServer<{ items: FavoriteItem[] }>(`/workspaces/${workspace.id}/discover/favorites`)
+      .then((r) => r.items ?? [])
+      .catch((): FavoriteItem[] => []),
+  ]);
 
-  return <FavoritesClient items={items} />;
+  return (
+    // key:弹窗内登录后 refresh 重传 props,强制重挂载以重置子组件 useState
+    <FavoritesClient
+      key={me?.user?.id ?? "guest"}
+      workspaceId={workspace.id}
+      products={products.map((p) => ({
+        id: p.id,
+        title: p.title,
+        category: p.category,
+        emoji: p.emoji,
+        priceCents: p.priceCents,
+        costCents: p.costCents,
+        costSource: p.costSource,
+        marginPct: p.marginPct,
+        roiScore: p.roiScore,
+        monthlySales: p.monthlySales,
+        trendDelta: p.trendDelta,
+        status: p.status,
+        note: p.note,
+        shop: null,
+      }))}
+      favorites={items}
+    />
+  );
 }

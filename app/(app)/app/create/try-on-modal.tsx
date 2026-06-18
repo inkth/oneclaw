@@ -14,7 +14,7 @@ import type { StreamTask } from "../task-stream";
 type ProductOption = { id: string; title: string; roiScore: number };
 
 /**
- * 虚拟试穿弹窗:选模特 + 给一张服饰图(上传 / 选品库商品主图)→ 派活 TRYON。
+ * 虚拟试穿弹窗:选模特 + 给一张服饰图(上传 / 收藏商品主图)→ 派活 TRYON。
  * 出图异步,结果在任务流(会话)里按 imagesStatus 轮询显示,与 Listing 主图同机制。
  */
 export function TryOnModal({
@@ -36,7 +36,7 @@ export function TryOnModal({
   const [garment, setGarment] = useState<{ materialId: string; url: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // 选品库商品 → productId(后端取该商品 EchoTik 主图作服饰图)
+  // 收藏商品 → productId(后端取该商品 EchoTik 主图作服饰图)
   const [products, setProducts] = useState<ProductOption[] | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
 
@@ -201,7 +201,7 @@ export function TryOnModal({
             }}
             icon={Package}
           >
-            从选品库取
+            从收藏取
           </TabButton>
         </div>
 
@@ -252,10 +252,10 @@ export function TryOnModal({
               <div className="py-6 text-center text-xs text-zinc-400">加载中…</div>
             ) : products.length === 0 ? (
               <Link
-                href="/app/assets/products"
+                href="/app/discover/favorites"
                 className="block rounded-lg border border-dashed border-zinc-300 py-5 text-center text-xs text-zinc-500 transition-colors hover:border-brand-300 hover:text-brand-600"
               >
-                选品库还没有商品,去挑几个 →
+                收藏里还没有商品,去挑几个 →
               </Link>
             ) : (
               <div className="max-h-44 space-y-1 overflow-y-auto">

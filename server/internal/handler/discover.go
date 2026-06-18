@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	apperr "github.com/oneclaw/server/internal/errors"
+	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service"
 	"github.com/oneclaw/server/internal/service/echotik"
 )
@@ -104,24 +105,6 @@ func (h *DiscoverHandler) RanklistPublic(c *gin.Context) {
 	OK(c, res)
 }
 
-func (h *DiscoverHandler) Interaction(c *gin.Context) {
-	_, wid, ok := authorizeWorkspace(c, h.ws)
-	if !ok {
-		return
-	}
-	var in service.InteractionInput
-	if err := c.ShouldBindJSON(&in); err != nil {
-		_ = c.Error(apperr.BadRequest("参数不合法:" + err.Error()))
-		return
-	}
-	rec, err := h.discover.UpsertInteraction(c.Request.Context(), wid, in)
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-	OK(c, gin.H{"interaction": rec})
-}
-
 // Favorite POST /workspaces/:wid/discover/favorites —— 收藏/取消店铺·达人·视频。
 func (h *DiscoverHandler) Favorite(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
@@ -181,7 +164,7 @@ func (h *DiscoverHandler) Import(c *gin.Context) {
 		_ = c.Error(apperr.BadRequest("参数不合法:" + err.Error()))
 		return
 	}
-	res, err := h.discover.ImportProduct(c.Request.Context(), wid, in.ProductID, in.Region, in.CategoryLabel)
+	res, err := h.discover.ImportProduct(c.Request.Context(), wid, in.ProductID, in.Region, in.CategoryLabel, model.ProductCandidate)
 	if err != nil {
 		_ = c.Error(err)
 		return

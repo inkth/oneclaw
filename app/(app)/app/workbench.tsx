@@ -40,10 +40,10 @@ export function Workbench({
   showPresets?: boolean;
   /** 服务端预取的任务历史(新→旧),作为会话流初始内容。 */
   initialTasks?: StreamTask[];
-  /** 从其他页面接力进来时预选的 Agent 与预填指令(如选品库「为它做视频」)。 */
+  /** 从其他页面接力进来时预选的 Agent 与预填指令(如收藏「为它做视频」)。 */
   initialAgent?: ComposerKind;
   initialInput?: string;
-  /** 接力时关联的选品库商品 ID:DIRECTOR/LISTING 派活会带上,后端注入真实商品数据。 */
+  /** 接力时关联的收藏商品 ID:DIRECTOR/LISTING 派活会带上,后端注入真实商品数据。 */
   initialProductId?: string;
   /** 本页可派活的 Agent 子集(工作台=分析/复盘,创作页=视频/Listing),不传则全量。 */
   agents?: ComposerKind[];
@@ -89,7 +89,7 @@ export function Workbench({
     ? tasks.filter((t) => (streamAgents as string[]).includes(t.agent))
     : tasks;
 
-  // 带指令接力进来时(如选品库跳转),光标直接落到输入框,看一眼就能发。
+  // 带指令接力进来时(如收藏跳转),光标直接落到输入框,看一眼就能发。
   useEffect(() => {
     if (initialInput) textareaRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps

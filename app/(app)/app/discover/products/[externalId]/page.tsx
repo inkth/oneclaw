@@ -22,7 +22,6 @@ type DetailDTO = {
   totalVideoCnt: number;
   coverUrls: string[] | null;
   importedProductId: string | null;
-  interaction: { isStarred: boolean; tags: string[] } | null;
   rating: number;
   reviewCount: number;
   discount: string;
@@ -163,7 +162,6 @@ export default async function ProductDetailPage({
     trend: (dto.trend ?? []).map((t) => ({ dt: t.dt, saleCnt: t.saleCnt, gmv: t.gmvCents / 100 })),
     score: dto.score,
     importedProductId: dto.importedProductId,
-    interaction: dto.interaction,
   };
 
   return (

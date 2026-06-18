@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 	"github.com/oneclaw/server/internal/model"
 )
 
-// 收藏支持的实体类型(商品走 WorkspaceDiscoverInteraction.IsStarred,不在此列)。
+// 收藏支持的实体类型(商品收藏已并入选品 products 表,不走这里)。
 var favoriteKinds = map[string]bool{"seller": true, "influencer": true, "video": true}
 
 // FavoriteInput 收藏/取消收藏。Snapshot 是 {name,cover,subtitle,metric},供收藏页渲染。
@@ -76,43 +75,12 @@ func (s *DiscoverService) IsFavorited(ctx context.Context, wsID uuid.UUID, kind,
 	return n > 0
 }
 
-// ListFavorites 汇总工作台收藏:商品(收藏星标)+ 店铺/达人/视频,按时间倒序。
+// ListFavorites 汇总工作台收藏:店铺/达人/视频,按时间倒序。
+// 商品收藏已并入选品 products 表(见 GET /workspaces/:wid/products),此处只管非商品实体。
 func (s *DiscoverService) ListFavorites(ctx context.Context, wsID uuid.UUID) ([]FavoriteItemDTO, error) {
 	items := make([]FavoriteItemDTO, 0)
 
-	// 1. 商品:WorkspaceDiscoverInteraction.IsStarred → join DiscoverProduct。
-	var inters []model.WorkspaceDiscoverInteraction
-	if err := s.db.WithContext(ctx).
-		Where("workspace_id = ? AND is_starred = ?", wsID, true).
-		Find(&inters).Error; err != nil {
-		return nil, apperr.Wrap(apperr.CodeInternal, "查询收藏失败", err)
-	}
-	if len(inters) > 0 {
-		dpIDs := make([]uuid.UUID, 0, len(inters))
-		createdByDP := make(map[uuid.UUID]time.Time, len(inters))
-		for _, it := range inters {
-			dpIDs = append(dpIDs, it.DiscoverProductID)
-			createdByDP[it.DiscoverProductID] = it.CreatedAt
-		}
-		var dps []model.DiscoverProduct
-		s.db.WithContext(ctx).Where("id IN ?", dpIDs).Find(&dps)
-		for _, dp := range dps {
-			cover := ""
-			if covers := parseCovers(dp.CoverUrls); len(covers) > 0 {
-				cover = covers[0]
-			}
-			items = append(items, FavoriteItemDTO{
-				Kind: "product", ExternalID: dp.ExternalID, Region: dp.Region,
-				Name: dp.Name, Cover: cover,
-				Subtitle:  dp.Region,
-				Metric:    fmtCentsUSD(dp.AvgPriceCents),
-				Href:      favoriteHref("product", dp.ExternalID, dp.Region),
-				CreatedAt: createdByDP[dp.ID],
-			})
-		}
-	}
-
-	// 2. 店铺/达人/视频:从 favorites 表 + 快照渲染。
+	// 店铺/达人/视频:从 favorites 表 + 快照渲染。
 	var favs []model.WorkspaceDiscoverFavorite
 	if err := s.db.WithContext(ctx).
 		Where("workspace_id = ?", wsID).Find(&favs).Error; err != nil {
@@ -135,7 +103,6 @@ func (s *DiscoverService) ListFavorites(ctx context.Context, wsID uuid.UUID) ([]
 
 func favoriteHref(kind, externalID, region string) string {
 	base := map[string]string{
-		"product":    "/app/discover/products/",
 		"seller":     "/app/discover/sellers/",
 		"influencer": "/app/discover/influencers/",
 		"video":      "/app/discover/videos/",
@@ -144,11 +111,4 @@ func favoriteHref(kind, externalID, region string) string {
 		return ""
 	}
 	return base + externalID + "?region=" + region
-}
-
-func fmtCentsUSD(cents int) string {
-	if cents <= 0 {
-		return ""
-	}
-	return fmt.Sprintf("$%.2f", float64(cents)/100)
 }

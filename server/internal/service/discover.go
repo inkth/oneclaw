@@ -39,7 +39,7 @@ func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storag
 	}
 }
 
-// DecoratedProduct 给前端发现页用:商品 + 是否已导入 + 工作台收藏/标签。
+// DecoratedProduct 给前端发现页用:商品 + 是否已收藏(已收藏 = 已落进选品 products 表)。
 type DecoratedProduct struct {
 	ProductID         string    `json:"productId"` // EchoTik external id
 	Name              string    `json:"name"`
@@ -54,12 +54,6 @@ type DecoratedProduct struct {
 	TotalVideoCnt     int       `json:"totalVideoCnt"`
 	CoverUrls         []string  `json:"coverUrls"`
 	ImportedProductID *string   `json:"importedProductId"`
-	Interaction       *interDTO `json:"interaction"`
-}
-
-type interDTO struct {
-	IsStarred bool     `json:"isStarred"`
-	Tags      []string `json:"tags"`
 }
 
 type RanklistResult struct {
@@ -302,7 +296,6 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 
 	// 游客(wsID == Nil)没有工作台,跳过「已导入/已收藏」个性化浮层,只回公共榜单。
 	importedBy := map[uuid.UUID]string{}
-	interBy := map[uuid.UUID]model.WorkspaceDiscoverInteraction{}
 	if wsID != uuid.Nil {
 		var prods []model.Product
 		s.db.WithContext(ctx).
@@ -312,14 +305,6 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 			if p.DiscoverProductID != nil {
 				importedBy[*p.DiscoverProductID] = p.ID.String()
 			}
-		}
-
-		var inters []model.WorkspaceDiscoverInteraction
-		s.db.WithContext(ctx).
-			Where("workspace_id = ? AND discover_product_id IN ?", wsID, ids).
-			Find(&inters)
-		for _, it := range inters {
-			interBy[it.DiscoverProductID] = it
 		}
 	}
 
@@ -334,9 +319,6 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 		}
 		if pid, ok := importedBy[d.ID]; ok {
 			dp.ImportedProductID = &pid
-		}
-		if it, ok := interBy[d.ID]; ok {
-			dp.Interaction = &interDTO{IsStarred: it.IsStarred, Tags: it.Tags}
 		}
 		out = append(out, dp)
 	}
@@ -404,57 +386,13 @@ func parseCovers(raw model.JSONB) []string {
 	return []string{}
 }
 
-// UpsertInteraction 收藏/标签/备注。
-type InteractionInput struct {
-	ExternalID string    `json:"externalId" binding:"required"`
-	Region     string    `json:"region" binding:"required"`
-	IsStarred  *bool     `json:"isStarred"`
-	Tags       *[]string `json:"tags"`
-	Note       *string   `json:"note"`
-}
-
-func (s *DiscoverService) UpsertInteraction(ctx context.Context, wsID uuid.UUID, in InteractionInput) (*model.WorkspaceDiscoverInteraction, error) {
-	dp, err := s.findDiscover(ctx, in.ExternalID, in.Region)
-	if err != nil {
-		return nil, err
-	}
-	var rec model.WorkspaceDiscoverInteraction
-	err = s.db.WithContext(ctx).
-		Where("workspace_id = ? AND discover_product_id = ?", wsID, dp.ID).
-		First(&rec).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		rec = model.WorkspaceDiscoverInteraction{WorkspaceID: wsID, DiscoverProductID: dp.ID, Tags: []string{}}
-	} else if err != nil {
-		return nil, apperr.Wrap(apperr.CodeInternal, "查询收藏失败", err)
-	}
-	if in.IsStarred != nil {
-		rec.IsStarred = *in.IsStarred
-	}
-	if in.Tags != nil {
-		rec.Tags = *in.Tags
-	}
-	if in.Note != nil {
-		rec.Note = in.Note
-	}
-	if rec.ID == uuid.Nil {
-		if err := s.db.WithContext(ctx).Create(&rec).Error; err != nil {
-			return nil, apperr.Wrap(apperr.CodeInternal, "保存收藏失败", err)
-		}
-	} else {
-		if err := s.db.WithContext(ctx).Save(&rec).Error; err != nil {
-			return nil, apperr.Wrap(apperr.CodeInternal, "保存收藏失败", err)
-		}
-	}
-	return &rec, nil
-}
-
 // ImportProduct 把已缓存的 EchoTik 商品导入为本地 Product(去重)。
 type ImportResult struct {
 	Product       *model.Product `json:"product"`
 	AlreadyExists bool           `json:"alreadyExists"`
 }
 
-func (s *DiscoverService) ImportProduct(ctx context.Context, wsID uuid.UUID, externalID, region, categoryLabel string) (*ImportResult, error) {
+func (s *DiscoverService) ImportProduct(ctx context.Context, wsID uuid.UUID, externalID, region, categoryLabel, status string) (*ImportResult, error) {
 	dp, err := s.findDiscover(ctx, externalID, region)
 	if err != nil {
 		return nil, err
@@ -474,6 +412,9 @@ func (s *DiscoverService) ImportProduct(ctx context.Context, wsID uuid.UUID, ext
 	if categoryLabel == "" {
 		categoryLabel = "TikTok Shop 爆品"
 	}
+	if status == "" {
+		status = model.ProductEvaluating
+	}
 	priceCents := dp.AvgPriceCents
 	costCents := echotik.EstimateLandedCost(priceCents, dp.Name, dp.Region).TotalCents
 	emoji := echotik.GuessEmoji(dp.Name)
@@ -491,7 +432,7 @@ func (s *DiscoverService) ImportProduct(ctx context.Context, wsID uuid.UUID, ext
 		MarginPct:         echotik.EstimateMarginPct(priceCents, costCents),
 		RoiScore:          echotik.RoiScore(dp.TotalSaleCnt, dp.TotalIflCnt),
 		MonthlySales:      dp.TotalSaleCnt,
-		Status:            model.ProductEvaluating,
+		Status:            status,
 		Note:              &note,
 	}
 	if err := s.db.WithContext(ctx).Create(&p).Error; err != nil {
@@ -517,4 +458,29 @@ func (s *DiscoverService) findDiscover(ctx context.Context, externalID, region s
 // GetDiscoverProduct 详情(P1 走 DB 缓存)。
 func (s *DiscoverService) GetDiscoverProduct(ctx context.Context, externalID, region string) (*model.DiscoverProduct, error) {
 	return s.findDiscover(ctx, externalID, region)
+}
+
+// MigrateStarredToProducts 一次性迁移:把旧的商品收藏(interactions.is_starred=true)
+// 搬成选品 products 表里的候选记录。复用 ImportProduct 去重,已存在则跳过。
+func (s *DiscoverService) MigrateStarredToProducts(ctx context.Context) (migrated, skipped int, err error) {
+	var inters []model.WorkspaceDiscoverInteraction
+	if e := s.db.WithContext(ctx).Where("is_starred = ?", true).Find(&inters).Error; e != nil {
+		return 0, 0, e
+	}
+	for _, it := range inters {
+		var dp model.DiscoverProduct
+		if e := s.db.WithContext(ctx).Where("id = ?", it.DiscoverProductID).First(&dp).Error; e != nil {
+			continue // discover 商品已不在缓存,跳过
+		}
+		res, e := s.ImportProduct(ctx, it.WorkspaceID, dp.ExternalID, dp.Region, "", model.ProductCandidate)
+		if e != nil {
+			return migrated, skipped, e
+		}
+		if res.AlreadyExists {
+			skipped++
+		} else {
+			migrated++
+		}
+	}
+	return migrated, skipped, nil
 }

@@ -9,7 +9,7 @@ import { Star, Loader2 } from "lucide-react";
 
 export type FavSnapshot = { name: string; cover: string; subtitle: string; metric: string };
 
-/** 店铺/达人/视频收藏星标按钮(游客点击弹登录)。商品收藏走单独的 interactions 接口。 */
+/** 店铺/达人/视频收藏星标按钮(游客点击弹登录)。商品收藏已并入选品 products 表(收藏页商品 tab)。 */
 export function FavoriteButton({
   kind,
   externalId,

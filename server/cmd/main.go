@@ -107,6 +107,15 @@ func main() {
 			logger.Info("[persona] 种子任务完成", zap.Int("created", created))
 			return
 		}
+		// 一次性:把旧商品收藏(interactions.is_starred)迁成选品候选记录后退出。
+		if arg == "--migrate-favorites" {
+			m, sk, err := discSvc.MigrateStarredToProducts(context.Background())
+			if err != nil {
+				logger.Fatal("[migrate] 收藏迁移失败", logger.Err(err))
+			}
+			logger.Info("[migrate] 收藏→候选迁移完成", zap.Int("migrated", m), zap.Int("skipped", sk))
+			return
+		}
 	}
 
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)

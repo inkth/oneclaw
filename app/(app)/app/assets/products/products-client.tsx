@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package, Rocket, Pencil, Check } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { PublishKitDrawer } from "./publish-kit-drawer";
@@ -11,10 +12,10 @@ import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { Delta } from "@/components/ui/Delta";
 
-type Status = "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
+type Status = "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 type CostSource = "ESTIMATE" | "MANUAL" | "SOURCED";
 
-type Product = {
+export type Product = {
   id: string;
   title: string;
   category: string;
@@ -32,8 +33,9 @@ type Product = {
 };
 
 const statusMap: Record<Status, { label: string; cls: string }> = {
-  RECOMMENDED: { label: "推荐", cls: "bg-emerald-50 text-emerald-700" },
+  CANDIDATE: { label: "候选", cls: "bg-sky-50 text-sky-700" },
   EVALUATING: { label: "评估中", cls: "bg-amber-50 text-amber-700" },
+  RECOMMENDED: { label: "推荐", cls: "bg-emerald-50 text-emerald-700" },
   ARCHIVED: { label: "已归档", cls: "bg-zinc-100 text-zinc-500" },
 };
 
@@ -69,7 +71,7 @@ function CostBadge({ source }: { source: CostSource }) {
 }
 
 // 选品 → 创作的接力:带着产品上下文跳到工作台,预选对应 Agent 并预填指令。
-// 只带创作意图;价格/卖点/市场数据由后端按 productId 从选品库真实数据注入,避免 URL 里的快照过期。
+// 只带创作意图;价格/卖点/市场数据由后端按 productId 从收藏商品真实数据注入,避免 URL 里的快照过期。
 function videoPromptFor(p: Product): string {
   return `为「${p.title}」生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感。`;
 }
@@ -80,17 +82,20 @@ function listingPromptFor(p: Product): string {
 
 const filters: Array<{ key: "ALL" | Status; label: string }> = [
   { key: "ALL", label: "全部" },
-  { key: "RECOMMENDED", label: "推荐" },
+  { key: "CANDIDATE", label: "候选" },
   { key: "EVALUATING", label: "评估中" },
+  { key: "RECOMMENDED", label: "推荐" },
   { key: "ARCHIVED", label: "归档" },
 ];
 
 export function ProductsClient({
   workspaceId,
   initialProducts,
+  embedded = false,
 }: {
   workspaceId: string;
   initialProducts: Product[];
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
@@ -104,6 +109,29 @@ export function ProductsClient({
 
   const visible =
     filter === "ALL" ? products : products.filter((p) => p.status === filter);
+
+  const filterBar = (
+    <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
+      {filters.map((f) => (
+        <button
+          key={f.key}
+          onClick={() => setFilter(f.key)}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            filter === f.key
+              ? "bg-brand-600 text-white shadow-sm"
+              : "text-zinc-600 hover:text-brand-700"
+          }`}
+        >
+          {f.label}
+          <span className={`ml-1 text-2xs ${filter === f.key ? "text-brand-200" : "text-zinc-400"}`}>
+            {f.key === "ALL"
+              ? products.length
+              : products.filter((p) => p.status === f.key).length}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
 
   function startEditCost(p: Product) {
     committedRef.current = null;
@@ -156,32 +184,15 @@ export function ProductsClient({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="选品库"
-        description="选品分析 Agent 推荐与你手动加入的潜力品类。"
-        actions={
-          <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  filter === f.key
-                    ? "bg-brand-600 text-white shadow-sm"
-                    : "text-zinc-600 hover:text-brand-700"
-                }`}
-              >
-                {f.label}
-                <span className={`ml-1 text-2xs ${filter === f.key ? "text-brand-200" : "text-zinc-400"}`}>
-                  {f.key === "ALL"
-                    ? products.length
-                    : products.filter((p) => p.status === f.key).length}
-                </span>
-              </button>
-            ))}
-          </div>
-        }
-      />
+      {embedded ? (
+        <div className="flex justify-end">{filterBar}</div>
+      ) : (
+        <PageHeader
+          title="收藏 · 商品"
+          description="你从爆品榜收藏的商品,按推进阶段管理。"
+          actions={filterBar}
+        />
+      )}
 
       {error && (
         <div className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-100">
@@ -192,10 +203,10 @@ export function ProductsClient({
       {visible.length === 0 ? (
         <EmptyState
           icon={Package}
-          title={filter === "ALL" ? "还没有选品" : "这个分类下还没有选品"}
+          title={filter === "ALL" ? "还没有收藏的商品" : "这个分类下还没有商品"}
           description={
             <>
-              前往 <span className="text-brand-600">Agent 工作流</span>，让选品分析扫描热门品类。
+              去 <Link href="/app/discover/products" className="text-brand-600">爆品榜</Link> 点「收藏」，商品会出现在这里。
             </>
           }
         />

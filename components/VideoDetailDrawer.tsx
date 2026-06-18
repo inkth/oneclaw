@@ -411,7 +411,7 @@ export function VideoDetailDrawer({
                         label="商品"
                         value={video.product.title}
                         secondary={`状态：${video.product.status}`}
-                        href={`/app/assets/products`}
+                        href={`/app/discover/favorites`}
                       />
                     )}
                     {video.modelAsset && (

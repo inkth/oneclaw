@@ -44,7 +44,7 @@ export type StreamTask = {
   metadata?: {
     /** REVIEW 任务:完整复盘结果,流内还原仪表盘。 */
     review?: ReviewResult;
-    /** ANALYST 任务:写入选品库的商品,externalId 存在时可跳转发现页详情。 */
+    /** ANALYST 任务:写入收藏的商品,externalId 存在时可跳转发现页详情。 */
     products?: {
       id: string;
       title: string;

@@ -22,10 +22,9 @@ import { VERDICT_TONE, VERDICT_LABEL } from "@/lib/ui/tokens";
 import {
   Compass,
   Sparkles,
-  Plus,
   Loader2,
-  Star,
-  CheckCircle2,
+  Bookmark,
+  BookmarkCheck,
   PackageSearch,
 } from "lucide-react";
 
@@ -38,8 +37,6 @@ type AnalysisInfo = {
   createdAt: string;
   verdict?: string;
 };
-
-type Interaction = { isStarred: boolean; tags: string[] };
 
 type DiscoverProduct = {
   productId: string;
@@ -58,7 +55,6 @@ type DiscoverProduct = {
   trend7dPct: number | null;
   importedProductId: string | null;
   analysis: AnalysisInfo | null;
-  interaction: Interaction | null;
 };
 
 // 商品榜排序支持 3 项(店铺/达人/视频只有销量/GMV)。
@@ -107,7 +103,7 @@ export function DiscoverClient({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可操作",
-      desc: "导入选品、收藏都需要账号。趋势榜随便逛,登录后一键操作。",
+      desc: "收藏商品需要账号。趋势榜随便逛,登录后一键收藏。",
     });
     return true;
   }
@@ -129,46 +125,15 @@ export function DiscoverClient({
         },
       );
       if (data.alreadyExists) {
-        toast(`选品库里已经有了：${p.productName.slice(0, 30)}…`);
+        toast(`已经收藏过了：${p.productName.slice(0, 30)}…`);
       } else {
-        toast.success(`已加入选品库：${p.productName.slice(0, 30)}…`);
+        toast.success(`已收藏：${p.productName.slice(0, 30)}…`);
       }
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "加入失败");
     } finally {
       setImporting((prev) => {
-        const n = new Set(prev);
-        n.delete(p.productId);
-        return n;
-      });
-    }
-  }
-
-  const [starring, setStarring] = useState<Set<string>>(new Set());
-  const [stars, setStars] = useState<Record<string, boolean>>(() => {
-    const m: Record<string, boolean> = {};
-    for (const p of products) m[p.productId] = p.interaction?.isStarred ?? false;
-    return m;
-  });
-
-  async function toggleStar(p: DiscoverProduct) {
-    if (starring.has(p.productId)) return;
-    if (gateGuest()) return;
-    const next = !stars[p.productId];
-    setStarring((prev) => new Set(prev).add(p.productId));
-    setStars((prev) => ({ ...prev, [p.productId]: next }));
-    try {
-      await apiBrowser(`/workspaces/${workspaceId}/discover/interactions`, {
-        method: "POST",
-        body: JSON.stringify({ externalId: p.productId, region: p.region, isStarred: next }),
-      });
-      if (next) toast.success("已收藏");
-    } catch {
-      setStars((prev) => ({ ...prev, [p.productId]: !next }));
-      toast.error("收藏失败");
-    } finally {
-      setStarring((prev) => {
         const n = new Set(prev);
         n.delete(p.productId);
         return n;
@@ -234,21 +199,7 @@ export function DiscoverClient({
             {products.map((p, idx) => (
               <Tr key={p.productId}>
                 <Td>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleStar(p)}
-                      disabled={starring.has(p.productId)}
-                      className="flex h-5 w-5 items-center justify-center rounded text-zinc-300 hover:text-amber-400 transition-colors"
-                      title={stars[p.productId] ? "取消收藏" : "收藏"}
-                    >
-                      <Star
-                        className={`h-3.5 w-3.5 ${
-                          stars[p.productId] ? "fill-amber-400 text-amber-400" : ""
-                        }`}
-                      />
-                    </button>
-                    <RankMedal rank={idx + 1} />
-                  </div>
+                  <RankMedal rank={idx + 1} />
                 </Td>
                 <Td className="max-w-[360px]">
                   <Link
@@ -269,7 +220,7 @@ export function DiscoverClient({
                         </span>
                         {p.importedProductId && (
                           <Badge tone="success" outline={false} className="font-sans">
-                            已加入
+                            已收藏
                           </Badge>
                         )}
                         {p.analysis && (
@@ -306,13 +257,13 @@ export function DiscoverClient({
                   <div className="flex items-center justify-end gap-1.5">
                     {p.importedProductId ? (
                       <ButtonLink
-                        href="/app/assets/products"
+                        href="/app/discover/favorites"
                         size="sm"
                         className="rounded-full px-2.5 bg-emerald-50 text-emerald-700 ring-0 hover:bg-emerald-100"
-                        title="已在选品库中,点击查看"
+                        title="已收藏,点击去收藏页查看"
                       >
-                        <CheckCircle2 className="h-3 w-3" />
-                        已加入
+                        <BookmarkCheck className="h-3 w-3" />
+                        已收藏
                       </ButtonLink>
                     ) : (
                       <Button
@@ -321,14 +272,14 @@ export function DiscoverClient({
                         onClick={() => importProduct(p)}
                         disabled={importing.has(p.productId)}
                         className="rounded-full px-2.5"
-                        title="加入到我的选品库"
+                        title="收藏到我的收藏夹"
                       >
                         {importing.has(p.productId) ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Plus className="h-3 w-3" />
+                          <Bookmark className="h-3 w-3" />
                         )}
-                        加入
+                        收藏
                       </Button>
                     )}
                   </div>

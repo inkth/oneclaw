@@ -112,7 +112,7 @@ export function AgentComposer({
   onAgentChange: (k: ComposerKind) => void;
   input: string;
   onInputChange: (v: string) => void;
-  /** 选品库接力带入的商品 ID:DIRECTOR/LISTING 派活时一并提交,后端注入真实商品数据并关联产出。 */
+  /** 收藏接力带入的商品 ID:DIRECTOR/LISTING 派活时一并提交,后端注入真实商品数据并关联产出。 */
   productId?: string | null;
   onClearProduct?: () => void;
   /** 创作页工具链:商品/人设/素材选择(状态由 Workbench 持有,派活即清空)。 */
@@ -182,7 +182,7 @@ export function AgentComposer({
       body: JSON.stringify({
         agent: activeAgent,
         input: input.trim(),
-        // 只在创作类 Agent 下携带:后端据此注入选品库真实数据并关联产出(视频/Listing)
+        // 只在创作类 Agent 下携带:后端据此注入收藏真实数据并关联产出(视频/Listing)
         ...((activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId
           ? { productId }
           : {}),
@@ -276,7 +276,7 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
-        {/* 关联商品 chip:选品库接力带入(创作页有 AssetChips 时由选择器展示,不重复出 chip) */}
+        {/* 关联商品 chip:收藏接力带入(创作页有 AssetChips 时由选择器展示,不重复出 chip) */}
         {!showAssetChips && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-2 pr-1 text-xs font-medium text-brand-700">

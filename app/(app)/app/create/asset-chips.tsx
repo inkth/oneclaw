@@ -158,7 +158,7 @@ export function AssetChips({
           products === null ? (
             <PickerLoading />
           ) : products.length === 0 ? (
-            <EmptyPickerHint href="/app/assets/products" label="去选品库挑商品" />
+            <EmptyPickerHint href="/app/discover/favorites" label="去收藏挑商品" />
           ) : (
             <div className="max-h-64 w-64 space-y-1 overflow-y-auto">
               {products.map((p) => {
