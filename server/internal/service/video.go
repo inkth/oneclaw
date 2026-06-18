@@ -432,6 +432,15 @@ func (s *VideoService) rehostToCOS(ctx context.Context, videoID uuid.UUID, srcUR
 	if strings.Contains(ct, "webm") {
 		ext = ".webm"
 	}
+	// 出片后处理:烧口播字幕 + 价格 CTA 尾帧(best-effort,失败/无 ffmpeg 用原片)。仅 mp4 处理。
+	if ext == ".mp4" {
+		var v model.Video
+		if e := s.db.WithContext(ctx).First(&v, "id = ?", videoID).Error; e == nil {
+			if processed, ok := s.postProcessVideo(ctx, v, data); ok {
+				data = processed
+			}
+		}
+	}
 	key := "videos/" + videoID.String() + ext
 	return s.storage.Put(ctx, key, data, ct)
 }

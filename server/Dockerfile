@@ -11,7 +11,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/server ./cmd
 
 # —— 运行阶段 ——————————————————————————————————————————
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates tzdata wget libwebp-tools && \
+# ffmpeg = 出片后处理(烧字幕/CTA 尾帧);font-noto* = libass 多语言字形回退
+RUN apk add --no-cache ca-certificates tzdata wget libwebp-tools \
+        ffmpeg font-noto font-noto-cjk font-noto-emoji && \
     addgroup -g 1000 app && \
     adduser -u 1000 -G app -D app
 WORKDIR /home/app
