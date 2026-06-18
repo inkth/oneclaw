@@ -1,12 +1,21 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { Workbench } from "./workbench";
 import { type ComposerKind } from "./agent-composer";
-import { RecentVideos, type RecentVideo } from "./create/recent-videos";
+import { SampleVideos, type SampleVid } from "./sample-videos";
 
 export const metadata = { title: "工作台 · OneClaw" };
 
 // 工作台是统一派活台：创作类(短视频 DIRECTOR / Listing) + 选品分析(ANALYST) + 投放复盘(REVIEW)四个 Agent 同处一框。
 const AGENT_KINDS = new Set(["ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
+
+// 「爆款短视频示例」临时取数：EchoTik 带货视频榜（公共端点，游客可见）。
+type VideoRow = {
+  videoId: string;
+  region: string;
+  coverUrl: string | null;
+  desc: string;
+  totalViewsCnt: number;
+};
 
 export default async function DashboardPage({
   searchParams,
@@ -21,18 +30,26 @@ export default async function DashboardPage({
   const initialInput = sp.prompt || undefined;
   const initialProductId = sp.productId || undefined;
 
-  // 游客可浏览；无工作台时任务流与成片为空。
+  // 游客可浏览；成片仅登录后有。
   const me = await getMe();
   const user = me?.user ?? null;
   const workspace = me?.workspace ?? null;
 
-  let videos: RecentVideo[] = [];
-  if (workspace) {
-    const vs = await apiServer<{ videos: RecentVideo[] }>(
-      `/workspaces/${workspace.id}/videos`,
-    ).catch(() => ({ videos: [] as RecentVideo[] }));
-    videos = (vs.videos ?? []).slice(0, 6);
-  }
+  // 爆款短视频示例：临时用真实 EchoTik 带货视频榜填充（公共端点，游客可见）。
+  // 注：这是别人的 TikTok 成片（封面 + 点开进详情），非本平台产出；自制样片就绪后替换。
+  const sampleVideos = await apiServer<{ rows: VideoRow[] }>(
+    `/discover/video-ranklist?region=US&rank_type=1&field=1&page_size=8`,
+  )
+    .then((d): SampleVid[] =>
+      (d.rows ?? []).slice(0, 6).map((r) => ({
+        videoId: r.videoId,
+        region: r.region,
+        coverUrl: r.coverUrl,
+        desc: r.desc,
+        views: r.totalViewsCnt,
+      })),
+    )
+    .catch((): SampleVid[] => []);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -59,9 +76,10 @@ export default async function DashboardPage({
         agents={["DIRECTOR", "LISTING", "ANALYST", "REVIEW"]}
         showQuickActions
         showAssetChips
+        showExamples
       />
 
-      <RecentVideos videos={videos} />
+      <SampleVideos videos={sampleVideos} />
     </div>
   );
 }

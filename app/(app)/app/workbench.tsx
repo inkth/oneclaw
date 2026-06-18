@@ -14,6 +14,26 @@ import { industryPresets } from "@/components/OnboardingCard";
 
 const POLL_MS = 5000;
 
+// 前门「示例派活」:完整、可直接发的整句指令(无需填空),点一下就预选 Agent 并填进输入框。
+// 与 QuickActionCards(带「」空槽的按 Agent 模板)互补,专治小白「连写什么都不知道」。
+const EXAMPLE_DISPATCHES: { agent: ComposerKind; label: string; prompt: string }[] = [
+  {
+    agent: "ANALYST",
+    label: "找新手爆品",
+    prompt: "找 3 个适合新手起步的高毛利宠物用品，要欧美市场的",
+  },
+  {
+    agent: "DIRECTOR",
+    label: "做条带货视频",
+    prompt: "给这款便携榨汁杯生成一支 15 秒带货短视频，叙事角度你帮我挑",
+  },
+  {
+    agent: "REVIEW",
+    label: "复盘投流",
+    prompt: "分析我店铺上周的投流报表，哪些素材值得加预算？",
+  },
+];
+
 /**
  * 会话流工作台:胶囊行 + 超大输入卡 + 任务消息流 + 快捷功能卡。
  * 派活后新任务气泡立即出现在输入框下方;存在排队/执行中的任务时每 5s 轮询刷新,
@@ -31,6 +51,7 @@ export function Workbench({
   streamAgents,
   showQuickActions = false,
   showAssetChips = false,
+  showExamples = false,
   showStream = true,
   align = "center",
 }: {
@@ -53,6 +74,8 @@ export function Workbench({
   showQuickActions?: boolean;
   /** 是否在输入卡底栏挂资产选择器(商品/人设/素材,创作页开)。 */
   showAssetChips?: boolean;
+  /** 是否在输入卡下方挂「示例派活」chips(完整可直接发的整句示例,前门治空白画布)。 */
+  showExamples?: boolean;
   /** 胶囊行与预设行的对齐:创作页居中 hero,工作台驾驶舱左对齐。 */
   align?: "center" | "start";
   /** 是否在输入框下方挂对话流(任务消息流)。工作台关掉:派活后只提示去「会话」看进展与结果。 */
@@ -145,6 +168,15 @@ export function Workbench({
   function pickPreset(prompt: string) {
     setActiveAgent("ANALYST");
     focusInput(prompt);
+  }
+
+  // 示例派活:只展示当前 Agent 子集内的示例,避免选到胶囊行里没有的 Agent。
+  const examples = EXAMPLE_DISPATCHES.filter(
+    (ex) => !agents || agents.includes(ex.agent),
+  );
+  function pickExample(ex: (typeof EXAMPLE_DISPATCHES)[number]) {
+    setActiveAgent(ex.agent);
+    focusInput(ex.prompt);
   }
 
 
@@ -240,6 +272,25 @@ export function Workbench({
         />
         {composer}
       </div>
+
+      {showExamples && examples.length > 0 && (
+        <div
+          className={`flex flex-wrap items-center gap-2 ${
+            align === "center" ? "justify-center" : "justify-start"
+          }`}
+        >
+          <span className="text-xs text-zinc-400">不知道写什么？试试：</span>
+          {examples.map((ex) => (
+            <button
+              key={ex.label}
+              onClick={() => pickExample(ex)}
+              className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:bg-brand-50/40 hover:text-brand-700"
+            >
+              {ex.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showQuickActions && (
         <QuickActionCards

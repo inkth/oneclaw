@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import {
   Globe,
   Loader2,
   Package,
+  Play,
   RefreshCw,
   Star,
   UserRound,
@@ -549,13 +550,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
               </div>
             )}
             {isDirector && t.status === "DONE" && videoId && (
-              <Link
-                href="/app/videos"
-                className="mt-3 inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
-              >
-                <Clapperboard className="h-3 w-3" />
-                去短视频墙查看成片 <ArrowRight className="h-3 w-3" />
-              </Link>
+              <VideoResultCard workspaceId={task.workspaceId} videoId={videoId} />
             )}
             {review && (
               <button
@@ -575,5 +570,105 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
         </div>
       )}
     </div>
+  );
+}
+
+type VideoLite = {
+  id: string;
+  title?: string;
+  thumbnailUrl: string | null;
+  videoUrl: string | null;
+  processing: string; // PENDING | GENERATING | COMPLETED | FAILED
+  durationSec?: number;
+};
+
+/**
+ * 对话历史里 DIRECTOR 出片结果的内联成片卡：按 videoId 取一次视频，渲染 9:16 缩略图
+ * （生成中 / 失败有徽标），点开进短视频墙。取图失败兜底回文字链接，绝不空着。
+ * 不轮询（与「最近成片」同口径：生成中的实时变化去短视频墙看）。
+ */
+function VideoResultCard({
+  workspaceId,
+  videoId,
+}: {
+  workspaceId: string;
+  videoId: string;
+}) {
+  const [video, setVideo] = useState<VideoLite | null>(null);
+  const [errored, setErrored] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, {
+      credentials: "include",
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        if (j?.ok && j.data?.video) setVideo(j.data.video as VideoLite);
+        else setErrored(true);
+      })
+      .catch(() => {
+        if (alive) setErrored(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [workspaceId, videoId]);
+
+  if (errored) {
+    return (
+      <Link
+        href="/app/videos"
+        className="mt-3 inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+      >
+        <Clapperboard className="h-3 w-3" />
+        去短视频墙查看成片 <ArrowRight className="h-3 w-3" />
+      </Link>
+    );
+  }
+
+  const generating =
+    !video || video.processing === "PENDING" || video.processing === "GENERATING";
+  const failed = video?.processing === "FAILED";
+
+  return (
+    <Link
+      href="/app/videos"
+      title={video?.title || "查看成片"}
+      className="dk-card lift group relative mt-3 block aspect-[9/16] w-28 overflow-hidden sm:w-32"
+    >
+      {video?.thumbnailUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={video.thumbnailUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <span className="absolute inset-0 flex items-center justify-center bg-zinc-100">
+          <Clapperboard className="h-5 w-5 text-zinc-300" />
+        </span>
+      )}
+
+      {generating ? (
+        <span className="absolute inset-x-1.5 top-1.5 inline-flex items-center justify-center gap-1 rounded-full bg-black/55 px-1.5 py-0.5 text-2xs font-medium text-white backdrop-blur-sm">
+          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+          生成中
+        </span>
+      ) : failed ? (
+        <span className="absolute inset-x-1.5 top-1.5 inline-flex items-center justify-center rounded-full bg-rose-500/90 px-1.5 py-0.5 text-2xs font-medium text-white">
+          生成失败
+        </span>
+      ) : (
+        <span className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-md transition-transform group-hover:scale-110">
+          <Play className="h-4 w-4 translate-x-px fill-current" />
+        </span>
+      )}
+
+      <span className="absolute inset-x-0 bottom-0 flex items-center gap-1 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-5 text-2xs font-medium text-white">
+        查看成片 <ArrowRight className="h-2.5 w-2.5" />
+      </span>
+    </Link>
   );
 }
