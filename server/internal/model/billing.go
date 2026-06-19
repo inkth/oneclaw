@@ -31,20 +31,30 @@ const (
 // 用量统一计入「积分池」:每个动作按权重扣不同积分(出片贵、出图便宜),
 // 方案按月给一笔积分额度。权重/额度集中在此,调价只改这里。
 
-// usageCreditCost 各动作的积分单价(按 kind)。
+// usageCreditCost 各动作的积分单价(按 kind)。权重按真实边际成本标定:
+// 文本近乎零成本(定低促活),出片含视频生成+脚本+封面+转存,是成本大头。
+// 复盘不走派活入口(见 agent.go validAgents),不计积分。
 var usageCreditCost = map[string]int{
-	UsageAgentTask: 5,  // 选品分析 / Listing / 复盘
-	UsageVideo:     50, // 出片(短视频)
-	UsageImage:     2,  // 出图(每张)
+	UsageAgentTask: 3,   // 选品 / 短视频脚本 / Listing / 试穿(各一次派活)
+	UsageVideo:     175, // 出片(短视频):覆盖单条 ~¥4 生成成本 + ~30% 毛利
+	UsageImage:     6,   // 出图(每张):覆盖图像生成成本
 }
 
-// planCredits 各档方案的月度积分额度。-1 表示不限。
-// 由旧配额折算:FREE 10×5+4×50+12×2≈300,PRO 200×5+80×50+240×2≈6000。
+// planCredits 各档方案的月度积分额度。-1 表示不限(TEAM,超基线部分按量计费)。
+// 按 ¥0.0332/积分(PRO ¥199/6000)标定,出片 175 积分/条 → FREE≈2 条、PRO≈34 条出片。
 var planCredits = map[string]int{
-	PlanFree: 300,
+	PlanFree: 450,
 	PlanPro:  6000,
 	PlanTeam: -1,
 }
+
+// TeamBaselineCredits TEAM 月度含量基线;本月用量超出后,超出部分标记为待结算(billable),
+// 不阻断出片。含 ≈171 条出片(30000/175),覆盖 ¥899 月费且留毛利。
+const TeamBaselineCredits = 30000
+
+// TeamOverflowCentsPerKCredit TEAM 超基线用量结算单价:分/千积分(¥45/千积分≈¥0.045/积分,
+// 出片 ≈¥7.9/条,成本上加 ~40% 便利溢价)。供月底对账/出账单用。
+const TeamOverflowCentsPerKCredit = 4500
 
 // CreditsFor 返回某动作消耗的积分(qty 张/条/次)。未知 kind 记 0。
 func CreditsFor(kind string, qty int) int {
@@ -76,6 +86,7 @@ type UsageRecord struct {
 	Kind        string     `gorm:"not null;index:idx_usage_ws_kind_created" json:"kind"`
 	Qty         int        `gorm:"not null;default:1" json:"qty"`
 	RefID       *uuid.UUID `gorm:"column:ref_id;type:uuid;index" json:"refId,omitempty"`
+	Billable    bool       `gorm:"not null;default:false;index" json:"billable"` // TEAM 超基线的待结算用量
 	CreatedAt   time.Time  `gorm:"index:idx_usage_ws_kind_created" json:"createdAt"`
 }
 

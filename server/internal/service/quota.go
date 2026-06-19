@@ -91,7 +91,9 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 			}
 		}
 		limit := model.PlanCredits(plan)
+		billable := false
 		if limit >= 0 {
+			// FREE/PRO:硬上限,超额拒绝。
 			cost := model.CreditsFor(kind, qty)
 			used, _, err := monthCredits(ctx, tx, wsID)
 			if err != nil {
@@ -101,8 +103,17 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 				return apperr.New(apperr.CodeQuotaExceeded,
 					fmt.Sprintf("本月积分已用完(%d/%d),升级方案可继续", used, limit))
 			}
+		} else {
+			// TEAM(不限):软基线,本月已超基线的部分标记为待结算,不阻断出片。
+			used, _, err := monthCredits(ctx, tx, wsID)
+			if err != nil {
+				return err
+			}
+			if used >= model.TeamBaselineCredits {
+				billable = true
+			}
 		}
-		rec := model.UsageRecord{WorkspaceID: wsID, Kind: kind, Qty: qty, RefID: refID}
+		rec := model.UsageRecord{WorkspaceID: wsID, Kind: kind, Qty: qty, RefID: refID, Billable: billable}
 		if err := tx.Create(&rec).Error; err != nil {
 			return apperr.Wrap(apperr.CodeInternal, "记录用量失败", err)
 		}
@@ -141,6 +152,8 @@ type UsageSummary struct {
 	Breakdown     UsageBreakdown `json:"breakdown"`    // 各动作次数明细
 	CreditCosts   map[string]int `json:"creditCosts"`  // 积分单价表,前端动作处标识用
 	CostCents     int            `json:"costCents"`    // 当月 LLM+生成 实际成本(任务+视频累计)
+	BillableCredits int          `json:"billableCredits"` // TEAM 超基线的待结算积分(其他档恒 0)
+	OverflowCents   int          `json:"overflowCents"`   // 待结算积分折算金额(分)
 }
 
 // Usage 汇总当月用量与方案信息。
@@ -165,6 +178,23 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		Select("COALESCE(SUM(cost_cents),0)").
 		Where("workspace_id = ? AND created_at >= ?", wsID, start).Scan(&videoCost)
 
+	// TEAM 超基线的待结算用量(其他档 billable 恒 false,故为 0)。
+	billableCredits := 0
+	{
+		type brow struct {
+			Kind string
+			Cnt  int
+		}
+		var brows []brow
+		s.db.WithContext(ctx).Model(&model.UsageRecord{}).
+			Select("kind, COALESCE(SUM(qty),0) AS cnt").
+			Where("workspace_id = ? AND created_at >= ? AND billable = ?", wsID, start, true).
+			Group("kind").Scan(&brows)
+		for _, r := range brows {
+			billableCredits += model.CreditsFor(r.Kind, r.Cnt)
+		}
+	}
+
 	return &UsageSummary{
 		Plan:          plan,
 		PlanExpiresAt: ws.PlanExpiresAt,
@@ -175,7 +205,9 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 			Videos:     counts[model.UsageVideo],
 			Images:     counts[model.UsageImage],
 		},
-		CreditCosts: model.CreditCosts(),
-		CostCents:   int(taskCost + videoCost),
+		CreditCosts:     model.CreditCosts(),
+		CostCents:       int(taskCost + videoCost),
+		BillableCredits: billableCredits,
+		OverflowCents:   billableCredits * model.TeamOverflowCentsPerKCredit / 1000,
 	}, nil
 }
