@@ -11,6 +11,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/server ./cmd
 
 # —— 运行阶段 ——————————————————————————————————————————
 FROM alpine:3.20
+# 换腾讯云内网 Alpine 镜像源:官方 dl-cdn 在国内 CVM 上极慢(ffmpeg+字体共 122 个包能拖 20+ 分钟,
+# 部署常死在这层)。构建固定在腾讯云服务器上跑,tencentyun 内网镜像最快且免流量。
+RUN sed -i 's|https\?://dl-cdn.alpinelinux.org|https://mirrors.tencentyun.com|g' /etc/apk/repositories
 # ffmpeg = 出片后处理(烧字幕/CTA 尾帧);font-noto* = libass 多语言字形回退
 RUN apk add --no-cache ca-certificates tzdata wget libwebp-tools \
         ffmpeg font-noto font-noto-cjk font-noto-emoji && \
