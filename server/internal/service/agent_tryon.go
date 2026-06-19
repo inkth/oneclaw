@@ -30,7 +30,7 @@ func (s *AgentService) runTryOn(ctx context.Context, taskID, wsID uuid.UUID, opt
 	if opts.PersonaID == nil {
 		return "", nil, llm.Usage{}, apperr.BadRequest("请先选择一位模特")
 	}
-	modelURL := s.modelAvatarURL(ctx, wsID, *opts.PersonaID)
+	modelURL := s.tryOnModelURL(ctx, wsID, *opts.PersonaID)
 	if modelURL == "" {
 		return "", nil, llm.Usage{}, apperr.BadRequest("该模特没有可用的形象图,请换一位或先在「资产 → 模特」补图")
 	}
@@ -76,7 +76,19 @@ func (s *AgentService) runTryOnImage(taskID uuid.UUID, modelURL, garmentURL stri
 		rctx, rcancel := context.WithTimeout(context.Background(), 10*time.Second)
 		s.quota.Refund(rctx, taskID, model.UsageImage)
 		rcancel()
-		s.writeTryOnMeta(map[string]any{"imagesStatus": listingImagesFailed})(taskID)
+		s.writeTryOnMeta(map[string]any{
+			"imagesStatus": listingImagesFailed,
+			"imagesError":  tryOnFailHint(err),
+		})(taskID)
+	}
+
+	// 服饰图永久化到自有 COS 再喂 fal:选品库商品主图常是 EchoTik 带签名的临时 URL
+	// (约 3 天过期),隔天发起试穿 fal 会拉不到图。复用发现页封面转存(命中缓存免重复
+	// 下载、失败回退原 URL);非自有 COS 才转。best-effort,不阻断出图。
+	if s.discover != nil && garmentURL != "" && !strings.Contains(garmentURL, "myqcloud.com") {
+		if m := s.discover.rehostCovers(ctx, []string{garmentURL}); m[garmentURL] != "" {
+			garmentURL = m[garmentURL]
+		}
 	}
 
 	data, ct, err := s.fal.TryOn(ctx, modelURL, garmentURL)
@@ -110,14 +122,38 @@ func (s *AgentService) writeTryOnMeta(patch map[string]any) func(uuid.UUID) {
 	}
 }
 
-// modelAvatarURL 取模特形象图(自有或全局预置均可),供试穿/出镜参考。
-func (s *AgentService) modelAvatarURL(ctx context.Context, wsID, modelID uuid.UUID) string {
+// tryOnModelURL 取模特用于试穿的形象图。fashn 试穿要先在图里识别人体姿态,正脸大头照
+// (AvatarURL)会被判 "Failed to detect body pose" 而 422 失败,故优先用半身图
+// (PreviewURL,预置人设的 waist-up 镜头);自有模特没半身图时再退回 AvatarURL。
+func (s *AgentService) tryOnModelURL(ctx context.Context, wsID, modelID uuid.UUID) string {
 	var m model.ModelAsset
 	err := s.db.WithContext(ctx).
 		Where("id = ? AND (workspace_id = ? OR is_preset = TRUE)", modelID, wsID).
 		First(&m).Error
-	if err != nil || m.AvatarURL == nil {
+	if err != nil {
 		return ""
 	}
-	return *m.AvatarURL
+	if m.PreviewURL != nil && strings.TrimSpace(*m.PreviewURL) != "" {
+		return *m.PreviewURL
+	}
+	if m.AvatarURL != nil {
+		return *m.AvatarURL
+	}
+	return ""
+}
+
+// tryOnFailHint 把 fal 的技术报错翻成给用户的可操作提示(展示在失败卡片下方)。
+func tryOnFailHint(err error) string {
+	msg := ""
+	if err != nil {
+		msg = strings.ToLower(err.Error())
+	}
+	switch {
+	case strings.Contains(msg, "body pose") || strings.Contains(msg, "person_image") || strings.Contains(msg, "model image"):
+		return "没识别到模特的人体姿态,请换一位模特、或为该模特补一张露出上半身/全身的形象图,再重新发起试穿。"
+	case strings.Contains(msg, "garment") || strings.Contains(msg, "cloth"):
+		return "没识别到服饰,请换一张更清晰的服饰平铺图(建议单件、白底)。注意保健品、3C 等非服装类目无法试穿。"
+	default:
+		return "可换一位模特或换一张更清晰的服饰平铺图,重新发起试穿。"
+	}
 }

@@ -68,7 +68,9 @@ export function TryOnResult({ task }: { task: StreamTask }) {
         </a>
       )}
       {meta.imagesStatus === "FAILED" && (
-        <p className="text-2xs text-zinc-400">可换一位模特或换一张更清晰的服饰平铺图,重新发起试穿。</p>
+        <p className="text-2xs text-zinc-400">
+          {meta.imagesError ?? "可换一位模特或换一张更清晰的服饰平铺图,重新发起试穿。"}
+        </p>
       )}
     </div>
   );

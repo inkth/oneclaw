@@ -76,9 +76,10 @@ export type StreamTask = {
     images?: string[];
     imagesStatus?: "PENDING" | "RUNNING" | "DONE" | "FAILED";
     coverUrl?: string;
-    /** TRYON 任务:试穿输入图(模特 / 服饰),结果图落 images。 */
+    /** TRYON 任务:试穿输入图(模特 / 服饰),结果图落 images;失败时 imagesError 给可操作原因。 */
     modelUrl?: string;
     garmentUrl?: string;
+    imagesError?: string;
   } | null;
   createdAt: string;
 };
