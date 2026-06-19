@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -50,7 +51,13 @@ type ProductPatch struct {
 	Note         *string `json:"note"`
 }
 
-func (s *ProductService) List(ctx context.Context, wsID uuid.UUID) ([]model.Product, error) {
+// ProductListItem 列表项:商品本体 + 关联 EchoTik 主图(coverUrl),供前端选择器显示缩略图。
+type ProductListItem struct {
+	model.Product
+	CoverURL string `json:"coverUrl,omitempty"`
+}
+
+func (s *ProductService) List(ctx context.Context, wsID uuid.UUID) ([]ProductListItem, error) {
 	var items []model.Product
 	if err := s.db.WithContext(ctx).
 		Where("workspace_id = ?", wsID).
@@ -58,7 +65,41 @@ func (s *ProductService) List(ctx context.Context, wsID uuid.UUID) ([]model.Prod
 		Find(&items).Error; err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询商品失败", err)
 	}
-	return items, nil
+
+	// 批量取关联 DiscoverProduct 的主图(CoverUrls[0]),一次查询避免 N+1。
+	dpIDs := make([]uuid.UUID, 0, len(items))
+	for _, p := range items {
+		if p.DiscoverProductID != nil {
+			dpIDs = append(dpIDs, *p.DiscoverProductID)
+		}
+	}
+	coverByDP := make(map[uuid.UUID]string, len(dpIDs))
+	if len(dpIDs) > 0 {
+		var dps []model.DiscoverProduct
+		if err := s.db.WithContext(ctx).
+			Select("id", "cover_urls").
+			Where("id IN ?", dpIDs).
+			Find(&dps).Error; err == nil {
+			for _, dp := range dps {
+				if len(dp.CoverUrls) == 0 {
+					continue
+				}
+				var urls []string
+				if json.Unmarshal(dp.CoverUrls, &urls) == nil && len(urls) > 0 {
+					coverByDP[dp.ID] = strings.TrimSpace(urls[0])
+				}
+			}
+		}
+	}
+
+	out := make([]ProductListItem, len(items))
+	for i, p := range items {
+		out[i] = ProductListItem{Product: p}
+		if p.DiscoverProductID != nil {
+			out[i].CoverURL = coverByDP[*p.DiscoverProductID]
+		}
+	}
+	return out, nil
 }
 
 func (s *ProductService) Create(ctx context.Context, wsID uuid.UUID, in ProductInput) (*model.Product, error) {

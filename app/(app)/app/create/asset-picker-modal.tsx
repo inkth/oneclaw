@@ -21,7 +21,7 @@ import { CREDIT_COST } from "@/lib/credits";
 import { usePersonas } from "../use-personas";
 import type { ComposerKind } from "../agent-composer";
 
-type ProductOption = { id: string; title: string; emoji?: string | null; roiScore: number };
+type ProductOption = { id: string; title: string; emoji?: string | null; roiScore: number; coverUrl?: string | null };
 type MaterialOption = { id: string; type: string; url: string; originalName: string };
 
 type TabKey = "upload" | "generate" | "product" | "model";
@@ -189,6 +189,7 @@ export function AssetPickerModal({
             {selectedProduct && (
               <SelectedChip
                 icon={Package}
+                thumb={selectedProduct.coverUrl ?? undefined}
                 label={selectedProduct.title}
                 onRemove={() => onProductChange(null)}
               />
@@ -326,11 +327,19 @@ export function AssetPickerModal({
                       <button
                         key={p.id}
                         onClick={() => onProductChange(sel ? null : p.id)}
-                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs transition-colors ${
+                        className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${
                           sel ? "bg-brand-50 ring-1 ring-brand-200" : "hover:bg-zinc-50"
                         }`}
                       >
-                        <Package className="h-3.5 w-3.5 shrink-0 text-brand-600" />
+                        {p.coverUrl ? (
+                          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-zinc-200/80">
+                            <Image src={p.coverUrl} alt="" fill sizes="36px" unoptimized className="object-cover" />
+                          </span>
+                        ) : (
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-base">
+                            {p.emoji ?? "📦"}
+                          </span>
+                        )}
                         <span className="flex-1 truncate">{p.title}</span>
                         <span className="font-mono text-2xs text-zinc-400">R{p.roiScore}</span>
                         {sel && <Check className="h-3.5 w-3.5 shrink-0 text-brand-600" />}
