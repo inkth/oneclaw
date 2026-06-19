@@ -342,23 +342,9 @@ export function AgentComposer({
         )}
 
         {isTryOn ? (
-          <div className="px-4 py-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (gateGuest()) return;
-                  setTryOnPickerOpen(true);
-                }}
-                className="press inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                选择模特与服饰
-              </button>
-              <AssetStatus ok={!!personaId} label="模特" />
-              <AssetStatus ok={!!materialId || !!productId} label="服饰图" />
-            </div>
-            <p className="mt-2.5 text-2xs leading-relaxed text-zinc-400">
+          // 与非试穿的 textarea(rows=4)等高,切换 Agent 时输入卡不跳变
+          <div className="flex min-h-[118px] items-center px-4 py-3.5">
+            <p className="text-sm leading-relaxed text-zinc-500">
               选一位模特 + 一张服饰图(上传图,或选品库里带主图的商品),AI 生成模特上身效果图。
             </p>
           </div>
@@ -399,6 +385,25 @@ export function AgentComposer({
                 <FileSpreadsheet className="h-3.5 w-3.5" />
                 上传报表
               </button>
+            </>
+          )}
+
+          {/* 虚拟试穿:选模特 + 服饰图,与复盘「上传报表」同处底栏左下角 */}
+          {isTryOn && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  if (gateGuest()) return;
+                  setTryOnPickerOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                选择模特与服饰
+              </button>
+              <AssetStatus ok={!!personaId} label="模特" />
+              <AssetStatus ok={!!materialId || !!productId} label="服饰图" />
             </>
           )}
 
