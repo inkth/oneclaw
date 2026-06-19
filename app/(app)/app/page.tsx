@@ -5,8 +5,8 @@ import { SampleVideos, type SampleVid } from "./sample-videos";
 
 export const metadata = { title: "工作台 · OneClaw" };
 
-// 工作台是统一派活台：创作类(短视频 DIRECTOR / Listing) + 选品分析(ANALYST) + 投放复盘(REVIEW)四个 Agent 同处一框。
-const AGENT_KINDS = new Set(["ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
+// 工作台是统一派活台：创作类(短视频 DIRECTOR / Listing / 虚拟试穿 TRYON) + 选品分析(ANALYST) + 投放复盘(REVIEW)同处一框。
+const AGENT_KINDS = new Set(["ANALYST", "DIRECTOR", "LISTING", "TRYON", "REVIEW"]);
 
 // 「爆款短视频示例」临时取数：EchoTik 带货视频榜（公共端点，游客可见）。
 type VideoRow = {
@@ -73,7 +73,7 @@ export default async function DashboardPage({
         initialAgent={initialAgent}
         initialInput={initialInput}
         initialProductId={initialProductId}
-        agents={["DIRECTOR", "LISTING", "ANALYST", "REVIEW"]}
+        agents={["DIRECTOR", "LISTING", "TRYON", "ANALYST", "REVIEW"]}
         showQuickActions
         showAssetChips
         showExamples

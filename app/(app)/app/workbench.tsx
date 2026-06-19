@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import { MessagesSquare } from "lucide-react";
 import { AgentComposer, AgentPills, type ComposerKind } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
-import { TryOnModal } from "./create/try-on-modal";
-import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { TaskStream, type StreamTask } from "./task-stream";
 import { ReviewTrend } from "./review-trend";
 import { industryPresets } from "@/components/OnboardingCard";
@@ -91,10 +89,8 @@ export function Workbench({
   const [materialId, setMaterialId] = useState<string | null>(null);
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
-  const [tryOnOpen, setTryOnOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
-  const { open: openAuthModal } = useAuthModal();
 
   // 派活/复盘落库后的统一去处:聊天页(showStream)就地追加气泡并自动滚到底;
   // launcher 首页则带你进入「会话」,在那条对话流里看进展与结果(一个框、一个去处)。
@@ -203,7 +199,11 @@ export function Workbench({
       allowReview={allowReview}
       onDispatched={(task) => {
         // 关联资产是一次性的:派活成功即消费,避免下一条任务误带上一次的选择
-        if (task.agent === "DIRECTOR" || task.agent === "LISTING") {
+        if (
+          task.agent === "DIRECTOR" ||
+          task.agent === "LISTING" ||
+          task.agent === "TRYON"
+        ) {
           setProductId(null);
           setPersonaId(null);
           setMaterialId(null);
@@ -248,14 +248,6 @@ export function Workbench({
             <div className="mt-3">{composer}</div>
           </div>
         </div>
-
-        {tryOnOpen && (
-          <TryOnModal
-            workspaceId={workspaceId}
-            onClose={() => setTryOnOpen(false)}
-            onCreated={ingest}
-          />
-        )}
       </>
     );
   }
@@ -293,26 +285,7 @@ export function Workbench({
       )}
 
       {showQuickActions && (
-        <QuickActionCards
-          activeAgent={activeAgent}
-          onPick={pickQuickAction}
-          onTryOn={() =>
-            isGuest
-              ? openAuthModal({
-                  title: "登录后即可使用虚拟试穿",
-                  desc: "选模特、出上身图需要账号。",
-                })
-              : setTryOnOpen(true)
-          }
-        />
-      )}
-
-      {tryOnOpen && (
-        <TryOnModal
-          workspaceId={workspaceId}
-          onClose={() => setTryOnOpen(false)}
-          onCreated={ingest}
-        />
+        <QuickActionCards activeAgent={activeAgent} onPick={pickQuickAction} />
       )}
 
       {showPresets && (

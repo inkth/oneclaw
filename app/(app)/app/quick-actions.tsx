@@ -8,7 +8,6 @@ import {
   LayoutPanelTop,
   LineChart,
   Search,
-  Shirt,
   Sparkles,
   Tag,
   Target,
@@ -30,13 +29,11 @@ export type QuickAction = {
   status: "live" | "soon";
   agent?: ComposerKind;
   promptTemplate?: string;
-  /** "tryon" 走专用弹窗(选模特 + 服饰图),不预填 composer。 */
-  flow?: "composer" | "tryon";
 };
 
 /**
  * 快捷场景卡按 Agent 分组:切换上方胶囊时,这排卡跟着换成当前 Agent 的常用场景。
- * 键覆盖全部 ComposerKind(选品/视频/Listing/复盘),与胶囊行一一对应。
+ * 键覆盖全部 ComposerKind(选品/视频/Listing/试穿/复盘);试穿走 composer 内联选择,无快捷卡。
  */
 const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
   ANALYST: [
@@ -137,15 +134,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
         "为「」生成 TikTok Shop Listing:商品标题、五点卖点、主图方案(英文出图 prompt)、推荐标签",
     },
     {
-      key: "try-on",
-      title: "虚拟试穿",
-      desc: "模特上身图,服饰类专用",
-      icon: Shirt,
-      thumb: "from-sky-400 to-cyan-400",
-      status: "live",
-      flow: "tryon",
-    },
-    {
       key: "aplus",
       title: "A+ 内容",
       desc: "图文详情页结构化生成",
@@ -167,6 +155,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       promptTemplate: "为「」优化 TikTok Shop 商品标题,覆盖高搜索量关键词并兼顾可读性,给 3 个版本",
     },
   ],
+  TRYON: [],
   REVIEW: [
     {
       key: "review-stoploss",
@@ -203,16 +192,14 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
 
 /**
  * 对标竞品的快捷功能卡行:跟随当前 Agent 切换卡组。
- * 点 live 卡选中对应 Agent 并预填模板;tryon 卡开专用弹窗;soon 卡提示打磨中。
+ * 点 live 卡选中对应 Agent 并预填模板;soon 卡提示打磨中。
  */
 export function QuickActionCards({
   activeAgent,
   onPick,
-  onTryOn,
 }: {
   activeAgent: ComposerKind;
   onPick: (a: QuickAction) => void;
-  onTryOn?: () => void;
 }) {
   const actions = QUICK_ACTIONS_BY_AGENT[activeAgent] ?? [];
   if (actions.length === 0) return null;
@@ -226,10 +213,6 @@ export function QuickActionCards({
             onClick={() => {
               if (soon) {
                 toast("该功能打磨中,敬请期待");
-                return;
-              }
-              if (a.flow === "tryon") {
-                onTryOn?.();
                 return;
               }
               onPick(a);

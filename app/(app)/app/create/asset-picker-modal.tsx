@@ -54,14 +54,17 @@ export function AssetPickerModal({
   onMaterialChange: (id: string | null) => void;
   onClose: () => void;
 }) {
-  const showModel = activeAgent === "DIRECTOR";
+  // 模特 tab:短视频出镜人设 + 虚拟试穿模特都用它。
+  const showModel = activeAgent === "DIRECTOR" || activeAgent === "TRYON";
+  const isTryOn = activeAgent === "TRYON";
   const tabs: { key: TabKey; label: string; icon: typeof Upload }[] = [
     { key: "upload", label: "上传资产", icon: Upload },
     { key: "generate", label: "AI 生成", icon: Sparkles },
     { key: "product", label: "商品", icon: Package },
     ...(showModel ? [{ key: "model" as const, label: "模特", icon: UserRound }] : []),
   ];
-  const [tab, setTab] = useState<TabKey>("upload");
+  // 试穿先选模特(主图作服饰可后选);其余 Agent 默认进上传 tab。
+  const [tab, setTab] = useState<TabKey>(isTryOn ? "model" : "upload");
 
   const personas = usePersonas(workspaceId, showModel);
   const [products, setProducts] = useState<ProductOption[] | null>(null);
@@ -169,8 +172,14 @@ export function AssetPickerModal({
               <ImagePlus className="h-4 w-4" />
             </span>
             <div>
-              <div className="text-sm font-semibold text-ink">添加素材</div>
-              <div className="text-2xs text-zinc-500">选商品、模特,或上传 / AI 生成一张参考图</div>
+              <div className="text-sm font-semibold text-ink">
+                {isTryOn ? "选模特与服饰图" : "添加素材"}
+              </div>
+              <div className="text-2xs text-zinc-500">
+                {isTryOn
+                  ? "选一位模特 + 一张服饰图(上传图 / 商品主图),生成上身效果图"
+                  : "选商品、模特,或上传 / AI 生成一张参考图"}
+              </div>
             </div>
           </div>
           <button
@@ -346,7 +355,11 @@ export function AssetPickerModal({
                       </button>
                     );
                   })}
-                  <p className="px-2 pt-1 text-2xs text-zinc-400">选中商品会把它的真实数据(售价/毛利/ROI/月销)注入产出。</p>
+                  <p className="px-2 pt-1 text-2xs text-zinc-400">
+                    {isTryOn
+                      ? "选中商品会用它的主图作为试穿服饰图。"
+                      : "选中商品会把它的真实数据(售价/毛利/ROI/月销)注入产出。"}
+                  </p>
                 </div>
               )}
             </>
