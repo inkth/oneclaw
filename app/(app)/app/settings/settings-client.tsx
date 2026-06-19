@@ -23,6 +23,7 @@ export type Usage = {
   plan: string;
   planExpiresAt?: string | null;
   periodStart: string;
+  periodEnd: string;
   credits: { used: number; limit: number };
   breakdown: { agentTasks: number; videos: number; images: number };
   creditCosts: { agentTask: number; video: number; image: number };
@@ -34,6 +35,11 @@ const PLAN_META: Record<string, { label: string; tone: "neutral" | "brand" | "su
   PRO: { label: "专业版", tone: "brand" },
   TEAM: { label: "团队版", tone: "success" },
 };
+
+/** 计费周期日期只显示「月/日」。 */
+function fmtMD(iso: string) {
+  return new Date(iso).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
+}
 
 export function SettingsClient({
   user,
@@ -54,7 +60,7 @@ export function SettingsClient({
     <div className="space-y-6">
       <PageHeader
         title="设置"
-        description="账号、订阅方案与本月用量。"
+        description="账号、订阅方案与当前周期用量。"
         actions={<LogoutButton />}
       />
 
@@ -126,18 +132,23 @@ export function SettingsClient({
         </div>
       </section>
 
-      {/* 本月积分 */}
+      {/* 本周期积分 */}
       <section className="dk-card p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <Coins className="h-4 w-4 text-zinc-400" /> 本月积分
+            <Coins className="h-4 w-4 text-zinc-400" /> 本周期积分
           </div>
           {usage && usage.costCents > 0 && (
             <div className="text-2xs text-zinc-400">
-              本月生成成本约 ¥{(usage.costCents / 100).toFixed(2)}
+              本周期生成成本约 ¥{(usage.costCents / 100).toFixed(2)}
             </div>
           )}
         </div>
+        {usage && (
+          <div className="mt-1 text-2xs text-zinc-400">
+            计费周期 {fmtMD(usage.periodStart)} 至 {fmtMD(usage.periodEnd)},到期自动重置额度
+          </div>
+        )}
         {usage ? (
           <CreditBalance usage={usage} />
         ) : (
@@ -172,7 +183,7 @@ function CreditBalance({ usage }: { usage: Usage }) {
           <span className="text-sm text-zinc-400"> / {unlimited ? "∞" : limit} 积分</span>
         </div>
         <div className="text-2xs text-zinc-400">
-          {unlimited ? "团队版不限积分" : `本月剩余 ${remaining} 积分`}
+          {unlimited ? "团队版不限积分" : `本周期剩余 ${remaining} 积分`}
         </div>
       </div>
       <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-zinc-200/70">

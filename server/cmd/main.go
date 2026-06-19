@@ -70,6 +70,7 @@ func main() {
 		&model.CreationTemplate{},
 		&model.UsageRecord{},
 		&model.PaymentOrder{},
+		&model.OverflowBill{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -145,10 +146,11 @@ func main() {
 		logger.Warn("[echotik] 未配置 ECHOTIK_USERNAME/PASSWORD,发现页走 mock 数据")
 	}
 
-	// 后台任务:选品榜单定时同步(预热缓存 + 每日快照)。
+	// 后台任务:选品榜单定时同步(预热缓存 + 每日快照)+ TEAM 超额月度结算出账。
 	jobCtx, jobCancel := context.WithCancel(context.Background())
 	defer jobCancel()
 	job.NewDiscoverSync(cfg.DiscoverSync, discSvc, echoClient).Start(jobCtx)
+	job.NewOverflowSettle(cfg.OverflowSettle, billingSvc).Start(jobCtx)
 
 	r := router.New(router.Deps{
 		Cfg:       cfg,

@@ -152,14 +152,18 @@ func (s *BillingService) markPaid(ctx context.Context, o *model.PaymentOrder) er
 			First(&ws, "id = ?", o.WorkspaceID).Error; err != nil {
 			return apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
 		}
-		// 续费同方案从现有到期日顺延;换方案/已到期从现在起算。
+		// 续费同方案从现有到期日顺延、计费周期锚点不变;换方案/已到期从现在起算并重置锚点。
 		base := now
+		anchor := now
 		if ws.Plan == o.Plan && ws.PlanExpiresAt != nil && ws.PlanExpiresAt.After(now) {
 			base = *ws.PlanExpiresAt
+			if ws.BillingCycleAnchor != nil {
+				anchor = *ws.BillingCycleAnchor
+			}
 		}
 		expires := base.AddDate(0, o.PeriodMonths, 0)
 		if err := tx.Model(&model.Workspace{}).Where("id = ?", ws.ID).
-			Updates(map[string]any{"plan": o.Plan, "plan_expires_at": expires}).Error; err != nil {
+			Updates(map[string]any{"plan": o.Plan, "plan_expires_at": expires, "billing_cycle_anchor": anchor}).Error; err != nil {
 			return apperr.Wrap(apperr.CodeInternal, "升级方案失败", err)
 		}
 		o.Status = model.OrderPaid
@@ -175,4 +179,140 @@ func newOutTradeNo(now time.Time) string {
 	b := make([]byte, 4)
 	_, _ = rand.Read(b)
 	return fmt.Sprintf("OC%s%s", now.Format("20060102150405"), hex.EncodeToString(b))
+}
+
+// —— TEAM 超额周期结算 ————————————————————————————————————————————
+//
+// job 把每个工作台「刚结束的订阅周期」内 billable=true 的用量出账。billable 仅在 TEAM
+// (不限额)本周期超 TeamBaselineCredits 后由 quota.CheckAndRecord 置位,故按 billable 聚合即为
+// 应结算用量。账期按各工作台自己的订阅周期(anniversary)切,不是自然月。
+
+// SettleDueCycles 扫描所有有待结算(billable)用量的工作台,为各自「刚结束的上一订阅周期」出账。
+// 幂等(账单按 workspace_id+period 唯一):已出账的周期重复跑只空转。返回本次新生成的账单数。
+func (s *BillingService) SettleDueCycles(ctx context.Context, now time.Time) (int, error) {
+	var wsIDs []uuid.UUID
+	if err := s.db.WithContext(ctx).Model(&model.UsageRecord{}).
+		Where("billable = ?", true).
+		Distinct().Pluck("workspace_id", &wsIDs).Error; err != nil {
+		return 0, apperr.Wrap(apperr.CodeInternal, "扫描待结算工作台失败", err)
+	}
+	created := 0
+	for _, wsID := range wsIDs {
+		n, err := s.settleWorkspacePrevCycle(ctx, wsID, now)
+		if err != nil {
+			logger.Warn("[settle] 工作台出账失败", logger.String("ws", wsID.String()), logger.Err(err))
+			continue
+		}
+		created += n
+	}
+	return created, nil
+}
+
+// settleWorkspacePrevCycle 为单个工作台「上一个已结束订阅周期」出账(幂等)。返回新生成账单数(0/1)。
+func (s *BillingService) settleWorkspacePrevCycle(ctx context.Context, wsID uuid.UUID, now time.Time) (int, error) {
+	var ws model.Workspace
+	if err := s.db.WithContext(ctx).First(&ws, "id = ?", wsID).Error; err != nil {
+		return 0, apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
+	}
+	// 结算锚点恒用付费日(BillingCycleAnchor,回退注册日),与当前 plan 无关:
+	// 中途降级的 TEAM 其历史 billable 仍按原付费周期结清(降级后 FREE 不再产生新 billable)。
+	anchor := ws.CreatedAt
+	if ws.BillingCycleAnchor != nil {
+		anchor = *ws.BillingCycleAnchor
+	}
+	// 上一周期 = 当前周期起点往前一个订阅月,右开界 = 当前周期起点(必 ≤ now,即已结束)。
+	curStart, _ := cycleBounds(anchor, now)
+	py, pm := shiftMonth(curStart.Year(), curStart.Month(), -1)
+	prevStart := anchorInMonth(py, pm, anchor.In(cnZone).Day())
+	prevEnd := curStart
+	period := prevStart.Format("2006-01-02")
+
+	type row struct {
+		Kind string
+		Cnt  int
+	}
+	var rows []row
+	if err := s.db.WithContext(ctx).Model(&model.UsageRecord{}).
+		Select("kind, COALESCE(SUM(qty),0) AS cnt").
+		Where("workspace_id = ? AND billable = ? AND created_at >= ? AND created_at < ?", wsID, true, prevStart, prevEnd).
+		Group("kind").Scan(&rows).Error; err != nil {
+		return 0, apperr.Wrap(apperr.CodeInternal, "汇总超额用量失败", err)
+	}
+	credits := 0
+	for _, r := range rows {
+		credits += model.CreditsFor(r.Kind, r.Cnt)
+	}
+	if credits <= 0 {
+		return 0, nil
+	}
+
+	bill := model.OverflowBill{
+		WorkspaceID:     wsID,
+		Period:          period,
+		PeriodStart:     prevStart,
+		PeriodEnd:       prevEnd,
+		BillableCredits: credits,
+		AmountCents:     model.OverflowCents(credits),
+		Status:          model.OverflowPending,
+		OutTradeNo:      newOutTradeNo(now),
+	}
+	// (workspace_id, period) 唯一 + ON CONFLICT DO NOTHING:同周期重复跑不会重复出账。
+	res := s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&bill)
+	if res.Error != nil {
+		return 0, apperr.Wrap(apperr.CodeInternal, "生成超额账单失败", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return 0, nil // 该周期已出账,幂等跳过
+	}
+	// MVP:无代扣渠道,落一条醒目日志通知销售人工对账(后续接微信/支付宝代扣回调 → MarkOverflowPaid)。
+	logger.Info("[settle] TEAM 超额账单已生成,待对账/代扣",
+		logger.String("ws", wsID.String()),
+		logger.String("period", period),
+		logger.String("cycle", prevStart.Format("2006-01-02")+"~"+prevEnd.Format("2006-01-02")),
+		logger.Int("billableCredits", credits),
+		logger.Int("amountCents", bill.AmountCents),
+		logger.String("outTradeNo", bill.OutTradeNo))
+	return 1, nil
+}
+
+// MockSettleOverflow 模拟超额账单结算(仅 dev),无代扣渠道时联调「出账→结清」闭环。
+func (s *BillingService) MockSettleOverflow(ctx context.Context, wsID, billID uuid.UUID) (*model.OverflowBill, error) {
+	if !s.dev {
+		return nil, apperr.Forbidden("mock 结算仅在开发模式可用")
+	}
+	return s.MarkOverflowPaid(ctx, wsID, billID, "dev mock settle")
+}
+
+// ListOverflowBills 列出某工作台的超额账单(新账期在前),供 settings 页/对账查看。
+func (s *BillingService) ListOverflowBills(ctx context.Context, wsID uuid.UUID) ([]model.OverflowBill, error) {
+	var bills []model.OverflowBill
+	if err := s.db.WithContext(ctx).
+		Where("workspace_id = ?", wsID).
+		Order("period DESC").Find(&bills).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询超额账单失败", err)
+	}
+	return bills, nil
+}
+
+// MarkOverflowPaid 把一笔超额账单标记为已结算(幂等:仅 PENDING 单生效)。
+// 接入微信/支付宝代扣后由支付回调调用;MVP 阶段供 dev 联调与人工核销入口复用。
+func (s *BillingService) MarkOverflowPaid(ctx context.Context, wsID, billID uuid.UUID, note string) (*model.OverflowBill, error) {
+	now := time.Now()
+	res := s.db.WithContext(ctx).Model(&model.OverflowBill{}).
+		Where("id = ? AND workspace_id = ? AND status = ?", billID, wsID, model.OverflowPending).
+		Updates(map[string]any{"status": model.OverflowPaid, "paid_at": now, "note": note})
+	if res.Error != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "更新超额账单失败", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return nil, apperr.BadRequest("账单不存在或已结算")
+	}
+	var bill model.OverflowBill
+	if err := s.db.WithContext(ctx).First(&bill, "id = ?", billID).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询超额账单失败", err)
+	}
+	logger.Info("[settle] 超额账单已结算",
+		logger.String("ws", wsID.String()), logger.String("period", bill.Period),
+		logger.Int("amountCents", bill.AmountCents))
+	return &bill, nil
 }

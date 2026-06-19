@@ -14,9 +14,12 @@ type Workspace struct {
 	Slug          string     `gorm:"uniqueIndex;not null" json:"slug"`
 	Plan          string     `gorm:"not null;default:'FREE'" json:"plan"`
 	PlanExpiresAt *time.Time `json:"planExpiresAt,omitempty"`
-	OwnerID       uuid.UUID  `gorm:"column:owner_id;type:uuid;index;not null" json:"ownerId"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	// BillingCycleAnchor 计费周期锚点 = 首次/换档付费日。积分按「订阅月」(anniversary)重置,
+	// 锚点取此值的「日」;为空(FREE/未付费)时回退 CreatedAt。续费同档不变,换档/过期重订重置。
+	BillingCycleAnchor *time.Time `gorm:"column:billing_cycle_anchor" json:"billingCycleAnchor,omitempty"`
+	OwnerID            uuid.UUID  `gorm:"column:owner_id;type:uuid;index;not null" json:"ownerId"`
+	CreatedAt          time.Time  `json:"createdAt"`
+	UpdatedAt          time.Time  `json:"updatedAt"`
 }
 
 func (w *Workspace) BeforeCreate(*gorm.DB) error {

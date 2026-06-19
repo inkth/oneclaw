@@ -88,3 +88,36 @@ func (h *BillingHandler) MockConfirm(c *gin.Context) {
 	}
 	OK(c, gin.H{"order": o})
 }
+
+// OverflowBills 列出本工作台的 TEAM 超额账单(对账/结算查看)。
+func (h *BillingHandler) OverflowBills(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	bills, err := h.billing.ListOverflowBills(c.Request.Context(), wid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"bills": bills})
+}
+
+// MockSettleOverflow 模拟超额账单结算(仅 dev),联调出账→结清闭环。
+func (h *BillingHandler) MockSettleOverflow(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	bid, err := uuid.Parse(c.Param("bid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("账单 ID 无效"))
+		return
+	}
+	bill, err := h.billing.MockSettleOverflow(c.Request.Context(), wid, bid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"bill": bill})
+}

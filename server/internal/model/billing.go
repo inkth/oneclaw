@@ -22,6 +22,12 @@ const (
 	OrderCancelled = "CANCELLED"
 )
 
+// TEAM 超额账单状态:出账即 PENDING,代扣成功 / 人工核销后 PAID。
+const (
+	OverflowPending = "PENDING"
+	OverflowPaid    = "PAID"
+)
+
 // 支付渠道。
 const (
 	PayWechat = "WECHAT"
@@ -59,6 +65,12 @@ const TeamOverflowCentsPerKCredit = 4500
 // CreditsFor 返回某动作消耗的积分(qty 张/条/次)。未知 kind 记 0。
 func CreditsFor(kind string, qty int) int {
 	return usageCreditCost[kind] * qty
+}
+
+// OverflowCents 把 TEAM 超基线积分折算为结算金额(分)。
+// 周期出账(SettleDueCycles)与用量预览(Usage)共用,避免两处口径漂移。
+func OverflowCents(billableCredits int) int {
+	return billableCredits * TeamOverflowCentsPerKCredit / 1000
 }
 
 // PlanCredits 返回方案月度积分额度;未知方案按 FREE 处理。-1 不限。
@@ -120,6 +132,32 @@ type PaymentOrder struct {
 func (o *PaymentOrder) BeforeCreate(*gorm.DB) error {
 	if o.ID == uuid.Nil {
 		o.ID = uuid.New()
+	}
+	return nil
+}
+
+// OverflowBill TEAM 超基线用量的订阅周期结算账单。结算 job(SettleDueCycles)汇总刚结束的
+// 订阅周期内 billable=true 的用量积分,按 TeamOverflowCentsPerKCredit 折算成金额出账,状态待结算。
+// (workspace_id, period) 唯一 —— 同一周期不重复出账(幂等);Period 为该周期起点 YYYY-MM-DD(中国时区)。
+type OverflowBill struct {
+	ID              uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	WorkspaceID     uuid.UUID  `gorm:"column:workspace_id;type:uuid;not null;uniqueIndex:uq_overflow_ws_period,priority:1" json:"workspaceId"`
+	Period          string     `gorm:"not null;uniqueIndex:uq_overflow_ws_period,priority:2" json:"period"` // 账期=订阅周期起点 YYYY-MM-DD(中国时区)
+	PeriodStart     time.Time  `gorm:"column:period_start;not null" json:"periodStart"`
+	PeriodEnd       time.Time  `gorm:"column:period_end;not null" json:"periodEnd"` // 开区间上界(下一周期起点)
+	BillableCredits int        `gorm:"column:billable_credits;not null" json:"billableCredits"`
+	AmountCents     int        `gorm:"column:amount_cents;not null" json:"amountCents"`
+	Status          string     `gorm:"not null;default:'PENDING';index" json:"status"`
+	OutTradeNo      string     `gorm:"column:out_trade_no;uniqueIndex;not null" json:"outTradeNo"`
+	PaidAt          *time.Time `json:"paidAt,omitempty"`
+	Note            string     `gorm:"type:text" json:"note,omitempty"` // 人工对账备注(谁/何时/凭证)
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
+}
+
+func (b *OverflowBill) BeforeCreate(*gorm.DB) error {
+	if b.ID == uuid.Nil {
+		b.ID = uuid.New()
 	}
 	return nil
 }

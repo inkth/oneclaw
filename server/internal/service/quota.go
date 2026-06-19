@@ -14,8 +14,8 @@ import (
 	"github.com/oneclaw/server/internal/model"
 )
 
-// QuotaService 月度配额:消耗前查余量(CheckAndRecord),终态失败按 ref 退回(Refund)。
-// 计费窗口为自然月(中国时区,与 DB 会话时区一致)。
+// QuotaService 配额:消耗前查余量(CheckAndRecord),终态失败按 ref 退回(Refund)。
+// 计费窗口为「订阅月周期」(anniversary,中国时区):付费档锚定付费日、FREE/未付费锚定注册日。
 type QuotaService struct {
 	db *gorm.DB
 }
@@ -27,14 +27,54 @@ func NewQuotaService(db *gorm.DB) *QuotaService {
 // cnZone 中国无夏令时,固定 +8 即可,不依赖容器 tzdata。
 var cnZone = time.FixedZone("CST", 8*3600)
 
-func monthStart(now time.Time) time.Time {
-	n := now.In(cnZone)
-	return time.Date(n.Year(), n.Month(), 1, 0, 0, 0, 0, cnZone)
+// shiftMonth 把 (year, month) 平移 delta 个月并规整(delta 可负)。
+func shiftMonth(year int, month time.Month, delta int) (int, time.Month) {
+	t := int(month) - 1 + delta
+	y := year + t/12
+	m := t % 12
+	if m < 0 {
+		m += 12
+		y--
+	}
+	return y, time.Month(m + 1)
 }
 
-// monthCredits 汇总当月用量:返回按 kind 的原始次数,以及折算后的总积分。
+// anchorInMonth 返回「锚点日 day」落在 year-month 的那天 00:00(中国时区);
+// 该月不足 day 天(如 31 号遇 2 月)则 clamp 到月末。订阅月周期的边界点。
+func anchorInMonth(year int, month time.Month, day int) time.Time {
+	first := time.Date(year, month, 1, 0, 0, 0, 0, cnZone)
+	if last := first.AddDate(0, 1, -1).Day(); day > last {
+		day = last
+	}
+	return time.Date(year, month, day, 0, 0, 0, 0, cnZone)
+}
+
+// cycleBounds 返回 now 所在「订阅月周期」的 [start, end)(中国时区,半开区间)。
+// 锚点取 anchor 的「日」按订阅月推进,月末自动 clamp。
+func cycleBounds(anchor, now time.Time) (start, end time.Time) {
+	day := anchor.In(cnZone).Day()
+	n := now.In(cnZone)
+	this := anchorInMonth(n.Year(), n.Month(), day)
+	if !n.Before(this) { // now ≥ 当月锚点 → 周期从当月锚点起
+		ny, nm := shiftMonth(n.Year(), n.Month(), 1)
+		return this, anchorInMonth(ny, nm, day)
+	}
+	py, pm := shiftMonth(n.Year(), n.Month(), -1) // now 未到当月锚点 → 周期从上月锚点起
+	return anchorInMonth(py, pm, day), this
+}
+
+// billingAnchor 计费周期锚点:付费档(未降级)锚定付费日(BillingCycleAnchor),
+// FREE / 未付费 / 到期降级锚定注册日(CreatedAt)。
+func billingAnchor(plan string, ws *model.Workspace) time.Time {
+	if plan != model.PlanFree && ws.BillingCycleAnchor != nil {
+		return *ws.BillingCycleAnchor
+	}
+	return ws.CreatedAt
+}
+
+// cycleCredits 汇总周期窗口 [start,end) 的用量:返回按 kind 原始次数与折算总积分。
 // 校验(CheckAndRecord)与汇总(Usage)共用,避免两处折算口径漂移。db 可传事务 tx。
-func monthCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID) (total int, counts map[string]int, err error) {
+func cycleCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID, start, end time.Time) (total int, counts map[string]int, err error) {
 	type row struct {
 		Kind string
 		Cnt  int
@@ -42,7 +82,7 @@ func monthCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID) (total int, 
 	var rows []row
 	if err = db.WithContext(ctx).Model(&model.UsageRecord{}).
 		Select("kind, COALESCE(SUM(qty),0) AS cnt").
-		Where("workspace_id = ? AND created_at >= ?", wsID, monthStart(time.Now())).
+		Where("workspace_id = ? AND created_at >= ? AND created_at < ?", wsID, start, end).
 		Group("kind").Scan(&rows).Error; err != nil {
 		return 0, nil, apperr.Wrap(apperr.CodeInternal, "查询用量失败", err)
 	}
@@ -90,28 +130,22 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 				return apperr.Wrap(apperr.CodeInternal, "方案降级失败", err)
 			}
 		}
+		start, end := cycleBounds(billingAnchor(plan, &ws), time.Now())
+		used, _, err := cycleCredits(ctx, tx, wsID, start, end)
+		if err != nil {
+			return err
+		}
 		limit := model.PlanCredits(plan)
 		billable := false
 		if limit >= 0 {
-			// FREE/PRO:硬上限,超额拒绝。
-			cost := model.CreditsFor(kind, qty)
-			used, _, err := monthCredits(ctx, tx, wsID)
-			if err != nil {
-				return err
-			}
-			if used+cost > limit {
+			// FREE/PRO:硬上限,本周期超额拒绝。
+			if used+model.CreditsFor(kind, qty) > limit {
 				return apperr.New(apperr.CodeQuotaExceeded,
-					fmt.Sprintf("本月积分已用完(%d/%d),升级方案可继续", used, limit))
+					fmt.Sprintf("本周期积分已用完(%d/%d),升级方案可继续", used, limit))
 			}
-		} else {
-			// TEAM(不限):软基线,本月已超基线的部分标记为待结算,不阻断出片。
-			used, _, err := monthCredits(ctx, tx, wsID)
-			if err != nil {
-				return err
-			}
-			if used >= model.TeamBaselineCredits {
-				billable = true
-			}
+		} else if used >= model.TeamBaselineCredits {
+			// TEAM(不限):软基线,本周期已超基线的部分标记为待结算,不阻断出片。
+			billable = true
 		}
 		rec := model.UsageRecord{WorkspaceID: wsID, Kind: kind, Qty: qty, RefID: refID, Billable: billable}
 		if err := tx.Create(&rec).Error; err != nil {
@@ -143,17 +177,18 @@ type UsageBreakdown struct {
 	Images     int `json:"images"`
 }
 
-// UsageSummary 工作台当月用量总览(settings 页 / 驾驶舱用)。
+// UsageSummary 工作台「当前计费周期」用量总览(settings 页 / 驾驶舱用)。
 type UsageSummary struct {
-	Plan          string         `json:"plan"`
-	PlanExpiresAt *time.Time     `json:"planExpiresAt,omitempty"`
-	PeriodStart   time.Time      `json:"periodStart"`
-	Credits       CreditItem     `json:"credits"`      // 统一积分池
-	Breakdown     UsageBreakdown `json:"breakdown"`    // 各动作次数明细
-	CreditCosts   map[string]int `json:"creditCosts"`  // 积分单价表,前端动作处标识用
-	CostCents     int            `json:"costCents"`    // 当月 LLM+生成 实际成本(任务+视频累计)
-	BillableCredits int          `json:"billableCredits"` // TEAM 超基线的待结算积分(其他档恒 0)
-	OverflowCents   int          `json:"overflowCents"`   // 待结算积分折算金额(分)
+	Plan            string         `json:"plan"`
+	PlanExpiresAt   *time.Time     `json:"planExpiresAt,omitempty"`
+	PeriodStart     time.Time      `json:"periodStart"`     // 当前计费周期起点(含)
+	PeriodEnd       time.Time      `json:"periodEnd"`       // 周期终点(开区间,即下次额度重置时刻)
+	Credits         CreditItem     `json:"credits"`         // 统一积分池
+	Breakdown       UsageBreakdown `json:"breakdown"`       // 各动作次数明细
+	CreditCosts     map[string]int `json:"creditCosts"`     // 积分单价表,前端动作处标识用
+	CostCents       int            `json:"costCents"`       // 当月 LLM+生成 实际成本(任务+视频累计)
+	BillableCredits int            `json:"billableCredits"` // TEAM 超基线的待结算积分(其他档恒 0)
+	OverflowCents   int            `json:"overflowCents"`   // 待结算积分折算金额(分)
 }
 
 // Usage 汇总当月用量与方案信息。
@@ -163,9 +198,9 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
 	}
 	plan := s.EffectivePlan(ctx, &ws)
-	start := monthStart(time.Now())
+	start, end := cycleBounds(billingAnchor(plan, &ws), time.Now())
 
-	usedCredits, counts, err := monthCredits(ctx, s.db, wsID)
+	usedCredits, counts, err := cycleCredits(ctx, s.db, wsID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -173,10 +208,10 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 	var taskCost, videoCost int64
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).
 		Select("COALESCE(SUM(cost_cents),0)").
-		Where("workspace_id = ? AND created_at >= ?", wsID, start).Scan(&taskCost)
+		Where("workspace_id = ? AND created_at >= ? AND created_at < ?", wsID, start, end).Scan(&taskCost)
 	s.db.WithContext(ctx).Model(&model.Video{}).
 		Select("COALESCE(SUM(cost_cents),0)").
-		Where("workspace_id = ? AND created_at >= ?", wsID, start).Scan(&videoCost)
+		Where("workspace_id = ? AND created_at >= ? AND created_at < ?", wsID, start, end).Scan(&videoCost)
 
 	// TEAM 超基线的待结算用量(其他档 billable 恒 false,故为 0)。
 	billableCredits := 0
@@ -188,7 +223,7 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		var brows []brow
 		s.db.WithContext(ctx).Model(&model.UsageRecord{}).
 			Select("kind, COALESCE(SUM(qty),0) AS cnt").
-			Where("workspace_id = ? AND created_at >= ? AND billable = ?", wsID, start, true).
+			Where("workspace_id = ? AND created_at >= ? AND created_at < ? AND billable = ?", wsID, start, end, true).
 			Group("kind").Scan(&brows)
 		for _, r := range brows {
 			billableCredits += model.CreditsFor(r.Kind, r.Cnt)
@@ -199,6 +234,7 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		Plan:          plan,
 		PlanExpiresAt: ws.PlanExpiresAt,
 		PeriodStart:   start,
+		PeriodEnd:     end,
 		Credits:       CreditItem{Used: usedCredits, Limit: model.PlanCredits(plan)},
 		Breakdown: UsageBreakdown{
 			AgentTasks: counts[model.UsageAgentTask],
@@ -208,6 +244,6 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		CreditCosts:     model.CreditCosts(),
 		CostCents:       int(taskCost + videoCost),
 		BillableCredits: billableCredits,
-		OverflowCents:   billableCredits * model.TeamOverflowCentsPerKCredit / 1000,
+		OverflowCents:   model.OverflowCents(billableCredits),
 	}, nil
 }

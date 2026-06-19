@@ -145,6 +145,8 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/billing/checkout", billH.Checkout)
 		priv.GET("/workspaces/:wid/billing/orders/:oid", billH.GetOrder)
 		priv.POST("/workspaces/:wid/billing/orders/:oid/mock-confirm", billH.MockConfirm)
+		priv.GET("/workspaces/:wid/billing/overflow-bills", billH.OverflowBills)
+		priv.POST("/workspaces/:wid/billing/overflow-bills/:bid/mock-settle", billH.MockSettleOverflow)
 
 		priv.GET("/workspaces/:wid/templates", tplH.List)
 		priv.POST("/workspaces/:wid/templates", tplH.Create)

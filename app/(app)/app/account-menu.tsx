@@ -51,7 +51,7 @@ export function AccountMenu({
       {hasCredits && (
         <Link
           href="/app/settings"
-          title="本月积分余额"
+          title="本周期积分余额"
           className={`hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
             low
               ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
@@ -113,7 +113,7 @@ export function AccountMenu({
               >
                 <span className="inline-flex items-center gap-2 text-zinc-600">
                   <Coins className="h-4 w-4 text-zinc-400" />
-                  本月积分
+                  本周期积分
                 </span>
                 <span className={`font-medium tabular-nums ${low ? "text-rose-600" : "text-ink"}`}>
                   {unlimited ? "∞" : remaining}

@@ -6,7 +6,7 @@ import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import type { Usage } from "./settings/settings-client";
 
 /**
- * 驾驶舱顶部的经营概况:本月派活 / 成片 / 出图 / 成本 四张 Stat 卡。
+ * 驾驶舱顶部的经营概况:本周期派活 / 成片 / 出图 / 成本 四张 Stat 卡。
  * 游客拿不到 usage(需登录),整块降级为登录引导卡。
  */
 export function DashboardStats({
@@ -24,13 +24,13 @@ export function DashboardStats({
         onClick={() =>
           openAuthModal({
             title: "登录查看经营概况",
-            desc: "本月派活、成片、出图与成本,登录后一眼看清自己的生意。",
+            desc: "本周期派活、成片、出图与成本,登录后一眼看清自己的生意。",
           })
         }
         className="dk-card lift flex w-full items-center justify-between gap-3 p-5 text-left"
       >
         <div>
-          <div className="text-sm font-semibold text-ink">登录查看本月经营概况</div>
+          <div className="text-sm font-semibold text-ink">登录查看经营概况</div>
           <div className="mt-1 text-xs text-zinc-500">
             派活次数、成片数、出图数与生成成本,都会汇总在这里。
           </div>
@@ -56,34 +56,34 @@ export function DashboardStats({
     ? "团队版不限积分"
     : pct >= 90
       ? "积分告急,去设置升级"
-      : `本月已用 ${used} 积分`;
+      : `本周期已用 ${used} 积分`;
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat
         icon={Coins}
-        label="本月积分余额"
+        label="本周期积分余额"
         value={`${remaining}${unlimited ? "" : `/${limit}`}`}
         hint={creditHint}
         href="/app/settings"
       />
       <Stat
         icon={Clapperboard}
-        label="本月成片"
+        label="本周期成片"
         value={`${usage.breakdown.videos}`}
-        hint="本月出片条数"
+        hint="本周期出片条数"
         href="/app/videos"
       />
       <Stat
         icon={ImageIcon}
-        label="本月出图"
+        label="本周期出图"
         value={`${usage.breakdown.images}`}
         hint="Listing 主图等出图张数"
         href="/app/settings"
       />
       <Stat
         icon={Wallet}
-        label="本月生成成本"
+        label="本周期生成成本"
         value={`¥${(usage.costCents / 100).toFixed(2)}`}
         hint="LLM + 视频/出图服务累计"
         href="/app/settings"

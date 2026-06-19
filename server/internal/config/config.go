@@ -15,19 +15,20 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig
-	Database  DatabaseConfig
-	JWT       JWTConfig
-	Cookie    CookieConfig
-	RateLimit RateLimitConfig
-	SMS       SMSConfig
-	EchoTik      EchoTikConfig
-	DiscoverSync DiscoverSyncConfig
-	Storage      StorageConfig
-	OpenRouter   OpenRouterConfig
-	Fal          FalConfig
-	CORS         CORSConfig
-	Log          LogConfig
+	Server         ServerConfig
+	Database       DatabaseConfig
+	JWT            JWTConfig
+	Cookie         CookieConfig
+	RateLimit      RateLimitConfig
+	SMS            SMSConfig
+	EchoTik        EchoTikConfig
+	DiscoverSync   DiscoverSyncConfig
+	OverflowSettle OverflowSettleConfig
+	Storage        StorageConfig
+	OpenRouter     OpenRouterConfig
+	Fal            FalConfig
+	CORS           CORSConfig
+	Log            LogConfig
 }
 
 type ServerConfig struct {
@@ -111,6 +112,13 @@ type SyncCombo struct {
 	Region    string
 	RankType  int
 	RankField int
+}
+
+// OverflowSettleConfig TEAM 超额月度结算 job:把上一账期 billable 用量出账(幂等)。
+// Interval 为轮询频率,出账幂等故粗粒度即可(默认 6h,跨月后首个 tick 自然结清上月)。
+type OverflowSettleConfig struct {
+	Enabled  bool
+	Interval time.Duration
 }
 
 // StorageConfig 腾讯云 COS 对象存储(素材 / 视频转存)。
@@ -208,6 +216,10 @@ func Load() *Config {
 			Interval: time.Duration(getEnvInt("DISCOVER_SYNC_INTERVAL_HOURS", 6)) * time.Hour,
 			Combos:   parseSyncCombos(getEnv("DISCOVER_SYNC_COMBOS", "US,ID,TH,VN")),
 			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 30),
+		},
+		OverflowSettle: OverflowSettleConfig{
+			Enabled:  getEnvBool("OVERFLOW_SETTLE_ENABLED", true),
+			Interval: time.Duration(getEnvInt("OVERFLOW_SETTLE_INTERVAL_HOURS", 6)) * time.Hour,
 		},
 		Storage: StorageConfig{
 			COSBucket:    getEnv("TENCENT_COS_BUCKET", ""),
