@@ -10,28 +10,25 @@ import {
   Loader2,
   Package,
   Search,
-  Sparkles,
   Upload,
   UserRound,
   X,
 } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
-import { CreditCost } from "@/components/ui/CreditCost";
-import { CREDIT_COST } from "@/lib/credits";
 import { usePersonas } from "../use-personas";
 import type { ComposerKind } from "../agent-composer";
 
 type ProductOption = { id: string; title: string; emoji?: string | null; roiScore: number; coverUrl?: string | null };
 type MaterialOption = { id: string; type: string; url: string; originalName: string };
 
-type TabKey = "upload" | "generate" | "product" | "model";
+type TabKey = "upload" | "product" | "model";
 
 /**
  * 资产选择弹窗:把原先散在 composer 底栏的 商品 / 出镜人设 / 素材 三个 picker
- * 合并到一个带 tab 的弹窗里(上传资产 / AI 生成 / 商品 / 模特)。
+ * 合并到一个带 tab 的弹窗里(上传资产 / 商品 / 模特)。
  * 选择仍按类型单选(≤1 商品 + ≤1 模特 + ≤1 参考图),写回 Workbench 持有的状态,
  * 保住后端「商品=注入真实数据 / 人设=第一人称 / 素材=参考图」语义。
- * 模特 tab 仅短视频(DIRECTOR)出现;AI 生成走 /materials/generate 端点出图后选用。
+ * 模特 tab 仅短视频(DIRECTOR)/ 虚拟试穿(TRYON)出现。
  */
 export function AssetPickerModal({
   workspaceId,
@@ -59,7 +56,6 @@ export function AssetPickerModal({
   const isTryOn = activeAgent === "TRYON";
   const tabs: { key: TabKey; label: string; icon: typeof Upload }[] = [
     { key: "upload", label: "上传资产", icon: Upload },
-    { key: "generate", label: "AI 生成", icon: Sparkles },
     { key: "product", label: "商品", icon: Package },
     ...(showModel ? [{ key: "model" as const, label: "模特", icon: UserRound }] : []),
   ];
@@ -115,38 +111,6 @@ export function AssetPickerModal({
     }
   }
 
-  // ── AI 生成 ──
-  const [genPrompt, setGenPrompt] = useState("");
-  const [generating, setGenerating] = useState(false);
-
-  async function handleGenerate() {
-    const p = genPrompt.trim();
-    if (!p || generating) return;
-    setGenerating(true);
-    try {
-      const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: p }),
-      });
-      const json = await res.json();
-      if (res.ok && json.ok) {
-        const mat = json.data.material as MaterialOption;
-        setMaterials((prev) => [mat, ...(prev ?? [])]);
-        onMaterialChange(mat.id);
-        setGenPrompt("");
-        setTab("upload"); // 切到素材区,新图已被选中
-        toast.success("参考图已生成并选用");
-      } else {
-        toast.error(json?.error?.message ?? "生成失败");
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "网络错误");
-    } finally {
-      setGenerating(false);
-    }
-  }
-
   const selectedProduct = products?.find((p) => p.id === productId) ?? null;
   const selectedPersona = personas?.find((m) => m.id === personaId) ?? null;
   const selectedMaterial = materials?.find((m) => m.id === materialId) ?? null;
@@ -178,7 +142,7 @@ export function AssetPickerModal({
               <div className="text-2xs text-zinc-500">
                 {isTryOn
                   ? "选一位模特 + 一张服饰图(上传图 / 商品主图),生成上身效果图"
-                  : "选商品、模特,或上传 / AI 生成一张参考图"}
+                  : "选商品、模特,或上传一张参考图"}
               </div>
             </div>
           </div>
@@ -295,30 +259,6 @@ export function AssetPickerModal({
                   })}
                 </div>
               )}
-            </div>
-          )}
-
-          {tab === "generate" && (
-            <div className="space-y-3">
-              <textarea
-                value={genPrompt}
-                onChange={(e) => setGenPrompt(e.target.value)}
-                rows={4}
-                placeholder="描述想要的参考图,例:极简白底面霜产品图,柔和自然光,无文字水印"
-                className="w-full resize-none rounded-lg border border-zinc-200 px-3 py-2.5 text-sm outline-none placeholder:text-zinc-400 focus:border-brand-400"
-              />
-              <div className="flex items-center justify-between">
-                <CreditCost credits={CREDIT_COST.image} />
-                <button
-                  onClick={handleGenerate}
-                  disabled={!genPrompt.trim() || generating}
-                  className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:pointer-events-none disabled:opacity-50"
-                >
-                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                  {generating ? "生成中…" : "生成参考图"}
-                </button>
-              </div>
-              <p className="text-2xs text-zinc-400">出图约 10–60 秒,完成后自动选用为参考图(消耗出图额度)。</p>
             </div>
           )}
 

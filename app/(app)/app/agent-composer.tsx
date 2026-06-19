@@ -378,7 +378,7 @@ export function AgentComposer({
 
         {/* 底栏:左「+ 添加」附件(仅含复盘的页面),右黑色发送 */}
         <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
-          {allowReview && !isTryOn && (
+          {isReview && (
             <>
               <input
                 ref={fileRef}
