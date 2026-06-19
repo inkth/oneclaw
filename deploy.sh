@@ -151,7 +151,7 @@ cmd_backup() {
   precheck_ssh; mkdir -p "$BACKUP_DIR"
   local f="$BACKUP_DIR/oneclaw-pg-$(date +%Y%m%d-%H%M%S).sql.gz"
   step "pg_dumpall → $f"
-  remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE exec -T postgres pg_dumpall -U \${DB_USER:-postgres}" | gzip > "$f"
+  remote "cd $ONECLAW_REMOTE_DIR && set -a && . ./.env && set +a && $COMPOSE exec -T postgres pg_dumpall -U \"\${DB_USER}\"" | gzip > "$f"
   ok "备份完成($(du -h "$f" | awk '{print $1}'))"
 }
 
