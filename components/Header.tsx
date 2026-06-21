@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Menu, X, Sparkles, ArrowRight } from "lucide-react";
 
 const navItems: Array<{ label: string; href: string; badge?: string }> = [
-  { label: "全链路", href: "/#chain" },
-  { label: "AI 团队", href: "/#team" },
+  { label: "全链路", href: "/intro#chain" },
+  { label: "AI 团队", href: "/intro#team" },
   { label: "定价", href: "/pricing" },
 ];
 
@@ -15,7 +15,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full glass border-b border-zinc-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <a href="#" className="flex items-center gap-2">
+          <a href="/intro" className="flex items-center gap-2">
             <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500 shadow-sm">
               <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
             </div>

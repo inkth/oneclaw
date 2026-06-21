@@ -5,8 +5,8 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
   {
     title: "产品",
     links: [
-      { label: "全链路", href: "/#chain" },
-      { label: "AI 团队", href: "/#team" },
+      { label: "全链路", href: "/intro#chain" },
+      { label: "AI 团队", href: "/intro#team" },
       { label: "定价方案", href: "/pricing" },
     ],
   },
@@ -22,7 +22,7 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
     title: "资源",
     links: [
       { label: "登录", href: "/login" },
-      { label: "注册", href: "/register" },
+      { label: "注册", href: "/login" },
       { label: "工作台", href: "/app" },
     ],
   },
@@ -58,10 +58,10 @@ export function Footer() {
                 <Mail className="h-4 w-4" />
                 hello@oneclaw.ai
               </a>
-              <a href="#" className="inline-flex items-center gap-2 hover:text-brand-600">
+              <span className="inline-flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 微信公众号：OneClaw 出海
-              </a>
+              </span>
             </div>
           </div>
 
@@ -91,13 +91,8 @@ export function Footer() {
           <SubscribeForm />
         </div>
 
-        <div className="mt-12 border-t border-zinc-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
-          <div>© 2026 OneClaw Technology. All rights reserved.</div>
-          <div className="flex items-center gap-4">
-            <a href="#" className="hover:text-zinc-900">隐私政策</a>
-            <a href="#" className="hover:text-zinc-900">服务条款</a>
-            <a href="#" className="hover:text-zinc-900">沪 ICP 备 2026 XXXXXX 号</a>
-          </div>
+        <div className="mt-12 border-t border-zinc-200/80 pt-6 text-xs text-zinc-500">
+          © 2026 OneClaw Technology. All rights reserved.
         </div>
       </div>
     </footer>

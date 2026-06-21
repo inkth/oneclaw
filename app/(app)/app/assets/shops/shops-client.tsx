@@ -79,6 +79,10 @@ export function ShopsClient({
   const [modalOpen, setModalOpen] = useState(false);
   const { open: openAuthModal } = useAuthModal();
 
+  // 营收/订单/转化看板只在真有店铺 OAuth 连上(CONNECTED)时显示;
+  // 当前无真实平台对接,一律 PENDING → 看板隐藏,避免永远 0 的伪 dashboard。
+  const hasMetrics = shops.some((s) => s.status === "CONNECTED");
+
   function gateGuest(): boolean {
     if (!isGuest) return false;
     openAuthModal({
@@ -106,7 +110,7 @@ export function ShopsClient({
     <div className="space-y-6">
       <PageHeader
         title="店铺"
-        description="连接你的电商平台店铺，统一追踪营收、订单、转化率。"
+        description="登记你绑定的店铺，Agent 的选品 / 复盘报告会自动归到对应店铺。真实平台对接(OAuth 自动同步订单 / 营收)开发中。"
         actions={
           <Button
             variant="primary"
@@ -121,12 +125,21 @@ export function ShopsClient({
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="总营收" value={`¥${(totals.revenueCents / 100).toLocaleString()}`} icon={TrendingUp} tone="brand" />
-        <StatCard label="订单数" value={totals.orders.toLocaleString()} icon={ShoppingCart} tone="violet" />
-        <StatCard label="已售商品" value={totals.itemsSold.toLocaleString()} icon={Package} tone="fuchsia" />
-        <StatCard label="访客" value={totals.visitors.toLocaleString()} icon={Users} tone="emerald" />
-      </div>
+      {hasMetrics ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="总营收" value={`¥${(totals.revenueCents / 100).toLocaleString()}`} icon={TrendingUp} tone="brand" />
+          <StatCard label="订单数" value={totals.orders.toLocaleString()} icon={ShoppingCart} tone="violet" />
+          <StatCard label="已售商品" value={totals.itemsSold.toLocaleString()} icon={Package} tone="fuchsia" />
+          <StatCard label="访客" value={totals.visitors.toLocaleString()} icon={Users} tone="emerald" />
+        </div>
+      ) : (
+        <div className="flex items-start gap-2.5 rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3.5 text-xs text-zinc-600">
+          <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
+          <span className="leading-relaxed">
+            营收 / 订单 / 转化看板将在店铺 <span className="font-medium text-zinc-700">OAuth 自动同步</span> 上线后开放(开发中)。当前可登记店铺、关联选品,Agent 的报告会自动归属到对应店铺。
+          </span>
+        </div>
+      )}
 
       {shops.length === 0 ? (
         <EmptyState onAdd={() => setModalOpen(true)} />
@@ -137,10 +150,10 @@ export function ShopsClient({
                 <Th>店铺</Th>
                 <Th>平台</Th>
                 <Th>国家</Th>
-                <Th align="right">营收</Th>
-                <Th align="right">订单</Th>
+                {hasMetrics && <Th align="right">营收</Th>}
+                {hasMetrics && <Th align="right">订单</Th>}
                 <Th align="right">商品</Th>
-                <Th align="right">转化率</Th>
+                {hasMetrics && <Th align="right">转化率</Th>}
                 <Th align="center">状态</Th>
                 <Th align="right">操作</Th>
               </tr>
@@ -167,14 +180,18 @@ export function ShopsClient({
                     <Td className="text-zinc-600">
                       {s.country ?? <span className="text-zinc-300">—</span>}
                     </Td>
-                    <Td align="right" className="font-semibold">
-                      ¥{(s.totalRevenueCents / 100).toLocaleString()}
-                    </Td>
-                    <Td align="right">{s.orders.toLocaleString()}</Td>
+                    {hasMetrics && (
+                      <Td align="right" className="font-semibold">
+                        ¥{(s.totalRevenueCents / 100).toLocaleString()}
+                      </Td>
+                    )}
+                    {hasMetrics && <Td align="right">{s.orders.toLocaleString()}</Td>}
                     <Td align="right">{s.productCount}</Td>
-                    <Td align="right">
-                      {(s.conversionRate * 100).toFixed(1)}%
-                    </Td>
+                    {hasMetrics && (
+                      <Td align="right">
+                        {(s.conversionRate * 100).toFixed(1)}%
+                      </Td>
+                    )}
                     <Td align="center">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-medium ${statusMeta[s.status].cls}`}>
                         {statusMeta[s.status].cn}
@@ -248,7 +265,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
     <EmptyStatePrimitive
       icon={Store}
       title="还没添加店铺"
-      description="连接你的 TikTok Shop / Amazon / Shopify 等平台店铺，OneClaw 会自动同步商品、订单与营收，让 Agent 的选品和投放决策都有数据兜底。"
+      description="把你的 TikTok Shop 店铺先登记进来，Agent 的选品 / 复盘报告会自动归到对应店铺。真实平台对接(OAuth 自动同步商品 / 订单 / 营收)开发中。"
       action={
         <Button variant="primary" onClick={onAdd}>
           <Plus className="h-4 w-4" />

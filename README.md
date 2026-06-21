@@ -1,143 +1,94 @@
 # OneClaw
 
-> 你的 AI 出海团队 — 从洞察到变现，一站搞定。
+> 给跨境电商新手的 TikTok Shop 全链路 AI 工具 —— 选品、做视频、复盘,一句话开干。
 
-Next.js 16 App Router + Tailwind v4 + Prisma 6 + Auth.js v5 + Postgres。
+OneClaw 把「找爆品 → 出带货短视频 → 复盘投放」三件事收进一个工作台,由一排 AI Agent 完成。
 
-## 功能
+## 产品 = 三件事 + 5 个 Agent
 
-- 🏠 **营销落地页**：Hero、痛点、工作流对比、选品（精简）、内容创作、Agent 团队、合作伙伴、CTA、Footer
-- 🔐 **认证**：邮箱+密码（bcrypt），Auth.js v5 凭证登录，JWT session，proxy 保护 `/app`
-- 🗄️ **数据层**：Prisma 6 / Postgres，`User` `Workspace` `Membership` `Product` `Video` `AgentTask` `NewsletterSubscription` `DemoRequest`
-- 🤖 **AI Agent**（已真实化）：
-  - **选品分析（ANALYST）** —— LLM（多模型可切）输出结构化 JSON，自动写入 `Product` 表
-  - **短视频创作（DIRECTOR）** —— AI 自选叙事角度，写脚本 + 生成封面 + 提交 5s 视频生成任务，单条出片
-  - **Listing 内容（LISTING）** —— 标题 / 五点卖点 / A+ 文案 / 主图出图 prompt
-  - **投放复盘（REVIEW）** —— 上传 GMVMax 投流报表，产出 ROI 四象限与预算建议
-- ⏳ **异步执行**：`POST /agent-tasks` 立即返回 `QUEUED` 任务，`after()` 后台执行，前端每 2.5s 轮询任务状态，视频生成每 8s 轮询生成队列
-- 📡 **API**：见下表
-- 🧑‍💻 **/app 工作台**：概览（任务/选品/视频统计）、选品库、短视频墙（含视频内联播放）、Agent Runner、设置
+工作台(`/app`)是统一派活台,一排胶囊切换 Agent,写一句指令就能开干:
+
+| Agent | 做什么 | 数据 / 模型 |
+| --- | --- | --- |
+| **选品分析 ANALYST** | 拉 EchoTik 四榜(商品 / 店铺 / 达人 / 视频)+ LLM 可行性评分,可关键词搜索、按类目筛选、收藏入库 | EchoTik · OpenRouter |
+| **短视频 DIRECTOR** | 一句话出**单条**带货短视频:AI 自选叙事角度写脚本 → 异步出片 → 烧口播字幕 + 价格 CTA 尾帧。会逆向真实带货爆款、按目标市场出母语口播、读本店复盘成绩反哺脚本 | OpenRouter(脚本 / 视频)· fal(封面)· ffmpeg |
+| **Listing 内容 LISTING** | 标题 / 五点卖点 / A+ 图文 / 主图出图 prompt | OpenRouter · fal |
+| **虚拟试穿 TRYON** | 选模特图 + 服饰图,生成上身图 | fal |
+| **投放复盘 REVIEW** | 上传 GMVMax 投流报表(CSV / XLSX)→ ROI 四象限诊断 + 止损 / 加投建议 | 报表解析 · OpenRouter |
+
+选品库可一键「为它做视频 / 做 Listing」接力到工作台(带 `productId` 注入真实商品数据)。
+
+> 已**主动下线**:品牌运营官 / 排期发布(无真实发布能力)、全链路小队一键串行 —— 不是窟窿,别去「补齐」。
+
+## 技术栈
+
+**前端纯展示,所有后端逻辑在 Go。**
+
+- **前端**:Next.js 16(App Router)+ React 19 + Tailwind v4 + TypeScript。只渲染 + 调 Go API,无后端逻辑、无 Prisma。
+- **后端**:Go 1.25 + Gin + GORM,代码在 [`server/`](server/)。启动自动 `AutoMigrate`。
+- **数据库**:Postgres(Go 自建 schema,uuid 主键)。
+- **鉴权**:Go 侧 JWT cookie(`oc_session`)+ 手机验证码,**非** Auth.js。
+- **外部集成**:EchoTik(选品数据)· OpenRouter(LLM + 视频)· fal(图 / 封面 / 试穿)· 腾讯云 COS(对象存储)· SMS(验证码)。
+- **计费**:积分制 —— 扣费 / 额度(按订阅周期重置)/ 下单 / 订单 / TEAM 超额结算均已落库生效。
+
+前端经 [`lib/api-client.ts`](lib/api-client.ts) 调后端:`GO_API_INTERNAL_URL`(默认 `http://localhost:8082`)拼 `/api/v1`。**路由全集以 [`server/internal/router/router.go`](server/internal/router/router.go) 为准**(不在此枚举,免得过时)。
 
 ## 本地开发
 
+需要一个 Postgres。前后端分别起:
+
 ```bash
-# 1. 安装依赖
+# 前端
 npm install
+npm run dev            # http://localhost:3000
 
-# 2. 准备环境变量
-cp .env.example .env.local
-# 编辑 .env.local 填上 DATABASE_URL / AUTH_SECRET / OPENROUTER_API_KEY / FAL_KEY
-
-# 3. 推到数据库 + 跑 seed
-npm run db:push      # 或 db:migrate
-npm run db:seed      # 创建 demo@oneclaw.ai / demopass1234，含 4 选品 4 视频
-
-# 4. 启动
-npm run dev
+# 后端(另开终端)
+cd server
+go run ./cmd           # 默认 :8082,启动自动建表
 ```
 
-打开 http://localhost:3000
+后端环境变量读 [`server/internal/config/config.go`](server/internal/config/config.go)(无 `.env.example`,按需设),主要几族:
 
-| 路径 | 说明 |
-| --- | --- |
-| `/` | 落地页 |
-| `/register` | 注册（自动建工作台 + 自动登录） |
-| `/login` | 登录 |
-| `/app` | 工作台首页（未登录会跳 `/login`） |
-| `/app/products` | 选品库（Analyst 写入） |
-| `/app/videos` | 短视频墙（Director 写入，含视频/封面） |
-| `/app/agents` | Agent 派发器（含历史） |
-| `/app/settings` | 账号/工作台 |
-| `npm run db:studio` | Prisma Studio |
+- `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` —— Postgres
+- `JWT_SECRET` —— 会话签名
+- `ECHOTIK_BASE_URL` / `ECHOTIK_USERNAME` / `ECHOTIK_PASSWORD` —— 选品数据(缺则发现页走 mock)
+- `OPENROUTER_API_KEY`(+ `OPENROUTER_MODEL` / `OPENROUTER_IMAGE_MODEL` / `OPENROUTER_VIDEO_MODEL`)—— LLM / 视频(缺则 Agent 走降级)
+- `FALAI_API_KEY`(+ `FALAI_TRYON_MODEL` 等)—— 封面 / 试穿出图
+- `SMS_PROVIDER` —— 手机验证码
+- COS 桶配置 —— 对象存储(榜单封面永久化依赖)
 
-## API
+> **只想预览前端、本地没 Postgres**:在 `.env.local` 里设 `GO_API_INTERNAL_URL=https://test.oneclaw.club` 指向测试后端,即可用真实数据跑游客页;验证完删掉。
 
-| 路径 | 方法 | 鉴权 | 说明 |
-| --- | --- | --- | --- |
-| `/api/auth/[...nextauth]` | * | - | Auth.js handlers |
-| `/api/auth/register` | POST | 公开 | 注册（事务建 user + workspace + membership） |
-| `/api/subscribe` | POST | 公开 | 落地页邮件订阅 |
-| `/api/demo` | POST | 公开 | 预约演示 |
-| `/api/me` | GET | 登录 | 当前用户 + 默认工作台 |
-| `/api/workspaces/:id/products` | GET / POST | Membership | 选品 |
-| `/api/workspaces/:id/videos` | GET | Membership | 视频 |
-| `/api/workspaces/:id/videos/:videoId/refresh` | POST | Membership | 拉一次生成队列状态，回写 `videoUrl` |
-| `/api/workspaces/:id/agent-tasks` | GET / POST | Membership | 列出 / 派发 Agent 任务（异步） |
-| `/api/workspaces/:id/agent-tasks/:taskId` | GET | Membership | 查单个任务，用于前端轮询 |
+预置出镜人设(虚拟试穿 / 出镜)补种:
 
-## Agent 实现
-
-[`lib/agents/`](lib/agents/) 三个文件对应三位 Agent。它们都是 **真实** LLM / 视频生成调用：
-
-```
-lib/agents/llm.ts       —— LLM chat 封装 + JSON 抽取（容忍 markdown 包裹）
-lib/agents/analyst.ts   —— 系统 prompt 强制 JSON 输出 → zod 校验 → prisma.product.createMany
-lib/agents/director.ts  —— 关联工作台 RECOMMENDED 商品 → LLM 4 脚本 → 并行生成 4 封面 + 提交 4 视频 → Video 行
-lib/agents/operator.ts  —— 抓最近 12 个视频喂给 LLM → 三平台周日历 JSON
-lib/agents/index.ts     —— executeAgentTask(): 更新状态 → dispatch → 写回 output / metadata / cost / tokens
+```bash
+docker compose run --rm go-api ./server --seed-personas
 ```
 
-派发链路：
+## 部署
 
+生产 = Go 全栈 docker(compose)。根目录:
+
+```bash
+./deploy.sh            # build → 推镜像 → 远端起服务;compose 文件 docker-compose.prod.yml
 ```
-client POST → route.ts 创建 QUEUED 任务 → after() 异步跑 executeAgentTask
-client poll GET → 任务转 RUNNING → DONE/FAILED
-DONE 时 router.refresh() 让选品/视频页同步
-GENERATING 视频前端每 8s 轮询生成队列；完成后内联 <video> 播放
-```
 
-**模型 / 价格**：通过 env 切：
-- `OPENROUTER_MODEL` 默认 `anthropic/claude-sonnet-4.5`（可换 haiku / opus / gpt-4o / gemini-2.5-pro）
-- `FAL_IMAGE_MODEL` 默认 `fal-ai/flux/schnell`（最便宜，~$0.003 / 图）
-- `FAL_VIDEO_MODEL` 默认 `fal-ai/kling-video/v1/standard/text-to-video`（~$0.05 / 5s 视频）
+→ test.oneclaw.club(腾讯云)。具体流程见 [`deploy.sh`](deploy.sh)。
 
-每个 AgentTask 落库时会记录 `model` / `tokensIn` / `tokensOut` / `costCents`，前端右上角显示 ¢ 数。
-
-## 部署到 Vercel + 托管 Postgres
-
-1. 用 Neon / Vercel Postgres / Supabase 建 Postgres
-2. Vercel 项目环境变量：
-   - `DATABASE_URL`
-   - `AUTH_SECRET`（`openssl rand -base64 32`）
-   - `AUTH_URL`（部署后的 https 域名）
-   - `AUTH_TRUST_HOST=true`
-   - `OPENROUTER_API_KEY`
-   - `FAL_KEY`
-   - 可选：`OPENROUTER_MODEL` / `FAL_IMAGE_MODEL` / `FAL_VIDEO_MODEL`
-3. 首次部署：
-   ```bash
-   npx prisma migrate deploy
-   npm run db:seed   # 可选
-   ```
-4. push 到 main，Vercel 自动 build（`postinstall` 会跑 `prisma generate`）
-
-**Vercel maxDuration**：`/api/workspaces/[id]/agent-tasks` 设了 `export const maxDuration = 60`。Hobby 免费 10s，建议 Pro。如果跑视频生成 + 封面 + LLM 加起来超过 60s，请升级到 Pro 或拆成更细的后台任务（Inngest / Trigger.dev）。
-
-## 关键文件速查
+## 仓库结构
 
 | 路径 | 作用 |
 | --- | --- |
-| `prisma/schema.prisma` | 数据模型，含 `VideoProcessing` 枚举与 `AgentTask.metadata` JSON 字段 |
-| `prisma/seed.ts` | demo 用户 + 4 选品 + 4 视频 |
-| `lib/db.ts` | Prisma client 单例 |
-| `lib/workspace.ts` | 自动获取/创建默认工作台 |
-| `lib/validations.ts` | 全部 zod schema |
-| `lib/api.ts` | 统一 `ok` / `fail` / `handleError` |
-| `lib/openrouter.ts` | OpenAI SDK 指向 LLM 网关，lazy 单例 |
-| `lib/fal.ts` | 视频/图片生成客户端 + `generateCover` / `submitVideoJob` / `pollVideoStatus` |
-| `lib/agents/*` | 三个 Agent 实现 + 调度器 |
-| `auth.ts` / `auth.config.ts` / `proxy.ts` | Auth.js v5 + Next.js 16 proxy |
-| `app/(auth)/` | login / register |
-| `app/(app)/app/` | 工作台 |
-| `app/api/` | 路由处理器 |
+| [`app/`](app/) | Next.js 前端:`(app)/app` 工作台、`pricing` 定价、`(auth)` 登录、`intro` 营销 |
+| [`components/`](components/) · [`lib/`](lib/) | 共享 UI 原语 + 前端工具(`api-client.ts`、`credits.ts` 等) |
+| [`server/internal/handler/`](server/internal/handler) | HTTP handlers |
+| [`server/internal/service/`](server/internal/service) | 业务逻辑(`agent_*.go` 五个 Agent、`discover*`、`billing`、`quota`、`video*`) |
+| [`server/internal/model/`](server/internal/model) | GORM 模型 |
+| [`docs/go-migration-plan.md`](docs/go-migration-plan.md) | Next/Prisma → Go 迁移记录(架构权威) |
 
-## 后续 TODO
+## 现状(诚实)
 
-- [ ] OAuth (Google / GitHub) + 邮箱验证 + 找回密码
-- [ ] Rate limit（Upstash Ratelimit）+ Sentry
-- [ ] Stripe 计费 + 用量配额（FREE/PRO/TEAM 关联 Plan）
-- [ ] 多人协作邀请页（Membership 模型已建）
-- [ ] 把 Agent 后台跑改成 Inngest / Trigger.dev 真异步队列 + SSE 流式输出
-- [ ] 选品 / 视频的 CRUD UI（目前只读 + 自动生成）
-- [ ] 定价页 + 落地页死链接（生态 / 网站搭建 / 客户管理）
-- [ ] i18n
+- ✅ 三件事(选品 / 做视频 / 复盘)+ Listing / 试穿端到端可用;选品→做视频接力、复盘成绩→脚本反哺已打通。
+- 🚧 **真实收款渠道**(微信 / 支付宝商户)未接 —— 计费账本 / 额度 / 下单全真,生产暂诚实拒单并引导联系客服。
+- 🚧 **店铺真实绑定**(OAuth + 自动拉投放数据)开发中 —— 复盘当前靠手动上传报表。
+- 🚧 **视频↔复盘按条精确归因**(GMVMax Creative ID ↔ Video ID)待做。

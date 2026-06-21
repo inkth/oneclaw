@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Clock } from "lucide-react";
 import { PricingCTA } from "./pricing-cta";
 
 type PlanKey = "FREE" | "PRO" | "TEAM";
@@ -17,6 +17,7 @@ const tiers: Array<{
   highlight: boolean;
   description: string;
   features: string[];
+  planned: string[];
   notIncluded: string[];
   cta: string;
 }> = [
@@ -33,9 +34,10 @@ const tiers: Array<{
       "每月 450 积分(≈ 2 条出片 / 150 次选品)",
       "选品 3 / 出片 175 / 出图 6 积分",
       "1 个工作台",
-      "选品 / 视频 / 工作流全功能",
+      "选品 / 短视频 / Listing / 复盘全功能",
       "社区 Discord 支持",
     ],
+    planned: [],
     notIncluded: ["团队协作", "API 访问", "数据导出", "优先客服"],
     cta: "免费开始",
   },
@@ -51,11 +53,14 @@ const tiers: Array<{
     features: [
       "每月 6000 积分(≈ 34 条出片)",
       "选品 3 / 出片 175 / 出图 6 积分",
-      "5 个工作台 + 3 名成员",
+      "选品 / 短视频 / Listing / 复盘全功能",
+      "邮件客服 24h 响应",
+    ],
+    planned: [
+      "多工作台 + 团队协作",
       "选品 CSV 导出 / 视频批量下载",
       "Webhook + REST API",
       "邮件 + 站内通知",
-      "邮件客服 24h 响应",
     ],
     notIncluded: ["私有部署", "SLA"],
     cta: "升级到 Pro",
@@ -72,10 +77,13 @@ const tiers: Array<{
     features: [
       "含 30000 积分/月，超出按量计费",
       "超基线后约 ¥7.9/条出片结算",
-      "无限工作台 + 无限成员",
+      "选品 / 短视频 / Listing / 复盘全功能",
+      "专属客户成功经理",
+    ],
+    planned: [
+      "无限工作台 + 多成员协作",
       "细粒度角色权限 + 审计日志",
       "自定义 LLM Provider Key（BYOK）",
-      "专属客户成功经理",
       "99.9% SLA",
     ],
     notIncluded: [],
@@ -90,7 +98,7 @@ const faqs = [
   },
   {
     q: "积分用完了怎么办？",
-    a: "Free / Pro 用完会暂停出片 / 出图等消耗积分的动作，投放复盘仍可正常使用，下个自然月自动重置；随时可升级方案立即恢复。Team 含 30000 积分/月，超出部分按量结算（约 ¥7.9/条出片）。",
+    a: "Free / Pro 用完会暂停出片 / 出图等消耗积分的动作，投放复盘仍可正常使用，到期按你的计费周期(开通 / 续费日对应，非自然月)自动重置；随时可升级方案立即恢复。Team 含 30000 积分/月，超出部分按量结算（约 ¥7.9/条出片）。",
   },
   {
     q: "可以中途升级 / 降级吗？",
@@ -98,7 +106,7 @@ const faqs = [
   },
   {
     q: "支持 BYOK（自带模型 key）吗？",
-    a: "Team 起支持。BYOK 模式下 OneClaw 只对工作流编排和数据存储收费，模型成本走你自己的账户。",
+    a: "BYOK 在路线图上(规划中)，将面向 Team 开放；届时 OneClaw 只对编排和数据存储收费，模型成本走你自己的账户。",
   },
   {
     q: "用了 Agent 写出来的视频版权归谁？",
@@ -140,8 +148,8 @@ export default function PricingPage() {
               定价透明，<span className="gradient-text">按真实用量算</span>
             </h1>
             <p className="mt-4 text-zinc-600 max-w-2xl mx-auto text-cjk-relaxed">
-              三档方案覆盖从个人测试到 MCN 全场景，每一档都包含全部核心功能 ——
-              区别只在每月给多少积分(出片 / 选品 / 出图统一从积分池扣)、能拉几个人进来。
+              三档方案都包含全部核心功能(选品 / 短视频 / Listing / 复盘)——
+              区别主要在每月给多少积分(出片 / 选品 / 出图统一从积分池扣)、超额后怎么结算。
             </p>
           </div>
         </section>
@@ -208,6 +216,22 @@ export default function PricingPage() {
                           </li>
                         ))}
                       </ul>
+                      {t.planned.length > 0 && (
+                        <>
+                          <div className="mt-4 flex items-center gap-1.5 text-2xs font-medium uppercase tracking-wider text-amber-500">
+                            <Clock className="h-3 w-3" />
+                            规划中
+                          </div>
+                          <ul className="mt-3 space-y-2">
+                            {t.planned.map((f) => (
+                              <li key={f} className="flex items-start gap-2 text-sm">
+                                <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400" strokeWidth={2} />
+                                <span className="text-zinc-500">{f}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
                       {t.notIncluded.length > 0 && (
                         <>
                           <div className="mt-4 text-2xs font-medium uppercase tracking-wider text-zinc-400">
@@ -231,7 +255,7 @@ export default function PricingPage() {
 
             <p className="mt-10 text-center text-xs text-zinc-500">
               所有方案均不含模型实际推理成本，相关费用由 OneClaw
-              在你的积分内代付；BYOK 模式下走你自己的账户。
+              在你的积分内代付；未来 BYOK 模式(规划中)下可走你自己的账户。
             </p>
           </div>
         </section>
