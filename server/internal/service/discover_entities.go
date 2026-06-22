@@ -75,38 +75,16 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 		p.PageSize = 20
 	}
 	if p.Keyword != "" {
-		return entitySearch(s.echo.Configured(),
-			func() []SellerDTO {
-				return s.signMapSellers(ctx, echotik.MockSearchSellers(p.Region, p.Keyword, p.PageSize))
-			},
-			func() ([]SellerDTO, error) {
-				raw, err := s.echo.SearchSellers(ctx, p.Keyword, p.Region, p.PageSize)
-				if err != nil {
-					return nil, err
-				}
-				// 搜索响应店铺无 region 字段(只回 priority_region/seller_location),回填查询 region。
-				for i := range raw {
-					if raw[i].Region == "" {
-						raw[i].Region = p.Region
-					}
-				}
-				return s.signMapSellers(ctx, raw), nil
-			},
-		)
+		return s.searchSellers(ctx, p)
 	}
-	return cachedEntity(s, ctx, entityCacheKey("seller", p), s.echo.Configured(),
-		func() []SellerDTO { return s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize)) },
-		func() ([]SellerDTO, error) { return s.fetchSellerRows(ctx, p) },
-	)
-}
-
-// fetchSellerRows 拉店铺榜 → 签封面 → 映射 DTO。缓存 live 路径与定时预热共用。
-func (s *DiscoverService) fetchSellerRows(ctx context.Context, p echotik.RanklistParams) ([]SellerDTO, error) {
-	raw, err := s.echo.GetSellerRanklist(ctx, p)
-	if err != nil {
-		return nil, err
+	// 主流榜(第 1 页、无类目)读 DB:顺序表 + 主表,零 EchoTik。
+	if p.PageNum <= 1 && p.CategoryID == "" {
+		if res, ok := s.lookupSellerRanklist(ctx, p); ok {
+			return res
+		}
 	}
-	return s.signMapSellers(ctx, raw), nil
+	// 冷启动/类目/翻页兜底:拉 live(主流榜顺手落库供下次)。
+	return s.fetchSellerRanklistLive(ctx, p)
 }
 
 // signMapSellers 签封面 + 映射 DTO(榜单 / 搜索共用)。
@@ -129,34 +107,14 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 		p.PageSize = 20
 	}
 	if p.Keyword != "" {
-		return entitySearch(s.echo.Configured(),
-			func() []InfluencerDTO {
-				return s.signMapInfluencers(ctx, echotik.MockSearchInfluencers(p.Region, p.Keyword, p.PageSize))
-			},
-			func() ([]InfluencerDTO, error) {
-				raw, err := s.echo.SearchInfluencers(ctx, p.Keyword, p.Region, p.PageSize)
-				if err != nil {
-					return nil, err
-				}
-				return s.signMapInfluencers(ctx, raw), nil
-			},
-		)
+		return s.searchInfluencers(ctx, p)
 	}
-	return cachedEntity(s, ctx, entityCacheKey("influencer", p), s.echo.Configured(),
-		func() []InfluencerDTO {
-			return s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))
-		},
-		func() ([]InfluencerDTO, error) { return s.fetchInfluencerRows(ctx, p) },
-	)
-}
-
-// fetchInfluencerRows 拉达人榜 → 签头像 → 映射 DTO。缓存 live 路径与定时预热共用。
-func (s *DiscoverService) fetchInfluencerRows(ctx context.Context, p echotik.RanklistParams) ([]InfluencerDTO, error) {
-	raw, err := s.echo.GetInfluencerRanklist(ctx, p)
-	if err != nil {
-		return nil, err
+	if p.PageNum <= 1 && p.CategoryID == "" {
+		if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
+			return res
+		}
 	}
-	return s.signMapInfluencers(ctx, raw), nil
+	return s.fetchInfluencerRanklistLive(ctx, p)
 }
 
 // signMapInfluencers 签头像 + 映射 DTO(榜单 / 搜索共用)。
@@ -179,32 +137,14 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 		p.PageSize = 20
 	}
 	if p.Keyword != "" {
-		return entitySearch(s.echo.Configured(),
-			func() []VideoDTO {
-				return s.signMapVideos(ctx, echotik.MockSearchVideos(p.Region, p.Keyword, p.PageSize))
-			},
-			func() ([]VideoDTO, error) {
-				raw, err := s.echo.SearchVideos(ctx, p.Keyword, p.Region, p.PageSize)
-				if err != nil {
-					return nil, err
-				}
-				return s.signMapVideos(ctx, raw), nil
-			},
-		)
+		return s.searchVideos(ctx, p)
 	}
-	return cachedEntity(s, ctx, entityCacheKey("video", p), s.echo.Configured(),
-		func() []VideoDTO { return s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize)) },
-		func() ([]VideoDTO, error) { return s.fetchVideoRows(ctx, p) },
-	)
-}
-
-// fetchVideoRows 拉视频榜 → 签封面/头像 → 映射 DTO。缓存 live 路径与定时预热共用。
-func (s *DiscoverService) fetchVideoRows(ctx context.Context, p echotik.RanklistParams) ([]VideoDTO, error) {
-	raw, err := s.echo.GetVideoRanklist(ctx, p)
-	if err != nil {
-		return nil, err
+	if p.PageNum <= 1 && p.CategoryID == "" {
+		if res, ok := s.lookupVideoRanklist(ctx, p); ok {
+			return res
+		}
 	}
-	return s.signMapVideos(ctx, raw), nil
+	return s.fetchVideoRanklistLive(ctx, p)
 }
 
 // signMapVideos 签封面/头像 + 映射 DTO(榜单 / 搜索共用)。
@@ -233,27 +173,27 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 	}
 	p.PageNum = 1 // 预热第 1 页,与前端默认页缓存键对齐
 	var firstErr error
-	if rows, err := s.fetchSellerRows(ctx, p); err != nil {
+	if raw, err := s.echo.GetSellerRanklist(ctx, p); err != nil {
 		firstErr = err
-	} else if len(rows) > 0 {
-		s.cacheSetJSON(ctx, entityCacheKey("seller", p), rows)
-		s.upsertSellerList(ctx, p.Region, rows) // P1: 店铺榜落库主表 + 当日累计快照
+	} else if len(raw) > 0 {
+		s.upsertSellerList(ctx, p.Region, raw) // 落主表(含 COS 封面)+ 当日快照
+		s.writeEntityRanklist(ctx, "seller", p, sellerIDsOf(raw))
 	}
-	if rows, err := s.fetchInfluencerRows(ctx, p); err != nil {
+	if raw, err := s.echo.GetInfluencerRanklist(ctx, p); err != nil {
 		if firstErr == nil {
 			firstErr = err
 		}
-	} else if len(rows) > 0 {
-		s.cacheSetJSON(ctx, entityCacheKey("influencer", p), rows)
-		s.upsertInfluencerList(ctx, p.Region, rows) // P0: 达人榜落库主表 + 当日累计快照
+	} else if len(raw) > 0 {
+		s.upsertInfluencerList(ctx, p.Region, raw)
+		s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
 	}
-	if rows, err := s.fetchVideoRows(ctx, p); err != nil {
+	if raw, err := s.echo.GetVideoRanklist(ctx, p); err != nil {
 		if firstErr == nil {
 			firstErr = err
 		}
-	} else if len(rows) > 0 {
-		s.cacheSetJSON(ctx, entityCacheKey("video", p), rows)
-		s.upsertVideoList(ctx, p.Region, rows) // P1: 视频榜落库主表 + 当日累计快照
+	} else if len(raw) > 0 {
+		s.upsertVideoList(ctx, p.Region, raw)
+		s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
 	}
 	return firstErr
 }

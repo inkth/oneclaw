@@ -3,9 +3,13 @@ package service
 import (
 	"context"
 	"sort"
+	"time"
 
 	"github.com/oneclaw/server/internal/service/echotik"
 )
+
+// categoriesTTL 一级类目极稳定,长缓存:读路径基本零 EchoTik(约 7 天 miss 一次后刷新)。
+const categoriesTTL = 7 * 24 * time.Hour
 
 // CategoryOption 给前端筛选用的一级类目。
 type CategoryOption struct {
@@ -39,7 +43,7 @@ func (s *DiscoverService) Categories(ctx context.Context, region string) []Categ
 	// 缓存命中(仅 live 模式才写缓存,所以未配置时不会命中)。
 	if configured {
 		var cached []CategoryOption
-		if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
+		if _, ok := s.cacheGetJSON(ctx, key, categoriesTTL, &cached); ok {
 			return cached
 		}
 	}

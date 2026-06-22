@@ -33,8 +33,15 @@ type DiscoverProduct struct {
 	CoverUrls      JSONB     `gorm:"type:jsonb" json:"coverUrls,omitempty"`
 	Raw            JSONB     `gorm:"type:jsonb" json:"-"`
 	LastFetchedAt  time.Time `gorm:"index" json:"lastFetchedAt"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+
+	// 详情级(详情页按条件刷新,对标达人/店铺/视频两级新鲜度;趋势走 DiscoverSnapshot 差分,不在此存)。
+	DetailExtras      JSONB     `gorm:"column:detail_extras;type:jsonb" json:"-"`      // 图廊/评分/描述/窗口/累计权威值
+	DetailInfluencers JSONB     `gorm:"column:detail_influencers;type:jsonb" json:"-"` // []ProductInfluencerDTO
+	DetailVideos      JSONB     `gorm:"column:detail_videos;type:jsonb" json:"-"`      // []ProductVideoDTO
+	DetailFetchedAt   time.Time `gorm:"column:detail_fetched_at;index" json:"detailFetchedAt"`
+
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func (d *DiscoverProduct) BeforeCreate(*gorm.DB) error {
@@ -353,6 +360,29 @@ type DiscoverVideoSnapshot struct {
 func (s *DiscoverVideoSnapshot) BeforeCreate(*gorm.DB) error {
 	if s.ID == uuid.Nil {
 		s.ID = uuid.New()
+	}
+	return nil
+}
+
+// EntityRanklistEntry 店铺/达人/视频榜单顺序快照。
+// (provider, kind, region, rank_type, rank_field, category_id) 唯一。
+// 取代 DiscoverCache 存榜单:榜单读 = 本表顺序 + 关联实体主表渲染(零 EchoTik);job 定时刷新顺序。
+// 对标商品的 RanklistCacheEntry,但多 kind(三类共用)与 category_id(支持类目维度)。
+type EntityRanklistEntry struct {
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	Provider    string    `gorm:"not null;uniqueIndex:uq_ere_key" json:"provider"`
+	Kind        string    `gorm:"not null;uniqueIndex:uq_ere_key" json:"kind"`
+	Region      string    `gorm:"not null;uniqueIndex:uq_ere_key" json:"region"`
+	RankType    int       `gorm:"column:rank_type;not null;uniqueIndex:uq_ere_key" json:"rankType"`
+	RankField   int       `gorm:"column:rank_field;not null;uniqueIndex:uq_ere_key" json:"rankField"`
+	CategoryID  string    `gorm:"column:category_id;not null;default:'';uniqueIndex:uq_ere_key" json:"categoryId"`
+	ExternalIDs []string  `gorm:"column:external_ids;serializer:json" json:"externalIds"`
+	FetchedAt   time.Time `gorm:"column:fetched_at" json:"fetchedAt"`
+}
+
+func (e *EntityRanklistEntry) BeforeCreate(*gorm.DB) error {
+	if e.ID == uuid.Nil {
+		e.ID = uuid.New()
 	}
 	return nil
 }

@@ -12,53 +12,67 @@ import (
 	"github.com/oneclaw/server/internal/service/echotik"
 )
 
-// upsertVideoList 把视频榜行落库(列表级)并写当日累计快照。供定时任务调用。
-// 列表 upsert 不碰详情字段(cover_url/avatar_url/user_id/products 等)。
-func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, rows []VideoDTO) {
-	if s.db == nil || len(rows) == 0 {
+// upsertVideoList 把视频榜行落库(列表级,封面/头像 rehost 到 COS 永久化)并写当日累计快照。
+// 供定时任务/榜单冷启动调用。封面/头像仅在 rehost 成功时更新,不清空既有;不碰 user_id/products 等详情字段。
+func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, raw []echotik.VideoListItem) {
+	if s.db == nil || len(raw) == 0 {
 		return
 	}
+	imgs := make([]string, 0, len(raw)*2)
+	for _, it := range raw {
+		imgs = append(imgs, it.ReflowCover, it.Avatar)
+	}
+	hosted := s.rehostCovers(ctx, imgs)
 	today := time.Now().Format("2006-01-02")
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for _, r := range rows {
-			if r.VideoID == "" {
+		for _, it := range raw {
+			if it.VideoID == "" {
 				continue
 			}
 			dv := model.DiscoverVideo{
 				Provider:      providerEchoTik,
-				ExternalID:    r.VideoID,
+				ExternalID:    it.VideoID,
 				Region:        region,
-				NickName:      r.NickName,
-				UniqueID:      r.UniqueID,
-				Desc:          r.Desc,
-				Category:      r.Category,
-				Duration:      r.Duration,
-				CreateTime:    r.CreateTime,
-				Views:         r.TotalViewsCnt,
-				Digg:          r.TotalDiggCnt,
-				Comments:      r.TotalCommentsCnt,
-				Shares:        r.TotalSharesCnt,
-				SaleCnt:       r.TotalVideoSaleCnt,
-				SaleGmvCents:  echotik.DollarsToCents(r.TotalVideoSaleGmvAmt),
+				NickName:      it.NickName,
+				UniqueID:      it.UniqueID,
+				Desc:          it.VideoDesc,
+				Category:      it.Category,
+				Duration:      it.Duration,
+				CreateTime:    string(it.CreateTime),
+				Views:         it.TotalViewsCnt,
+				Digg:          it.TotalDiggCnt,
+				Comments:      it.TotalCommentsCnt,
+				Shares:        it.TotalSharesCnt,
+				SaleCnt:       it.TotalVideoSaleCnt,
+				SaleGmvCents:  echotik.DollarsToCents(it.TotalVideoSaleGmvAmt),
 				ListFetchedAt: time.Now(),
 			}
+			cols := []string{
+				"nick_name", "unique_id", "video_desc", "category", "duration", "create_time",
+				"views", "digg", "comments", "shares", "sale_cnt", "sale_gmv_cents",
+				"list_fetched_at", "updated_at",
+			}
+			if cos := hosted[it.ReflowCover]; cos != "" {
+				dv.CoverURL = cos
+				cols = append(cols, "cover_url")
+			}
+			if cos := hosted[it.Avatar]; cos != "" {
+				dv.AvatarURL = cos
+				cols = append(cols, "avatar_url")
+			}
 			tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
-				DoUpdates: clause.AssignmentColumns([]string{
-					"nick_name", "unique_id", "video_desc", "category", "duration", "create_time",
-					"views", "digg", "comments", "shares", "sale_cnt", "sale_gmv_cents",
-					"list_fetched_at", "updated_at",
-				}),
+				Columns:   []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
+				DoUpdates: clause.AssignmentColumns(cols),
 			}).Create(&dv)
 
 			var stored model.DiscoverVideo
 			if err := tx.Where("provider = ? AND external_id = ? AND region = ?",
-				providerEchoTik, r.VideoID, region).First(&stored).Error; err != nil {
+				providerEchoTik, it.VideoID, region).First(&stored).Error; err != nil {
 				continue
 			}
 			snap := model.DiscoverVideoSnapshot{
 				DiscoverVideoID: stored.ID, Dt: today,
-				Views: r.TotalViewsCnt, SaleCnt: r.TotalVideoSaleCnt, GmvCents: echotik.DollarsToCents(r.TotalVideoSaleGmvAmt),
+				Views: it.TotalViewsCnt, SaleCnt: it.TotalVideoSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalVideoSaleGmvAmt),
 			}
 			tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "discover_video_id"}, {Name: "dt"}},

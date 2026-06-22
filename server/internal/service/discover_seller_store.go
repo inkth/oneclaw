@@ -13,51 +13,61 @@ import (
 	"github.com/oneclaw/server/internal/service/echotik"
 )
 
-// upsertSellerList 把店铺榜行落库(列表级)并写当日累计快照。供定时任务调用。
-// 列表 upsert 只更新榜单字段,不碰详情字段(cover_url/seller_link/products/categories 等);
-// categories 详情口径更全(n=5),故列表只在 insert 新行时兜底(n=2)、不在 update 覆盖。
-func (s *DiscoverService) upsertSellerList(ctx context.Context, region string, rows []SellerDTO) {
-	if s.db == nil || len(rows) == 0 {
+// upsertSellerList 把店铺榜行落库(列表级,封面 rehost 到 COS 永久化)并写当日累计快照。
+// 供定时任务/榜单冷启动调用。封面仅在 rehost 成功时更新,不清空既有;不碰 seller_link/products
+// 等详情独有字段与 detail_fetched_at。categories 用榜单的 most_product_category_list(n=5,与详情同源)。
+func (s *DiscoverService) upsertSellerList(ctx context.Context, region string, raw []echotik.SellerListItem) {
+	if s.db == nil || len(raw) == 0 {
 		return
 	}
+	covers := make([]string, 0, len(raw))
+	for _, it := range raw {
+		covers = append(covers, it.CoverURL)
+	}
+	hosted := s.rehostCovers(ctx, covers)
 	today := time.Now().Format("2006-01-02")
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for _, r := range rows {
-			if r.SellerID == "" {
+		for _, it := range raw {
+			if it.SellerID == "" {
 				continue
 			}
-			catsJSON, _ := json.Marshal(r.Categories)
+			catsJSON, _ := json.Marshal(parseCategoryNames(it.MostProductCategoryList, 5))
 			ds := model.DiscoverSeller{
 				Provider:      providerEchoTik,
-				ExternalID:    r.SellerID,
+				ExternalID:    it.SellerID,
 				Region:        region,
-				SellerName:    r.SellerName,
-				Rating:        r.Rating,
+				SellerName:    it.SellerName,
+				Rating:        it.Rating.Float(),
 				Categories:    model.JSONB(catsJSON),
-				ProductCnt:    r.TotalProductCnt,
-				SaleCnt:       r.TotalSaleCnt,
-				SaleGmvCents:  echotik.DollarsToCents(r.TotalSaleGmvAmt),
-				IflCnt:        r.TotalIflCnt,
-				VideoCnt:      r.TotalVideoCnt,
-				LiveCnt:       r.TotalLiveCnt,
+				ProductCnt:    it.TotalProductCnt,
+				SaleCnt:       it.TotalSaleCnt,
+				SaleGmvCents:  echotik.DollarsToCents(it.TotalSaleGmvAmt),
+				IflCnt:        it.TotalIflCnt,
+				VideoCnt:      it.TotalVideoCnt,
+				LiveCnt:       it.TotalLiveCnt,
 				ListFetchedAt: time.Now(),
 			}
+			cols := []string{
+				"seller_name", "rating", "categories", "product_cnt", "sale_cnt", "sale_gmv_cents",
+				"ifl_cnt", "video_cnt", "live_cnt", "list_fetched_at", "updated_at",
+			}
+			if cos := hosted[it.CoverURL]; cos != "" {
+				ds.CoverURL = cos
+				cols = append(cols, "cover_url")
+			}
 			tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
-				DoUpdates: clause.AssignmentColumns([]string{
-					"seller_name", "rating", "product_cnt", "sale_cnt", "sale_gmv_cents",
-					"ifl_cnt", "video_cnt", "live_cnt", "list_fetched_at", "updated_at",
-				}),
+				Columns:   []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
+				DoUpdates: clause.AssignmentColumns(cols),
 			}).Create(&ds)
 
 			var stored model.DiscoverSeller
 			if err := tx.Where("provider = ? AND external_id = ? AND region = ?",
-				providerEchoTik, r.SellerID, region).First(&stored).Error; err != nil {
+				providerEchoTik, it.SellerID, region).First(&stored).Error; err != nil {
 				continue
 			}
 			snap := model.DiscoverSellerSnapshot{
 				DiscoverSellerID: stored.ID, Dt: today,
-				SaleCnt: r.TotalSaleCnt, GmvCents: echotik.DollarsToCents(r.TotalSaleGmvAmt),
+				SaleCnt: it.TotalSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalSaleGmvAmt),
 			}
 			tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "discover_seller_id"}, {Name: "dt"}},

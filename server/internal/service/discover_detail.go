@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
@@ -107,8 +109,11 @@ type detailExtras struct {
 
 // ── 入口 ─────────────────────────────────────────────────────────────────────
 
-// ProductDetailFull 组装选品详情:基础 + 详情扩展 + 达人/视频/趋势 + 评分。
-// 各子资源独立缓存(6h)与降级,任一失败不阻断整页。
+// productDetailTTL 选品详情级数据新鲜期(详情慢变;陈旧走 SWR 后台刷)。
+const productDetailTTL = 12 * time.Hour
+
+// ProductDetailFull 组装选品详情:基础(DB)+ 详情扩展/达人/视频(DB,按条件刷新)+ 趋势(本地快照差分)+ 评分。
+// 读 DB 优先,零 EchoTik;详情陈旧走 stale-while-revalidate 后台刷,首见同步刷一次并落库。
 func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID, externalID, region string) (*ProductDetailDTO, error) {
 	dp, err := s.findDiscover(ctx, externalID, region)
 	if err != nil {
@@ -116,28 +121,37 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 	}
 	base := s.decorate(ctx, wsID, []model.DiscoverProduct{*dp})[0]
 	dto := &ProductDetailDTO{DecoratedProduct: base}
+	trend := s.productTrendFromSnapshots(ctx, dp.ID)
 
-	if !s.echo.Configured() {
-		dto.Score = s.scoreProduct(dp, nil, nil)
-		return dto, nil
+	hasDetail := !dp.DetailFetchedAt.IsZero()
+	fresh := hasDetail && time.Since(dp.DetailFetchedAt) < productDetailTTL
+
+	var extras *detailExtras
+	if fresh || hasDetail || !s.echo.Configured() {
+		// 新鲜 / SWR 旧值 / 未配置降级:全部读 DB。
+		extras = parseProductExtras(dp.DetailExtras)
+		dto.Influencers = parseProductInfluencers(dp.DetailInfluencers)
+		dto.Videos = parseProductVideos(dp.DetailVideos)
+		if !fresh && hasDetail && s.echo.Configured() {
+			go func() {
+				bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
+				defer cancel()
+				if _, _, _, e := s.refreshProductDetail(bg, externalID, region); e != nil {
+					logger.Warn("选品详情后台刷新失败", logger.String("id", externalID), logger.Err(e))
+				}
+			}()
+		}
+	} else {
+		// 首见:同步刷一次并落库。
+		ex, infls, vids, e := s.refreshProductDetail(ctx, externalID, region)
+		if e == nil {
+			extras, dto.Influencers, dto.Videos = ex, infls, vids
+		}
 	}
-
-	var (
-		extras *detailExtras
-		infls  []ProductInfluencerDTO
-		vids   []ProductVideoDTO
-		trend  []TrendPointDTO
-	)
-	g, gctx := errgroup.WithContext(ctx)
-	g.Go(func() error { extras = s.fetchDetailExtras(gctx, externalID, region); return nil })
-	g.Go(func() error { infls = s.fetchInfluencers(gctx, externalID, region); return nil })
-	g.Go(func() error { vids = s.fetchVideos(gctx, externalID, region); return nil })
-	g.Go(func() error { trend = s.fetchTrend(gctx, externalID, region); return nil })
-	_ = g.Wait()
 
 	if extras != nil {
 		if len(extras.Gallery) > 0 {
-			dto.CoverUrls = extras.Gallery // 用完整图廊覆盖列表里的单图
+			dto.CoverUrls = extras.Gallery // 完整图廊覆盖列表单图
 		}
 		dto.Rating = extras.Rating
 		dto.ReviewCount = extras.ReviewCount
@@ -153,21 +167,40 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 			dto.TotalVideoCnt = extras.TotalVideoCnt
 		}
 	}
-	dto.Influencers = infls
-	dto.Videos = vids
+	if dto.Influencers == nil {
+		dto.Influencers = []ProductInfluencerDTO{}
+	}
+	if dto.Videos == nil {
+		dto.Videos = []ProductVideoDTO{}
+	}
 	dto.Trend = trend
 	dto.Score = s.scoreProduct(dp, extras, trend)
 	return dto, nil
 }
 
-// ── 子资源(缓存 + 降级) ──────────────────────────────────────────────────────
+// ── 详情子资源(拉取 + 永久化 + 落库) ──────────────────────────────────────────
 
-func (s *DiscoverService) fetchDetailExtras(ctx context.Context, id, region string) *detailExtras {
-	key := "pdetail:" + region + ":" + id
-	var cached detailExtras
-	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
-		return &cached
+// refreshProductDetail 并行拉详情扩展/带货达人/带货视频,封面 rehost 到 COS 永久化,落库 DiscoverProduct
+// 详情字段。趋势不在此取(走 DiscoverSnapshot 差分)。任一子资源失败只影响该块,全失败才返回 error。
+func (s *DiscoverService) refreshProductDetail(ctx context.Context, id, region string) (*detailExtras, []ProductInfluencerDTO, []ProductVideoDTO, error) {
+	var (
+		extras *detailExtras
+		infls  []ProductInfluencerDTO
+		vids   []ProductVideoDTO
+	)
+	g, gctx := errgroup.WithContext(ctx)
+	g.Go(func() error { extras = s.fetchProductExtras(gctx, id, region); return nil })
+	g.Go(func() error { infls = s.fetchProductInfluencers(gctx, id, region); return nil })
+	g.Go(func() error { vids = s.fetchProductVideos(gctx, id, region); return nil })
+	_ = g.Wait()
+	if extras == nil && len(infls) == 0 && len(vids) == 0 {
+		return nil, nil, nil, errors.New("选品详情子资源全部拉取失败")
 	}
+	s.persistProductDetail(ctx, id, region, extras, infls, vids)
+	return extras, infls, vids, nil
+}
+
+func (s *DiscoverService) fetchProductExtras(ctx context.Context, id, region string) *detailExtras {
 	d, err := s.echo.GetProductDetail(ctx, id, region)
 	if err != nil || d == nil {
 		if err != nil {
@@ -175,20 +208,19 @@ func (s *DiscoverService) fetchDetailExtras(ctx context.Context, id, region stri
 		}
 		return nil
 	}
-	// 图廊签名
 	covers := echotik.ParseCovers(d.CoverURL)
 	raws := make([]string, 0, len(covers))
 	for _, cv := range covers {
 		raws = append(raws, cv.URL)
 	}
-	signed := s.echo.SignCovers(ctx, raws)
+	hosted := s.rehostCovers(ctx, raws) // 图廊永久化到 COS
 	gallery := make([]string, 0, len(raws))
 	for _, r := range raws {
-		if su, ok := signed[r]; ok {
-			gallery = append(gallery, su)
+		if u := hosted[r]; u != "" {
+			gallery = append(gallery, u)
 		}
 	}
-	ex := &detailExtras{
+	return &detailExtras{
 		Gallery:      gallery,
 		Rating:       d.ProductRating.Float(),
 		ReviewCount:  d.ReviewCount.Int(),
@@ -210,16 +242,9 @@ func (s *DiscoverService) fetchDetailExtras(ctx context.Context, id, region stri
 		TotalVideoCnt: d.TotalVideoCnt.Int(),
 		TotalLiveCnt:  d.TotalLiveCnt.Int(),
 	}
-	s.cacheSetJSON(ctx, key, ex)
-	return ex
 }
 
-func (s *DiscoverService) fetchInfluencers(ctx context.Context, id, region string) []ProductInfluencerDTO {
-	key := "pinfl:" + region + ":" + id
-	var cached []ProductInfluencerDTO
-	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
-		return cached
-	}
+func (s *DiscoverService) fetchProductInfluencers(ctx context.Context, id, region string) []ProductInfluencerDTO {
 	rows, err := s.echo.GetProductInfluencers(ctx, id, region, 10)
 	if err != nil {
 		logger.Warn("选品详情:取达人失败", logger.String("id", id), logger.Err(err))
@@ -229,29 +254,23 @@ func (s *DiscoverService) fetchInfluencers(ctx context.Context, id, region strin
 	for _, r := range rows {
 		avatars = append(avatars, r.Avatar)
 	}
-	signed := s.echo.SignCovers(ctx, avatars)
+	hosted := s.rehostCovers(ctx, avatars)
 	out := make([]ProductInfluencerDTO, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, ProductInfluencerDTO{
 			UserID:             r.UserID,
 			NickName:           r.NickName,
-			Avatar:             signed[r.Avatar],
+			Avatar:             hosted[r.Avatar],
 			Category:           r.Category,
 			Followers:          r.TotalFollowersCnt.Int(),
 			PerProductGmvCents: echotik.DollarsToCents(r.PerProductGmvAmt.Float()),
 			PerProductSaleCnt:  r.PerProductSaleCnt.Int(),
 		})
 	}
-	s.cacheSetJSON(ctx, key, out)
 	return out
 }
 
-func (s *DiscoverService) fetchVideos(ctx context.Context, id, region string) []ProductVideoDTO {
-	key := "pvideo:" + region + ":" + id
-	var cached []ProductVideoDTO
-	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
-		return cached
-	}
+func (s *DiscoverService) fetchProductVideos(ctx context.Context, id, region string) []ProductVideoDTO {
 	rows, err := s.echo.GetProductVideos(ctx, id, region, 10)
 	if err != nil {
 		logger.Warn("选品详情:取视频失败", logger.String("id", id), logger.Err(err))
@@ -261,12 +280,12 @@ func (s *DiscoverService) fetchVideos(ctx context.Context, id, region string) []
 	for _, r := range rows {
 		covers = append(covers, r.ReflowCover)
 	}
-	signed := s.echo.SignCovers(ctx, covers)
+	hosted := s.rehostCovers(ctx, covers)
 	out := make([]ProductVideoDTO, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, ProductVideoDTO{
 			VideoID:      r.VideoID,
-			Cover:        signed[r.ReflowCover],
+			Cover:        hosted[r.ReflowCover],
 			Desc:         r.VideoDesc,
 			PlayAddr:     r.PlayAddr,
 			CreateTime:   string(r.CreateTime),
@@ -278,30 +297,88 @@ func (s *DiscoverService) fetchVideos(ctx context.Context, id, region string) []
 			SaleGmvCents: echotik.DollarsToCents(r.TotalVideoSaleGmv.Float()),
 		})
 	}
-	s.cacheSetJSON(ctx, key, out)
 	return out
 }
 
-func (s *DiscoverService) fetchTrend(ctx context.Context, id, region string) []TrendPointDTO {
-	key := "ptrend:" + region + ":" + id
-	var cached []TrendPointDTO
-	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
-		return cached
+// persistProductDetail 落库详情子资源(仅更新本轮拿到的块 + detail_fetched_at)。
+func (s *DiscoverService) persistProductDetail(ctx context.Context, id, region string, extras *detailExtras, infls []ProductInfluencerDTO, vids []ProductVideoDTO) {
+	if s.db == nil {
+		return
 	}
-	rows, err := s.echo.GetProductTrend(ctx, id, region, 14)
-	if err != nil {
-		logger.Warn("选品详情:取趋势失败", logger.String("id", id), logger.Err(err))
+	updates := map[string]any{"detail_fetched_at": time.Now()}
+	if extras != nil {
+		if b, e := json.Marshal(extras); e == nil {
+			updates["detail_extras"] = model.JSONB(b)
+		}
+	}
+	if infls != nil {
+		if b, e := json.Marshal(infls); e == nil {
+			updates["detail_influencers"] = model.JSONB(b)
+		}
+	}
+	if vids != nil {
+		if b, e := json.Marshal(vids); e == nil {
+			updates["detail_videos"] = model.JSONB(b)
+		}
+	}
+	s.db.WithContext(ctx).Model(&model.DiscoverProduct{}).
+		Where("provider = ? AND external_id = ? AND region = ?", providerEchoTik, id, region).
+		Updates(updates)
+}
+
+// productTrendFromSnapshots 商品趋势:本地每日累计快照差分(突破 EchoTik trend 14 天限制)。
+func (s *DiscoverService) productTrendFromSnapshots(ctx context.Context, productID uuid.UUID) []TrendPointDTO {
+	if s.db == nil || productID == uuid.Nil {
+		return []TrendPointDTO{}
+	}
+	var snaps []model.DiscoverSnapshot
+	if err := s.db.WithContext(ctx).
+		Where("discover_product_id = ?", productID).
+		Order("dt asc").Find(&snaps).Error; err != nil {
+		return []TrendPointDTO{}
+	}
+	return diffProductTrend(snaps)
+}
+
+// diffProductTrend 累计快照差分成日增量趋势点(纯函数)。首点无前值留 0,口径回退归 0。
+func diffProductTrend(snaps []model.DiscoverSnapshot) []TrendPointDTO {
+	out := make([]TrendPointDTO, 0, len(snaps))
+	for i, sn := range snaps {
+		pt := TrendPointDTO{Dt: sn.Dt}
+		if i > 0 {
+			prev := snaps[i-1]
+			pt.SaleCnt = nonNeg(sn.TotalSaleCnt - prev.TotalSaleCnt)
+			pt.GmvCents = nonNeg(sn.TotalSaleGmv - prev.TotalSaleGmv)
+		}
+		out = append(out, pt)
+	}
+	return out
+}
+
+func parseProductExtras(raw model.JSONB) *detailExtras {
+	if len(raw) == 0 {
 		return nil
 	}
-	out := make([]TrendPointDTO, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, TrendPointDTO{
-			Dt:       r.Dt,
-			SaleCnt:  r.Sale1dCnt.Int(),
-			GmvCents: echotik.DollarsToCents(r.SaleGmv1dAmt.Float()),
-		})
+	var ex detailExtras
+	if json.Unmarshal(raw, &ex) != nil {
+		return nil
 	}
-	s.cacheSetJSON(ctx, key, out)
+	return &ex
+}
+
+func parseProductInfluencers(raw model.JSONB) []ProductInfluencerDTO {
+	out := []ProductInfluencerDTO{}
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &out)
+	}
+	return out
+}
+
+func parseProductVideos(raw model.JSONB) []ProductVideoDTO {
+	out := []ProductVideoDTO{}
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &out)
+	}
 	return out
 }
 

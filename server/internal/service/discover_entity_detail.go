@@ -134,7 +134,12 @@ func (s *DiscoverService) SellerDetailFull(ctx context.Context, sellerID, region
 		return s.sellerDTOFromModel(ctx, &ds), nil
 	}
 
-	return s.refreshSellerDetail(ctx, sellerID, region)
+	// 首见:同步拉一次;失败(实体不存在/EchoTik 错)返回空而非 500。
+	dto, e := s.refreshSellerDetail(ctx, sellerID, region)
+	if e != nil {
+		return nil, nil
+	}
+	return dto, nil
 }
 
 // ── 达人详情入口 ──────────────────────────────────────────────────────────────
@@ -177,7 +182,12 @@ func (s *DiscoverService) InfluencerDetailFull(ctx context.Context, userID, regi
 		return s.influencerDTOFromModel(ctx, &di), nil
 	}
 
-	return s.refreshInfluencerDetail(ctx, userID, region)
+	// 首见:同步拉一次;失败(实体不存在/EchoTik 错)返回空而非 500。
+	dto, e := s.refreshInfluencerDetail(ctx, userID, region)
+	if e != nil {
+		return nil, nil
+	}
+	return dto, nil
 }
 
 // ── 视频详情 DTO ──────────────────────────────────────────────────────────────
@@ -238,7 +248,12 @@ func (s *DiscoverService) VideoDetailFull(ctx context.Context, videoID, region s
 		return videoDTOFromModel(&dv), nil
 	}
 
-	return s.refreshVideoDetail(ctx, videoID, region)
+	// 首见:同步拉一次;失败(实体不存在/EchoTik 错)返回空而非 500。
+	dto, e := s.refreshVideoDetail(ctx, videoID, region)
+	if e != nil {
+		return nil, nil
+	}
+	return dto, nil
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────

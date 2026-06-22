@@ -30,9 +30,9 @@ func (s *DiscoverService) TopSellingVideos(ctx context.Context, externalID, regi
 		limit = 5
 	}
 
-	// 主路:该商品自己的真实带货视频(复用 fetchVideos 的 pvideo 缓存)。
+	// 主路:该商品自己的真实带货视频(优先读已落库详情,无则 best-effort 拉)。
 	candidates := make([]HotVideoRef, 0, 10)
-	for _, v := range s.fetchVideos(ctx, externalID, region) {
+	for _, v := range s.productVideosCached(ctx, externalID, region) {
 		candidates = append(candidates, HotVideoRef{Desc: v.Desc, SaleCnt: v.SaleCnt, GmvCents: v.SaleGmvCents})
 	}
 	refs := selectTopHotVideos(candidates, limit)
@@ -43,6 +43,19 @@ func (s *DiscoverService) TopSellingVideos(ctx context.Context, externalID, regi
 		refs = selectTopHotVideos(candidates, limit)
 	}
 	return refs
+}
+
+// productVideosCached 取商品带货视频:优先读已落库详情(零 EchoTik),无则 best-effort 拉。
+func (s *DiscoverService) productVideosCached(ctx context.Context, externalID, region string) []ProductVideoDTO {
+	if dp, err := s.findDiscover(ctx, externalID, region); err == nil {
+		if vids := parseProductVideos(dp.DetailVideos); len(vids) > 0 {
+			return vids
+		}
+	}
+	if !s.echo.Configured() {
+		return nil
+	}
+	return s.fetchProductVideos(ctx, externalID, region)
 }
 
 // selectTopHotVideos 过滤(销量>0、去标签后≥hotMinDescRunes 字、按文案去重)→ 按销量降序 → 截断到 limit。

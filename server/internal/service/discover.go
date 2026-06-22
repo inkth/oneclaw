@@ -41,19 +41,19 @@ func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storag
 
 // DecoratedProduct 给前端发现页用:商品 + 是否已收藏(已收藏 = 已落进选品 products 表)。
 type DecoratedProduct struct {
-	ProductID         string    `json:"productId"` // EchoTik external id
-	Name              string    `json:"name"`
-	Region            string    `json:"region"`
-	AvgPriceCents     int       `json:"avgPriceCents"`
-	MinPriceCents     int       `json:"minPriceCents"`
-	MaxPriceCents     int       `json:"maxPriceCents"`
-	CommissionRate    float64   `json:"commissionRate"`
-	TotalSaleCnt      int       `json:"totalSaleCnt"`
-	TotalSaleGmvCents int       `json:"totalSaleGmvCents"`
-	TotalIflCnt       int       `json:"totalIflCnt"`
-	TotalVideoCnt     int       `json:"totalVideoCnt"`
-	CoverUrls         []string  `json:"coverUrls"`
-	ImportedProductID *string   `json:"importedProductId"`
+	ProductID         string   `json:"productId"` // EchoTik external id
+	Name              string   `json:"name"`
+	Region            string   `json:"region"`
+	AvgPriceCents     int      `json:"avgPriceCents"`
+	MinPriceCents     int      `json:"minPriceCents"`
+	MaxPriceCents     int      `json:"maxPriceCents"`
+	CommissionRate    float64  `json:"commissionRate"`
+	TotalSaleCnt      int      `json:"totalSaleCnt"`
+	TotalSaleGmvCents int      `json:"totalSaleGmvCents"`
+	TotalIflCnt       int      `json:"totalIflCnt"`
+	TotalVideoCnt     int      `json:"totalVideoCnt"`
+	CoverUrls         []string `json:"coverUrls"`
+	ImportedProductID *string  `json:"importedProductId"`
 }
 
 type RanklistResult struct {
@@ -75,10 +75,35 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 	// 全局榜单缓存键不含 category/页码,按类目筛选或翻页(第 2 页起)时绕过缓存(实时拉、不写缓存)。
 	useCache := p.CategoryID == "" && p.PageNum <= 1
 
-	// 1. 缓存命中?
+	// 1. 缓存命中?有就用(不看 TTL,EchoTik 不可用也能读);陈旧则后台刷新,不阻塞用户。
 	if useCache {
 		if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
+			if s.echo.Configured() && time.Since(fetchedAt) > cacheTTL {
+				go func() {
+					bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
+					defer cancel()
+					if _, e := s.RefreshRanklist(bg, p); e != nil {
+						logger.Warn("商品榜后台刷新失败", logger.String("region", p.Region), logger.Err(e))
+					}
+				}()
+			}
 			return &RanklistResult{State: "cached", FetchedAt: &fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
+		}
+	}
+
+	// 1b. 类目筛选:本地按累计销量取(数据足够零 EchoTik);命中则后台刷新补新。
+	if p.CategoryID != "" && p.PageNum <= 1 {
+		if dps, ok := s.lookupProductsByCategory(ctx, p); ok {
+			if s.echo.Configured() {
+				go func() {
+					bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
+					defer cancel()
+					if _, e := s.RefreshRanklist(bg, p); e != nil {
+						logger.Warn("类目商品榜后台刷新失败", logger.String("cat", p.CategoryID), logger.Err(e))
+					}
+				}()
+			}
+			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}, nil
 		}
 	}
 
@@ -109,10 +134,16 @@ func (s *DiscoverService) searchProducts(ctx context.Context, wsID uuid.UUID, p 
 	state := "live"
 	var raw []echotik.ProductListItem
 	if !s.echo.Configured() {
+		if dps, ok := s.searchLocalProducts(ctx, p); ok {
+			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}
+		}
 		state = "mock"
 		raw = echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
 	} else if rows, err := s.echo.SearchProducts(ctx, p.Keyword, p.Region, p.PageSize); err != nil {
-		logger.Warn("选品搜索失败,降级 mock", logger.String("keyword", p.Keyword), logger.Err(err))
+		logger.Warn("选品搜索失败,本地兜底", logger.String("keyword", p.Keyword), logger.Err(err))
+		if dps, ok := s.searchLocalProducts(ctx, p); ok {
+			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}
+		}
 		state = "error"
 		raw = echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
 	} else {
@@ -165,7 +196,8 @@ func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistPar
 		Where("provider = ? AND region = ? AND rank_type = ? AND rank_field = ?",
 			providerEchoTik, p.Region, p.RankType, p.RankField).
 		First(&entry).Error
-	if err != nil || time.Since(entry.FetchedAt) > cacheTTL || len(entry.ExternalIDs) == 0 {
+	// 不看 TTL:有就用(榜单可读不依赖 EchoTik);新鲜度由 Ranklist 的后台刷新与定时 job 保证。
+	if err != nil || len(entry.ExternalIDs) == 0 {
 		return nil, time.Time{}, false
 	}
 	var dps []model.DiscoverProduct
@@ -194,6 +226,20 @@ func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistPar
 	}
 	_ = order
 	return ordered, entry.FetchedAt, true
+}
+
+// lookupProductsByCategory 本地按类目取商品榜(累计销量降序)。数据足够时类目筛选零 EchoTik。
+func (s *DiscoverService) lookupProductsByCategory(ctx context.Context, p echotik.RanklistParams) ([]model.DiscoverProduct, bool) {
+	if s.db == nil {
+		return nil, false
+	}
+	var dps []model.DiscoverProduct
+	if err := s.db.WithContext(ctx).
+		Where("provider = ? AND region = ? AND category_id = ?", providerEchoTik, p.Region, p.CategoryID).
+		Order("total_sale_cnt DESC").Limit(p.PageSize).Find(&dps).Error; err != nil || len(dps) == 0 {
+		return nil, false
+	}
+	return dps, true
 }
 
 // persist 落库 DiscoverProduct(永远 upsert,支持导入);writeCache 控制是否写榜单缓存+快照

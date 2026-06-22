@@ -13,53 +13,63 @@ import (
 	"github.com/oneclaw/server/internal/service/echotik"
 )
 
-// upsertInfluencerList 把达人榜行落库(列表级)并写当日累计快照。供定时任务调用。
-// 列表 upsert 只更新榜单字段与 list_fetched_at,绝不碰详情字段(avatar/gender/signature/videos)
-// 与 detail_fetched_at,避免把详情刷新写入的值清空。
-func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region string, rows []InfluencerDTO) {
-	if s.db == nil || len(rows) == 0 {
+// upsertInfluencerList 把达人榜行落库(列表级,头像 rehost 到 COS 永久化)并写当日累计快照。
+// 供定时任务/榜单冷启动调用。列表 upsert 只更新榜单字段 + 头像,绝不碰其余详情字段
+// (gender/signature/videos/interaction_rate 等)与 detail_fetched_at;头像仅在 rehost 成功时更新,不清空既有。
+func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region string, raw []echotik.InfluencerListItem) {
+	if s.db == nil || len(raw) == 0 {
 		return
 	}
+	avatars := make([]string, 0, len(raw))
+	for _, it := range raw {
+		avatars = append(avatars, it.Avatar)
+	}
+	hosted := s.rehostCovers(ctx, avatars)
 	today := time.Now().Format("2006-01-02")
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for _, r := range rows {
-			if r.UserID == "" {
+		for _, it := range raw {
+			if it.UserID == "" {
 				continue
 			}
 			di := model.DiscoverInfluencer{
 				Provider:      providerEchoTik,
-				ExternalID:    r.UserID,
+				ExternalID:    it.UserID,
 				Region:        region,
-				UniqueID:      r.UniqueID,
-				NickName:      r.NickName,
-				Category:      r.Category,
-				EcScore:       r.EcScore,
-				Followers:     r.TotalFollowersCnt,
-				DiggCnt:       r.TotalDiggCnt,
-				ProductCnt:    r.TotalProductCnt,
-				PostVideoCnt:  r.TotalPostVideoCnt,
-				LiveCnt:       r.TotalLiveCnt,
-				SaleCnt:       r.TotalSaleCnt,
-				SaleGmvCents:  echotik.DollarsToCents(r.TotalSaleGmvAmt),
+				UniqueID:      it.UniqueID,
+				NickName:      it.NickName,
+				Category:      it.Category,
+				EcScore:       it.EcScore,
+				Followers:     it.TotalFollowersCnt,
+				DiggCnt:       it.TotalDiggCnt,
+				ProductCnt:    it.TotalProductCnt,
+				PostVideoCnt:  it.TotalPostVideoCnt,
+				LiveCnt:       it.TotalLiveCnt,
+				SaleCnt:       it.TotalSaleCnt,
+				SaleGmvCents:  echotik.DollarsToCents(it.TotalSaleGmvAmt),
 				ListFetchedAt: time.Now(),
 			}
+			cols := []string{
+				"unique_id", "nick_name", "category", "ec_score",
+				"followers", "digg_cnt", "product_cnt", "post_video_cnt", "live_cnt",
+				"sale_cnt", "sale_gmv_cents", "list_fetched_at", "updated_at",
+			}
+			if cos := hosted[it.Avatar]; cos != "" {
+				di.AvatarURL = cos
+				cols = append(cols, "avatar_url")
+			}
 			tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
-				DoUpdates: clause.AssignmentColumns([]string{
-					"unique_id", "nick_name", "category", "ec_score",
-					"followers", "digg_cnt", "product_cnt", "post_video_cnt", "live_cnt",
-					"sale_cnt", "sale_gmv_cents", "list_fetched_at", "updated_at",
-				}),
+				Columns:   []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
+				DoUpdates: clause.AssignmentColumns(cols),
 			}).Create(&di)
 
 			var stored model.DiscoverInfluencer
 			if err := tx.Where("provider = ? AND external_id = ? AND region = ?",
-				providerEchoTik, r.UserID, region).First(&stored).Error; err != nil {
+				providerEchoTik, it.UserID, region).First(&stored).Error; err != nil {
 				continue
 			}
 			snap := model.DiscoverInfluencerSnapshot{
 				DiscoverInfluencerID: stored.ID, Dt: today,
-				Followers: r.TotalFollowersCnt, SaleCnt: r.TotalSaleCnt, GmvCents: echotik.DollarsToCents(r.TotalSaleGmvAmt),
+				Followers: it.TotalFollowersCnt, SaleCnt: it.TotalSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalSaleGmvAmt),
 			}
 			tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "discover_influencer_id"}, {Name: "dt"}},
