@@ -76,7 +76,9 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 	}
 	if p.Keyword != "" {
 		return entitySearch(s.echo.Configured(),
-			func() []SellerDTO { return s.signMapSellers(ctx, echotik.MockSearchSellers(p.Region, p.Keyword, p.PageSize)) },
+			func() []SellerDTO {
+				return s.signMapSellers(ctx, echotik.MockSearchSellers(p.Region, p.Keyword, p.PageSize))
+			},
 			func() ([]SellerDTO, error) {
 				raw, err := s.echo.SearchSellers(ctx, p.Keyword, p.Region, p.PageSize)
 				if err != nil {
@@ -128,7 +130,9 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 	}
 	if p.Keyword != "" {
 		return entitySearch(s.echo.Configured(),
-			func() []InfluencerDTO { return s.signMapInfluencers(ctx, echotik.MockSearchInfluencers(p.Region, p.Keyword, p.PageSize)) },
+			func() []InfluencerDTO {
+				return s.signMapInfluencers(ctx, echotik.MockSearchInfluencers(p.Region, p.Keyword, p.PageSize))
+			},
 			func() ([]InfluencerDTO, error) {
 				raw, err := s.echo.SearchInfluencers(ctx, p.Keyword, p.Region, p.PageSize)
 				if err != nil {
@@ -139,7 +143,9 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 		)
 	}
 	return cachedEntity(s, ctx, entityCacheKey("influencer", p), s.echo.Configured(),
-		func() []InfluencerDTO { return s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize)) },
+		func() []InfluencerDTO {
+			return s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))
+		},
 		func() ([]InfluencerDTO, error) { return s.fetchInfluencerRows(ctx, p) },
 	)
 }
@@ -174,7 +180,9 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 	}
 	if p.Keyword != "" {
 		return entitySearch(s.echo.Configured(),
-			func() []VideoDTO { return s.signMapVideos(ctx, echotik.MockSearchVideos(p.Region, p.Keyword, p.PageSize)) },
+			func() []VideoDTO {
+				return s.signMapVideos(ctx, echotik.MockSearchVideos(p.Region, p.Keyword, p.PageSize))
+			},
 			func() ([]VideoDTO, error) {
 				raw, err := s.echo.SearchVideos(ctx, p.Keyword, p.Region, p.PageSize)
 				if err != nil {
@@ -229,6 +237,7 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 		firstErr = err
 	} else if len(rows) > 0 {
 		s.cacheSetJSON(ctx, entityCacheKey("seller", p), rows)
+		s.upsertSellerList(ctx, p.Region, rows) // P1: 店铺榜落库主表 + 当日累计快照
 	}
 	if rows, err := s.fetchInfluencerRows(ctx, p); err != nil {
 		if firstErr == nil {
@@ -236,6 +245,7 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 		}
 	} else if len(rows) > 0 {
 		s.cacheSetJSON(ctx, entityCacheKey("influencer", p), rows)
+		s.upsertInfluencerList(ctx, p.Region, rows) // P0: 达人榜落库主表 + 当日累计快照
 	}
 	if rows, err := s.fetchVideoRows(ctx, p); err != nil {
 		if firstErr == nil {
@@ -243,6 +253,7 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 		}
 	} else if len(rows) > 0 {
 		s.cacheSetJSON(ctx, entityCacheKey("video", p), rows)
+		s.upsertVideoList(ctx, p.Region, rows) // P1: 视频榜落库主表 + 当日累计快照
 	}
 	return firstErr
 }

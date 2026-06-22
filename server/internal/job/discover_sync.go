@@ -79,11 +79,19 @@ func (j *DiscoverSync) runOnce(ctx context.Context) {
 		}
 		j.syncCombo(ctx, c)
 	}
+
+	// 所有榜单刷完后,刷新被收藏(tracked)且详情最旧的实体:把 EchoTik 配额优先花在用户关注的实体上。
+	if ctx.Err() == nil {
+		j.discover.RefreshTrackedDetails(ctx, trackedRefreshPerRun)
+	}
 }
 
 // entityPrewarmPageSize 预热店铺/达人/视频三榜的条数,必须与前端各 entity 页请求的
 // page_size 一致(20),否则缓存键含 page_size 不匹配、预热白做。
 const entityPrewarmPageSize = 20
+
+// trackedRefreshPerRun 每轮主动刷新的 tracked(被收藏)实体数上限(每类)。
+const trackedRefreshPerRun = 10
 
 func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
 	// 商品榜 + 店铺/达人/视频三榜串行(视频榜还要批量签封面),留足跨境拉取时间。

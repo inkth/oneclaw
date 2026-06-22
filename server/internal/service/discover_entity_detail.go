@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
-	"golang.org/x/sync/errgroup"
-
+	"github.com/oneclaw/server/internal/logger"
+	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/echotik"
 )
 
@@ -100,200 +101,83 @@ type InfluencerTrendDTO struct {
 
 // ── 店铺详情入口 ──────────────────────────────────────────────────────────────
 
+// SellerDetailFull 店铺详情:读 DB 优先 + 按 detail_fetched_at 条件刷新(同 InfluencerDetailFull 四档)。
+// 趋势来自本地累计快照差分(sellerTrendFromSnapshots),不再实时打 EchoTik trend。
 func (s *DiscoverService) SellerDetailFull(ctx context.Context, sellerID, region string) (*SellerDetailDTO, error) {
+	var ds model.DiscoverSeller
+	found := false
+	if s.db != nil {
+		found = s.db.WithContext(ctx).
+			Where("provider = ? AND external_id = ? AND region = ?", providerEchoTik, sellerID, region).
+			First(&ds).Error == nil
+	}
+	fresh := found && !ds.DetailFetchedAt.IsZero() && time.Since(ds.DetailFetchedAt) < detailTTLFor(ds.IsTracked)
+	if fresh {
+		return s.sellerDTOFromModel(ctx, &ds), nil
+	}
+
 	if !s.echo.Configured() {
-		return nil, nil
-	}
-	key := "sdetail:" + region + ":" + sellerID
-	var cached SellerDetailDTO
-	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
-		return &cached, nil
-	}
-
-	d, err := s.echo.GetSellerDetail(ctx, sellerID, region)
-	if err != nil {
-		return nil, err
-	}
-	if d == nil {
+		if found {
+			return s.sellerDTOFromModel(ctx, &ds), nil
+		}
 		return nil, nil
 	}
 
-	var (
-		products []echotik.EntityProduct
-		trend    []echotik.SellerTrendPoint
-	)
-	g, gctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		products, _ = s.echo.GetSellerProducts(gctx, sellerID, region, 10)
-		return nil
-	})
-	g.Go(func() error {
-		trend, _ = s.echo.GetSellerTrend(gctx, sellerID, region, 14)
-		return nil
-	})
-	_ = g.Wait()
-
-	// 收集需签名的图:店铺封面 + 各商品首图。
-	toSign := []string{d.CoverURL}
-	prodRaw := make([]string, len(products))
-	for i, pr := range products {
-		prodRaw[i] = firstCoverURL(pr.CoverURL)
-		toSign = append(toSign, prodRaw[i])
-	}
-	signed := s.echo.SignCovers(ctx, toSign)
-	sign := func(raw string) string {
-		if raw == "" {
-			return ""
-		}
-		if su, ok := signed[raw]; ok {
-			return su
-		}
-		return raw // 非防盗链域名(如已是普通 URL)直接用
+	if found {
+		go func() {
+			bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
+			defer cancel()
+			if _, err := s.refreshSellerDetail(bg, sellerID, region); err != nil {
+				logger.Warn("店铺详情后台刷新失败", logger.String("sellerId", sellerID), logger.Err(err))
+			}
+		}()
+		return s.sellerDTOFromModel(ctx, &ds), nil
 	}
 
-	dto := &SellerDetailDTO{
-		SellerID:          d.SellerID,
-		SellerName:        d.SellerName,
-		Region:            d.Region,
-		Cover:             sign(d.CoverURL),
-		SellerLink:        d.SellerLink,
-		Rating:            d.Rating.Float(),
-		Categories:        parseCategoryNames(d.MostProductCategoryList, 5),
-		AvgPriceCents:     echotik.DollarsToCents(d.SpuAvgPrice.Float()),
-		TotalProductCnt:   d.TotalProductCnt.Int(),
-		TotalSaleCnt:      d.TotalSaleCnt.Int(),
-		TotalSaleGmvCents: echotik.DollarsToCents(d.TotalSaleGmvAmt.Float()),
-		TotalIflCnt:       d.TotalIflCnt.Int(),
-		TotalVideoCnt:     d.TotalVideoCnt.Int(),
-		TotalLiveCnt:      d.TotalLiveCnt.Int(),
-		Windows: &EntityWindowsDTO{
-			Sale7dCnt:   d.TotalSale7dCnt.Int(),
-			Sale30dCnt:  d.TotalSale30dCnt.Int(),
-			Gmv7dCents:  echotik.DollarsToCents(d.TotalSaleGmv7dAmt.Float()),
-			Gmv30dCents: echotik.DollarsToCents(d.TotalSaleGmv30dAmt.Float()),
-		},
-		Products: make([]EntityProductDTO, 0, len(products)),
-		Trend:    make([]TrendPointDTO, 0, len(trend)),
-	}
-	for i, pr := range products {
-		dto.Products = append(dto.Products, EntityProductDTO{
-			ProductID:      pr.ProductID,
-			Name:           pr.ProductName,
-			Cover:          sign(prodRaw[i]),
-			AvgPriceCents:  echotik.DollarsToCents(pr.MaxPrice.Float()),
-			CommissionRate: pr.ProductCommissionRate.Float(),
-			Rating:         pr.ProductRating.Float(),
-		})
-	}
-	for _, t := range trend {
-		dto.Trend = append(dto.Trend, TrendPointDTO{
-			Dt: t.Dt, SaleCnt: t.Sale1dCnt.Int(), GmvCents: echotik.DollarsToCents(t.SaleGmv1dAmt.Float()),
-		})
-	}
-	s.cacheSetJSON(ctx, key, dto)
-	return dto, nil
+	return s.refreshSellerDetail(ctx, sellerID, region)
 }
 
 // ── 达人详情入口 ──────────────────────────────────────────────────────────────
 
+// InfluencerDetailFull 达人详情:读 DB 优先 + 按 detail_fetched_at 条件刷新。
+//  1. DB 命中且详情新鲜(< influencerDetailTTL) → 零 API 直返;
+//  2. EchoTik 未配置 → 有旧值返回旧值(降级),否则空;
+//  3. 有旧值但陈旧 → stale-while-revalidate:先返回旧值,后台异步刷新(不随请求 ctx 取消);
+//  4. 首见(无旧值) → 同步拉一次并落库。
+//
+// 趋势来自本地累计快照差分(见 influencerTrendFromSnapshots),不再实时打 EchoTik trend。
 func (s *DiscoverService) InfluencerDetailFull(ctx context.Context, userID, region string) (*InfluencerDetailDTO, error) {
+	var di model.DiscoverInfluencer
+	found := false
+	if s.db != nil {
+		found = s.db.WithContext(ctx).
+			Where("provider = ? AND external_id = ? AND region = ?", providerEchoTik, userID, region).
+			First(&di).Error == nil
+	}
+	fresh := found && !di.DetailFetchedAt.IsZero() && time.Since(di.DetailFetchedAt) < detailTTLFor(di.IsTracked)
+	if fresh {
+		return s.influencerDTOFromModel(ctx, &di), nil
+	}
+
 	if !s.echo.Configured() {
-		return nil, nil
-	}
-	key := "idetail:" + region + ":" + userID
-	var cached InfluencerDetailDTO
-	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
-		return &cached, nil
-	}
-
-	d, err := s.echo.GetInfluencerDetail(ctx, userID, region)
-	if err != nil {
-		return nil, err
-	}
-	if d == nil {
-		return nil, nil
-	}
-
-	var (
-		videos []echotik.InfluencerVideo
-		trend  []echotik.InfluencerTrendPoint
-	)
-	g, gctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		videos, _ = s.echo.GetInfluencerVideos(gctx, userID, region, 10)
-		return nil
-	})
-	g.Go(func() error {
-		trend, _ = s.echo.GetInfluencerTrend(gctx, userID, region, 14)
-		return nil
-	})
-	_ = g.Wait()
-
-	toSign := []string{d.Avatar}
-	vidRaw := make([]string, len(videos))
-	for i, v := range videos {
-		vidRaw[i] = v.ReflowCover
-		toSign = append(toSign, v.ReflowCover)
-	}
-	signed := s.echo.SignCovers(ctx, toSign)
-	sign := func(raw string) string {
-		if su, ok := signed[raw]; ok {
-			return su
+		if found {
+			return s.influencerDTOFromModel(ctx, &di), nil
 		}
-		return raw
+		return nil, nil
 	}
 
-	dto := &InfluencerDetailDTO{
-		UserID:            d.UserID,
-		UniqueID:          d.UniqueID,
-		NickName:          d.NickName,
-		Region:            d.Region,
-		Avatar:            sign(d.Avatar),
-		Category:          d.Category,
-		Gender:            d.Gender,
-		Language:          d.Language,
-		ContactEmail:      d.ContactEmail,
-		Signature:         d.Signature,
-		EcScore:           d.EcScore.Float(),
-		InteractionRate:   d.InteractionRate.Float(),
-		Followers:         d.TotalFollowersCnt.Int(),
-		Followers30d:      d.TotalFollowers30dCnt.Int(),
-		PostVideoCnt:      d.TotalPostVideoCnt.Int(),
-		ProductCnt:        d.TotalProductCnt.Int(),
-		TotalSaleCnt:      d.TotalSaleCnt.Int(),
-		TotalSaleGmvCents: echotik.DollarsToCents(d.TotalSaleGmvAmt.Float()),
-		TotalViewsCnt:     d.TotalViewsCnt.Int(),
-		TotalDiggCnt:      d.TotalDiggCnt.Int(),
-		Videos:            make([]InfluencerVideoDTO, 0, len(videos)),
-		Trend:             make([]InfluencerTrendDTO, 0, len(trend)),
+	if found {
+		go func() {
+			bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
+			defer cancel()
+			if _, err := s.refreshInfluencerDetail(bg, userID, region); err != nil {
+				logger.Warn("达人详情后台刷新失败", logger.String("userId", userID), logger.Err(err))
+			}
+		}()
+		return s.influencerDTOFromModel(ctx, &di), nil
 	}
-	for i, v := range videos {
-		dto.Videos = append(dto.Videos, InfluencerVideoDTO{
-			VideoID:      v.VideoID,
-			UniqueID:     v.UniqueID,
-			Cover:        sign(vidRaw[i]),
-			Desc:         v.VideoDesc,
-			IsAd:         v.IsAd.Int() == 1,
-			Views:        v.TotalViewsCnt.Int(),
-			Digg:         v.TotalDiggCnt.Int(),
-			Comments:     v.TotalCommentsCnt.Int(),
-			Shares:       v.TotalSharesCnt.Int(),
-			CreateTime:   string(v.CreateTime),
-			SaleCnt:      v.TotalVideoSaleCnt.Int(),
-			SaleGmvCents: echotik.DollarsToCents(v.TotalVideoSaleGmv.Float()),
-		})
-	}
-	for _, t := range trend {
-		dto.Trend = append(dto.Trend, InfluencerTrendDTO{
-			Dt:           t.Dt,
-			Followers:    t.TotalFollowersCnt.Int(),
-			NewFollowers: t.Followers1dCnt.Int(),
-			SaleCnt:      t.Sale1dCnt.Int(),
-			GmvCents:     echotik.DollarsToCents(t.SaleGmv1dAmt.Float()),
-		})
-	}
-	s.cacheSetJSON(ctx, key, dto)
-	return dto, nil
+
+	return s.refreshInfluencerDetail(ctx, userID, region)
 }
 
 // ── 视频详情 DTO ──────────────────────────────────────────────────────────────
@@ -322,83 +206,39 @@ type VideoDetailDTO struct {
 	Products     []EntityProductDTO `json:"products"`
 }
 
+// VideoDetailFull 视频详情:读 DB 优先 + 按 detail_fetched_at 条件刷新(同 InfluencerDetailFull 四档)。
 func (s *DiscoverService) VideoDetailFull(ctx context.Context, videoID, region string) (*VideoDetailDTO, error) {
+	var dv model.DiscoverVideo
+	found := false
+	if s.db != nil {
+		found = s.db.WithContext(ctx).
+			Where("provider = ? AND external_id = ? AND region = ?", providerEchoTik, videoID, region).
+			First(&dv).Error == nil
+	}
+	fresh := found && !dv.DetailFetchedAt.IsZero() && time.Since(dv.DetailFetchedAt) < detailTTLFor(dv.IsTracked)
+	if fresh {
+		return videoDTOFromModel(&dv), nil
+	}
+
 	if !s.echo.Configured() {
-		return nil, nil
-	}
-	key := "vdetail:" + region + ":" + videoID
-	var cached VideoDetailDTO
-	if _, ok := s.cacheGetJSON(ctx, key, entityCacheTTL, &cached); ok {
-		return &cached, nil
-	}
-
-	d, err := s.echo.GetVideoDetail(ctx, videoID, region)
-	if err != nil {
-		return nil, err
-	}
-	if d == nil {
+		if found {
+			return videoDTOFromModel(&dv), nil
+		}
 		return nil, nil
 	}
 
-	// 视频带货商品(video_products 是 productId 数组)→ 取详情补名称/封面/价格。
-	pids := parseIDList(d.VideoProducts)
-	var prods []echotik.ProductDetail
-	if len(pids) > 0 {
-		prods, _ = s.echo.GetProductDetails(ctx, pids, region)
+	if found {
+		go func() {
+			bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
+			defer cancel()
+			if _, err := s.refreshVideoDetail(bg, videoID, region); err != nil {
+				logger.Warn("视频详情后台刷新失败", logger.String("videoId", videoID), logger.Err(err))
+			}
+		}()
+		return videoDTOFromModel(&dv), nil
 	}
 
-	toSign := []string{d.ReflowCover, d.Avatar}
-	prodRaw := make([]string, len(prods))
-	for i, pr := range prods {
-		prodRaw[i] = firstCoverURL(pr.CoverURL)
-		toSign = append(toSign, prodRaw[i])
-	}
-	signed := s.echo.SignCovers(ctx, toSign)
-	sign := func(raw string) string {
-		if raw == "" {
-			return ""
-		}
-		if su, ok := signed[raw]; ok {
-			return su
-		}
-		return raw
-	}
-
-	dto := &VideoDetailDTO{
-		VideoID:      d.VideoID,
-		UserID:       d.UserID,
-		UniqueID:     d.UniqueID,
-		Region:       d.Region,
-		Desc:         d.VideoDesc,
-		Cover:        sign(d.ReflowCover),
-		Avatar:       sign(d.Avatar),
-		Duration:     d.Duration.Int(),
-		CreateTime:   string(d.CreateTime),
-		IsAd:         d.IsAd.Int() == 1,
-		CreatedByAI:  string(d.CreatedByAI) == "true",
-		Views:        d.TotalViewsCnt.Int(),
-		Views7d:      d.TotalViews7dCnt.Int(),
-		Views30d:     d.TotalViews30dCnt.Int(),
-		Digg:         d.TotalDiggCnt.Int(),
-		Comments:     d.TotalCommentsCnt.Int(),
-		Shares:       d.TotalSharesCnt.Int(),
-		Favorites:    d.TotalFavoritesCnt.Int(),
-		SaleCnt:      d.TotalVideoSaleCnt.Int(),
-		SaleGmvCents: echotik.DollarsToCents(d.TotalVideoSaleGmv.Float()),
-		Products:     make([]EntityProductDTO, 0, len(prods)),
-	}
-	for i, pr := range prods {
-		dto.Products = append(dto.Products, EntityProductDTO{
-			ProductID:      pr.ProductID,
-			Name:           pr.ProductName,
-			Cover:          sign(prodRaw[i]),
-			AvgPriceCents:  echotik.DollarsToCents(pr.SpuAvgPrice.Float()),
-			CommissionRate: pr.ProductCommissionRate.Float(),
-			Rating:         pr.ProductRating.Float(),
-		})
-	}
-	s.cacheSetJSON(ctx, key, dto)
-	return dto, nil
+	return s.refreshVideoDetail(ctx, videoID, region)
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────

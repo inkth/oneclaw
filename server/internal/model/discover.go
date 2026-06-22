@@ -120,15 +120,16 @@ func (w *WorkspaceDiscoverInteraction) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
-// WorkspaceDiscoverFavorite 工作台对店铺/达人/视频的收藏(这些实体不落库,故另存快照供收藏页渲染)。
+// WorkspaceDiscoverFavorite 工作台对店铺/达人/视频的收藏关系。
 // (workspace_id, kind, external_id, region) 唯一。kind = seller | influencer | video。
+// 注:实体已落库(DiscoverSeller/Influencer/Video),收藏页直接读主表渲染;Snapshot 字段已废弃保留。
 type WorkspaceDiscoverFavorite struct {
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
 	WorkspaceID uuid.UUID `gorm:"column:workspace_id;type:uuid;not null;uniqueIndex:uq_wdf_key" json:"workspaceId"`
 	Kind        string    `gorm:"not null;uniqueIndex:uq_wdf_key" json:"kind"`
 	ExternalID  string    `gorm:"column:external_id;not null;uniqueIndex:uq_wdf_key" json:"externalId"`
 	Region      string    `gorm:"not null;uniqueIndex:uq_wdf_key" json:"region"`
-	Snapshot    JSONB     `gorm:"type:jsonb" json:"snapshot"` // {name, cover, subtitle, metric} 供收藏页渲染
+	Snapshot    JSONB     `gorm:"type:jsonb" json:"snapshot,omitempty"` // deprecated: 实体落库后改读主表渲染,不再写/读
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -154,6 +155,204 @@ type CoverAsset struct {
 func (a *CoverAsset) BeforeCreate(*gorm.DB) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
+	}
+	return nil
+}
+
+// DiscoverInfluencer EchoTik 达人(全局,非工作台维度)。(provider, external_id, region) 唯一,
+// external_id = EchoTik user_id。对标 DiscoverProduct,但区分两级新鲜度:
+//   - 列表级字段(nick_name/followers/sale_* 等)由榜单同步刷新,记 list_fetched_at;
+//   - 详情级字段(gender/signature/videos/avatar 等)由详情页按条件刷新,记 detail_fetched_at。
+//
+// 这样列表 upsert 绝不覆盖详情字段,详情页可「读 DB + 按 detail_fetched_at TTL 条件刷新」。
+type DiscoverInfluencer struct {
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	Provider   string    `gorm:"not null;uniqueIndex:uq_dinf_provider_ext_region" json:"provider"`
+	ExternalID string    `gorm:"column:external_id;not null;uniqueIndex:uq_dinf_provider_ext_region" json:"externalId"`
+	Region     string    `gorm:"not null;uniqueIndex:uq_dinf_provider_ext_region" json:"region"`
+
+	// ── 列表级(榜单同步刷新) ──
+	UniqueID     string  `gorm:"column:unique_id;default:''" json:"uniqueId"`
+	NickName     string  `gorm:"default:''" json:"nickName"`
+	Category     string  `gorm:"default:''" json:"category"`
+	EcScore      float64 `gorm:"default:0" json:"ecScore"`
+	Followers    int     `gorm:"default:0" json:"followers"`
+	DiggCnt      int     `gorm:"default:0" json:"diggCnt"`
+	ProductCnt   int     `gorm:"default:0" json:"productCnt"`
+	PostVideoCnt int     `gorm:"default:0" json:"postVideoCnt"`
+	LiveCnt      int     `gorm:"default:0" json:"liveCnt"`
+	SaleCnt      int     `gorm:"default:0" json:"saleCnt"`
+	SaleGmvCents int     `gorm:"default:0" json:"saleGmvCents"`
+
+	// ── 详情级(详情页按条件刷新) ──
+	AvatarURL       string  `gorm:"column:avatar_url;type:text;default:''" json:"avatarUrl"` // 永久化到 COS
+	Gender          string  `gorm:"default:''" json:"gender"`
+	Language        string  `gorm:"default:''" json:"language"`
+	ContactEmail    string  `gorm:"column:contact_email;default:''" json:"contactEmail"`
+	Signature       string  `gorm:"type:text;default:''" json:"signature"`
+	InteractionRate float64 `gorm:"default:0" json:"interactionRate"`
+	Followers30d    int     `gorm:"column:followers30d;default:0" json:"followers30d"`
+	ViewsCnt        int     `gorm:"column:views_cnt;default:0" json:"viewsCnt"`
+	Videos          JSONB   `gorm:"type:jsonb" json:"-"` // []InfluencerVideoDTO 带货视频(详情子资源)
+	Raw             JSONB   `gorm:"type:jsonb" json:"-"`
+
+	IsTracked       bool      `gorm:"default:false;index" json:"isTracked"` // 被收藏/选品=高优先级刷新(P2 用)
+	ListFetchedAt   time.Time `gorm:"index" json:"listFetchedAt"`
+	DetailFetchedAt time.Time `gorm:"index" json:"detailFetchedAt"` // 零值=从未拉过详情
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func (d *DiscoverInfluencer) BeforeCreate(*gorm.DB) error {
+	if d.ID == uuid.Nil {
+		d.ID = uuid.New()
+	}
+	return nil
+}
+
+// DiscoverInfluencerSnapshot 达人每日累计指标快照。(discover_influencer_id, dt) 唯一。
+// 既是 job 每日追加的时间序列,也是详情页趋势图的数据源:存累计值,趋势的「日增量」由相邻两天差分得到
+// (突破 EchoTik trend 仅 14 天的限制,攒越久越完整)。对标 DiscoverSnapshot。
+type DiscoverInfluencerSnapshot struct {
+	ID                   uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	DiscoverInfluencerID uuid.UUID `gorm:"column:discover_influencer_id;type:uuid;not null;index;uniqueIndex:uq_dinf_snap_dt" json:"discoverInfluencerId"`
+	Dt                   string    `gorm:"not null;index;uniqueIndex:uq_dinf_snap_dt" json:"dt"`
+	Followers            int       `gorm:"default:0" json:"followers"` // 累计
+	SaleCnt              int       `gorm:"default:0" json:"saleCnt"`   // 累计
+	GmvCents             int       `gorm:"default:0" json:"gmvCents"`  // 累计
+	CreatedAt            time.Time `json:"createdAt"`
+}
+
+func (s *DiscoverInfluencerSnapshot) BeforeCreate(*gorm.DB) error {
+	if s.ID == uuid.Nil {
+		s.ID = uuid.New()
+	}
+	return nil
+}
+
+// DiscoverSeller EchoTik 店铺(全局)。(provider, external_id, region) 唯一,external_id = seller_id。
+// 同 DiscoverInfluencer:两级新鲜度,列表 upsert 不覆盖详情字段。
+type DiscoverSeller struct {
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	Provider   string    `gorm:"not null;uniqueIndex:uq_dsel_provider_ext_region" json:"provider"`
+	ExternalID string    `gorm:"column:external_id;not null;uniqueIndex:uq_dsel_provider_ext_region" json:"externalId"`
+	Region     string    `gorm:"not null;uniqueIndex:uq_dsel_provider_ext_region" json:"region"`
+
+	// ── 列表级 ──
+	SellerName   string  `gorm:"default:''" json:"sellerName"`
+	CoverURL     string  `gorm:"column:cover_url;type:text;default:''" json:"coverUrl"` // 永久化 COS
+	Rating       float64 `gorm:"default:0" json:"rating"`
+	Categories   JSONB   `gorm:"type:jsonb" json:"categories"` // []string
+	ProductCnt   int     `gorm:"default:0" json:"productCnt"`
+	SaleCnt      int     `gorm:"default:0" json:"saleCnt"`
+	SaleGmvCents int     `gorm:"default:0" json:"saleGmvCents"`
+	IflCnt       int     `gorm:"default:0" json:"iflCnt"`
+	VideoCnt     int     `gorm:"default:0" json:"videoCnt"`
+	LiveCnt      int     `gorm:"default:0" json:"liveCnt"`
+
+	// ── 详情级 ──
+	SellerLink    string `gorm:"column:seller_link;type:text;default:''" json:"sellerLink"`
+	AvgPriceCents int    `gorm:"default:0" json:"avgPriceCents"`
+	Sale7dCnt     int    `gorm:"column:sale7d_cnt;default:0" json:"sale7dCnt"`
+	Sale30dCnt    int    `gorm:"column:sale30d_cnt;default:0" json:"sale30dCnt"`
+	Gmv7dCents    int    `gorm:"column:gmv7d_cents;default:0" json:"gmv7dCents"`
+	Gmv30dCents   int    `gorm:"column:gmv30d_cents;default:0" json:"gmv30dCents"`
+	Products      JSONB  `gorm:"type:jsonb" json:"-"` // []EntityProductDTO,详情子资源
+	Raw           JSONB  `gorm:"type:jsonb" json:"-"`
+
+	IsTracked       bool      `gorm:"default:false;index" json:"isTracked"`
+	ListFetchedAt   time.Time `gorm:"index" json:"listFetchedAt"`
+	DetailFetchedAt time.Time `gorm:"index" json:"detailFetchedAt"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func (d *DiscoverSeller) BeforeCreate(*gorm.DB) error {
+	if d.ID == uuid.Nil {
+		d.ID = uuid.New()
+	}
+	return nil
+}
+
+// DiscoverSellerSnapshot 店铺每日累计快照。(discover_seller_id, dt) 唯一。趋势由相邻两天差分。
+type DiscoverSellerSnapshot struct {
+	ID               uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	DiscoverSellerID uuid.UUID `gorm:"column:discover_seller_id;type:uuid;not null;index;uniqueIndex:uq_dsel_snap_dt" json:"discoverSellerId"`
+	Dt               string    `gorm:"not null;index;uniqueIndex:uq_dsel_snap_dt" json:"dt"`
+	SaleCnt          int       `gorm:"default:0" json:"saleCnt"`  // 累计
+	GmvCents         int       `gorm:"default:0" json:"gmvCents"` // 累计
+	CreatedAt        time.Time `json:"createdAt"`
+}
+
+func (s *DiscoverSellerSnapshot) BeforeCreate(*gorm.DB) error {
+	if s.ID == uuid.Nil {
+		s.ID = uuid.New()
+	}
+	return nil
+}
+
+// DiscoverVideo EchoTik 带货视频(全局)。(provider, external_id, region) 唯一,external_id = video_id。
+// 同上两级新鲜度。当前 VideoDetailDTO 不含趋势,但仍每日落快照,为复盘/趋势攒数据底座。
+type DiscoverVideo struct {
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	Provider   string    `gorm:"not null;uniqueIndex:uq_dvid_provider_ext_region" json:"provider"`
+	ExternalID string    `gorm:"column:external_id;not null;uniqueIndex:uq_dvid_provider_ext_region" json:"externalId"`
+	Region     string    `gorm:"not null;uniqueIndex:uq_dvid_provider_ext_region" json:"region"`
+
+	// ── 列表级 ──
+	NickName     string `gorm:"default:''" json:"nickName"`
+	UniqueID     string `gorm:"column:unique_id;default:''" json:"uniqueId"`
+	CoverURL     string `gorm:"column:cover_url;type:text;default:''" json:"coverUrl"`   // 永久化 COS
+	AvatarURL    string `gorm:"column:avatar_url;type:text;default:''" json:"avatarUrl"` // 永久化 COS
+	Desc         string `gorm:"column:video_desc;type:text;default:''" json:"desc"`
+	Category     string `gorm:"default:''" json:"category"`
+	Duration     int    `gorm:"default:0" json:"duration"`
+	CreateTime   string `gorm:"column:create_time;default:''" json:"createTime"`
+	Views        int    `gorm:"default:0" json:"views"`
+	Digg         int    `gorm:"default:0" json:"digg"`
+	Comments     int    `gorm:"default:0" json:"comments"`
+	Shares       int    `gorm:"default:0" json:"shares"`
+	SaleCnt      int    `gorm:"default:0" json:"saleCnt"`
+	SaleGmvCents int    `gorm:"default:0" json:"saleGmvCents"`
+
+	// ── 详情级 ──
+	UserID      string `gorm:"column:user_id;default:''" json:"userId"`
+	IsAd        bool   `gorm:"column:is_ad;default:false" json:"isAd"`
+	CreatedByAI bool   `gorm:"column:created_by_ai;default:false" json:"createdByAi"`
+	Views7d     int    `gorm:"column:views7d;default:0" json:"views7d"`
+	Views30d    int    `gorm:"column:views30d;default:0" json:"views30d"`
+	Favorites   int    `gorm:"default:0" json:"favorites"`
+	Products    JSONB  `gorm:"type:jsonb" json:"-"` // []EntityProductDTO 带货商品
+	Raw         JSONB  `gorm:"type:jsonb" json:"-"`
+
+	IsTracked       bool      `gorm:"default:false;index" json:"isTracked"`
+	ListFetchedAt   time.Time `gorm:"index" json:"listFetchedAt"`
+	DetailFetchedAt time.Time `gorm:"index" json:"detailFetchedAt"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func (d *DiscoverVideo) BeforeCreate(*gorm.DB) error {
+	if d.ID == uuid.Nil {
+		d.ID = uuid.New()
+	}
+	return nil
+}
+
+// DiscoverVideoSnapshot 视频每日累计快照。(discover_video_id, dt) 唯一。当前只写不读(攒数据)。
+type DiscoverVideoSnapshot struct {
+	ID              uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	DiscoverVideoID uuid.UUID `gorm:"column:discover_video_id;type:uuid;not null;index;uniqueIndex:uq_dvid_snap_dt" json:"discoverVideoId"`
+	Dt              string    `gorm:"not null;index;uniqueIndex:uq_dvid_snap_dt" json:"dt"`
+	Views           int       `gorm:"default:0" json:"views"`    // 累计
+	SaleCnt         int       `gorm:"default:0" json:"saleCnt"`  // 累计
+	GmvCents        int       `gorm:"default:0" json:"gmvCents"` // 累计
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
+func (s *DiscoverVideoSnapshot) BeforeCreate(*gorm.DB) error {
+	if s.ID == uuid.Nil {
+		s.ID = uuid.New()
 	}
 	return nil
 }
