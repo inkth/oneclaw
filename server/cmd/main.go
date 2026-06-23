@@ -174,6 +174,15 @@ func main() {
 		Template:  tplSvc,
 		Billing:   billingSvc,
 		Quota:     quotaSvc,
+		// 就绪探针:DB ping(带 2s 超时)。让 /ready 在 DB 不可达时返回 503,
+		// 而非像过去那样空探针恒 200(伪健康)。
+		Ready: []func() error{
+			func() error {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+				return sqlDB.PingContext(ctx)
+			},
+		},
 	})
 
 	srv := &http.Server{

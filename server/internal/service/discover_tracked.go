@@ -57,9 +57,7 @@ func (s *DiscoverService) markFavoriteEntity(ctx context.Context, kind, external
 	if !s.echo.Configured() {
 		return
 	}
-	go func() {
-		bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
-		defer cancel()
+	goRefresh(ctx, "track-entity:"+kind, func(bg context.Context) {
 		switch kind {
 		case "influencer":
 			_, _ = s.refreshInfluencerDetail(bg, externalID, region)
@@ -69,7 +67,7 @@ func (s *DiscoverService) markFavoriteEntity(ctx context.Context, kind, external
 			_, _ = s.refreshVideoDetail(bg, externalID, region)
 		}
 		s.setEntityTracked(bg, kind, externalID, region)
-	}()
+	})
 }
 
 // RefreshTrackedDetails 刷新被跟踪且详情超过 trackedDetailTTL 的实体:每类最多 limitPerKind 个、

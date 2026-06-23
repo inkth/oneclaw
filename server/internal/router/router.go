@@ -25,6 +25,8 @@ type Deps struct {
 	Template  *service.TemplateService
 	Billing   *service.BillingService
 	Quota     *service.QuotaService
+	// Ready 就绪探针(如 DB ping);任一失败 /ready 返回 503。空则 /ready 恒 200。
+	Ready []func() error
 }
 
 func New(d Deps) *gin.Engine {
@@ -57,7 +59,7 @@ func New(d Deps) *gin.Engine {
 	billH := handler.NewBillingHandler(d.Billing, d.Quota, d.Workspace)
 
 	r.GET("/health", handler.Health)
-	r.GET("/ready", handler.Ready())
+	r.GET("/ready", handler.Ready(d.Ready...))
 
 	api := r.Group("/api/v1")
 	api.Use(middleware.RateLimit(&d.Cfg.RateLimit))

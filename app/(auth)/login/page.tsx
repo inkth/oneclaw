@@ -16,8 +16,8 @@ export default function LoginPage() {
         </Suspense>
       </div>
       <p className="mt-6 text-center text-2xs text-zinc-400">
-        登录即表示同意 <a href="#" className="underline">服务条款</a> 与{" "}
-        <a href="#" className="underline">隐私政策</a>。
+        登录即表示同意 <a href="/legal/terms" className="underline">服务条款</a> 与{" "}
+        <a href="/legal/privacy" className="underline">隐私政策</a>。
       </p>
     </div>
   );

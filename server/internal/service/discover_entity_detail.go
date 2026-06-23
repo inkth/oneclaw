@@ -124,13 +124,11 @@ func (s *DiscoverService) SellerDetailFull(ctx context.Context, sellerID, region
 	}
 
 	if found {
-		go func() {
-			bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
-			defer cancel()
+		goRefresh(ctx, "seller-detail", func(bg context.Context) {
 			if _, err := s.refreshSellerDetail(bg, sellerID, region); err != nil {
 				logger.Warn("店铺详情后台刷新失败", logger.String("sellerId", sellerID), logger.Err(err))
 			}
-		}()
+		})
 		return s.sellerDTOFromModel(ctx, &ds), nil
 	}
 
@@ -172,13 +170,11 @@ func (s *DiscoverService) InfluencerDetailFull(ctx context.Context, userID, regi
 	}
 
 	if found {
-		go func() {
-			bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
-			defer cancel()
+		goRefresh(ctx, "influencer-detail", func(bg context.Context) {
 			if _, err := s.refreshInfluencerDetail(bg, userID, region); err != nil {
 				logger.Warn("达人详情后台刷新失败", logger.String("userId", userID), logger.Err(err))
 			}
-		}()
+		})
 		return s.influencerDTOFromModel(ctx, &di), nil
 	}
 
@@ -238,13 +234,11 @@ func (s *DiscoverService) VideoDetailFull(ctx context.Context, videoID, region s
 	}
 
 	if found {
-		go func() {
-			bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
-			defer cancel()
+		goRefresh(ctx, "video-detail", func(bg context.Context) {
 			if _, err := s.refreshVideoDetail(bg, videoID, region); err != nil {
 				logger.Warn("视频详情后台刷新失败", logger.String("videoId", videoID), logger.Err(err))
 			}
-		}()
+		})
 		return videoDTOFromModel(&dv), nil
 	}
 

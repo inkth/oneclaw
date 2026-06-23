@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# 部署连接配置(含生产 IP/SSH 路径,勿提交);模板见 .deploy.env.example
+.deploy.env
 
 # vercel
 .vercel

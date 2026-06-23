@@ -133,13 +133,11 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 		dto.Influencers = parseProductInfluencers(dp.DetailInfluencers)
 		dto.Videos = parseProductVideos(dp.DetailVideos)
 		if !fresh && hasDetail && s.echo.Configured() {
-			go func() {
-				bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
-				defer cancel()
+			goRefresh(ctx, "product-detail", func(bg context.Context) {
 				if _, _, _, e := s.refreshProductDetail(bg, externalID, region); e != nil {
 					logger.Warn("选品详情后台刷新失败", logger.String("id", externalID), logger.Err(e))
 				}
-			}()
+			})
 		}
 	} else {
 		// 首见:同步刷一次并落库。

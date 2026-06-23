@@ -109,11 +109,24 @@ func (s *SMSService) Verify(ctx context.Context, phone, code string) error {
 		return apperr.New(apperr.CodeInvalidSMSCode, "验证次数过多,请重新获取")
 	}
 	if rec.CodeHash != hashCode(code) {
-		s.db.WithContext(ctx).Model(&rec).Update("attempts", rec.Attempts+1)
+		// 错码累加重试计数(best-effort);写失败仅告警,不改变"验证码不正确"的结论。
+		if err := s.db.WithContext(ctx).Model(&rec).Update("attempts", rec.Attempts+1).Error; err != nil {
+			logger.Warn("[sms] 重试计数写入失败", logger.String("phone", phone), logger.Err(err))
+		}
 		return apperr.New(apperr.CodeInvalidSMSCode, "验证码不正确")
 	}
-	now := time.Now()
-	s.db.WithContext(ctx).Model(&rec).Update("used_at", now)
+	// 原子消费:仅当仍未使用时置 used_at,据 RowsAffected 判定本次是否真正消费成功。
+	// 同时堵住「写失败仍放行(可重放)」与「并发请求重复消费同一码」两个窗口。
+	res := s.db.WithContext(ctx).Model(&model.PhoneVerificationCode{}).
+		Where("id = ? AND used_at IS NULL", rec.ID).
+		Update("used_at", time.Now())
+	if res.Error != nil {
+		return apperr.Wrap(apperr.CodeInternal, "校验失败", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		// 写未命中:已被并发消费 / 瞬时未更新 → 不放行,要求重新获取。
+		return apperr.New(apperr.CodeInvalidSMSCode, "验证码已失效,请重新获取")
+	}
 	return nil
 }
 

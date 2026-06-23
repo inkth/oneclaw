@@ -29,9 +29,9 @@ type Order = {
   expiresAt: string;
 };
 
-const PROVIDER_META: Record<Provider, { cn: string; color: string; icon: string }> = {
-  WECHAT: { cn: "微信支付", color: "bg-emerald-500", icon: "💚" },
-  ALIPAY: { cn: "支付宝", color: "bg-sky-500", icon: "💙" },
+const PROVIDER_META: Record<Provider, { cn: string; color: string; tint: string }> = {
+  WECHAT: { cn: "微信支付", color: "bg-emerald-500", tint: "text-emerald-500" },
+  ALIPAY: { cn: "支付宝", color: "bg-sky-500", tint: "text-sky-500" },
 };
 
 const PERIOD_OPTIONS: Array<{ months: Period; label: string; sub: string }> = [
@@ -206,7 +206,7 @@ export function CheckoutModal({
                           : "border-zinc-200/80 hover:border-zinc-300"
                       }`}
                     >
-                      <span>{m.icon}</span>
+                      <Wallet className={`h-4 w-4 ${m.tint}`} strokeWidth={2.2} />
                       {m.cn}
                     </button>
                   );

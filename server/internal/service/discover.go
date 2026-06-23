@@ -79,13 +79,11 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 	if useCache {
 		if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
 			if s.echo.Configured() && time.Since(fetchedAt) > cacheTTL {
-				go func() {
-					bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
-					defer cancel()
+				goRefresh(ctx, "ranklist", func(bg context.Context) {
 					if _, e := s.RefreshRanklist(bg, p); e != nil {
 						logger.Warn("商品榜后台刷新失败", logger.String("region", p.Region), logger.Err(e))
 					}
-				}()
+				})
 			}
 			return &RanklistResult{State: "cached", FetchedAt: &fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
 		}
@@ -95,13 +93,11 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 	if p.CategoryID != "" && p.PageNum <= 1 {
 		if dps, ok := s.lookupProductsByCategory(ctx, p); ok {
 			if s.echo.Configured() {
-				go func() {
-					bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 90*time.Second)
-					defer cancel()
+				goRefresh(ctx, "ranklist-category", func(bg context.Context) {
 					if _, e := s.RefreshRanklist(bg, p); e != nil {
 						logger.Warn("类目商品榜后台刷新失败", logger.String("cat", p.CategoryID), logger.Err(e))
 					}
-				}()
+				})
 			}
 			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}, nil
 		}
@@ -207,10 +203,6 @@ func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistPar
 		return nil, time.Time{}, false
 	}
 	// 按缓存顺序排列。
-	order := make(map[string]int, len(entry.ExternalIDs))
-	for i, id := range entry.ExternalIDs {
-		order[id] = i
-	}
 	ordered := make([]model.DiscoverProduct, 0, len(dps))
 	byID := make(map[string]model.DiscoverProduct, len(dps))
 	for _, d := range dps {
@@ -224,7 +216,6 @@ func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistPar
 	if len(ordered) == 0 {
 		ordered = dps
 	}
-	_ = order
 	return ordered, entry.FetchedAt, true
 }
 
@@ -499,11 +490,6 @@ func (s *DiscoverService) findDiscover(ctx context.Context, externalID, region s
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询商品失败", err)
 	}
 	return &dp, nil
-}
-
-// GetDiscoverProduct 详情(P1 走 DB 缓存)。
-func (s *DiscoverService) GetDiscoverProduct(ctx context.Context, externalID, region string) (*model.DiscoverProduct, error) {
-	return s.findDiscover(ctx, externalID, region)
 }
 
 // MigrateStarredToProducts 一次性迁移:把旧的商品收藏(interactions.is_starred=true)

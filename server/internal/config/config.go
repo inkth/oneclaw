@@ -258,6 +258,10 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("JWT_SECRET 必须在生产环境中设置为非默认值")
 		}
 	}
+	// 生产禁用默认弱口令(脱离 compose 的 ${VAR:?} 兜底直跑二进制时的最后防线)。
+	if c.Server.Mode == "release" && (c.Database.Password == "" || c.Database.Password == "postgres") {
+		return fmt.Errorf("DB_PASSWORD 必须在生产环境中设置为非默认值")
+	}
 	if c.Database.Host == "" || c.Database.User == "" || c.Database.DBName == "" {
 		return fmt.Errorf("数据库连接配置不完整")
 	}

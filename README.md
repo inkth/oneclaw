@@ -47,7 +47,7 @@ cd server
 go run ./cmd           # 默认 :8082,启动自动建表
 ```
 
-后端环境变量读 [`server/internal/config/config.go`](server/internal/config/config.go)(无 `.env.example`,按需设),主要几族:
+后端环境变量读 [`server/internal/config/config.go`](server/internal/config/config.go);常用项见 [`server/.env.example`](server/.env.example)(`cp server/.env.example .env` 后填值),主要几族:
 
 - `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` —— Postgres
 - `JWT_SECRET` —— 会话签名

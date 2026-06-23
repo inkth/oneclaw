@@ -30,7 +30,8 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
     title: "公司",
     links: [
       { label: "联系我们", href: "mailto:hello@oneclaw.ai" },
-      { label: "媒体合作", href: "mailto:hello@oneclaw.ai" },
+      { label: "服务条款", href: "/legal/terms" },
+      { label: "隐私政策", href: "/legal/privacy" },
     ],
   },
 ];

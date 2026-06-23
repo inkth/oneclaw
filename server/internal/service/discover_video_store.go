@@ -149,7 +149,7 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 		SaleGmvCents:    echotik.DollarsToCents(d.TotalVideoSaleGmv.Float()),
 		UserID:          d.UserID,
 		IsAd:            d.IsAd.Int() == 1,
-		CreatedByAI:     string(d.CreatedByAI) == "true",
+		CreatedByAI:     string(d.CreatedByAI) == "true" || string(d.CreatedByAI) == "1",
 		Views7d:         d.TotalViews7dCnt.Int(),
 		Views30d:        d.TotalViews30dCnt.Int(),
 		Favorites:       d.TotalFavoritesCnt.Int(),

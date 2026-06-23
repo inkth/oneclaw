@@ -110,6 +110,18 @@ func (s *QuotaService) EffectivePlan(ctx context.Context, ws *model.Workspace) s
 	return ws.Plan
 }
 
+// quotaDecision 纯额度判定:给定方案、动作、数量与本周期已用积分,返回是否放行 + 本次是否计入超额待结算。
+// 与 CheckAndRecord 的取数/落库分离,便于无 DB 单测覆盖边界。
+//   - FREE/PRO(limit≥0):硬上限,used + 本次消耗 > limit 即拒绝(allowed=false)。
+//   - TEAM(limit<0):不限量,但 used 已达基线则本次标记 billable(待结算),不阻断出片。
+func quotaDecision(plan, kind string, qty, used int) (allowed, billable bool) {
+	limit := model.PlanCredits(plan)
+	if limit >= 0 {
+		return used+model.CreditsFor(kind, qty) <= limit, false
+	}
+	return true, used >= model.TeamBaselineCredits
+}
+
 // CheckAndRecord 原子地"查余量 + 记一笔消耗"。超额返回 QUOTA_EXCEEDED。
 // 锁工作台行防并发双花;refID 供终态失败时退回。
 func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind string, qty int, refID *uuid.UUID) error {
@@ -136,16 +148,11 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 			return err
 		}
 		limit := model.PlanCredits(plan)
-		billable := false
-		if limit >= 0 {
-			// FREE/PRO:硬上限,本周期超额拒绝。
-			if used+model.CreditsFor(kind, qty) > limit {
-				return apperr.New(apperr.CodeQuotaExceeded,
-					fmt.Sprintf("本周期积分已用完(%d/%d),升级方案可继续", used, limit))
-			}
-		} else if used >= model.TeamBaselineCredits {
-			// TEAM(不限):软基线,本周期已超基线的部分标记为待结算,不阻断出片。
-			billable = true
+		allowed, billable := quotaDecision(plan, kind, qty, used)
+		if !allowed {
+			// FREE/PRO 硬上限:本周期超额拒绝(TEAM 不限量,只在 quotaDecision 里标 billable)。
+			return apperr.New(apperr.CodeQuotaExceeded,
+				fmt.Sprintf("本周期积分已用完(%d/%d),升级方案可继续", used, limit))
 		}
 		rec := model.UsageRecord{WorkspaceID: wsID, Kind: kind, Qty: qty, RefID: refID, Billable: billable}
 		if err := tx.Create(&rec).Error; err != nil {
