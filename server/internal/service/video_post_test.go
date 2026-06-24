@@ -50,6 +50,18 @@ All spoken dialogue is in English.`
 	if len(c5) != 2 || c5[1].EndSec != 6 {
 		t.Errorf("zero-duration fallback wrong: %+v", c5)
 	}
+
+	// 6. 全角 “ ” / 日式「」 引号也能抽到台词(CJK 市场 LLM 常用,不止 ASCII 引号)
+	c6 := parseVOCues(`Shot 1 (0-3s): x. VO: 「これ、まじで神。」 Shot 2 (3-6s): y. VO: “毎日使ってる”`, 6)
+	if len(c6) != 2 {
+		t.Fatalf("full-width quotes: got %d cues, want 2: %+v", len(c6), c6)
+	}
+	if c6[0].Text != "これ、まじで神。" {
+		t.Errorf("c6[0] text = %q, want corner-bracket content", c6[0].Text)
+	}
+	if c6[1].Text != "毎日使ってる" {
+		t.Errorf("c6[1] text = %q, want full-width-quote content", c6[1].Text)
+	}
 }
 
 func TestBuildASSAndTime(t *testing.T) {

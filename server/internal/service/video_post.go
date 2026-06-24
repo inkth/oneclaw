@@ -28,7 +28,9 @@ type voCue struct {
 }
 
 var (
-	reVOLine   = regexp.MustCompile(`VO:\s*"([^"]+)"`)
+	// 兼容 ASCII " "、全角 “ ”、日式「」『』 引号:中文指令 + CJK 市场下 LLM 常把台词
+	// 用全角/方引号包起来,只认 ASCII 引号会让这些片的字幕静默抽空(尤以日语高发)。
+	reVOLine   = regexp.MustCompile(`VO:\s*["“「『]([^"”」』]+)["”」』]`)
 	reShotTime = regexp.MustCompile(`\(\s*(\d+)\s*-\s*(\d+)\s*s?\s*\)`)
 )
 
@@ -172,6 +174,10 @@ func (s *VideoService) probeDuration(ctx context.Context, path string, fallbackS
 
 // postProcessVideo 给成片烧录口播字幕 + 价格 CTA 尾帧,返回 (处理后字节, 是否改动)。
 // best-effort:无字幕也无价格、或 ffmpeg 缺失/失败/超时,都返回 (raw, false)。
+//
+// 先试一次同时烧字幕 + CTA(只编码一次,质量/耗时最优);若失败 —— 例如某条 filter 字体
+// 解析挂掉 —— 且两段都在,则降级为「字幕」「CTA」两段独立 pass:一段失败不再连累另一段
+// (旧实现把两者塞进同一条 ffmpeg,drawtext 一炸连字幕都没了)。代价是降级路径会二次编码。
 func (s *VideoService) postProcessVideo(ctx context.Context, v model.Video, raw []byte) ([]byte, bool) {
 	prompt := ""
 	if v.Prompt != nil {
@@ -183,6 +189,32 @@ func (s *VideoService) postProcessVideo(ctx context.Context, v model.Video, raw 
 		return raw, false // 没字幕也没价格,无需处理
 	}
 
+	// happy path:一次过同时烧字幕 + CTA。
+	if out, ok := s.renderPost(ctx, v, raw, cues, ctaPrice, "字幕+CTA"); ok {
+		return out, true
+	}
+	// 只有「字幕 + CTA」都在时,拆段才有意义(单一组件没什么可拆);否则直接用原片。
+	if len(cues) == 0 || ctaPrice == "" {
+		return raw, false
+	}
+	// 降级:两段互不拖累 —— 字幕(libass)、CTA(drawtext)各自成败,任一字体/filter 故障只损失自己那段。
+	cur, changed := raw, false
+	if out, ok := s.renderPost(ctx, v, cur, cues, "", "字幕"); ok {
+		cur, changed = out, true
+	}
+	if out, ok := s.renderPost(ctx, v, cur, nil, ctaPrice, "CTA"); ok {
+		cur, changed = out, true
+	}
+	return cur, changed
+}
+
+// renderPost 跑一次 ffmpeg,按传入的 cues / ctaPrice 烧字幕和/或价格 CTA 尾帧,
+// 返回 (处理后字节, 是否成功)。两者都空、或 ffmpeg 缺失/失败/超时都返回 (raw, false)。
+// stage 仅用于日志区分是哪一段(字幕+CTA / 字幕 / CTA)。
+func (s *VideoService) renderPost(ctx context.Context, v model.Video, raw []byte, cues []voCue, ctaPrice, stage string) ([]byte, bool) {
+	if len(cues) == 0 && ctaPrice == "" {
+		return raw, false
+	}
 	dir, err := os.MkdirTemp("", "vpost-*")
 	if err != nil {
 		return raw, false
@@ -235,7 +267,8 @@ func (s *VideoService) postProcessVideo(ctx context.Context, v model.Video, raw 
 			tail = tail[len(tail)-400:]
 		}
 		logger.Warn("[video] 后处理失败,用原片",
-			logger.String("video", v.ID.String()), logger.String("err", err.Error()), logger.String("ffmpeg", tail))
+			logger.String("video", v.ID.String()), logger.String("stage", stage),
+			logger.String("err", err.Error()), logger.String("ffmpeg", tail))
 		return raw, false
 	}
 	processed, err := os.ReadFile(outPath)
