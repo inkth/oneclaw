@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -41,6 +42,8 @@ type VideoInput struct {
 	ProductID   *string `json:"productId"`
 	// FirstFrameURL 非空时以该图(如商品实拍主图)作为成片首帧,保证画面里是真货。
 	FirstFrameURL string `json:"firstFrameUrl"`
+	// ReferenceImageURLs input_references:跨整片保持商品/人脸一致的参考图(可多张),与首帧互补。
+	ReferenceImageURLs []string `json:"referenceImageUrls"`
 	// ModelAssetID 出镜人设(数字人),仅作关联记录;prompt 注入由 ConfirmVideo 完成。
 	ModelAssetID *uuid.UUID `json:"-"`
 }
@@ -195,6 +198,12 @@ func (s *VideoService) Rerender(ctx context.Context, wsID, vid uuid.UUID) (*mode
 	if src.FirstFrameURL != nil {
 		in.FirstFrameURL = *src.FirstFrameURL
 	}
+	if len(src.ReferenceImageURLs) > 0 {
+		var refs []string
+		if json.Unmarshal(src.ReferenceImageURLs, &refs) == nil {
+			in.ReferenceImageURLs = refs
+		}
+	}
 	return s.Create(ctx, wsID, in)
 }
 
@@ -226,6 +235,11 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 	}
 	if ff := strings.TrimSpace(in.FirstFrameURL); ff != "" {
 		v.FirstFrameURL = &ff
+	}
+	if len(in.ReferenceImageURLs) > 0 {
+		if b, err := json.Marshal(in.ReferenceImageURLs); err == nil {
+			v.ReferenceImageURLs = model.JSONB(b)
+		}
 	}
 	if in.ProductID != nil {
 		if pid, err := uuid.Parse(*in.ProductID); err == nil {
@@ -285,11 +299,23 @@ func (s *VideoService) dispatch(ctx context.Context, v *model.Video, resolution 
 	if v.FirstFrameURL != nil {
 		ff = *v.FirstFrameURL
 	}
+	var refs []string
+	if len(v.ReferenceImageURLs) > 0 {
+		_ = json.Unmarshal(v.ReferenceImageURLs, &refs)
+	}
 	params := llm.VideoParams{
 		Prompt: prompt, DurationSec: v.DurationSec, AspectRatio: v.AspectRatio,
-		Resolution: resolution, FirstFrameURL: ff,
+		Resolution: resolution, FirstFrameURL: ff, ReferenceImageURLs: refs,
 	}
 	job, err := s.llm.SubmitVideo(ctx, params)
+	// 渐进降级:每步仅在出错时发生,保证新增的参考图只扩大成功面、不引入回归。
+	// 先退掉参考图保住首帧(= 既有成熟的图生视频请求),仍不行再退成纯文生视频。
+	if err != nil && len(refs) > 0 {
+		logger.Warn("[video] 带参考图提交失败,退到仅首帧重试",
+			logger.String("video", v.ID.String()), logger.Err(err))
+		params.ReferenceImageURLs = nil
+		job, err = s.llm.SubmitVideo(ctx, params)
+	}
 	if err != nil && ff != "" {
 		logger.Warn("[video] 带首帧图提交失败,降级为纯文生视频",
 			logger.String("video", v.ID.String()), logger.Err(err))

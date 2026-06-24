@@ -564,18 +564,31 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID,
 	if d.ProductID != "" {
 		vi.ProductID = &d.ProductID
 	}
+	// input_references:首帧真货图 + 人设参考图都作参考,让 Seedance 跨整片保持主体一致 ——
+	// 真货不再只出现在首帧(P0-2)、人脸不再只靠文字描述(P0-1)。与首帧(帧锚)互补。
+	var refs []string
+	if vi.FirstFrameURL != "" {
+		refs = append(refs, vi.FirstFrameURL)
+		if d.ProductID != "" {
+			vi.Prompt += "\nThe product shown is the exact item in the reference image — keep its shape, color, packaging and branding identical in every shot."
+		}
+	}
 	var persona *model.ModelAsset
 	if personaID != nil {
 		if line, ref, asset := s.personaPrompt(ctx, wsID, *personaID); asset != nil {
 			vi.Prompt += line
 			vi.ModelAssetID = &asset.ID
-			// 商品实拍图优先级更高(真货入画);没有商品图时用人设场景照锚定脸。
-			if vi.FirstFrameURL == "" && ref != "" {
-				vi.FirstFrameURL = ref
+			if ref != "" {
+				refs = append(refs, ref) // 人设参考图:同一张脸贯穿全片
+				// 没有商品图时,人设场景照同时兜底首帧(沿用原逻辑)。
+				if vi.FirstFrameURL == "" {
+					vi.FirstFrameURL = ref
+				}
 			}
 			persona = asset
 		}
 	}
+	vi.ReferenceImageURLs = dedupeURLs(refs)
 	v, err := s.videos.Create(ctx, wsID, vi)
 	if err != nil {
 		restoreDraft() // 没花出去钱,把草稿还给用户重试
@@ -605,4 +618,19 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID,
 		}()
 	}
 	return v, nil
+}
+
+// dedupeURLs 去重保序 + 剔空,用于组装 input_references(首帧真货图与人设参考图可能重合)。
+func dedupeURLs(urls []string) []string {
+	seen := make(map[string]bool, len(urls))
+	out := make([]string, 0, len(urls))
+	for _, u := range urls {
+		u = strings.TrimSpace(u)
+		if u == "" || seen[u] {
+			continue
+		}
+		seen[u] = true
+		out = append(out, u)
+	}
+	return out
 }

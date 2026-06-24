@@ -199,6 +199,9 @@ type VideoParams struct {
 	Resolution  string
 	// FirstFrameURL 非空时走图生视频:该图作为成片首帧(需公网可直接下载的 URL)。
 	FirstFrameURL string
+	// ReferenceImageURLs 走 reference-to-video:作 input_references 跨整片保持主体(商品/人脸)一致,
+	// 与 FirstFrameURL(帧锚)互补、可多张。需公网可直接下载的 URL。
+	ReferenceImageURLs []string
 }
 
 // SubmitVideo 提交一次视频生成,返回 job(含 polling_url)。
@@ -226,6 +229,20 @@ func (c *Client) SubmitVideo(ctx context.Context, p VideoParams) (*VideoJob, err
 			"image_url":  map[string]string{"url": p.FirstFrameURL},
 			"frame_type": "first_frame",
 		}}
+	}
+	if len(p.ReferenceImageURLs) > 0 {
+		refs := make([]map[string]any, 0, len(p.ReferenceImageURLs))
+		for _, u := range p.ReferenceImageURLs {
+			if u = strings.TrimSpace(u); u != "" {
+				refs = append(refs, map[string]any{
+					"type":      "image_url",
+					"image_url": map[string]string{"url": u},
+				})
+			}
+		}
+		if len(refs) > 0 {
+			body["input_references"] = refs
+		}
 	}
 	return c.videoCall(ctx, http.MethodPost, videoEndpoint, body)
 }

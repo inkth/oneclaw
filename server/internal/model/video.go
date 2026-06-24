@@ -22,6 +22,8 @@ type Video struct {
 	Prompt        *string    `gorm:"type:text" json:"prompt,omitempty"`
 	Script        *string    `gorm:"type:text" json:"script,omitempty"`
 	FirstFrameURL *string    `gorm:"column:first_frame_url;type:text" json:"firstFrameUrl,omitempty"` // 图生视频首帧(如商品实拍图);留存供重试复用
+	// ReferenceImageURLs input_references:跨整片保持商品/人脸一致的参考图(JSON 字符串数组);留存供 Retry/Rerender 复用。
+	ReferenceImageURLs JSONB `gorm:"column:reference_image_urls;type:jsonb" json:"referenceImageUrls,omitempty"`
 
 	ThumbnailURL  *string    `gorm:"column:thumbnail_url" json:"thumbnailUrl,omitempty"`
 	VideoURL      *string    `gorm:"column:video_url" json:"videoUrl,omitempty"`
