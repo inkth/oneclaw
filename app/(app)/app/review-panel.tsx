@@ -128,21 +128,38 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
         </TableWrap>
       </div>
 
-      {/* Gemini 深挖提示词 */}
-      <Card>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge tone="violet" icon={<Sparkles className="h-3 w-3" />}>
-              Gemini 创意深挖
-            </Badge>
-            <span className="text-xs text-zinc-500">已注入本次基线与重点素材</span>
+      {/* AI 深挖分析（gemini-3.5-flash）；未运行时回退为可手动复制的提示词 */}
+      {result.analysis ? (
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Badge tone="violet" icon={<Sparkles className="h-3 w-3" />}>
+                AI 深挖分析
+              </Badge>
+              <span className="text-xs text-zinc-500">由 Gemini 基于本次基线与重点素材生成</span>
+            </div>
+            <CopyButton text={result.analysis} />
           </div>
-          <CopyButton text={result.geminiPrompt} />
-        </div>
-        <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-3 text-2xs leading-relaxed text-zinc-600">
-          {result.geminiPrompt}
-        </pre>
-      </Card>
+          <pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-4 text-xs leading-relaxed text-zinc-700">
+            {result.analysis}
+          </pre>
+        </Card>
+      ) : (
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Badge tone="violet" icon={<Sparkles className="h-3 w-3" />}>
+                Gemini 创意深挖
+              </Badge>
+              <span className="text-xs text-zinc-500">AI 深挖未运行，复制提示词可手动深挖</span>
+            </div>
+            <CopyButton text={result.geminiPrompt} />
+          </div>
+          <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-3 text-2xs leading-relaxed text-zinc-600">
+            {result.geminiPrompt}
+          </pre>
+        </Card>
+      )}
     </div>
   );
 }

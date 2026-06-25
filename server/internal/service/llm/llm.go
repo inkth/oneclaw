@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -20,16 +21,30 @@ const endpoint = "https://openrouter.ai/api/v1/chat/completions"
 const videoEndpoint = "https://openrouter.ai/api/v1/videos"
 
 type Client struct {
-	cfg  config.OpenRouterConfig
-	http *http.Client
+	cfg        config.OpenRouterConfig
+	http       *http.Client
+	reviewHTTP *http.Client // 复盘模型专用(可走代理);ReviewProxy 空时即 http 本身
 }
 
 func New(cfg config.OpenRouterConfig) *Client {
-	return &Client{cfg: cfg, http: &http.Client{Timeout: 90 * time.Second}}
+	c := &Client{cfg: cfg, http: &http.Client{Timeout: 90 * time.Second}}
+	// 复盘模型(海外 Gemini)经正向代理出网,绕开国内 IP 的 OpenRouter 地区限制;
+	// 其余调用(deepseek 等国内可达)仍直连。代理 URL 无效时回退直连。
+	c.reviewHTTP = c.http
+	if cfg.ReviewProxy != "" {
+		if u, err := url.Parse(cfg.ReviewProxy); err == nil {
+			c.reviewHTTP = &http.Client{
+				Timeout:   90 * time.Second,
+				Transport: &http.Transport{Proxy: http.ProxyURL(u)},
+			}
+		}
+	}
+	return c
 }
 
-func (c *Client) Configured() bool { return c.cfg.Configured() }
-func (c *Client) Model() string    { return c.cfg.Model }
+func (c *Client) Configured() bool    { return c.cfg.Configured() }
+func (c *Client) Model() string       { return c.cfg.Model }
+func (c *Client) ReviewModel() string { return c.cfg.ReviewModel }
 func (c *Client) VideoModel() string {
 	return c.cfg.VideoModel
 }
@@ -79,16 +94,24 @@ type chatResp struct {
 	} `json:"error"`
 }
 
-// Chat 发起一次对话。jsonMode=true 时请求 JSON 输出(并由 prompt 兜底)。
+// Chat 用默认文本模型(cfg.Model)发起一次对话。jsonMode=true 时请求 JSON 输出(并由 prompt 兜底)。
 func (c *Client) Chat(ctx context.Context, system, user string, jsonMode bool, maxTokens int) (*Result, error) {
+	return c.ChatWithModel(ctx, c.cfg.Model, system, user, jsonMode, maxTokens)
+}
+
+// ChatWithModel 指定模型发起一次对话(model 空回退默认文本模型)。投放复盘等需要换模型的调用点用它。
+func (c *Client) ChatWithModel(ctx context.Context, model, system, user string, jsonMode bool, maxTokens int) (*Result, error) {
 	if !c.Configured() {
 		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
+	}
+	if model == "" {
+		model = c.cfg.Model
 	}
 	if maxTokens <= 0 {
 		maxTokens = 2000
 	}
 	body := chatReq{
-		Model:       c.cfg.Model,
+		Model:       model,
 		Messages:    []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: user}},
 		MaxTokens:   maxTokens,
 		Temperature: 0.7,
@@ -108,7 +131,11 @@ func (c *Client) Chat(ctx context.Context, system, user string, jsonMode bool, m
 	req.Header.Set("HTTP-Referer", c.cfg.Referer)
 	req.Header.Set("X-Title", "OneClaw")
 
-	res, err := c.http.Do(req)
+	client := c.http
+	if model == c.cfg.ReviewModel {
+		client = c.reviewHTTP // 复盘模型走代理(若配置了 ReviewProxy)
+	}
+	res, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("llm: 请求失败: %w", err)
 	}
@@ -126,10 +153,10 @@ func (c *Client) Chat(ctx context.Context, system, user string, jsonMode bool, m
 	}
 
 	usage := Usage{
-		Model:     c.cfg.Model,
+		Model:     model,
 		TokensIn:  parsed.Usage.PromptTokens,
 		TokensOut: parsed.Usage.CompletionTokens,
-		CostCents: estimateCostCents(c.cfg.Model, parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens),
+		CostCents: estimateCostCents(model, parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens),
 	}
 	return &Result{Content: parsed.Choices[0].Message.Content, Usage: usage}, nil
 }
@@ -165,6 +192,7 @@ var priceTable = map[string][2]float64{ // {input, output}
 	"openai/gpt-4o":               {2.5, 10},
 	"openai/gpt-4o-mini":          {0.15, 0.6},
 	"google/gemini-2.5-pro":       {1.25, 10},
+	"google/gemini-3.5-flash":     {0.3, 2.5},
 	"deepseek/deepseek-chat":      {0.14, 0.28},
 }
 

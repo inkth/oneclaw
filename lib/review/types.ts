@@ -99,6 +99,9 @@ export interface ReviewResult {
   /** 每个象限的代表样本（按消耗降序，最多若干条）。 */
   quadrants: Record<Quadrant, QuadrantItem[]>;
   actions: ActionItem[];
+  /** 可粘进 Gemini 的提示词；同时是后端 AI 深挖的输入。analysis 缺失时作为「手动深挖」回退展示。 */
   geminiPrompt: string;
+  /** 后端用 google/gemini-3.5-flash 深挖出的 Markdown 结论；空 = 未深挖（超额/未配置/失败），回退到 geminiPrompt。 */
+  analysis?: string;
   warnings: string[];
 }

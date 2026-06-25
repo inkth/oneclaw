@@ -136,11 +136,13 @@ func (s StorageConfig) Configured() bool {
 
 // OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
 type OpenRouterConfig struct {
-	APIKey     string
-	Model      string // 文本默认 deepseek/deepseek-chat
-	VideoModel string // 视频默认 bytedance/seedance-2.0-fast
-	ImageModel string // 图像默认 google/gemini-3.1-flash-image-preview
-	Referer    string // HTTP-Referer 头
+	APIKey      string
+	Model       string // 文本默认 deepseek/deepseek-chat
+	ReviewModel string // 投放复盘深挖默认 google/gemini-3.5-flash(长上下文+便宜)
+	ReviewProxy string // 复盘模型出网代理(绕国内 IP 的 OpenRouter 地区限制);空=直连。如 http://1.2.3.4:8888
+	VideoModel  string // 视频默认 bytedance/seedance-2.0-fast
+	ImageModel  string // 图像默认 google/gemini-3.1-flash-image-preview
+	Referer     string // HTTP-Referer 头
 }
 
 func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
@@ -229,11 +231,13 @@ func Load() *Config {
 			COSDomain:    getEnv("TENCENT_COS_DOMAIN", ""),
 		},
 		OpenRouter: OpenRouterConfig{
-			APIKey:     getEnv("OPENROUTER_API_KEY", ""),
-			Model:      getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
-			VideoModel: getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
-			ImageModel: getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
-			Referer:    getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
+			APIKey:      getEnv("OPENROUTER_API_KEY", ""),
+			Model:       getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
+			ReviewModel: getEnv("OPENROUTER_REVIEW_MODEL", "google/gemini-3.5-flash"),
+			ReviewProxy: getEnv("OPENROUTER_REVIEW_PROXY", ""),
+			VideoModel:  getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
+			ImageModel:  getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
+			Referer:     getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
 		},
 		Fal: FalConfig{
 			APIKey:     getEnv("FALAI_API_KEY", ""),

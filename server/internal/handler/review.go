@@ -74,9 +74,9 @@ func (h *ReviewHandler) Analyze(c *gin.Context) {
 
 	result := review.Analyze(parsed.Rows, targetRoi, parsed.Warnings)
 
-	// 落库为 REVIEW 任务统一留痕;失败不影响本次返回结果。
+	// AI 深挖(配额受限、best-effort)+ 落库为 REVIEW 任务统一留痕;深挖/落库失败均不影响本地仪表盘返回。
 	input := fmt.Sprintf("复盘报表「%s」· ROI 目标 %.1f", fileHeader.Filename, result.Baseline.TargetRoi)
-	task, rerr := h.agents.RecordReview(c.Request.Context(), wid, input, &result)
+	task, rerr := h.agents.RunReview(c.Request.Context(), wid, input, &result)
 	if rerr != nil {
 		logger.Warn("[review] 落库失败", logger.String("err", rerr.Error()))
 	}

@@ -39,9 +39,9 @@ const (
 
 // usageCreditCost 各动作的积分单价(按 kind)。权重按真实边际成本标定:
 // 文本近乎零成本(定低促活),出片含视频生成+脚本+封面+转存,是成本大头。
-// 复盘不走派活入口(见 agent.go validAgents),不计积分。
+// 复盘的本地四象限诊断免费,仅「AI 深挖」(gemini-3.5-flash)按一次 AGENT_TASK 计费(见 agent_review.go)。
 var usageCreditCost = map[string]int{
-	UsageAgentTask: 3,   // 选品 / 短视频脚本 / Listing / 试穿(各一次派活)
+	UsageAgentTask: 3,   // 选品 / 短视频脚本 / Listing / 试穿 / 复盘 AI 深挖(各一次)
 	UsageVideo:     175, // 出片(短视频):覆盖单条 ~¥4 生成成本 + ~30% 毛利
 	UsageImage:     6,   // 出图(每张):覆盖图像生成成本
 }
