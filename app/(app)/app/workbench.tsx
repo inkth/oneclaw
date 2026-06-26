@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MessagesSquare } from "lucide-react";
-import { AgentComposer, AgentPills, type ComposerKind } from "./agent-composer";
+import { AgentComposer, AgentPills, type ComposerKind, type ListingMode } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
 import { ReviewTrend } from "./review-trend";
@@ -87,6 +87,8 @@ export function Workbench({
   // 创作工具链选中的资产:与 productId 同生命周期,派活成功即消费清空。
   const [personaId, setPersonaId] = useState<string | null>(null);
   const [materialId, setMaterialId] = useState<string | null>(null);
+  // Listing 子模式(文案 / 上身图试穿):切走 Listing 自动回 copy(见下方 effect)。
+  const [listingMode, setListingMode] = useState<ListingMode>("copy");
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -113,6 +115,11 @@ export function Workbench({
     if (initialInput) textareaRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 切到非 Listing 的 Agent 时,Listing 子模式回到「文案」,避免下次选 Listing 仍停在试穿。
+  useEffect(() => {
+    if (activeAgent !== "LISTING") setListingMode("copy");
+  }, [activeAgent]);
 
   // 有排队/执行中的任务时轮询,全部到达终态自动停。
   const hasActive = tasks.some((t) => t.status === "QUEUED" || t.status === "RUNNING");
@@ -194,6 +201,8 @@ export function Workbench({
       onPersonaChange={setPersonaId}
       materialId={materialId}
       onMaterialChange={setMaterialId}
+      listingMode={listingMode}
+      onListingModeChange={setListingMode}
       showAssetChips={showAssetChips}
       textareaRef={textareaRef}
       allowReview={allowReview}
@@ -284,7 +293,7 @@ export function Workbench({
         </div>
       )}
 
-      {showQuickActions && (
+      {showQuickActions && !(activeAgent === "LISTING" && listingMode === "tryon") && (
         <QuickActionCards activeAgent={activeAgent} onPick={pickQuickAction} />
       )}
 

@@ -54,7 +54,7 @@ func (s *AgentService) runTryOn(ctx context.Context, taskID, wsID uuid.UUID, opt
 		return "", nil, llm.Usage{}, err
 	}
 
-	go s.runTryOnImage(taskID, modelURL, garmentURL)
+	go s.runTryOnImage(taskID, wsID, modelURL, garmentURL)
 
 	meta := map[string]any{
 		"imagesStatus": listingImagesRunning,
@@ -65,8 +65,8 @@ func (s *AgentService) runTryOn(ctx context.Context, taskID, wsID uuid.UUID, opt
 	return out, meta, llm.Usage{}, nil
 }
 
-// runTryOnImage 后台调 fal 试穿模型 → 传 COS → 回写 metadata(images + imagesStatus)。
-func (s *AgentService) runTryOnImage(taskID uuid.UUID, modelURL, garmentURL string) {
+// runTryOnImage 后台调 fal 试穿模型 → 传 COS → 回写 metadata(images + imagesStatus)→ 登记素材库。
+func (s *AgentService) runTryOnImage(taskID, wsID uuid.UUID, modelURL, garmentURL string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 
@@ -100,10 +100,28 @@ func (s *AgentService) runTryOnImage(taskID uuid.UUID, modelURL, garmentURL stri
 	if strings.Contains(ct, "png") {
 		ext = ".png"
 	}
-	url, err := s.storage.Put(ctx, fmt.Sprintf("tryon/%s/result%s", taskID, ext), data, ct)
+	key := fmt.Sprintf("tryon/%s/result%s", taskID, ext)
+	url, err := s.storage.Put(ctx, key, data, ct)
 	if err != nil {
 		fail("上传结果失败", err)
 		return
+	}
+	// 把这张真人上身图登记进素材库(指向同一 COS 对象,不重复上传):做视频选首帧/参考图时可直接复用,
+	// 试穿不再是断头路。best-effort:登记失败不影响出图展示(出图才是主交付)。
+	ctCopy := ct
+	mat := model.Material{
+		WorkspaceID:  wsID,
+		Type:         "IMAGE",
+		OriginalName: fmt.Sprintf("虚拟试穿-%s%s", taskID.String()[:8], ext),
+		URL:          url,
+		StorageKey:   &key,
+		ContentType:  &ctCopy,
+		SizeBytes:    int64(len(data)),
+		Tags:         []string{"虚拟试穿", "上身图"},
+	}
+	if err := s.db.WithContext(ctx).Create(&mat).Error; err != nil {
+		logger.Warn("[agent] 试穿结果登记素材库失败",
+			logger.String("task", taskID.String()), logger.Err(err))
 	}
 	s.writeTryOnMeta(map[string]any{
 		"imagesStatus": listingImagesDone,

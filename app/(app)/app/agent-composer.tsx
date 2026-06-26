@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   Check,
   FileSpreadsheet,
+  LayoutList,
   Loader2,
   Package,
   Plus,
@@ -22,11 +23,15 @@ import { type StreamTask } from "./task-stream";
 import { AssetChips, DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./create/asset-chips";
 import { AssetPickerModal } from "./create/asset-picker-modal";
 
-// 走后端 agent-tasks 的异步 Agent(含虚拟试穿 TRYON);REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
+// 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
+// TRYON 不再是独立胶囊:并入 LISTING 作「上身图」子模式(派活时仍落 TRYON 任务),故不在 PILL_AGENTS。
 export type ComposerKind = "ANALYST" | "DIRECTOR" | "LISTING" | "TRYON" | "REVIEW";
 
-/** 胶囊行展示的 Agent。 */
-const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "TRYON", "REVIEW"] as const).map(
+/** Listing 内容的两个子模式:文案(标题/卖点/A+/主图)与上身图(虚拟试穿)。 */
+export type ListingMode = "copy" | "tryon";
+
+/** 胶囊行展示的 Agent(4 个;虚拟试穿并入 Listing 子模式)。 */
+const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
   (kind) => ({ kind: kind as ComposerKind, ...AGENT_IDENTITY[kind] }),
 );
 
@@ -105,6 +110,8 @@ export function AgentComposer({
   onPersonaChange,
   materialId,
   onMaterialChange,
+  listingMode = "copy",
+  onListingModeChange,
   showAssetChips = false,
   textareaRef,
   onDispatched,
@@ -125,6 +132,9 @@ export function AgentComposer({
   onPersonaChange?: (id: string | null) => void;
   materialId?: string | null;
   onMaterialChange?: (id: string | null) => void;
+  /** Listing 子模式:文案 / 上身图(试穿);由 Workbench 持有,切走 Listing 自动回 copy。 */
+  listingMode?: ListingMode;
+  onListingModeChange?: (m: ListingMode) => void;
   /** 是否在底栏展示资产选择器(创作页开)。 */
   showAssetChips?: boolean;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
@@ -149,8 +159,8 @@ export function AgentComposer({
   const { open: openAuthModal } = useAuthModal();
 
   const isReview = activeAgent === "REVIEW";
-  // 虚拟试穿:输入是「模特 + 服饰图」两张图而非文字,凑齐才可发(同 DIRECTOR/LISTING 的资产语义)。
-  const isTryOn = activeAgent === "TRYON";
+  // 虚拟试穿 = Listing 的「上身图」子模式:输入是「模特 + 服饰图」两张图而非文字,凑齐才可发。
+  const isTryOn = activeAgent === "LISTING" && listingMode === "tryon";
   const tryOnReady = !!personaId && (!!materialId || !!productId);
   const placeholder =
     isReview && attachedFile
@@ -189,7 +199,8 @@ export function AgentComposer({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        agent: activeAgent,
+        // 试穿子模式派活落 TRYON 任务(后端不变),其余按当前 Agent
+        agent: isTryOn ? "TRYON" : activeAgent,
         // 试穿无文字指令(输入是两张图),给个默认 input 满足后端非空校验,也作会话气泡标题
         input: isTryOn ? input.trim() || "虚拟试穿" : input.trim(),
         // 创作类 + 试穿携带:DIRECTOR/LISTING 注入收藏真实数据;TRYON 用商品主图当服饰图
@@ -295,8 +306,27 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
+        {/* Listing 子模式切换:文案 / 上身图(试穿)。仅 Listing 显示,折叠原虚拟试穿胶囊。 */}
+        {activeAgent === "LISTING" && (
+          <div className="flex flex-wrap items-center gap-1.5 px-4 pt-3">
+            <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
+              <SubModeButton active={!isTryOn} icon={LayoutList} onClick={() => onListingModeChange?.("copy")}>
+                文案
+              </SubModeButton>
+              <SubModeButton active={isTryOn} icon={Shirt} onClick={() => onListingModeChange?.("tryon")}>
+                上身图
+              </SubModeButton>
+            </div>
+            <span className="text-2xs text-zinc-400">
+              {isTryOn
+                ? "真人上身效果图 · 自动存入素材库，做视频可复用"
+                : "标题 / 卖点 / A+ / 主图方案"}
+            </span>
+          </div>
+        )}
+
         {/* 关联商品 chip:收藏接力带入(创作页有 AssetChips 时由选择器展示,不重复出 chip) */}
-        {!showAssetChips && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
+        {!showAssetChips && !isTryOn && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-2 pr-1 text-xs font-medium text-brand-700">
               <Package className="h-3.5 w-3.5" />
@@ -407,8 +437,8 @@ export function AgentComposer({
             </>
           )}
 
-          {/* 创作工具链:商品 / 出镜人设 / 首帧素材 */}
-          {showAssetChips && (
+          {/* 创作工具链:商品 / 出镜人设 / 首帧素材(试穿子模式用专属「选择模特与服饰」,不重复出) */}
+          {showAssetChips && !isTryOn && (
             <AssetChips
               workspaceId={workspaceId}
               activeAgent={activeAgent}
@@ -465,6 +495,7 @@ export function AgentComposer({
       <AssetPickerModal
         workspaceId={workspaceId}
         activeAgent={activeAgent}
+        tryOn={isTryOn}
         productId={productId ?? null}
         onProductChange={(id) => onProductChange?.(id)}
         personaId={personaId ?? null}
@@ -475,6 +506,32 @@ export function AgentComposer({
       />
     )}
     </>
+  );
+}
+
+/** Listing 子模式分段按钮:选中白底浮起,未选灰字。 */
+function SubModeButton({
+  active,
+  icon: Icon,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  icon: typeof Shirt;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+        active ? "bg-white text-ink shadow-sm" : "text-zinc-500 hover:text-ink"
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {children}
+    </button>
   );
 }
 

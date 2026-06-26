@@ -39,6 +39,7 @@ export function AssetPickerModal({
   onPersonaChange,
   materialId,
   onMaterialChange,
+  tryOn,
   onClose,
 }: {
   workspaceId: string;
@@ -49,11 +50,14 @@ export function AssetPickerModal({
   onPersonaChange: (id: string | null) => void;
   materialId: string | null;
   onMaterialChange: (id: string | null) => void;
+  /** 试穿子模式:显式开启「模特 + 服饰图」语义(此时 activeAgent 仍是 LISTING)。 */
+  tryOn?: boolean;
   onClose: () => void;
 }) {
+  // 虚拟试穿现为 Listing 的「上身图」子模式:由 tryOn 显式驱动(activeAgent 仍是 LISTING)。
   // 模特 tab:短视频出镜人设 + 虚拟试穿模特都用它。
-  const showModel = activeAgent === "DIRECTOR" || activeAgent === "TRYON";
-  const isTryOn = activeAgent === "TRYON";
+  const isTryOn = tryOn ?? activeAgent === "TRYON";
+  const showModel = activeAgent === "DIRECTOR" || isTryOn;
   const tabs: { key: TabKey; label: string; icon: typeof Upload }[] = [
     { key: "upload", label: "上传资产", icon: Upload },
     { key: "product", label: "商品", icon: Package },

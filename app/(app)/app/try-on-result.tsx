@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Loader2, Shirt, UserRound } from "lucide-react";
 import type { StreamTask } from "./task-stream";
 
@@ -58,14 +59,22 @@ export function TryOnResult({ task }: { task: StreamTask }) {
       </div>
 
       {result && (
-        <a
-          href={result}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
-        >
-          查看原图
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={result}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+          >
+            查看原图
+          </a>
+          <Link
+            href="/app/assets/materials"
+            className="inline-flex items-center gap-1 text-2xs text-zinc-400 transition-colors hover:text-brand-600"
+          >
+            已存入素材库 · 做视频时可直接选用
+          </Link>
+        </div>
       )}
       {meta.imagesStatus === "FAILED" && (
         <p className="text-2xs text-zinc-400">
