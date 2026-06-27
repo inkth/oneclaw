@@ -1,7 +1,7 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { VideosClient } from "./videos-client";
 
-export const metadata = { title: "短视频 · OneClaw" };
+export const metadata = { title: "短视频 · 发现猫" };
 
 type Initial = Parameters<typeof VideosClient>[0]["initialVideos"];
 

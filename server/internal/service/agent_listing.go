@@ -20,7 +20,7 @@ import (
 
 // ── Listing:标题 / 五点卖点 / A+ 结构 / 主图(prompt → 用户确认 → fal 出图)──────
 
-const listingSystem = `你是 OneClaw 的"Listing 内容 Agent",服务 TikTok Shop 跨境卖家。
+const listingSystem = `你是 发现猫 的"Listing 内容 Agent",服务 TikTok Shop 跨境卖家。
 根据用户的商品描述,产出一套可直接上架的 Listing 内容。
 
 如果用户消息附带「商品档案」,以档案里的真实卖点、价格、市场数据为准:

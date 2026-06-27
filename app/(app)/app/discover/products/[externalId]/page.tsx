@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PackageSearch } from "lucide-react";
 import { ProductDetailClient, type DetailProduct } from "../product-detail-client";
 
-export const metadata = { title: "选品详情 · OneClaw" };
+export const metadata = { title: "选品详情 · 发现猫" };
 
 // 后端 DTO(金额 cents)。
 type DetailDTO = {

@@ -50,7 +50,7 @@ export function Chain() {
           </div>
           <h2 className="text-display-sm mt-3">一条链路，跑完一单生意</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            别再于十几个工具之间搬运数据。OneClaw 把出海的三个关键环节连成一条流水线，
+            别再于十几个工具之间搬运数据。发现猫 把出海的三个关键环节连成一条流水线，
             上一步的产出自动成为下一步的输入。
           </p>
         </div>

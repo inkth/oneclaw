@@ -44,7 +44,7 @@ function regionNote(code: Region): string {
 /**
  * 出海包 / 发布助手:把一个商品「手动发到 TikTok Shop」要用的料聚到一处 ——
  * 成片下载 + 主图下载 + 文案一键复制 + 按目标市场差异化的发布清单。
- * OneClaw 不真发布,这里把手动交接做顺。
+ * 发现猫 不真发布,这里把手动交接做顺。
  */
 export function PublishKitDrawer({
   workspaceId,
@@ -289,7 +289,7 @@ export function PublishKitDrawer({
                   ))}
                 </ol>
                 <p className="mt-3 text-2xs text-zinc-400">
-                  OneClaw 负责把内容做好;实际发布在 TikTok Shop 手动完成,照上面逐项核对即可。
+                  发现猫 负责把内容做好;实际发布在 TikTok Shop 手动完成,照上面逐项核对即可。
                 </p>
               </Section>
             </>

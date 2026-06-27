@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles, User } from "lucide-react";
+import { User } from "lucide-react";
+import { BrandTile } from "@/components/ui/BrandMark";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { BoardHeaderNav } from "./_nav";
 import { AccountMenu } from "./account-menu";
@@ -30,12 +31,8 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 bg-background/60 px-4 backdrop-blur-md sm:px-8">
       <div className="flex min-w-0 items-center gap-2">
-        <Link
-          href="/app"
-          aria-label="OneClaw 首页"
-          className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 md:hidden"
-        >
-          <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+        <Link href="/app" aria-label="发现猫 首页" className="md:hidden">
+          <BrandTile className="h-7 w-7 rounded-xl" markClassName="h-[68%] w-[68%]" />
         </Link>
         <BoardHeaderNav />
       </div>

@@ -1,4 +1,4 @@
-export const metadata = { title: "服务条款 · OneClaw" };
+export const metadata = { title: "服务条款 · 发现猫" };
 
 export default function TermsPage() {
   return (
@@ -7,8 +7,8 @@ export default function TermsPage() {
       <p className="!mt-2 text-zinc-400">最后更新：2026 年 6 月 23 日</p>
 
       <p>
-        欢迎使用 OneClaw。OneClaw 是由 OneClaw Technology(以下简称「我们」)提供的跨境电商
-        AI 工具，覆盖选品分析、短视频创作、Listing 内容、虚拟试穿与投放复盘。当你注册或使用 OneClaw
+        欢迎使用发现猫。发现猫是由发现猫科技(以下简称「我们」)提供的跨境电商
+        AI 工具，覆盖选品分析、短视频创作、Listing 内容、虚拟试穿与投放复盘。当你注册或使用发现猫
         （以下简称「服务」），即表示你已阅读、理解并同意本条款。
       </p>
 
@@ -44,7 +44,7 @@ export default function TermsPage() {
       <h2>5. 知识产权</h2>
       <p>
         在你遵守本条款并完成相应付费的前提下，你对通过服务生成的成果（脚本、视频、图片、文案等）享有使用权。
-        服务本身的软件、界面、商标及技术归 OneClaw Technology 所有，未经许可不得复制、反向工程或商业转售。
+        服务本身的软件、界面、商标及技术归发现猫科技所有，未经许可不得复制、反向工程或商业转售。
       </p>
 
       <h2>6. 第三方服务</h2>

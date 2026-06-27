@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getMe, apiServer } from "@/lib/api-client";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
-import { Sparkles } from "lucide-react";
+import { BrandTile } from "@/components/ui/BrandMark";
 import { SidebarNav, BoardTabs } from "./_nav";
 import { ConversationRail } from "./conversation-rail";
 import { AppHeader } from "./app-header";
@@ -34,12 +34,8 @@ export default async function AppLayout({
     <div className="app-skin min-h-screen flex bg-background">
       {/* 照搬 Designkit：80px 图标导航轨，透明贴画布色，纵向 图标+小字 */}
       <aside className="hidden md:flex sticky top-0 h-screen w-20 shrink-0 flex-col items-center self-start overflow-y-auto border-r border-black/5 bg-transparent py-4">
-        <Link
-          href="/"
-          aria-label="OneClaw 首页"
-          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-sm"
-        >
-          <Sparkles className="h-5 w-5 text-white" strokeWidth={2.5} />
+        <Link href="/" aria-label="发现猫 首页" className="block">
+          <BrandTile className="h-10 w-10 rounded-2xl" />
         </Link>
 
         <SidebarNav />

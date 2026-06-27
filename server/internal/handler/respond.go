@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// OneClaw 业务成功信封 { ok:true, data:... },与现有前端 lib/api.ts 对齐。
+// 发现猫 业务成功信封 { ok:true, data:... },与现有前端 lib/api.ts 对齐。
 // 错误仍走 c.Error(apperr) → ErrorHandler 中间件(返回 {code,message,...})。
 
 func OK(c *gin.Context, data any) {

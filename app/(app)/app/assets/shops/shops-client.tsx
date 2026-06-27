@@ -374,7 +374,7 @@ function AddShopModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
-              placeholder="例：OneClaw US 旗舰店"
+              placeholder="例：发现猫 US 旗舰店"
               className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
@@ -395,7 +395,7 @@ function AddShopModal({
 
           <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-3 text-2xs text-zinc-600 leading-relaxed">
             真实平台对接（OAuth + 拉取订单 / 商品）正在开发中。
-            当前先以「待对接」状态保存，OneClaw 会把后续生成的 Agent 报告关联到对应店铺。
+            当前先以「待对接」状态保存，发现猫 会把后续生成的 Agent 报告关联到对应店铺。
           </div>
 
           {error && (

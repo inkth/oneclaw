@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Users } from "lucide-react";
 import { InfluencerDetailClient, type InfluencerDetail } from "../influencer-detail-client";
 
-export const metadata = { title: "达人详情 · OneClaw" };
+export const metadata = { title: "达人详情 · 发现猫" };
 
 type DTO = {
   userId: string;

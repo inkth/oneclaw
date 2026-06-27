@@ -129,7 +129,7 @@ func (c *Client) ChatWithModel(ctx context.Context, model, system, user string, 
 	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("HTTP-Referer", c.cfg.Referer)
-	req.Header.Set("X-Title", "OneClaw")
+	req.Header.Set("X-Title", "Faxianmao")
 
 	client := c.http
 	if model == c.cfg.ReviewModel {
@@ -296,7 +296,7 @@ func (c *Client) videoCall(ctx context.Context, method, url string, body any) (*
 	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("HTTP-Referer", c.cfg.Referer)
-	req.Header.Set("X-Title", "OneClaw")
+	req.Header.Set("X-Title", "Faxianmao")
 
 	res, err := c.http.Do(req)
 	if err != nil {
@@ -343,7 +343,7 @@ func (c *Client) GenerateImage(ctx context.Context, prompt, aspectRatio string) 
 	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("HTTP-Referer", c.cfg.Referer)
-	req.Header.Set("X-Title", "OneClaw")
+	req.Header.Set("X-Title", "Faxianmao")
 
 	res, err := c.http.Do(req)
 	if err != nil {

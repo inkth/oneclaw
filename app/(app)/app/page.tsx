@@ -3,7 +3,7 @@ import { Workbench } from "./workbench";
 import { type ComposerKind } from "./agent-composer";
 import { SampleVideos, type SampleVid } from "./sample-videos";
 
-export const metadata = { title: "工作台 · OneClaw" };
+export const metadata = { title: "工作台 · 发现猫" };
 
 // 工作台是统一派活台：创作类(短视频 DIRECTOR / Listing —— 含「上身图」虚拟试穿子模式) + 选品分析(ANALYST) + 投放复盘(REVIEW)同处一框。
 const AGENT_KINDS = new Set(["ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);

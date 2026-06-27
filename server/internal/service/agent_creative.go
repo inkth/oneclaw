@@ -22,7 +22,7 @@ import (
 // directorSystemFor 按目标市场生成 DIRECTOR system prompt:口播/台词用市场母语,
 // videoPrompt 的视觉描述保持英文(Seedance 对英文视觉指令理解最好),脚本/标题仍面向中国卖家用中文。
 func directorSystemFor(v voiceSpec) string {
-	return fmt.Sprintf(`你是 OneClaw 的"短视频创作 Agent",服务 TikTok Shop 跨境卖家。本条视频的目标市场:%s,口播语言:%s。
+	return fmt.Sprintf(`你是 发现猫 的"短视频创作 Agent",服务 TikTok Shop 跨境卖家。本条视频的目标市场:%s,口播语言:%s。
 根据用户的商品/需求,产出一条可直接生成的带货短视频:分镜、口播、视频提示词三者必须一一对应。
 
 先判断哪种叙事角度最适合该商品,从下面四种里选一个:

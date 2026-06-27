@@ -5,7 +5,7 @@ import { PricingCTA } from "./pricing-cta";
 
 type PlanKey = "FREE" | "PRO" | "TEAM";
 
-export const metadata = { title: "定价 · OneClaw" };
+export const metadata = { title: "定价 · 发现猫" };
 
 const tiers: Array<{
   name: PlanKey;
@@ -29,7 +29,7 @@ const tiers: Array<{
     icon: Sparkles,
     tone: "zinc",
     highlight: false,
-    description: "适合个人测试 OneClaw 的能力边界",
+    description: "适合个人测试 发现猫 的能力边界",
     features: [
       "每月 450 积分(≈ 2 条出片 / 150 次选品)",
       "选品 3 / 出片 175 / 出图 6 积分",
@@ -106,11 +106,11 @@ const faqs = [
   },
   {
     q: "支持 BYOK（自带模型 key）吗？",
-    a: "BYOK 在路线图上(规划中)，将面向 Team 开放；届时 OneClaw 只对编排和数据存储收费，模型成本走你自己的账户。",
+    a: "BYOK 在路线图上(规划中)，将面向 Team 开放；届时 发现猫 只对编排和数据存储收费，模型成本走你自己的账户。",
   },
   {
     q: "用了 Agent 写出来的视频版权归谁？",
-    a: "归你。OneClaw 不主张任何素材版权，但建议你在商用前阅读相关模型服务商的服务条款。",
+    a: "归你。发现猫 不主张任何素材版权，但建议你在商用前阅读相关模型服务商的服务条款。",
   },
 ];
 
@@ -254,7 +254,7 @@ export default function PricingPage() {
             </div>
 
             <p className="mt-10 text-center text-xs text-zinc-500">
-              所有方案均不含模型实际推理成本，相关费用由 OneClaw
+              所有方案均不含模型实际推理成本，相关费用由 发现猫
               在你的积分内代付；未来 BYOK 模式(规划中)下可走你自己的账户。
             </p>
           </div>

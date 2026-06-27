@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
+import { BrandMark } from "@/components/ui/BrandMark";
 import { toast } from "sonner";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { LoginForm } from "./LoginForm";
@@ -63,14 +64,14 @@ export function AuthModal({
         </button>
 
         {/* 左：品牌面板（桌面端） */}
-        <div className="hidden flex-col justify-between bg-gradient-to-br from-brand-600 via-violet-600 to-fuchsia-500 p-8 text-white md:flex">
+        <div className="hidden flex-col justify-between bg-gradient-to-br from-violet-700 via-violet-600 to-fuchsia-600 p-8 text-white md:flex">
           <div>
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-                <Sparkles className="h-5 w-5" strokeWidth={2.5} />
+                <BrandMark className="h-5 w-5" strokeWidth={1.8} whiskers={false} />
               </span>
-              <span className="font-display text-lg font-semibold tracking-tight">
-                OneClaw
+              <span className="font-display text-lg font-semibold tracking-[0.06em]">
+                发现猫
               </span>
             </div>
             <h3 className="mt-6 text-xl font-bold leading-snug tracking-tight">
@@ -101,12 +102,12 @@ export function AuthModal({
         </div>
 
         {/* 移动端降级：渐变顶部条 */}
-        <div className="flex items-center gap-2.5 bg-gradient-to-r from-brand-600 via-violet-600 to-fuchsia-500 px-5 py-3.5 text-white md:hidden">
+        <div className="flex items-center gap-2.5 bg-gradient-to-r from-violet-700 via-violet-600 to-fuchsia-600 px-5 py-3.5 text-white md:hidden">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15">
-            <Sparkles className="h-4 w-4" strokeWidth={2.5} />
+            <BrandMark className="h-4 w-4" strokeWidth={1.9} whiskers={false} />
           </span>
           <div>
-            <span className="text-sm font-semibold">OneClaw</span>
+            <span className="text-sm font-semibold">发现猫</span>
             <span className="ml-2 text-xs text-white/70">你的 AI 出海团队</span>
           </div>
         </div>
@@ -114,7 +115,7 @@ export function AuthModal({
         {/* 右：登录表单 */}
         <div className="p-6 sm:p-8">
           <h2 className="text-lg font-bold tracking-tight">
-            {context?.title ?? "登录 / 注册 OneClaw"}
+            {context?.title ?? "登录 / 注册 发现猫"}
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
             {context?.desc ?? "中国大陆手机号，验证码登录，新用户自动开通工作台。"}

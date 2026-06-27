@@ -4,7 +4,7 @@ import { type DiscoverState } from "../_components/shared";
 import { fetchCategories } from "../_components/categories";
 import { InfluencersClient, type Influencer } from "./influencers-client";
 
-export const metadata = { title: "选品 · 达人榜 · OneClaw" };
+export const metadata = { title: "选品 · 达人榜 · 发现猫" };
 
 type Result = { state: DiscoverState; fetchedAt: string | null; rows: Influencer[] };
 

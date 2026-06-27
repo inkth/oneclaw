@@ -1,7 +1,7 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { ModelsClient } from "./models-client";
 
-export const metadata = { title: "模特 · OneClaw" };
+export const metadata = { title: "模特 · 发现猫" };
 
 type Initial = Parameters<typeof ModelsClient>[0]["initialModels"];
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, X, Sparkles, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
+import { BrandLockup } from "@/components/ui/BrandMark";
 
 const navItems: Array<{ label: string; href: string; badge?: string }> = [
   { label: "全链路", href: "/intro#chain" },
@@ -15,13 +16,8 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full glass border-b border-zinc-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <a href="/intro" className="flex items-center gap-2">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500 shadow-sm">
-              <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="text-lg font-semibold tracking-tight">
-              One<span className="text-brand-600">Claw</span>
-            </span>
+          <a href="/intro" aria-label="发现猫 首页">
+            <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
           </a>
 
           <nav className="hidden md:flex items-center gap-1">

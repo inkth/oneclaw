@@ -1,4 +1,5 @@
-import { Sparkles, Mail, MessageSquare } from "lucide-react";
+import { Mail, MessageSquare } from "lucide-react";
+import { BrandLockup } from "@/components/ui/BrandMark";
 import { SubscribeForm } from "./SubscribeForm";
 
 const sections: Array<{ title: string; links: Array<{ label: string; href: string }> }> = [
@@ -42,14 +43,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div className="col-span-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 via-violet-500 to-fuchsia-500">
-                <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="text-lg font-semibold tracking-tight">
-                One<span className="text-brand-600">Claw</span>
-              </span>
-            </div>
+            <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
             <p className="mt-4 text-sm text-zinc-600 leading-relaxed max-w-xs">
               用 AI Agent 团队，把跨境电商的重复工作交给机器，
               让每一个出海人都能像团队一样高效。
@@ -61,7 +55,7 @@ export function Footer() {
               </a>
               <span className="inline-flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                微信公众号：OneClaw 出海
+                微信公众号：发现猫 出海
               </span>
             </div>
           </div>
@@ -93,7 +87,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-zinc-200/80 pt-6 text-xs text-zinc-500">
-          © 2026 OneClaw Technology. All rights reserved.
+          © 2026 发现猫科技. All rights reserved.
         </div>
       </div>
     </footer>

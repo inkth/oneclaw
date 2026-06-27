@@ -4,7 +4,7 @@ import { AuthModalTrigger } from "@/components/auth/AuthModalTrigger";
 import { Bookmark } from "lucide-react";
 import { FavoritesClient, type FavoriteItem } from "./favorites-client";
 
-export const metadata = { title: "收藏 · OneClaw" };
+export const metadata = { title: "收藏 · 发现猫" };
 
 type GoProduct = {
   id: string;

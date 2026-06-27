@@ -4,7 +4,7 @@ import { type StreamTask } from "../task-stream";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MessagesSquare } from "lucide-react";
 
-export const metadata = { title: "全部对话 · OneClaw" };
+export const metadata = { title: "全部对话 · 发现猫" };
 
 export default async function AgentsPage() {
   const me = await getMe();

@@ -135,7 +135,7 @@ export function MaterialsClient({
         title="素材库"
         description={
           <>
-            上传你自己的图片 / 视频 / 音频，OneClaw 会在视频生成时优先用作底料。
+            上传你自己的图片 / 视频 / 音频，发现猫 会在视频生成时优先用作底料。
           </>
         }
         actions={

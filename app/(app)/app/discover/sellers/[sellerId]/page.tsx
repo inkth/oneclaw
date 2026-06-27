@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Store } from "lucide-react";
 import { SellerDetailClient, type SellerDetail } from "../seller-detail-client";
 
-export const metadata = { title: "店铺详情 · OneClaw" };
+export const metadata = { title: "店铺详情 · 发现猫" };
 
 type DTO = {
   sellerId: string;

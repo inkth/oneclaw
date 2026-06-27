@@ -1,4 +1,4 @@
-export const metadata = { title: "隐私政策 · OneClaw" };
+export const metadata = { title: "隐私政策 · 发现猫" };
 
 export default function PrivacyPage() {
   return (
@@ -7,7 +7,7 @@ export default function PrivacyPage() {
       <p className="!mt-2 text-zinc-400">最后更新：2026 年 6 月 23 日</p>
 
       <p>
-        本政策说明 OneClaw Technology(以下简称「我们」)在你使用 OneClaw 时如何收集、使用、存储与共享你的信息。
+        本政策说明发现猫科技(以下简称「我们」)在你使用发现猫时如何收集、使用、存储与共享你的信息。
         我们坚持最小必要原则，仅收集为你提供服务所必需的数据。
       </p>
 

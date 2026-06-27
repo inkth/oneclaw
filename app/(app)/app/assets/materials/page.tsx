@@ -1,7 +1,7 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { MaterialsClient } from "./materials-client";
 
-export const metadata = { title: "素材库 · OneClaw" };
+export const metadata = { title: "素材库 · 发现猫" };
 
 type Initial = Parameters<typeof MaterialsClient>[0]["initialMaterials"];
 

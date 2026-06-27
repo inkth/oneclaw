@@ -25,7 +25,6 @@ export type QuickAction = {
   desc: string;
   /** 缩略 tile:渐变底 + 白色线性图标(app icon 风格,不用 emoji / 图片资源)。 */
   icon: LucideIcon;
-  thumb: string;
   status: "live" | "soon";
   agent?: ComposerKind;
   promptTemplate?: string;
@@ -42,7 +41,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "蓝海选品",
       desc: "低竞争 + 上升趋势新品",
       icon: Search,
-      thumb: "from-brand-400 to-indigo-400",
       status: "live",
       agent: "ANALYST",
       promptTemplate:
@@ -53,7 +51,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "竞品拆解",
       desc: "卖点 / 定价 / 差异化机会",
       icon: Target,
-      thumb: "from-rose-400 to-orange-400",
       status: "live",
       agent: "ANALYST",
       promptTemplate: "拆解「」这款商品:核心卖点、定价策略、目标人群与我可切入的差异化机会",
@@ -63,7 +60,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "类目趋势",
       desc: "近 30 天热度与细分机会",
       icon: TrendingUp,
-      thumb: "from-emerald-400 to-teal-400",
       status: "live",
       agent: "ANALYST",
       promptTemplate: "分析「」类目近 30 天 TikTok 热度趋势,指出值得切入的细分赛道与代表爆品",
@@ -73,7 +69,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "利润测算",
       desc: "到手成本与毛利空间",
       icon: Wallet,
-      thumb: "from-sky-400 to-cyan-400",
       status: "live",
       agent: "ANALYST",
       promptTemplate: "为「」估算面向「」市场的到手成本、合理定价区间与毛利空间",
@@ -85,7 +80,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "UGC 开箱",
       desc: "真人开箱口播感带货",
       icon: Clapperboard,
-      thumb: "from-fuchsia-400 to-pink-400",
       status: "live",
       agent: "DIRECTOR",
       promptTemplate: "为「」生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感,突出使用前后对比",
@@ -95,7 +89,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "痛点种草",
       desc: "先戳痛点再给解决方案",
       icon: Sparkles,
-      thumb: "from-violet-400 to-purple-400",
       status: "live",
       agent: "DIRECTOR",
       promptTemplate: "为「」生成一条痛点切入的 TikTok 种草短视频:先放大用户痛点,再给出产品解决方案",
@@ -105,7 +98,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "效果对比",
       desc: "使用前后反差带货",
       icon: Video,
-      thumb: "from-amber-400 to-orange-400",
       status: "live",
       agent: "DIRECTOR",
       promptTemplate: "为「」生成使用前后对比的带货短视频脚本,突出效果反差与即时转化引导",
@@ -115,7 +107,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "卖点速览",
       desc: "15 秒快节奏卖点",
       icon: Clapperboard,
-      thumb: "from-sky-400 to-blue-400",
       status: "live",
       agent: "DIRECTOR",
       promptTemplate: "为「」生成一条 15 秒卖点速览短视频,快节奏罗列核心优势,结尾强 CTA",
@@ -127,7 +118,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "Listing 图集",
       desc: "标题 + 五点卖点 + 主图方案",
       icon: Images,
-      thumb: "from-emerald-400 to-lime-400",
       status: "live",
       agent: "LISTING",
       promptTemplate:
@@ -138,7 +128,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "A+ 内容",
       desc: "图文详情页结构化生成",
       icon: LayoutPanelTop,
-      thumb: "from-orange-400 to-rose-400",
       status: "live",
       agent: "LISTING",
       promptTemplate:
@@ -149,7 +138,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "标题优化",
       desc: "关键词 + 搜索权重",
       icon: Tag,
-      thumb: "from-fuchsia-400 to-violet-400",
       status: "live",
       agent: "LISTING",
       promptTemplate: "为「」优化 TikTok Shop 商品标题,覆盖高搜索量关键词并兼顾可读性,给 3 个版本",
@@ -162,7 +150,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "止损诊断",
       desc: "低 ROI 素材停还是改",
       icon: BarChart3,
-      thumb: "from-emerald-400 to-teal-400",
       status: "live",
       agent: "REVIEW",
       promptTemplate: "重点看 ROI 低于 2 的素材,逐条判断该停投还是优化,并说明依据",
@@ -172,7 +159,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "加投建议",
       desc: "找赢家素材放量",
       icon: TrendingUp,
-      thumb: "from-brand-400 to-indigo-400",
       status: "live",
       agent: "REVIEW",
       promptTemplate: "找出表现最好的素材与人群,给出加投预算与放量节奏建议",
@@ -182,7 +168,6 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       title: "漏斗体检",
       desc: "定位掉量环节",
       icon: LineChart,
-      thumb: "from-sky-400 to-cyan-400",
       status: "live",
       agent: "REVIEW",
       promptTemplate: "诊断各素材的 CTR / 加购 / 转化漏斗,定位掉量环节并给优化方向",
@@ -234,7 +219,7 @@ export function QuickActionCards({
             </div>
             <span
               aria-hidden
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm ${a.thumb}`}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-900 text-white shadow-sm"
             >
               <a.icon className="h-5 w-5" />
             </span>

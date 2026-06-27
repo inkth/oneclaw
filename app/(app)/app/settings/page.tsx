@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getMe, apiServer } from "@/lib/api-client";
 import { SettingsClient, type Usage } from "./settings-client";
 
-export const metadata = { title: "设置 · OneClaw" };
+export const metadata = { title: "设置 · 发现猫" };
 
 export default async function SettingsPage({
   searchParams,

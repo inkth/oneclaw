@@ -3,7 +3,7 @@ import { fetchCategories } from "../_components/categories";
 import { REGION_CODES, type Region } from "../_components/regions";
 import { DiscoverClient } from "./discover-client";
 
-export const metadata = { title: "发现 · TikTok 爆品 · OneClaw" };
+export const metadata = { title: "发现 · TikTok 爆品 · 发现猫" };
 
 type DecoratedProduct = {
   productId: string;

@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Clapperboard } from "lucide-react";
 import { VideoDetailClient, type VideoDetail } from "../video-detail-client";
 
-export const metadata = { title: "视频详情 · OneClaw" };
+export const metadata = { title: "视频详情 · 发现猫" };
 
 type DTO = {
   videoId: string;

@@ -193,7 +193,7 @@ func (s *AgentService) RecoverStartup(ctx context.Context) {
 // 选品分析基于 discover_products 真实榜单数据(EchoTik 定时同步/按需拉取落库),
 // LLM 只负责"从候选中筛选 + 给理由",指标(ROI/毛利/趋势)全部由既有换算函数得出,不让模型编数。
 
-const analystSystem = `你是 OneClaw 的"选品分析 Agent"。
+const analystSystem = `你是 发现猫 的"选品分析 Agent"。
 下面会给你一份 TikTok Shop 真实热销榜单（EchoTik 数据），请结合用户需求从中筛选 3-5 个最值得做的商品。
 
 强制要求：

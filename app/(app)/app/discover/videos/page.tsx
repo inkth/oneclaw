@@ -4,7 +4,7 @@ import { type DiscoverState } from "../_components/shared";
 import { fetchCategories } from "../_components/categories";
 import { VideosClient, type Video } from "./videos-client";
 
-export const metadata = { title: "选品 · 带货视频榜 · OneClaw" };
+export const metadata = { title: "选品 · 带货视频榜 · 发现猫" };
 
 type Result = { state: DiscoverState; fetchedAt: string | null; rows: Video[] };
 

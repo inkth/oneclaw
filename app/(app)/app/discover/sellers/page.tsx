@@ -4,7 +4,7 @@ import { type DiscoverState } from "../_components/shared";
 import { fetchCategories } from "../_components/categories";
 import { SellersClient, type Seller } from "./sellers-client";
 
-export const metadata = { title: "选品 · 店铺榜 · OneClaw" };
+export const metadata = { title: "选品 · 店铺榜 · 发现猫" };
 
 type Result = { state: DiscoverState; fetchedAt: string | null; rows: Seller[] };
 

@@ -1,7 +1,7 @@
 import { getMe, apiServer } from "@/lib/api-client";
 import { ShopsClient } from "./shops-client";
 
-export const metadata = { title: "店铺 · OneClaw" };
+export const metadata = { title: "店铺 · 发现猫" };
 
 type Props = Parameters<typeof ShopsClient>[0];
 type Initial = Props["initialShops"];
