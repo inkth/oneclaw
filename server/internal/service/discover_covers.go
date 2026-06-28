@@ -14,7 +14,78 @@ import (
 
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
+	"github.com/oneclaw/server/internal/service/echotik"
 )
+
+// coverLegacyHost 是 EchoTik 防盗链图床域名;cover_urls 里若含它,说明存的还是旧的
+// 签名 URL(3 天过期),不是 COS 永久 URL,需回填。
+const coverLegacyHost = "echosell-images"
+
+// BackfillCovers 一次性回填存量商品封面:把 cover_urls 为空、或仍指向 EchoTik 防盗链签名 URL
+// (会 3 天过期)的行,重新经 product/detail 取原文 → rehostCovers 永久化到 COS。
+//
+// 为什么需要它:读路径「商品榜不看 TTL」+ 只对被访问/预热的榜单后台刷新,对类目/搜索来的旧行、
+// 或 rehostCovers 上线前入库的旧行不会自愈,封面会一直空(前端露首字母占位)。此命令一次扫平。
+// 已是 COS 永久 URL 的行不动。用法:docker compose run --rm go-api ./server --backfill-covers
+func (s *DiscoverService) BackfillCovers(ctx context.Context) (updated, skipped int, err error) {
+	if s.echo == nil || !s.echo.Configured() {
+		return 0, 0, fmt.Errorf("echotik 未配置,无法回填封面")
+	}
+
+	var rows []model.DiscoverProduct
+	if e := s.db.WithContext(ctx).
+		Where("provider = ?", providerEchoTik).
+		Where("cover_urls IS NULL OR cover_urls::text = '[]' OR cover_urls::text LIKE ?", "%"+coverLegacyHost+"%").
+		Order("region").
+		Find(&rows).Error; e != nil {
+		return 0, 0, e
+	}
+	if len(rows) == 0 {
+		logger.Info("封面回填:无候选行,跳过")
+		return 0, 0, nil
+	}
+
+	byRegion := map[string][]model.DiscoverProduct{}
+	for _, r := range rows {
+		byRegion[r.Region] = append(byRegion[r.Region], r)
+	}
+	logger.Info("封面回填开始", logger.Int("rows", len(rows)), logger.Int("regions", len(byRegion)))
+
+	const batch = 30 // GetProductCovers 内部再按 10 子批;单批失败只影响这 30 个,不拖垮整体
+	for region, list := range byRegion {
+		for i := 0; i < len(list); i += batch {
+			end := i + batch
+			if end > len(list) {
+				end = len(list)
+			}
+			chunk := list[i:end]
+			items := make([]echotik.ProductListItem, len(chunk))
+			for j, dp := range chunk {
+				items[j] = echotik.ProductListItem{ProductID: dp.ExternalID}
+			}
+			// 复用榜单同款永久化链路:product/detail 取防盗链原文 → rehostCovers → COS。
+			coverByID := s.enrichCovers(ctx, region, items)
+			for _, dp := range chunk {
+				cov, ok := coverByID[dp.ExternalID]
+				if !ok || len(cov) == 0 {
+					skipped++ // 详情查不到封面 / 上游失败,留待下次
+					continue
+				}
+				if e := s.db.WithContext(ctx).Model(&model.DiscoverProduct{}).
+					Where("id = ?", dp.ID).
+					Update("cover_urls", cov).Error; e != nil {
+					logger.Warn("封面回填落库失败", logger.String("externalId", dp.ExternalID), logger.Err(e))
+					skipped++
+					continue
+				}
+				updated++
+			}
+			logger.Info("封面回填进度", logger.String("region", region),
+				logger.Int("updated", updated), logger.Int("skipped", skipped))
+		}
+	}
+	return updated, skipped, nil
+}
 
 // rehostCovers 把 EchoTik 防盗链原始封面 URL 永久化到自有 COS,返回 rawURL -> 可用 URL。
 //

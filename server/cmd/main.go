@@ -124,6 +124,15 @@ func main() {
 			logger.Info("[migrate] 收藏→候选迁移完成", zap.Int("migrated", m), zap.Int("skipped", sk))
 			return
 		}
+		// 一次性:回填存量空/过期签名封面,永久化到 COS 后退出。
+		if arg == "--backfill-covers" {
+			up, sk, err := discSvc.BackfillCovers(context.Background())
+			if err != nil {
+				logger.Fatal("[backfill] 封面回填失败", logger.Err(err))
+			}
+			logger.Info("[backfill] 封面回填完成", zap.Int("updated", up), zap.Int("skipped", sk))
+			return
+		}
 	}
 
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)
