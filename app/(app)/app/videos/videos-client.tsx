@@ -6,6 +6,7 @@ import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2, Vide
 import { VideoDetailDrawer } from "@/components/VideoDetailDrawer";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
+import { authFetch } from "@/lib/api-browser";
 
 type Processing = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
 
@@ -51,7 +52,7 @@ export function VideosClient({
     const interval = setInterval(async () => {
       const updates = await Promise.all(
         pending.map((v) =>
-          fetch(`/api/v1/workspaces/${workspaceId}/videos/${v.id}/refresh`, {
+          authFetch(`/api/v1/workspaces/${workspaceId}/videos/${v.id}/refresh`, {
             method: "POST",
           })
             .then((r) => r.json())
@@ -76,7 +77,7 @@ export function VideosClient({
 
   async function refresh(id: string) {
     setRefreshingId(id);
-    const res = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${id}/refresh`, {
+    const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos/${id}/refresh`, {
       method: "POST",
     });
     const json = await res.json();
@@ -90,7 +91,7 @@ export function VideosClient({
 
   async function retryVideo(id: string) {
     setRetryingId(id);
-    const res = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${id}/retry`, {
+    const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos/${id}/retry`, {
       method: "POST",
     });
     const json = await res.json().catch(() => null);
@@ -105,7 +106,7 @@ export function VideosClient({
 
   // 重出后重新拉全量列表:新片(GENERATING)即时上墙,既有轮询接管后续状态。
   async function reload() {
-    const res = await fetch(`/api/v1/workspaces/${workspaceId}/videos`);
+    const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos`);
     const json = await res.json().catch(() => null);
     if (res.ok && json?.ok && Array.isArray(json.data?.videos)) {
       setVideos(json.data.videos as Video[]);
@@ -114,7 +115,7 @@ export function VideosClient({
 
   async function deleteVideo(id: string) {
     if (!confirm("确定删除这条视频？fal 上的资产将无法找回。")) return;
-    const res = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${id}`, {
+    const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos/${id}`, {
       method: "DELETE",
     });
     if (res.ok) {

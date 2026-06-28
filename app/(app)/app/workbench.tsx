@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MessagesSquare } from "lucide-react";
+import { authFetch } from "@/lib/api-browser";
 import { AgentComposer, AgentPills, type ComposerKind, type ListingMode } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
@@ -104,7 +105,7 @@ export function Workbench({
     if (!hasActive || !workspaceId || !showStream) return;
     const timer = setInterval(async () => {
       try {
-        const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`);
+        const res = await authFetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`);
         const json = await res.json().catch(() => null);
         const fresh = (json?.data?.tasks ?? json?.tasks) as StreamTask[] | undefined;
         if (res.ok && json?.ok && Array.isArray(fresh)) setTasks(fresh);

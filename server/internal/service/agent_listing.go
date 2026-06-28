@@ -153,6 +153,7 @@ type listingDraft struct {
 	ImagesStatus string   `json:"imagesStatus"`
 	CoverURL     string   `json:"coverUrl"`
 	Images       []string `json:"images"`
+	ProductID    string   `json:"productId"` // 关联选品库商品:出图完成后回写为商品主图
 }
 
 // GenerateListingImages 用户确认主图方案后才真正出图(消耗 fal 生成额度)。
@@ -205,14 +206,14 @@ func (s *AgentService) GenerateListingImages(ctx context.Context, wsID, taskID u
 		return nil, err
 	}
 
-	go s.runListingImages(taskID, d.ImagePrompts, d.CoverURL)
+	go s.runListingImages(taskID, wsID, d.ImagePrompts, d.CoverURL, d.ProductID)
 	s.db.WithContext(ctx).Where("id = ?", taskID).First(&t)
 	return &t, nil
 }
 
 // runListingImages 后台并发出图 → 传 COS → 回写 metadata(images + imagesStatus)。
 // 部分失败不拖垮整批:有图即 DONE,全军覆没才 FAILED(前端可重试)。
-func (s *AgentService) runListingImages(taskID uuid.UUID, prompts []string, coverURL string) {
+func (s *AgentService) runListingImages(taskID, wsID uuid.UUID, prompts []string, coverURL, productID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 	defer cancel()
 	if len(prompts) > listingMaxImages {
@@ -260,6 +261,16 @@ func (s *AgentService) runListingImages(taskID uuid.UUID, prompts []string, cove
 	defer wcancel()
 	s.db.WithContext(wctx).Model(&model.AgentTask{}).Where("id = ?", taskID).
 		Update("metadata", gorm.Expr(`metadata || ?::jsonb`, string(b)))
+
+	// 回写商品主图:出图成功且关联了选品库商品时,把第一张设为商品主图。
+	// 仅当商品还没主图(未手动设过)才自动写,避免覆盖用户的选择;手动「设为主图」始终覆盖。
+	if len(done) > 0 && productID != "" {
+		if pid, err := uuid.Parse(productID); err == nil {
+			s.db.WithContext(wctx).Model(&model.Product{}).
+				Where("id = ? AND workspace_id = ? AND (cover_url IS NULL OR cover_url = '')", pid, wsID).
+				Update("cover_url", done[0])
+		}
+	}
 }
 
 // listingImage 生成并上传单张主图(走 fal 队列 API,短请求轮询,跨境不被长连接卡死)。

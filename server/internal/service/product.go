@@ -49,6 +49,7 @@ type ProductPatch struct {
 	TrendDelta   *int    `json:"trendDelta"`
 	Status       *string `json:"status"`
 	Note         *string `json:"note"`
+	CoverURL     *string `json:"coverUrl"` // 回写商品主图(Listing 出图设为主图)
 }
 
 // ProductListItem 列表项:商品本体 + 关联 EchoTik 主图(coverUrl),供前端选择器显示缩略图。
@@ -95,7 +96,10 @@ func (s *ProductService) List(ctx context.Context, wsID uuid.UUID) ([]ProductLis
 	out := make([]ProductListItem, len(items))
 	for i, p := range items {
 		out[i] = ProductListItem{Product: p}
-		if p.DiscoverProductID != nil {
+		// 回写的主图优先;否则回退 EchoTik 关联主图。
+		if p.CoverURL != nil && strings.TrimSpace(*p.CoverURL) != "" {
+			out[i].CoverURL = *p.CoverURL
+		} else if p.DiscoverProductID != nil {
 			out[i].CoverURL = coverByDP[*p.DiscoverProductID]
 		}
 	}
@@ -191,6 +195,9 @@ func (s *ProductService) Update(ctx context.Context, wsID, pid uuid.UUID, patch 
 	}
 	if patch.Note != nil {
 		updates["note"] = *patch.Note
+	}
+	if patch.CoverURL != nil {
+		updates["cover_url"] = *patch.CoverURL
 	}
 	if len(updates) > 0 {
 		if err := s.db.WithContext(ctx).Model(p).Updates(updates).Error; err != nil {

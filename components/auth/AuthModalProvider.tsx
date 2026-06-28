@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { AuthModal } from "./AuthModal";
+import { setAuthExpiredHandler } from "@/lib/auth-expired";
 
 export type AuthModalOptions = {
   title?: string;
@@ -18,6 +19,16 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   // null = 关闭；open() 不带参数时用 {} 走默认文案
   const [options, setOptions] = useState<AuthModalOptions | null>(null);
   const open = useCallback((o?: AuthModalOptions) => setOptions(o ?? {}), []);
+
+  // 轮询/取数遇到 401 时唤起本弹窗;已打开则忽略,避免空轮反复触发。
+  useEffect(() => {
+    setAuthExpiredHandler(() =>
+      setOptions((cur) =>
+        cur ?? { title: "登录已过期", desc: "为继续操作请重新登录,任务进度已保存。" },
+      ),
+    );
+    return () => setAuthExpiredHandler(null);
+  }, []);
 
   return (
     <AuthModalCtx.Provider value={{ open }}>

@@ -28,6 +28,7 @@ import {
   type AgentKey,
 } from "@/lib/ui/tokens";
 import { type ReviewResult } from "@/lib/review/types";
+import { authFetch } from "@/lib/api-browser";
 import { REGIONS, REGION_LANG, type Region } from "./discover/_components/regions";
 import { ReviewResults } from "./review-panel";
 import { ListingResults } from "./listing-results";
@@ -76,6 +77,8 @@ export type StreamTask = {
     images?: string[];
     imagesStatus?: "PENDING" | "RUNNING" | "DONE" | "FAILED";
     coverUrl?: string;
+    /** 关联选品库商品 ID:出图后可「设为商品主图」回写。 */
+    productId?: string;
     /** TRYON 任务:试穿输入图(模特 / 服饰),结果图落 images;失败时 imagesError 给可操作原因。 */
     modelUrl?: string;
     garmentUrl?: string;
@@ -300,6 +303,8 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
   // 一句话重写:输入框文本 + 重写中状态(留空=直接换一版)
   const [rewriteText, setRewriteText] = useState("");
   const [rewriting, setRewriting] = useState(false);
+  // 失败任务一键重试:后端沿用原指令 + metadata 还原的派活选项重跑。
+  const [retrying, setRetrying] = useState(false);
   // 派活时在创作页预选过人设的,确认出片默认沿用(仍可换/取消)
   const [personaId, setPersonaId] = useState<string | null>(
     task.metadata?.preferredPersonaId ?? null,
@@ -318,7 +323,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
     setRedrafting(true);
     setPendingLang(lang);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/redraft`,
         {
           method: "POST",
@@ -334,7 +339,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
       }
       for (let i = 0; i < 24; i++) {
         await new Promise((r) => setTimeout(r, 2500));
-        const cur = await fetch(
+        const cur = await authFetch(
           `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`,
           { credentials: "include" },
         );
@@ -363,7 +368,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
     if (confirming) return;
     setConfirming(true);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/video`,
         {
           method: "POST",
@@ -393,7 +398,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
     const prevOutput = t.output ?? "";
     setRewriting(true);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/rewrite`,
         {
           method: "POST",
@@ -409,7 +414,7 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
       }
       for (let i = 0; i < 24; i++) {
         await new Promise((r) => setTimeout(r, 2500));
-        const cur = await fetch(
+        const cur = await authFetch(
           `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`,
           { credentials: "include" },
         );
@@ -437,6 +442,49 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
     }
   }
 
+  // 重试:置回 QUEUED 立即显示「排队中」,随后本地轮询到终态就地更新(同 rewrite 的轮询口径)。
+  async function retryTask() {
+    if (retrying) return;
+    setRetrying(true);
+    try {
+      const res = await authFetch(
+        `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/retry`,
+        { method: "POST" },
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.message || json?.error?.message || "重试失败,稍后再试");
+        return;
+      }
+      setLocalTask({ ...task, status: "QUEUED", output: null, errorMessage: null, metadata: t.metadata });
+      for (let i = 0; i < 48; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const cur = await authFetch(
+          `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`,
+        );
+        const cj = await cur.json().catch(() => null);
+        const nt = cj?.data?.task as StreamTask | undefined;
+        if (!nt) continue;
+        setLocalTask({
+          ...task,
+          status: nt.status,
+          output: nt.output,
+          errorMessage: nt.errorMessage,
+          metadata: nt.metadata,
+        });
+        if (!ACTIVE_STATUSES.has(nt.status)) {
+          if (nt.status === "DONE") toast.success("重试成功");
+          else toast.error(nt.errorMessage || "重试仍失败,请稍后再试");
+          return;
+        }
+      }
+    } catch {
+      toast.error("网络异常,稍后再试");
+    } finally {
+      setRetrying(false);
+    }
+  }
+
   return (
     <div id={`task-${task.id}`} className="space-y-2 scroll-mt-24">
       <UserBubble>{task.input}</UserBubble>
@@ -447,8 +495,25 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
             {t.status === "QUEUED" ? "排队中,马上开始…" : "正在工作,结果会出现在这里…"}
           </div>
         ) : t.status === "FAILED" ? (
-          <div className="text-sm leading-relaxed text-rose-600">
-            {t.errorMessage || "执行失败,请稍后重试"}
+          <div className="space-y-2.5">
+            <div className="text-sm leading-relaxed text-rose-600">
+              {t.errorMessage || "执行失败,请稍后重试"}
+            </div>
+            {/* TRYON 失败缺图源 ID 无法重建,引导回素材选择器重派,故不给一键重试 */}
+            {t.agent !== "TRYON" && (
+              <button
+                onClick={retryTask}
+                disabled={retrying}
+                className="press inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
+              >
+                {retrying ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {retrying ? "重试中…" : "重试"}
+              </button>
+            )}
           </div>
         ) : isListing ? (
           <ListingResults task={t} />
@@ -600,9 +665,7 @@ function VideoResultCard({
 
   useEffect(() => {
     let alive = true;
-    fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, {
-      credentials: "include",
-    })
+    authFetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`)
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;

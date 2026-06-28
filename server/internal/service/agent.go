@@ -155,6 +155,75 @@ func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
 	s.quota.Refund(ctx, taskID, model.UsageAgentTask) // 失败不烧额度
 }
 
+// retryableAgents 可一键重试的任务类型:opts 能从 metadata 完整还原。
+// TRYON 不在内 —— 其 metadata 只存解析后的图 URL,丢了 PersonaID/MaterialID,重试必败,
+// 这类失败引导用户回素材选择器重派。
+var retryableAgents = map[string]bool{
+	model.AgentAnalyst:  true,
+	model.AgentDirector: true,
+	model.AgentListing:  true,
+}
+
+// retryMeta 失败任务 metadata 里可还原派活选项的字段(DIRECTOR/LISTING 写入)。
+type retryMeta struct {
+	ProductID          string `json:"productId"`
+	PreferredPersonaID string `json:"preferredPersonaId"`
+	Region             string `json:"region"`
+	DurationSec        int    `json:"durationSec"`
+	AspectRatio        string `json:"aspectRatio"`
+}
+
+// optsFromTask 从任务 metadata 还原 AgentCreateOpts,让重试沿用原商品/市场/人设/时长/比例。
+func optsFromTask(t *model.AgentTask) AgentCreateOpts {
+	var opts AgentCreateOpts
+	if len(t.Metadata) == 0 {
+		return opts
+	}
+	var m retryMeta
+	if json.Unmarshal([]byte(t.Metadata), &m) != nil {
+		return opts
+	}
+	if id, err := uuid.Parse(m.ProductID); err == nil {
+		opts.ProductID = &id
+	}
+	if id, err := uuid.Parse(m.PreferredPersonaID); err == nil {
+		opts.PersonaID = &id
+	}
+	opts.Region = m.Region
+	opts.DurationSec = m.DurationSec
+	opts.AspectRatio = m.AspectRatio
+	return opts
+}
+
+// Retry 重跑一条失败任务:沿用原 input + 从 metadata 还原的选项,重占一笔额度,
+// 重置为 QUEUED 并异步执行(复用 execute)。只有失败、且类型可还原的任务可重试。
+func (s *AgentService) Retry(ctx context.Context, wsID, taskID uuid.UUID) (*model.AgentTask, error) {
+	t, err := s.Get(ctx, wsID, taskID)
+	if err != nil {
+		return nil, err
+	}
+	if t.Status != model.TaskFailed {
+		return nil, apperr.BadRequest("只有失败的任务可以重试")
+	}
+	if !retryableAgents[t.Agent] {
+		return nil, apperr.BadRequest("该任务类型不支持一键重试,请重新派活")
+	}
+	opts := optsFromTask(t)
+	// 失败时额度已退回,重试重新占一笔(沿用同一 task ID 作计费键,与视频重试同口径)。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
+		return nil, err
+	}
+	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", t.ID).
+		Updates(map[string]any{
+			"status": model.TaskQueued, "error_message": nil,
+			"output": nil, "started_at": nil, "finished_at": nil,
+		})
+	t.Status = model.TaskQueued
+	t.ErrorMessage = nil
+	go s.execute(t.ID, wsID, t.Agent, t.Input, opts)
+	return t, nil
+}
+
 // RecoverStartup 服务重启后清理悬挂任务:QUEUED/RUNNING 的执行 goroutine 已随进程消失,
 // 标记 FAILED 并退回额度;出图中断(imagesStatus=RUNNING)同理翻成 FAILED 供重试。
 func (s *AgentService) RecoverStartup(ctx context.Context) {

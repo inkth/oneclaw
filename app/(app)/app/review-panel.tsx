@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   Activity,
+  Clapperboard,
   MousePointerClick,
   ShoppingCart,
   Sparkles,
@@ -34,12 +36,35 @@ const pct = (n: number) => (n * 100).toFixed(1) + "%";
 const num = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 /**
+ * 复盘 → 做视频接力指令:优先用明星素材(高消耗高 ROI),其次潜力素材(低消耗高 ROI、待放量),
+ * 把赢家创意的方向写进 DIRECTOR 指令,让下一条视频延续已被验证的钩子/卖点。
+ */
+function relayVideoPrompt(r: ReviewResult): string {
+  const winners = r.quadrants.winner ?? [];
+  const potentials = r.quadrants.potential ?? [];
+  const ref = winners.length ? winners : potentials;
+  if (ref.length === 0) {
+    return "参考上次投流复盘的赢家创意特征,再做一条高转化的带货短视频。";
+  }
+  const titles = ref
+    .slice(0, 2)
+    .map((it) => it.title)
+    .filter(Boolean)
+    .join("、");
+  const label = winners.length ? "明星素材" : "潜力素材";
+  const why = winners.length ? "高消耗高 ROI、已被验证" : "低消耗高 ROI、值得放量";
+  return `参考上次投流复盘:${label}「${titles}」表现最好(${why})。再做一条同方向的带货短视频,延续它们的开场钩子和卖点角度。`;
+}
+
+/**
  * 复盘结果仪表盘（纯展示）：健康度基线 + Cost×ROI 象限 + 优化行动清单 + Gemini 深挖提示词。
  * 计算全在 Go 后端完成，这里只渲染 ReviewResult。由「店铺投流数据分析」Agent 在工作台内调用。
  */
 export function ReviewResults({ result }: { result: ReviewResult }) {
   const { baseline: b, counts, quadrants, actions } = result;
   const roiOk = b.roi >= b.targetRoi;
+  const router = useRouter();
+  const hasWinners = (quadrants.winner?.length ?? 0) + (quadrants.potential?.length ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -95,6 +120,26 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
               </div>
             );
           })}
+        </div>
+
+        {/* 复盘 → 行动接力:把赢家方向直接接到「做视频」,闭环不断点 */}
+        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-brand-100 bg-brand-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-2xs leading-relaxed text-zinc-600">
+            {hasWinners
+              ? "把这次复盘的赢家方向接力成下一条视频 —— 指令已按明星/潜力素材预填,可再改。"
+              : "样本里还没跑出明星素材,先按复盘结论再做一条试试方向。"}
+          </p>
+          <button
+            onClick={() =>
+              router.push(
+                `/app?agent=DIRECTOR&prompt=${encodeURIComponent(relayVideoPrompt(result))}`,
+              )
+            }
+            className="press inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-black sm:self-auto"
+          >
+            <Clapperboard className="h-3.5 w-3.5" />
+            再做一条视频
+          </button>
         </div>
       </Card>
 

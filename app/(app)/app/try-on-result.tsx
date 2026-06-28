@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Loader2, Shirt, UserRound } from "lucide-react";
 import type { StreamTask } from "./task-stream";
+import { authFetch } from "@/lib/api-browser";
 
 /**
  * 虚拟试穿结果:任务 DONE 后出图仍异步进行,按 imagesStatus 自轮询。
@@ -18,7 +19,7 @@ export function TryOnResult({ task }: { task: StreamTask }) {
     if (!running) return;
     const timer = setInterval(async () => {
       try {
-        const res = await fetch(`/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`);
+        const res = await authFetch(`/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`);
         const json = await res.json().catch(() => null);
         const fresh = (json?.data?.task ?? json?.task) as StreamTask | undefined;
         if (res.ok && fresh?.metadata) setMeta(fresh.metadata);

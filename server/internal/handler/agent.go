@@ -200,6 +200,25 @@ func (h *AgentHandler) GenerateImages(c *gin.Context) {
 	OK(c, gin.H{"task": t})
 }
 
+// Retry 重跑一条失败的 Agent 任务(沿用原指令与 metadata 还原的派活选项,重占额度)。
+func (h *AgentHandler) Retry(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	tid, err := uuid.Parse(c.Param("tid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("任务 ID 无效"))
+		return
+	}
+	t, err := h.agents.Retry(c.Request.Context(), wid, tid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"task": t})
+}
+
 func (h *AgentHandler) Get(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {

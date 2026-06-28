@@ -25,6 +25,9 @@ type Product struct {
 	TrendDelta        int        `gorm:"default:0" json:"trendDelta"`
 	Status            string     `gorm:"not null;default:'EVALUATING';index:idx_prod_ws_status" json:"status"`
 	Note              *string    `json:"note,omitempty"`
+	// CoverURL 用户回写的商品主图(Listing 出图设为主图);非空则覆盖 EchoTik 关联主图。
+	// json:"-":对外主图统一走 ProductListItem.CoverURL(已合并回写值与 EchoTik 兜底)。
+	CoverURL *string `gorm:"column:cover_url" json:"-"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
 }

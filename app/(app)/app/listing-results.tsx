@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Hash, Images, Loader2, RefreshCw } from "lucide-react";
+import { Check, Copy, Hash, Images, Loader2, RefreshCw, Star } from "lucide-react";
 import { CreditCost } from "@/components/ui/CreditCost";
 import { CREDIT_COST } from "@/lib/credits";
+import { authFetch } from "@/lib/api-browser";
 import { type StreamTask } from "./task-stream";
 
 type ListingMeta = NonNullable<StreamTask["metadata"]>;
@@ -37,13 +38,42 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
 export function ListingResults({ task }: { task: StreamTask }) {
   const [meta, setMeta] = useState<ListingMeta>(task.metadata ?? {});
   const [submitting, setSubmitting] = useState(false);
+  // 主图回写商品:记录已设为主图的那张 + 正在回写的那张。
+  const [appliedUrl, setAppliedUrl] = useState<string | null>(null);
+  const [applyingUrl, setApplyingUrl] = useState<string | null>(null);
   const running = meta.imagesStatus === "RUNNING";
+
+  async function setAsCover(url: string) {
+    if (!meta.productId || applyingUrl) return;
+    setApplyingUrl(url);
+    try {
+      const res = await authFetch(
+        `/api/v1/workspaces/${task.workspaceId}/products/${meta.productId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ coverUrl: url }),
+        },
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.message || json?.error?.message || "回写失败,稍后再试");
+        return;
+      }
+      setAppliedUrl(url);
+      toast.success("已设为商品主图");
+    } catch {
+      toast.error("网络异常,稍后再试");
+    } finally {
+      setApplyingUrl(null);
+    }
+  }
 
   useEffect(() => {
     if (!running) return;
     const timer = setInterval(async () => {
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}`,
         );
         const json = await res.json().catch(() => null);
@@ -60,7 +90,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/images`,
         { method: "POST" },
       );
@@ -146,18 +176,50 @@ export function ListingResults({ task }: { task: StreamTask }) {
         <div className="rounded-xl border border-black/10 bg-white px-3 py-2.5">
           <div className="text-2xs font-medium text-zinc-400">Listing 主图</div>
           {images.length > 0 ? (
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {images.map((url, i) => (
-                <a key={i} href={url} target="_blank" rel="noreferrer" title="点击查看原图">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={`Listing 主图 ${i + 1}`}
-                    className="aspect-square w-full rounded-lg border border-black/10 object-cover transition-opacity hover:opacity-90"
-                  />
-                </a>
-              ))}
-            </div>
+            <>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {images.map((url, i) => {
+                  const applied = appliedUrl === url;
+                  return (
+                    <div key={i} className="space-y-1">
+                      <a href={url} target="_blank" rel="noreferrer" title="点击查看原图" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={`Listing 主图 ${i + 1}`}
+                          className="aspect-square w-full rounded-lg border border-black/10 object-cover transition-opacity hover:opacity-90"
+                        />
+                      </a>
+                      {meta.productId && (
+                        <button
+                          onClick={() => setAsCover(url)}
+                          disabled={applyingUrl != null || applied}
+                          className={`inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 text-2xs font-medium transition-colors disabled:pointer-events-none ${
+                            applied
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-black/10 bg-white text-zinc-500 hover:border-brand-300 hover:text-brand-700"
+                          }`}
+                        >
+                          {applyingUrl === url ? (
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          ) : applied ? (
+                            <Check className="h-2.5 w-2.5" />
+                          ) : (
+                            <Star className="h-2.5 w-2.5" />
+                          )}
+                          {applied ? "已设为主图" : "设为主图"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {meta.productId && (
+                <p className="mt-1.5 text-2xs text-zinc-400">
+                  设为主图后,会回写到选品库该商品(替换原图),做视频选商品时即用这张。
+                </p>
+              )}
+            </>
           ) : (
             <>
               <ol className="mt-1.5 space-y-1">
