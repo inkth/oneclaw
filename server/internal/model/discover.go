@@ -87,6 +87,26 @@ func (c *DiscoverCache) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
+// DiscoverBackfillCursor 全量回填进度游标:按 (provider, region, category_id) 记录某地区某一级
+// 类目前 N 页已落库到第几页(DonePages)、是否拉完(Completed)。供 --backfill-products 断点续跑,
+// 已完成组合/已拉页跳过,不再重复请求 EchoTik。
+type DiscoverBackfillCursor struct {
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	Provider   string    `gorm:"not null;uniqueIndex:uq_dbc_key" json:"provider"`
+	Region     string    `gorm:"not null;uniqueIndex:uq_dbc_key" json:"region"`
+	CategoryID string    `gorm:"column:category_id;not null;uniqueIndex:uq_dbc_key" json:"categoryId"`
+	DonePages  int       `gorm:"column:done_pages;default:0" json:"donePages"`
+	Completed  bool      `gorm:"default:false" json:"completed"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+func (c *DiscoverBackfillCursor) BeforeCreate(*gorm.DB) error {
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+	return nil
+}
+
 // DiscoverSnapshot 每日商品指标快照。(discover_product_id, dt) 唯一。
 type DiscoverSnapshot struct {
 	ID                uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
