@@ -3,14 +3,14 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package, Rocket, Pencil, Check } from "lucide-react";
+import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package, MoreHorizontal, Pencil, Check } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
-import { PublishKitDrawer } from "./publish-kit-drawer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { Delta } from "@/components/ui/Delta";
+import { Popover } from "@/components/ui/Popover";
 
 type Status = "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 type CostSource = "ESTIMATE" | "MANUAL" | "SOURCED";
@@ -102,7 +102,6 @@ export function ProductsClient({
   const [filter, setFilter] = useState<"ALL" | Status>("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [kitProductId, setKitProductId] = useState<string | null>(null);
   const [editCostId, setEditCostId] = useState<string | null>(null);
   const [costDraft, setCostDraft] = useState("");
   const committedRef = useRef<string | null>(null); // 去重:Enter 后失焦不重复提交
@@ -354,58 +353,71 @@ export function ProductsClient({
                             <LayoutList className="h-2.5 w-2.5" />
                             为它做 Listing
                           </button>
-                          <button
-                            onClick={() => setKitProductId(p.id)}
-                            className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2 py-1 text-2xs font-medium text-fuchsia-700 hover:bg-fuchsia-100"
-                            title="出海包:成片 + 主图 + 文案 + 发布清单聚到一处,照着发到 TikTok Shop"
-                          >
-                            <Rocket className="h-2.5 w-2.5" />
-                            去发布
-                          </button>
                         </>
                       )}
-                      {p.status === "ARCHIVED" ? (
-                        <button
-                          onClick={() => patchProduct(p.id, { status: "EVALUATING" })}
-                          disabled={busyId === p.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-2xs text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
-                          title="恢复"
-                        >
-                          {busyId === p.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <RotateCcw className="h-2.5 w-2.5" />}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => patchProduct(p.id, { status: "ARCHIVED" })}
-                          disabled={busyId === p.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-2xs text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
-                          title="归档"
-                        >
-                          {busyId === p.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Archive className="h-2.5 w-2.5" />}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => deleteProduct(p.id)}
-                        disabled={busyId === p.id}
-                        className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-2xs text-rose-600 hover:bg-rose-100 disabled:opacity-50"
-                        title="删除"
+                      <Popover
+                        align="end"
+                        trigger={({ open }) => (
+                          <span
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 ${open ? "bg-zinc-100 text-zinc-700" : ""}`}
+                            title="更多操作"
+                          >
+                            {busyId === p.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            )}
+                          </span>
+                        )}
+                        panelClassName="min-w-[8rem] p-1"
                       >
-                        <Trash2 className="h-2.5 w-2.5" />
-                      </button>
+                        {({ close }) => (
+                          <div className="flex flex-col">
+                            {p.status === "ARCHIVED" ? (
+                              <button
+                                onClick={() => {
+                                  patchProduct(p.id, { status: "EVALUATING" });
+                                  close();
+                                }}
+                                disabled={busyId === p.id}
+                                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                恢复
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  patchProduct(p.id, { status: "ARCHIVED" });
+                                  close();
+                                }}
+                                disabled={busyId === p.id}
+                                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+                              >
+                                <Archive className="h-3.5 w-3.5" />
+                                归档
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                deleteProduct(p.id);
+                                close();
+                              }}
+                              disabled={busyId === p.id}
+                              className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              删除
+                            </button>
+                          </div>
+                        )}
+                      </Popover>
                     </div>
                   </Td>
                 </Tr>
               ))}
             </tbody>
         </TableWrap>
-      )}
-
-      {kitProductId && (
-        <PublishKitDrawer
-          key={kitProductId}
-          workspaceId={workspaceId}
-          productId={kitProductId}
-          onClose={() => setKitProductId(null)}
-        />
       )}
     </div>
   );
