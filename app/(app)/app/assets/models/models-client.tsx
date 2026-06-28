@@ -319,7 +319,7 @@ function CreateModelModal({
           <X className="h-4 w-4" />
         </button>
         <div className="p-6 space-y-4">
-          <h2 className="text-lg font-semibold tracking-tight">创建模特</h2>
+          <h2 className="text-subtitle">创建模特</h2>
 
           <div>
             <label className="block text-xs font-medium text-zinc-700 mb-1.5">名称</label>

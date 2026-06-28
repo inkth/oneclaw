@@ -25,7 +25,7 @@ export function EmptyState({
       {Icon && (
         <Icon className="mx-auto mb-4 h-12 w-12 text-zinc-300" strokeWidth={1.5} />
       )}
-      <div className="font-display text-lg font-semibold text-ink">{title}</div>
+      <div className="text-subtitle">{title}</div>
       {description && (
         <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-zinc-500">{description}</p>
       )}

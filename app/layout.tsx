@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Poppins, Open_Sans } from "next/font/google";
 import "./globals.css";
+// 专业中文字体(思源黑体 Noto Sans SC，SIL OFL)：标题优先 —— 仅 600/700 两字重，
+// 且仅「中文简体」子集(西文/数字走 Poppins，不拉 latin/日韩/西里尔等无关字符集)。
+// font-family "Noto Sans SC" 经 globals.css 的 --font-cjk 接入标题链；fontsource 默认 display:swap。
+import "@fontsource/noto-sans-sc/chinese-simplified-600.css";
+import "@fontsource/noto-sans-sc/chinese-simplified-700.css";
 import { Toaster } from "sonner";
 
 // 照搬 Designkit：标题 Poppins，正文 Open Sans。

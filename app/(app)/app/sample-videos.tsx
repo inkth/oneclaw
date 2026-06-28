@@ -75,7 +75,7 @@ function RealCard({ v }: { v: SampleVid }) {
           src={v.coverUrl}
           alt=""
           loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
         />
       ) : (
         <span aria-hidden className="absolute inset-0 bg-gradient-to-br from-zinc-300 to-zinc-400" />
@@ -110,7 +110,10 @@ function PlaceholderCard({ s }: { s: Placeholder }) {
       title={`${s.title} · ${s.angle}`}
       className="dk-card lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40"
     >
-      <span aria-hidden className={`absolute inset-0 bg-gradient-to-br ${s.thumb}`} />
+      <span
+        aria-hidden
+        className={`absolute inset-0 bg-gradient-to-br ${s.thumb} transition-transform duration-500 ease-out group-hover:scale-[1.04]`}
+      />
       <span aria-hidden className="absolute inset-0 bg-black/10" />
 
       <span className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-md transition-transform group-hover:scale-110">

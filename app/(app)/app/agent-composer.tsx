@@ -328,12 +328,12 @@ export function AgentComposer({
         {/* 关联商品 chip:收藏接力带入(创作页有 AssetChips 时由选择器展示,不重复出 chip) */}
         {!showAssetChips && !isTryOn && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 py-1 pl-2 pr-1 text-xs font-medium text-brand-700">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 py-1 pl-2 pr-1 text-xs font-medium text-violet-700">
               <Package className="h-3.5 w-3.5" />
               已关联选品商品 · 将注入其真实数据
               <button
                 onClick={onClearProduct}
-                className="rounded-full p-0.5 text-brand-400 hover:bg-brand-100 hover:text-brand-700"
+                className="rounded-full p-0.5 text-violet-400 hover:bg-violet-100 hover:text-violet-700"
                 aria-label="取消关联商品"
               >
                 <X className="h-3 w-3" />
@@ -541,7 +541,7 @@ function AssetStatus({ ok, label }: { ok: boolean; label: string }) {
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-2xs font-medium ${
         ok
-          ? "border-brand-200 bg-brand-50 text-brand-700"
+          ? "border-violet-200 bg-violet-50 text-violet-700"
           : "border-black/10 bg-white text-zinc-400"
       }`}
     >

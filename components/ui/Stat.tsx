@@ -29,13 +29,13 @@ export function Stat({
   const inner = (
     <>
       <div className="flex items-center justify-between">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 group-hover:bg-violet-50 group-hover:text-violet-600 transition-colors">
           <Icon className="h-4 w-4" />
         </div>
         {spark && spark.length > 1 ? (
           <Sparkline data={spark} />
         ) : href ? (
-          <ArrowUpRight className="h-4 w-4 text-zinc-300 group-hover:text-brand-500 transition-colors" />
+          <ArrowUpRight className="h-4 w-4 text-zinc-300 group-hover:text-violet-500 transition-colors" />
         ) : null}
       </div>
       <div
@@ -52,12 +52,10 @@ export function Stat({
     </>
   );
 
-  const cls = cn(
-    "group rounded-xl border border-zinc-200/80 bg-white shadow-xs",
-    lg ? "p-6" : "p-5"
-  );
+  const cls =
+    "group rounded-xl border border-zinc-200/80 bg-white shadow-xs p-6";
   return href ? (
-    <Link href={href} className={cn(cls, "lift hover:border-brand-200")}>
+    <Link href={href} className={cn(cls, "lift hover:border-violet-200")}>
       {inner}
     </Link>
   ) : (

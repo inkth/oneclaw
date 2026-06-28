@@ -55,8 +55,8 @@ export function Pagination({
           className={cn(
             "inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-medium tabular-nums transition-colors",
             p === page
-              ? "bg-brand-500 text-white shadow-sm"
-              : "border border-zinc-200/80 text-zinc-600 hover:border-brand-200 hover:bg-brand-50/40",
+              ? "bg-[var(--accent-pop)] text-white shadow-sm"
+              : "border border-zinc-200/80 text-zinc-600 hover:border-violet-200 hover:bg-violet-50/60",
           )}
         >
           {p}
@@ -84,7 +84,7 @@ function Arrow({
       aria-label={dir === "prev" ? "上一页" : "下一页"}
       className={cn(
         "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 text-zinc-500 transition-colors",
-        disabled ? "cursor-not-allowed opacity-40" : "hover:border-brand-200 hover:bg-brand-50/40",
+        disabled ? "cursor-not-allowed opacity-40" : "hover:border-violet-200 hover:bg-violet-50/60",
       )}
     >
       <Icon className="h-4 w-4" />

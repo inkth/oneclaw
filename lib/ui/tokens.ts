@@ -10,9 +10,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-/** 全站统一聚焦环：非原语调用点直接引用，避免硬编码 ring 颜色。 */
+/** 全站统一聚焦环：电紫点睛(violet 不受 app-skin 近黑级联，故工作台内焦点环亦电紫)。 */
 export const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40";
 
 /** 语义状态色：用于 Badge / Pill / 状态徽章。 */
 export const STATUS_TONES = {

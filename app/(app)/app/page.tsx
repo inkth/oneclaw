@@ -76,7 +76,6 @@ export default async function DashboardPage({
         agents={["DIRECTOR", "LISTING", "ANALYST", "REVIEW"]}
         showQuickActions
         showAssetChips
-        showExamples
       />
 
       <SampleVideos videos={sampleVideos} />

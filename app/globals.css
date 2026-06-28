@@ -30,6 +30,20 @@
   /* 高级活力层：电紫 → 品红珠宝调实体面（国际高端，去糖果粉；仅成交/CTA/奖牌/PRO 白名单使用） */
   --gradient-vibrant: linear-gradient(135deg, #6d28d9 0%, #7c3aed 48%, #a21caf 100%);
   --gradient-vibrant-soft: linear-gradient(135deg, #7c3aed 0%, #9333ea 52%, #c026d3 100%);
+
+  /* 电紫「点睛」通道：独立命名，故不被 .app-skin 的 --brand-* 近黑级联改写，
+     全站(含 /app 工作台近黑皮肤)恒为电紫。仅用于点睛位 ——
+     主 CTA / 选中态 / 当前路径 / 数据 hover / 焦点环，不铺面。 */
+  --accent-pop: #7c3aed; /* = 真源 brand-600 电紫 */
+  --accent-pop-strong: #6d28d9; /* hover 加深 */
+  --accent-pop-soft: #ede9fe; /* 选中态淡底 = brand-100 */
+  --accent-pop-ink: #6d28d9; /* 淡底上的文字 */
+  --focus-pop: rgba(124, 58, 237, 0.45); /* 焦点环 */
+
+  /* 专业中文字体真源：思源黑体 Noto Sans SC（SIL OFL 开源、零授权风险，
+     经 @fontsource 自托管 + unicode-range 分片按需加载）。
+     抽成变量 → 将来换字体(如确认授权后的 MiSans)只改此一处 + layout 的 import。 */
+  --font-cjk: "Noto Sans SC";
 }
 
 @theme inline {
@@ -56,7 +70,7 @@
 
   /* 照搬 Designkit：正文 Open Sans，标题 Poppins（font-display 工具类用） */
   --font-sans: var(--font-open-sans);
-  --font-display: var(--font-poppins);
+  --font-display: var(--font-poppins), var(--font-cjk);
   --font-mono: var(--font-open-sans);
 
   /* 11px 辅助字号 */
@@ -126,13 +140,13 @@ body {
 /* ---------- 表现力标题层级（照搬 Designkit：标题统一 Poppins） ---------- */
 /* 标题字族工具类：直接给任意标题套 Poppins */
 .font-display {
-  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
-    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
+    -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
 }
 /* 流体大标题：hero h1 / 营销 section h2。-0.022em 字距对 Latin 锐利、对中文也不挤 */
 .text-display {
-  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
-    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
+    -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4.5rem);
   line-height: 1.06;
   letter-spacing: -0.022em;
@@ -140,8 +154,8 @@ body {
   text-wrap: balance;
 }
 .text-display-sm {
-  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
-    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
+    -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: clamp(1.875rem, 1.3rem + 2vw, 3rem);
   line-height: 1.12;
   letter-spacing: -0.02em;
@@ -150,13 +164,23 @@ body {
 }
 /* 应用内页头标题：稳健不流体（== 现 text-2xl），Poppins */
 .text-title {
-  font-family: var(--font-poppins), var(--font-open-sans), -apple-system,
-    "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
+    -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: 1.5rem;
   line-height: 1.25;
   letter-spacing: -0.018em;
   font-weight: 600;
   text-wrap: balance;
+  color: var(--ink);
+}
+/* 中间字阶：display(24px+) 与正文(14px) 间的小节标题，补齐断层（替散落的 text-lg font-semibold）。 */
+.text-subtitle {
+  font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
+    -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  font-weight: 600;
   color: var(--ink);
 }
 /* 中文正文行高补偿：段落更舒展透气 */
@@ -209,6 +233,16 @@ body {
 .pop:active {
   transform: translateY(0) scale(0.98);
   transition-duration: 0.08s;
+}
+
+/* 电紫「点睛」主 CTA：品牌电紫实底（引用 --accent-pop，不受 .app-skin 近黑级联，
+   故工作台内主 CTA 恒为电紫）。调用点自带 transition-colors，此处不重复声明。 */
+.pop-cta {
+  background: var(--accent-pop);
+  color: #fff;
+}
+.pop-cta:hover {
+  background: var(--accent-pop-strong);
 }
 
 /* 照搬 Designkit：顶部氛围光改为极淡中性彩虹（不再全站紫光顶） */

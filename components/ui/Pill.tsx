@@ -20,7 +20,7 @@ export function Pill({
       className={cn(
         "press rounded-full px-3.5 py-1 text-sm font-medium transition-colors",
         active
-          ? "bg-[#1c1d1f] text-white"
+          ? "bg-[var(--accent-pop)] text-white"
           : "text-zinc-600 hover:bg-black/5 hover:text-ink",
         className
       )}
