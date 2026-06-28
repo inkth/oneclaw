@@ -26,6 +26,7 @@ export function Workbench({
   initialAgent,
   initialInput,
   initialProductId,
+  initialMaterialId,
   agents,
   streamAgents,
   showQuickActions = false,
@@ -44,6 +45,8 @@ export function Workbench({
   initialInput?: string;
   /** 接力时关联的收藏商品 ID:DIRECTOR/LISTING 派活会带上,后端注入真实商品数据。 */
   initialProductId?: string;
+  /** 接力时关联的素材图 ID:素材库「生成 Listing」带上,后端看图写文案 + 作主图参考。 */
+  initialMaterialId?: string;
   /** 本页可派活的 Agent 子集(工作台=分析/复盘,创作页=视频/Listing),不传则全量。 */
   agents?: ComposerKind[];
   /** 任务流只展示这些 Agent 的任务(创作页传 DIRECTOR/LISTING),不传则全量。 */
@@ -64,7 +67,7 @@ export function Workbench({
   const [productId, setProductId] = useState<string | null>(initialProductId ?? null);
   // 创作工具链选中的资产:与 productId 同生命周期,派活成功即消费清空。
   const [personaId, setPersonaId] = useState<string | null>(null);
-  const [materialId, setMaterialId] = useState<string | null>(null);
+  const [materialId, setMaterialId] = useState<string | null>(initialMaterialId ?? null);
   // Listing 子模式(文案 / 上身图试穿):切走 Listing 自动回 copy(见下方 effect)。
   const [listingMode, setListingMode] = useState<ListingMode>("copy");
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。

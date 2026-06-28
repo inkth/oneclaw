@@ -11,6 +11,7 @@ import {
   Music,
   Trash2,
   Tag,
+  LayoutList,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -113,6 +114,16 @@ export function MaterialsClient({
       }
     }
     router.refresh();
+  }
+
+  // 带着这张商品图去做 Listing:后端会「看图」写文案,同一张图也作出图参考(真货入画)。
+  function makeListing(id: string) {
+    if (gateGuest()) return;
+    const prompt =
+      "为这张商品图生成 TikTok Shop Listing（标题/五点卖点/A+/主图）。补充：";
+    router.push(
+      `/app?agent=LISTING&materialId=${id}&prompt=${encodeURIComponent(prompt)}`,
+    );
   }
 
   async function deleteMaterial(id: string) {
@@ -246,6 +257,16 @@ export function MaterialsClient({
                   >
                     <Trash2 className="h-2.5 w-2.5" />
                   </button>
+                  {(m.type === "IMAGE" || m.type === "LOGO" || m.type === "WATERMARK") && (
+                    <button
+                      onClick={() => makeListing(m.id)}
+                      className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-sky-600/95 px-2 py-1 text-2xs font-medium text-white shadow-sm hover:bg-sky-700"
+                      title="用这张商品图生成 Listing(后端看图写标题/五点/A+,同图作主图参考)"
+                    >
+                      <LayoutList className="h-2.5 w-2.5" />
+                      生成 Listing
+                    </button>
+                  )}
                 </div>
                 <div className="p-2.5 text-2xs">
                   <div className="font-medium truncate" title={m.originalName}>

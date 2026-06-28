@@ -71,8 +71,10 @@ type chatReq struct {
 }
 
 type chatMsg struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role string `json:"role"`
+	// Content 多数时候是纯文本 string;vision 调用时是 content-parts 数组
+	// ([{type:"text"...},{type:"image_url"...}])。OpenRouter 两种都接受。
+	Content any `json:"content"`
 }
 
 type respFormat struct {
@@ -107,12 +109,41 @@ func (c *Client) ChatWithModel(ctx context.Context, model, system, user string, 
 	if model == "" {
 		model = c.cfg.Model
 	}
+	msgs := []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: user}}
+	return c.do(ctx, model, msgs, jsonMode, maxTokens)
+}
+
+// ChatVision 让多模态模型「看图」对话:user 文本 + 一张或多张图片 URL 一起喂给模型。
+// model 须指向 vision-capable 模型(如 google/gemini-3.5-flash);prod 该模型经 reviewHTTP 代理出网。
+func (c *Client) ChatVision(ctx context.Context, model, system, user string, imageURLs []string, jsonMode bool, maxTokens int) (*Result, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
+	}
+	if model == "" {
+		model = c.cfg.Model
+	}
+	// user 消息体构造为 content-parts 数组:先文本,再逐张图(照搬视频路径的 image_url 写法)。
+	parts := []map[string]any{{"type": "text", "text": user}}
+	for _, u := range imageURLs {
+		if u = strings.TrimSpace(u); u != "" {
+			parts = append(parts, map[string]any{
+				"type":      "image_url",
+				"image_url": map[string]string{"url": u},
+			})
+		}
+	}
+	msgs := []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: parts}}
+	return c.do(ctx, model, msgs, jsonMode, maxTokens)
+}
+
+// do 是 chat completion 的公共执行体:构造请求 + 选 client(复盘/vision 模型走代理)+ 发送 + 解析 usage。
+func (c *Client) do(ctx context.Context, model string, msgs []chatMsg, jsonMode bool, maxTokens int) (*Result, error) {
 	if maxTokens <= 0 {
 		maxTokens = 2000
 	}
 	body := chatReq{
 		Model:       model,
-		Messages:    []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: user}},
+		Messages:    msgs,
 		MaxTokens:   maxTokens,
 		Temperature: 0.7,
 		Stream:      false,
@@ -133,7 +164,7 @@ func (c *Client) ChatWithModel(ctx context.Context, model, system, user string, 
 
 	client := c.http
 	if model == c.cfg.ReviewModel {
-		client = c.reviewHTTP // 复盘模型走代理(若配置了 ReviewProxy)
+		client = c.reviewHTTP // 复盘/vision 模型走代理(若配置了 ReviewProxy)
 	}
 	res, err := client.Do(req)
 	if err != nil {

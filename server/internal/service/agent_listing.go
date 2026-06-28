@@ -26,6 +26,9 @@ const listingSystem = `你是 发现猫 的"Listing 内容 Agent",服务 TikTok 
 如果用户消息附带「商品档案」,以档案里的真实卖点、价格、市场数据为准:
 标题和五点要体现这些具体信息,绝对不要编造数字。
 
+如果随消息附带了商品照片,先看图:标题、五点、A+ 必须基于照片里实际可见的
+商品形态/材质/颜色/卖点来写,不要编造照片中看不到的规格或参数。
+
 只输出合法 JSON,不要 markdown:
 {
   "title": "英文商品标题(≤150字符,含核心关键词,前 60 字符放最重要卖点)",
@@ -85,7 +88,20 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	if coverURL != "" {
 		user += "\n注:已有实拍参考图,出图时会作为参考让真货入画;imagePrompts 请围绕这个商品本身设计构图(白底/场景/细节/对比)。"
 	}
-	res, err := s.llm.Chat(ctx, listingSystem, user, true, 2200)
+	// 有实拍图就让 vision 模型看图写文案(标题/五点基于照片里的真货);
+	// vision 走 ReviewModel(gemini,prod 经代理可达)。失败则降级回纯文本,保证 Listing 仍出得来。
+	var res *llm.Result
+	var err error
+	if coverURL != "" {
+		res, err = s.llm.ChatVision(ctx, s.llm.ReviewModel(), listingSystem, user, []string{coverURL}, true, 2200)
+		if err != nil {
+			logger.Warn("[agent] listing vision 看图失败,降级回纯文本",
+				logger.String("workspace", wsID.String()), logger.Err(err))
+			res, err = s.llm.Chat(ctx, listingSystem, user, true, 2200)
+		}
+	} else {
+		res, err = s.llm.Chat(ctx, listingSystem, user, true, 2200)
+	}
 	if err != nil {
 		return "", nil, llm.Usage{}, err
 	}

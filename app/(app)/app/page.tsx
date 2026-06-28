@@ -29,6 +29,7 @@ export default async function DashboardPage({
     : undefined;
   const initialInput = sp.prompt || undefined;
   const initialProductId = sp.productId || undefined;
+  const initialMaterialId = sp.materialId || undefined;
 
   // 游客可浏览；成片仅登录后有。
   const me = await getMe();
@@ -73,6 +74,7 @@ export default async function DashboardPage({
         initialAgent={initialAgent}
         initialInput={initialInput}
         initialProductId={initialProductId}
+        initialMaterialId={initialMaterialId}
         agents={["DIRECTOR", "LISTING", "ANALYST", "REVIEW"]}
         showQuickActions
         showAssetChips
