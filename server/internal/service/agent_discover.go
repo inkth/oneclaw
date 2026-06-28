@@ -70,6 +70,12 @@ func (s *AgentService) DispatchDiscoverAnalyze(ctx context.Context, wsID uuid.UU
 		Input:    fmt.Sprintf("[Discover · %s] %s", region, dp.Name),
 		Metadata: model.JSONB(mb),
 	}
+	// 发现页接力分析自起一条新会话(每次接力是独立线程)。
+	cid, err := s.ensureConversation(ctx, wsID, nil, t.Input, model.AgentAnalyst)
+	if err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "创建会话失败", err)
+	}
+	t.ConversationID = cid
 	if err := s.db.WithContext(ctx).Create(&t).Error; err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建分析任务失败", err)
 	}

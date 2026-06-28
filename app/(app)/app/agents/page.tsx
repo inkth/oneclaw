@@ -1,37 +1,36 @@
+import { redirect } from "next/navigation";
 import { getMe, apiServer } from "@/lib/api-client";
 import { Workbench } from "../workbench";
-import { type StreamTask } from "../task-stream";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MessagesSquare } from "lucide-react";
+import { type Conversation } from "../conversation-rail";
 
-export const metadata = { title: "全部对话 · 发现猫" };
+export const metadata = { title: "会话 · 发现猫" };
 
+// 会话板块落地:有历史会话则进最近一条;无则落到新对话(游客直接渲染新对话页)。
 export default async function AgentsPage() {
   const me = await getMe();
   const ws = me?.workspace ?? null;
-  let tasks: StreamTask[] = [];
-  if (ws) {
-    const res = await apiServer<{ tasks: StreamTask[] }>(
-      `/workspaces/${ws.id}/agent-tasks`,
-    ).catch(() => ({ tasks: [] as StreamTask[] }));
-    tasks = res.tasks ?? [];
+  if (!ws) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title={
+            <span className="inline-flex items-center gap-2">
+              <MessagesSquare className="h-5 w-5 text-brand-500" />
+              会话
+            </span>
+          }
+          description="选个 Agent，写一句指令试试。登录后对话会按会话存进左侧列表。"
+        />
+        <Workbench workspaceId="" isGuest conversationId="" />
+      </div>
+    );
   }
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={
-          <span className="inline-flex items-center gap-2">
-            <MessagesSquare className="h-5 w-5 text-brand-500" />
-            全部对话
-          </span>
-        }
-        description="选品分析 / 做视频 / Listing / 投放复盘——你和 AI 的所有对话都在这里。"
-      />
-      <Workbench
-        workspaceId={ws?.id ?? ""}
-        isGuest={!ws}
-        initialTasks={tasks}
-      />
-    </div>
-  );
+
+  const res = await apiServer<{ conversations: Conversation[] }>(
+    `/workspaces/${ws.id}/conversations`,
+  ).catch(() => ({ conversations: [] as Conversation[] }));
+  const latest = res.conversations?.[0];
+  redirect(latest ? `/app/agents/${latest.id}` : "/app/agents/new");
 }

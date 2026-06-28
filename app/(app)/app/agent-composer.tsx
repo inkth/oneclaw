@@ -98,6 +98,7 @@ export function AgentPills({
  */
 export function AgentComposer({
   workspaceId,
+  conversationId = "",
   isGuest = false,
   activeAgent,
   onAgentChange,
@@ -118,6 +119,8 @@ export function AgentComposer({
   allowReview = true,
 }: {
   workspaceId: string;
+  /** 当前会话 ID:派活时带上则追加进该会话,空则后端新建一条。 */
+  conversationId?: string;
   isGuest?: boolean;
   activeAgent: ComposerKind;
   onAgentChange: (k: ComposerKind) => void;
@@ -199,6 +202,8 @@ export function AgentComposer({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        // 归属会话:在某会话内派活则带上,新对话页留空由后端建会话
+        ...(conversationId ? { conversationId } : {}),
         // 试穿子模式派活落 TRYON 任务(后端不变),其余按当前 Agent
         agent: isTryOn ? "TRYON" : activeAgent,
         // 试穿无文字指令(输入是两张图),给个默认 input 满足后端非空校验,也作会话气泡标题

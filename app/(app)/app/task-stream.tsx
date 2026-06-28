@@ -38,6 +38,7 @@ import { usePersonas } from "./use-personas";
 export type StreamTask = {
   id: string;
   workspaceId: string;
+  conversationId: string;
   agent: string;
   status: string;
   input: string;

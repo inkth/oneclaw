@@ -20,6 +20,7 @@ const POLL_MS = 5000;
  */
 export function Workbench({
   workspaceId,
+  conversationId = "",
   isGuest = false,
   showPresets = false,
   initialTasks = [],
@@ -35,6 +36,8 @@ export function Workbench({
   align = "center",
 }: {
   workspaceId: string;
+  /** 当前会话 ID:空=新对话(首次派活后路由到真实会话);非空=在该会话内追加。 */
+  conversationId?: string;
   isGuest?: boolean;
   /** 新工作台(无任何数据)时展示品类预设 chips。 */
   showPresets?: boolean;
@@ -75,14 +78,17 @@ export function Workbench({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
 
-  // 派活/复盘落库后的统一去处:聊天页(showStream)就地追加气泡并自动滚到底;
-  // launcher 首页则带你进入「会话」,在那条对话流里看进展与结果(一个框、一个去处)。
+  // 派活/复盘落库后的统一去处:
+  //  · 已在某会话内(showStream && conversationId):就地追加气泡并自动滚到底;
+  //  · 新对话页(showStream 但还没 cid):后端已自动建会话,路由进那条会话看进展;
+  //  · launcher 首页(!showStream):带你进入新建的会话。
   function ingest(task: StreamTask) {
-    if (showStream) {
+    if (showStream && conversationId) {
       setTasks((prev) => [task, ...prev]);
     } else {
-      toast.success("已派活，结果在「会话」里");
-      router.push("/app/agents");
+      const cid = task.conversationId;
+      if (!showStream) toast.success("已派活，结果在「会话」里");
+      router.push(cid ? `/app/agents/${cid}` : "/app/agents");
     }
   }
 
@@ -102,13 +108,15 @@ export function Workbench({
     if (activeAgent !== "LISTING") setListingMode("copy");
   }, [activeAgent]);
 
-  // 有排队/执行中的任务时轮询,全部到达终态自动停。
+  // 有排队/执行中的任务时轮询当前会话的任务流,全部到达终态自动停。
   const hasActive = tasks.some((t) => t.status === "QUEUED" || t.status === "RUNNING");
   useEffect(() => {
-    if (!hasActive || !workspaceId || !showStream) return;
+    if (!hasActive || !workspaceId || !showStream || !conversationId) return;
     const timer = setInterval(async () => {
       try {
-        const res = await authFetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`);
+        const res = await authFetch(
+          `/api/v1/workspaces/${workspaceId}/conversations/${conversationId}/tasks`,
+        );
         const json = await res.json().catch(() => null);
         const fresh = (json?.data?.tasks ?? json?.tasks) as StreamTask[] | undefined;
         if (res.ok && json?.ok && Array.isArray(fresh)) setTasks(fresh);
@@ -117,7 +125,7 @@ export function Workbench({
       }
     }, POLL_MS);
     return () => clearInterval(timer);
-  }, [hasActive, workspaceId, showStream]);
+  }, [hasActive, workspaceId, showStream, conversationId]);
 
   // 聊天页:新气泡到达 / 首次加载都把页面滚到底,最新一条紧贴底部输入框(对齐微信、ChatGPT 的方向)。
   const prevCount = useRef(tasks.length);
@@ -160,6 +168,7 @@ export function Workbench({
   const composer = (
     <AgentComposer
       workspaceId={workspaceId}
+      conversationId={conversationId}
       isGuest={isGuest}
       activeAgent={activeAgent}
       onAgentChange={setActiveAgent}

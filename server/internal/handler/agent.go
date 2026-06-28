@@ -33,6 +33,8 @@ func (h *AgentHandler) List(c *gin.Context) {
 type agentCreateReq struct {
 	Agent string `json:"agent" binding:"required"`
 	Input string `json:"input" binding:"required"`
+	// ConversationID 归属会话 ID(可选):传了则追加进该会话,空则后端新建一条。
+	ConversationID string `json:"conversationId"`
 	// ProductID 选品库商品 ID(可选):DIRECTOR/LISTING 据此注入真实商品数据并关联产出。
 	ProductID string `json:"productId"`
 	// ModelAssetID 出镜人设 ID(可选,DIRECTOR):脚本贴合人设,确认出片时默认沿用。
@@ -70,6 +72,9 @@ func (h *AgentHandler) Create(c *gin.Context) {
 	}
 	var opts service.AgentCreateOpts
 	var valid bool
+	if opts.ConversationID, valid = parseOpt(in.ConversationID, "conversationId"); !valid {
+		return
+	}
 	if opts.ProductID, valid = parseOpt(in.ProductID, "productId"); !valid {
 		return
 	}
@@ -235,4 +240,81 @@ func (h *AgentHandler) Get(c *gin.Context) {
 		return
 	}
 	OK(c, gin.H{"task": t})
+}
+
+// ── 会话(Conversation)─────────────────────────────────────────────────────
+
+func (h *AgentHandler) ListConversations(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	items, err := h.agents.ListConversations(c.Request.Context(), wid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"conversations": items})
+}
+
+func (h *AgentHandler) ConversationTasks(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	cid, err := uuid.Parse(c.Param("cid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("会话 ID 无效"))
+		return
+	}
+	items, err := h.agents.ListConversationTasks(c.Request.Context(), wid, cid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"tasks": items})
+}
+
+type conversationRenameReq struct {
+	Title string `json:"title" binding:"required"`
+}
+
+func (h *AgentHandler) RenameConversation(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	cid, err := uuid.Parse(c.Param("cid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("会话 ID 无效"))
+		return
+	}
+	var in conversationRenameReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数缺失:需要 title"))
+		return
+	}
+	conv, err := h.agents.RenameConversation(c.Request.Context(), wid, cid, in.Title)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"conversation": conv})
+}
+
+func (h *AgentHandler) DeleteConversation(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	cid, err := uuid.Parse(c.Param("cid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("会话 ID 无效"))
+		return
+	}
+	if err := h.agents.DeleteConversation(c.Request.Context(), wid, cid); err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"ok": true})
 }

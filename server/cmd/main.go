@@ -72,6 +72,7 @@ func main() {
 		&model.Shop{},
 		&model.ModelAsset{},
 		&model.Material{},
+		&model.Conversation{},
 		&model.AgentTask{},
 		&model.Video{},
 		&model.CreationTemplate{},
@@ -142,6 +143,7 @@ func main() {
 	go func() {
 		rctx, rcancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer rcancel()
+		agentSvc.BackfillConversations(rctx) // 存量任务回填会话归属(幂等,一任务一会话)
 		agentSvc.RecoverStartup(rctx)
 		videoSvc.RecoverStartup(rctx)
 	}()

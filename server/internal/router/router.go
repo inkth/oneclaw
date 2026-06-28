@@ -127,6 +127,11 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/materials/generate", matH.Generate)
 		priv.DELETE("/workspaces/:wid/materials/:mid", matH.Delete)
 
+		priv.GET("/workspaces/:wid/conversations", agentH.ListConversations)
+		priv.GET("/workspaces/:wid/conversations/:cid/tasks", agentH.ConversationTasks)
+		priv.PATCH("/workspaces/:wid/conversations/:cid", agentH.RenameConversation)
+		priv.DELETE("/workspaces/:wid/conversations/:cid", agentH.DeleteConversation)
+
 		priv.GET("/workspaces/:wid/agent-tasks", agentH.List)
 		priv.POST("/workspaces/:wid/agent-tasks", agentH.Create)
 		priv.GET("/workspaces/:wid/agent-tasks/:tid", agentH.Get)

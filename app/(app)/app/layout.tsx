@@ -41,7 +41,7 @@ export default async function AppLayout({
         <SidebarNav />
       </aside>
 
-      {/* 会话列表面板:仅「工作台」板块出现(自身按路由判断,其它板块返回 null) */}
+      {/* 会话列表面板:仅「会话」板块(/app/agents*)出现,自身按路由判断,其它板块返回 null */}
       <ConversationRail workspaceId={workspace?.id ?? ""} />
 
       <div className="flex-1 flex flex-col min-w-0">

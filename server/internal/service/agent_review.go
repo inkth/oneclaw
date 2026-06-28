@@ -89,6 +89,15 @@ func (s *AgentService) recordReview(ctx context.Context, wsID, taskID uuid.UUID,
 	if b, err := json.Marshal(map[string]any{"review": result}); err == nil {
 		t.Metadata = model.JSONB(b)
 	}
+	// 复盘自起一条新会话(上传报表即一段独立分析线程)。
+	cid, cerr := s.ensureConversation(ctx, wsID, nil, input, model.AgentReview)
+	if cerr != nil {
+		if usage.Model != "" {
+			s.quota.Refund(ctx, taskID, model.UsageAgentTask)
+		}
+		return nil, apperr.Wrap(apperr.CodeInternal, "创建会话失败", cerr)
+	}
+	t.ConversationID = cid
 	if err := s.db.WithContext(ctx).Create(&t).Error; err != nil {
 		// 落库失败:已扣的 AI 深挖额度退回,避免用户白扣(handler 负责记日志)。
 		if usage.Model != "" {
