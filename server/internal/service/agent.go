@@ -172,9 +172,12 @@ func (s *AgentService) RecoverStartup(ctx context.Context) {
 		logger.Info("[agent] 启动恢复:已清理悬挂任务", logger.Int("count", len(stale)))
 	}
 
+	// LISTING 与 TRYON 都有「任务 DONE 但出图后台异步」的阶段:进程被打断时任务本身已是
+	// DONE(逃过上面的 QUEUED/RUNNING 回收),只能靠 imagesStatus=RUNNING 兜底,故两类都要查。
 	var imgStale []model.AgentTask
 	if err := s.db.WithContext(ctx).
-		Where("agent = ? AND metadata->>'imagesStatus' = ?", model.AgentListing, listingImagesRunning).
+		Where("agent IN ? AND metadata->>'imagesStatus' = ?",
+			[]string{model.AgentListing, model.AgentTryOn}, listingImagesRunning).
 		Find(&imgStale).Error; err != nil {
 		return
 	}
@@ -182,6 +185,10 @@ func (s *AgentService) RecoverStartup(ctx context.Context) {
 		s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", t.ID).
 			Update("metadata", gorm.Expr(`metadata || '{"imagesStatus":"FAILED"}'::jsonb`))
 		s.quota.Refund(ctx, t.ID, model.UsageImage)
+		// 试穿无文字产出,出图中断=整单无价值,派活分一并退(与 runTryOnImage 失败路径口径一致)。
+		if t.Agent == model.AgentTryOn {
+			s.quota.Refund(ctx, t.ID, model.UsageAgentTask)
+		}
 	}
 	if len(imgStale) > 0 {
 		logger.Info("[agent] 启动恢复:已重置中断的出图任务", logger.Int("count", len(imgStale)))

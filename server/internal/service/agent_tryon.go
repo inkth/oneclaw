@@ -75,6 +75,8 @@ func (s *AgentService) runTryOnImage(taskID, wsID uuid.UUID, modelURL, garmentUR
 			logger.String("task", taskID.String()), logger.Err(err))
 		rctx, rcancel := context.WithTimeout(context.Background(), 10*time.Second)
 		s.quota.Refund(rctx, taskID, model.UsageImage)
+		// 试穿无文字产出,出图失败=整单无价值,派活分一并退,前端「积分已退回」才名副其实。
+		s.quota.Refund(rctx, taskID, model.UsageAgentTask)
 		rcancel()
 		s.writeTryOnMeta(map[string]any{
 			"imagesStatus": listingImagesFailed,
