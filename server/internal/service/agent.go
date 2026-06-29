@@ -75,6 +75,14 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建会话失败", err)
 	}
 	t.ConversationID = cid
+	// 关联商品的任务:派活时就把 productId 写进 metadata。否则 productId 要等任务完成
+	// (runListing 返回 meta)才落库,商品卡在 QUEUED/RUNNING 阶段按 productId 查不到状态,
+	// 既不显示「生成中」也不启动轮询,看起来像没在做。完成时 execute 会用完整 meta 覆盖。
+	if opts.ProductID != nil {
+		if b, e := json.Marshal(map[string]string{"productId": opts.ProductID.String()}); e == nil {
+			t.Metadata = model.JSONB(b)
+		}
+	}
 	if err := s.db.WithContext(ctx).Create(&t).Error; err != nil {
 		s.quota.Refund(ctx, t.ID, model.UsageAgentTask)
 		return nil, apperr.Wrap(apperr.CodeInternal, "创建任务失败", err)
