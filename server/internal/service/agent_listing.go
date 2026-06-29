@@ -1,10 +1,14 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
+	_ "image/png" // 注册 PNG 解码器:Seedream 出 PNG,toJPEG 需能解码
 	"strings"
 	"sync"
 	"time"
@@ -326,11 +330,23 @@ func (s *AgentService) listingImage(ctx context.Context, taskID uuid.UUID, idx i
 			lastErr = err
 			continue
 		}
-		ext := ".jpg"
-		if strings.Contains(ct, "png") {
-			ext = ".png"
-		}
-		return s.storage.Put(ctx, fmt.Sprintf("listing/%s/main-%d%s", taskID, idx+1, ext), data, ct)
+		// Seedream 出的是无压缩 PNG(数 MB),商品图不需要这么大:转 JPEG(分辨率不变、肉眼无损)
+		// 再传 COS,省存储/带宽、加载更快。转码失败则保留原图,不影响出图。
+		data, ct = toJPEG(data, ct)
+		return s.storage.Put(ctx, fmt.Sprintf("listing/%s/main-%d.jpg", taskID, idx+1), data, ct)
 	}
 	return "", lastErr
+}
+
+// toJPEG 把图片字节转成 JPEG(q85);解码失败则原样返回(兜底不破坏出图)。
+func toJPEG(data []byte, ct string) ([]byte, string) {
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return data, ct
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85}); err != nil {
+		return data, ct
+	}
+	return buf.Bytes(), "image/jpeg"
 }
