@@ -289,6 +289,22 @@ func (s *AgentService) RecoverStartup(ctx context.Context) {
 	if len(imgStale) > 0 {
 		logger.Info("[agent] 启动恢复:已重置中断的出图任务", logger.Int("count", len(imgStale)))
 	}
+
+	// 自建商品「批量做商品」的出图在 Product 上异步(images_status=RUNNING):进程中断时
+	// 这些卡会永远停在「出图中」,标 FAILED 并退回出图额度(refID=商品 ID)。
+	var prodStale []model.Product
+	if err := s.db.WithContext(ctx).
+		Where("images_status = ?", listingImagesRunning).Find(&prodStale).Error; err != nil {
+		return
+	}
+	for _, p := range prodStale {
+		s.db.WithContext(ctx).Model(&model.Product{}).Where("id = ?", p.ID).
+			Update("images_status", listingImagesFailed)
+		s.quota.Refund(ctx, p.ID, model.UsageImage)
+	}
+	if len(prodStale) > 0 {
+		logger.Info("[agent] 启动恢复:已重置中断的商品出图", logger.Int("count", len(prodStale)))
+	}
 }
 
 // ── Analyst ─────────────────────────────────────────────────────────────────

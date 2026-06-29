@@ -21,7 +21,8 @@ type GoProduct = {
   status: "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
   note: string | null;
   coverUrl?: string;
-  listingStatus?: "GENERATING" | "IMAGING" | "READY" | "FAILED" | "";
+  images?: string[];
+  imagesStatus?: "PENDING" | "RUNNING" | "DONE" | "FAILED" | "";
   discoverProductId?: string | null;
 };
 
@@ -81,7 +82,8 @@ export default async function FavoritesPage() {
         status: p.status,
         note: p.note,
         coverUrl: p.coverUrl,
-        listingStatus: p.listingStatus,
+        images: p.images,
+        imagesStatus: p.imagesStatus,
         discoverProductId: p.discoverProductId,
         shop: null,
       }))}

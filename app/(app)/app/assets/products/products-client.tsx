@@ -14,8 +14,8 @@ import { Popover } from "@/components/ui/Popover";
 
 type Status = "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 type CostSource = "ESTIMATE" | "MANUAL" | "SOURCED";
-// 自建商品 Listing 生成进度(后端 ProductListItem.listingStatus);空 = 无 Listing 任务。
-type ListingStatus = "GENERATING" | "IMAGING" | "READY" | "FAILED" | "";
+// 自建商品出图进度(后端 Product.imagesStatus);空 = 非自建/无出图。
+type ImagesStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "";
 
 export type Product = {
   id: string;
@@ -32,7 +32,8 @@ export type Product = {
   status: Status;
   note: string | null;
   coverUrl?: string;
-  listingStatus?: ListingStatus;
+  images?: string[];
+  imagesStatus?: ImagesStatus;
   discoverProductId?: string | null; // 非空=EchoTik 收藏;空=用户自建(素材图生成)
   shop: { id: string; name: string; platform: string } | null;
 };
@@ -40,10 +41,9 @@ export type Product = {
 // 商品范围:all=全部 · self=自建(资产/商品)· discover=EchoTik 收藏(收藏/商品)。
 export type ProductScope = "all" | "self" | "discover";
 
-const listingStatusMap: Record<"GENERATING" | "IMAGING" | "FAILED", { label: string; cls: string; spin: boolean }> = {
-  GENERATING: { label: "文案生成中", cls: "bg-violet-50 text-violet-700", spin: true },
-  IMAGING: { label: "主图生成中", cls: "bg-violet-50 text-violet-700", spin: true },
-  FAILED: { label: "生成失败", cls: "bg-rose-50 text-rose-600", spin: false },
+const imagesStatusMap: Record<"RUNNING" | "FAILED", { label: string; cls: string; spin: boolean }> = {
+  RUNNING: { label: "出图中", cls: "bg-violet-50 text-violet-700", spin: true },
+  FAILED: { label: "出图失败", cls: "bg-rose-50 text-rose-600", spin: false },
 };
 
 // 商品缩略图:有封面用真图(失败回退渐变占位),无封面用 seed 占位。
@@ -146,7 +146,7 @@ export function ProductsClient({
 
   // 本范围内任一商品仍在生成(文案/主图)时轮询商品列表,卡片「生成中 → 成品」自填充。
   const hasActive = scoped.some(
-    (p) => p.listingStatus === "GENERATING" || p.listingStatus === "IMAGING",
+    (p) => p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING",
   );
   useEffect(() => {
     if (!hasActive) return;
@@ -311,23 +311,24 @@ export function ProductsClient({
                           >
                             {p.title}
                           </Link>
-                          {p.listingStatus && p.listingStatus !== "READY" && listingStatusMap[p.listingStatus] && (
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${listingStatusMap[p.listingStatus].cls}`}
-                            >
-                              {listingStatusMap[p.listingStatus].spin && (
-                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                              )}
-                              {listingStatusMap[p.listingStatus].label}
+                          {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING") && (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${imagesStatusMap.RUNNING.cls}`}>
+                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              {imagesStatusMap.RUNNING.label}
                             </span>
                           )}
-                          {p.listingStatus === "READY" && (
+                          {p.imagesStatus === "FAILED" && (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${imagesStatusMap.FAILED.cls}`}>
+                              {imagesStatusMap.FAILED.label}
+                            </span>
+                          )}
+                          {p.imagesStatus === "DONE" && (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-2xs font-medium leading-none text-emerald-700"
-                              title="Listing 已生成,点「打开详情」查看/复制/补主图"
+                              title="展示图已生成,点「打开详情」查看/设主图/生成文案"
                             >
                               <Sparkles className="h-2.5 w-2.5" />
-                              Listing 就绪
+                              已出图
                             </span>
                           )}
                         </div>

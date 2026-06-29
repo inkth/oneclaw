@@ -98,20 +98,18 @@ func (h *AgentHandler) Create(c *gin.Context) {
 	Created(c, gin.H{"task": t})
 }
 
-type listingBatchReq struct {
-	// MaterialIDs 已上传到素材库的商品图 ID 列表(每张 → 一张自建商品卡 + 一个 LISTING 任务)。
+type productBatchReq struct {
+	// MaterialIDs 已上传到素材库的商品图 ID 列表(每张 → 一张自建商品卡 + N 张商品展示图)。
 	MaterialIDs []string `json:"materialIds" binding:"required"`
-	// Prompt 可选补充说明(留空用默认看图指令)。
-	Prompt string `json:"prompt"`
 }
 
-// ListingBatch 批量「把我拍的商品图变成商品」:多图一次扇出建商品卡 + 文案+主图一起出。
-func (h *AgentHandler) ListingBatch(c *gin.Context) {
+// ProductBatch 批量「把我拍的商品图变成商品」:多图一次扇出建商品卡 + 据原图出展示图(纯出图,无 LLM)。
+func (h *AgentHandler) ProductBatch(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {
 		return
 	}
-	var in listingBatchReq
+	var in productBatchReq
 	if err := c.ShouldBindJSON(&in); err != nil {
 		_ = c.Error(apperr.BadRequest("参数缺失:需要 materialIds"))
 		return
@@ -125,7 +123,7 @@ func (h *AgentHandler) ListingBatch(c *gin.Context) {
 		}
 		ids = append(ids, v)
 	}
-	res, err := h.agents.CreateListingBatch(c.Request.Context(), wid, ids, in.Prompt)
+	res, err := h.agents.CreateProductBatch(c.Request.Context(), wid, ids)
 	if err != nil {
 		_ = c.Error(err)
 		return

@@ -34,6 +34,8 @@ export type Kit = {
     marginPct: number;
     note?: string | null;
     coverUrl?: string;
+    images?: string[];
+    imagesStatus?: string;
   };
   videos: { id: string; title: string; videoUrl?: string | null; thumbnailUrl?: string | null }[];
   listing?: {
@@ -89,9 +91,11 @@ export function ProductDetail({
 
   const p = kit.product;
   const listing = kit.listing;
+  // 画廊 = 商品展示图(批量出的白底/场景/细节/俯拍)+ 当前封面 + Listing 主图(按需文案出的)。
   const gallery = Array.from(
-    new Set([p.coverUrl, ...(listing?.images ?? [])].filter(Boolean) as string[]),
+    new Set([...(p.images ?? []), p.coverUrl, ...(listing?.images ?? [])].filter(Boolean) as string[]),
   );
+  const imagingShots = p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING";
 
   async function refetchKit() {
     try {
@@ -102,6 +106,14 @@ export function ProductDetail({
       return null;
     }
   }
+
+  // 展示图还在出(刚从批量进来)时轮询,直到 DONE/FAILED。
+  useEffect(() => {
+    if (!imagingShots) return;
+    const timer = setInterval(() => { void refetchKit(); }, 5000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imagingShots]);
 
   async function patchProduct(patch: Record<string, unknown>) {
     return apiBrowser<{ product: { priceCents: number; costCents: number; marginPct: number; costSource: string; title: string } }>(
@@ -303,8 +315,13 @@ export function ProductDetail({
         <div className="space-y-4">
           <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-900">主图</h3>
-              {canAddImages && (
+              <h3 className="text-sm font-semibold text-zinc-900">商品图</h3>
+              {imagingShots ? (
+                <span className="inline-flex items-center gap-1 text-2xs text-violet-700">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  出图中…
+                </span>
+              ) : canAddImages && (
                 <button
                   onClick={addImages}
                   disabled={imaging}

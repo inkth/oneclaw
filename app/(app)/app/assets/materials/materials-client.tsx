@@ -21,8 +21,9 @@ import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { apiBrowser } from "@/lib/api-browser";
 import { CREDIT_COST } from "@/lib/credits";
 
-// 批量「做商品」单张预估积分上限:文案 1 笔 + 主图最多 3 张(实际按生成张数扣)。
-const PER_IMAGE_CREDITS = CREDIT_COST.agentTask + CREDIT_COST.image * 3;
+// 每张图做成商品 = 出 4 张展示图(白底/场景/细节/俯拍),纯出图、不含文案。
+const SHOTS_PER_PRODUCT = 4;
+const PER_IMAGE_CREDITS = CREDIT_COST.image * SHOTS_PER_PRODUCT;
 
 type MaterialType = "IMAGE" | "VIDEO" | "AUDIO" | "LOGO" | "WATERMARK" | "FONT";
 
@@ -107,28 +108,28 @@ export function MaterialsClient({
     });
   }
 
-  // 「把商品图变成商品」:复用后端 listing-batches —— 每张图建一张商品卡 + 出 Listing(文案+主图)。
-  // 单图(卡片「做成商品」)与多选(底栏)走同一条链路,产出都落「资产 · 我的商品」。
+  // 「把商品图变成商品」:每张图建一张商品卡 + 据原图出 4 张展示图(白底/场景/细节/俯拍)。
+  // 纯出图、不写文案(文案进商品详情页按需生成)。单图(卡片)与多选(底栏)走同一链路。
   async function submitBatch(ids: string[]) {
     if (gateGuest()) return;
     if (ids.length === 0) return;
     const noun = ids.length === 1 ? "这张图" : `${ids.length} 张图`;
     if (
       !confirm(
-        `将为${noun}各生成一张商品卡和一套 Listing(标题/五点/A+/主图)。\n` +
-          `预计最多消耗约 ${ids.length * PER_IMAGE_CREDITS} 积分(主图按实际生成张数计)。继续?`,
+        `将为${noun}各做成一个商品,并据原图生成 ${SHOTS_PER_PRODUCT} 张商品展示图(白底/场景/细节/俯拍)。\n` +
+          `预计消耗约 ${ids.length * PER_IMAGE_CREDITS} 积分。继续?`,
       )
     )
       return;
     setBatchBusy(true);
     try {
-      await apiBrowser(`/workspaces/${workspaceId}/listing-batches`, {
+      await apiBrowser(`/workspaces/${workspaceId}/product-batches`, {
         method: "POST",
         body: JSON.stringify({ materialIds: ids }),
       });
-      toast.success(`已创建 ${ids.length} 张商品卡,正在生成 Listing…`);
+      toast.success(`已创建 ${ids.length} 个商品,正在生成展示图…`);
       exitSelect();
-      router.push("/app/assets/products"); // 去「资产 · 我的商品」看卡片「生成中 → 成品」自填充
+      router.push("/app/assets/products"); // 去「资产 · 我的商品」看卡片「出图中 → 已出图」自填充
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "生成失败");
     } finally {

@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -12,28 +15,39 @@ import (
 	"github.com/oneclaw/server/internal/model"
 )
 
-// listingBatchMax 单批最多处理的商品图数(控成本/出图并发;超出引导用户分批)。
-const listingBatchMax = 12
+// productBatchMax 单批最多处理的商品图数(控成本/出图并发;超出引导用户分批)。
+const productBatchMax = 12
 
-// ListingBatchItem 批量里单张图的产出:一张自建商品卡 + 一个 LISTING 任务。
-type ListingBatchItem struct {
+// productImageShots 固定的「商品展示图」镜头模板:纯模板 + fal Seedream edit(以用户原图为参考
+// 锚定真货),**不调 LLM**,所以又稳又便宜。listingImage 会自动加「the exact same product…」前缀
+// 与 e-commerce 后缀,这里只描述构图。
+var productImageShots = []string{
+	"on a pure white seamless background, centered composition, professional studio softbox lighting, crisp catalog main image",
+	"placed in a tasteful real-life lifestyle scene that suits the product, natural window light, shallow depth of field, lifestyle shot",
+	"extreme close-up macro shot emphasizing material, texture and craftsmanship details, sharp focus",
+	"top-down flat-lay from directly above on a clean neutral surface, neat styled composition",
+}
+
+// ProductBatchItem 批量里单张图的产出:一张自建商品卡(出图中)。
+type ProductBatchItem struct {
 	MaterialID uuid.UUID `json:"materialId"`
 	ProductID  uuid.UUID `json:"productId"`
-	TaskID     uuid.UUID `json:"taskId"`
 	Title      string    `json:"title"`
 }
 
-// ListingBatchResult 批量结果:前端据此定位新建商品卡并轮询各自的 Listing 进度。
-type ListingBatchResult struct {
+// ProductBatchResult 批量结果:前端据此跳到「我的商品」并轮询各卡出图进度。
+type ProductBatchResult struct {
 	BatchID uuid.UUID          `json:"batchId"`
-	Items   []ListingBatchItem `json:"items"`
+	Items   []ProductBatchItem `json:"items"`
 }
 
-// CreateListingBatch 批量「把我拍的商品图变成商品」:
-// 每张已上传到素材库的图 → 建一张自建商品卡(DiscoverProductID 为空,封面先用用户原图,
-// 卡片即刻有图)→ 派一个 LISTING 任务(autoImages,文案+主图一起出,无需二次确认)。
-// 商品卡随各自任务异步「生成中 → 文案就绪 → 成品图就绪」自填充(前端轮询商品列表的 listingStatus)。
-func (s *AgentService) CreateListingBatch(ctx context.Context, wsID uuid.UUID, materialIDs []uuid.UUID, promptExtra string) (*ListingBatchResult, error) {
+// CreateProductBatch 批量「把我拍的商品图变成商品」:每张已上传的图 → 建一张自建商品卡
+// (DiscoverProductID 为空)→ 据原图出 N 张商品展示图(白底/场景/细节/俯拍,fal edit,不调 LLM)。
+// 卡片随出图异步「出图中 → 就绪」自填充。文案不在这里出 —— 进商品详情页按需「生成 Listing」。
+func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, materialIDs []uuid.UUID) (*ProductBatchResult, error) {
+	if !s.fal.Configured() || !s.storage.Configured() {
+		return nil, apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
+	}
 	// 去重 + 上限。
 	seen := map[uuid.UUID]bool{}
 	ids := make([]uuid.UUID, 0, len(materialIDs))
@@ -47,40 +61,34 @@ func (s *AgentService) CreateListingBatch(ctx context.Context, wsID uuid.UUID, m
 	if len(ids) == 0 {
 		return nil, apperr.BadRequest("请至少选择一张商品图")
 	}
-	if len(ids) > listingBatchMax {
-		return nil, apperr.BadRequest(fmt.Sprintf("单批最多 %d 张,请分批处理", listingBatchMax))
+	if len(ids) > productBatchMax {
+		return nil, apperr.BadRequest(fmt.Sprintf("单批最多 %d 张,请分批处理", productBatchMax))
 	}
 
-	// 整批前置校验,只预检「文案」这部分硬额度(每张派活一笔):不够直接整批拒,一张不建,
-	// 避免建到一半余额耗尽留下半成品。出图为尽力而为(逐任务在自动接力时再扣;某张额度不足时
-	// 该商品只出文案不出图,见 execute 的 AutoImages 分支),故不纳入此处硬预检。
-	need := model.CreditsFor(model.UsageAgentTask, len(ids))
+	// 整批前置校验出图额度(每张 N 个镜头):不够整批拒,一张不建,避免建到一半余额耗尽。
+	shots := len(productImageShots)
+	need := model.CreditsFor(model.UsageImage, len(ids)*shots)
 	if err := s.quota.EnsureBudget(ctx, wsID, need); err != nil {
 		return nil, err
 	}
 
-	prompt := strings.TrimSpace(promptExtra)
-	if prompt == "" {
-		prompt = "看这张商品照片,生成一套可直接上架的 TikTok Shop Listing(英文标题/五点卖点/A+ 图文/主图)。"
-	}
-
-	res := &ListingBatchResult{BatchID: uuid.New()}
+	res := &ProductBatchResult{BatchID: uuid.New()}
 	for _, mid := range ids {
 		url := s.materialImageURL(ctx, wsID, mid)
 		if url == "" {
-			// 非本工作台素材 / 非图片类型:跳过,不建商品、不计费。
-			logger.Warn("[agent] 批量 Listing 跳过无效素材", logger.String("material", mid.String()))
+			logger.Warn("[agent] 批量做商品跳过无效素材", logger.String("material", mid.String()))
 			continue
 		}
 		emoji := "🛍️"
 		prod := model.Product{
-			WorkspaceID: wsID,
-			Title:       s.materialTitle(ctx, wsID, mid),
-			Category:    "我的商品",
-			Emoji:       &emoji,
-			CostSource:  model.CostSourceEstimate,
-			Status:      model.ProductEvaluating,
-			CoverURL:    &url, // 先用用户原图,商品卡即刻有图;AI 成品图随 Listing 生成后在卡内可选用。
+			WorkspaceID:  wsID,
+			Title:        s.materialTitle(ctx, wsID, mid),
+			Category:     "我的商品",
+			Emoji:        &emoji,
+			CostSource:   model.CostSourceEstimate,
+			Status:       model.ProductEvaluating,
+			CoverURL:     &url, // 出图前先用原图占位,卡片即刻有图;出好后封面换成白底图。
+			ImagesStatus: listingImagesRunning,
 		}
 		if err := s.db.WithContext(ctx).Create(&prod).Error; err != nil {
 			logger.Warn("[agent] 批量建商品失败,跳过该图",
@@ -88,20 +96,15 @@ func (s *AgentService) CreateListingBatch(ctx context.Context, wsID uuid.UUID, m
 			continue
 		}
 		pid := prod.ID
-		t, err := s.Create(ctx, wsID, model.AgentListing, prompt, AgentCreateOpts{
-			ProductID:  &pid,
-			MaterialID: &mid,
-			AutoImages: true,
-		})
-		if err != nil {
-			// 额度在 Create 内逐笔权威校验:并发等极端情况下中途耗尽即停,返回已建部分。
-			// 已建商品保留(用户可后续在商品卡上手动「做 Listing」补齐)。
-			logger.Warn("[agent] 批量派 Listing 中止", logger.Err(err))
+		// 出图额度逐商品扣(refID=商品):中途耗尽则该商品标失败并停,返回已建部分。
+		if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageImage, shots, &pid); err != nil {
+			s.db.WithContext(ctx).Model(&model.Product{}).Where("id = ?", pid).
+				Update("images_status", listingImagesFailed)
+			logger.Warn("[agent] 批量做商品额度耗尽,中止", logger.Err(err))
 			break
 		}
-		res.Items = append(res.Items, ListingBatchItem{
-			MaterialID: mid, ProductID: pid, TaskID: t.ID, Title: prod.Title,
-		})
+		go s.runProductImages(pid, wsID, url)
+		res.Items = append(res.Items, ProductBatchItem{MaterialID: mid, ProductID: pid, Title: prod.Title})
 	}
 	if len(res.Items) == 0 {
 		return nil, apperr.BadRequest("没有可处理的商品图,请确认已上传图片素材")
@@ -109,7 +112,59 @@ func (s *AgentService) CreateListingBatch(ctx context.Context, wsID uuid.UUID, m
 	return res, nil
 }
 
-// materialTitle 用素材文件名(去扩展名)作自建商品的临时标题;Listing 出文案后用户可改名。
+// runProductImages 后台据原图并发出 N 张展示图 → 写 Product.Images + 封面(白底图)+ ImagesStatus。
+// 部分失败不拖垮:有图即 DONE;全军覆没 FAILED 并退回出图额度(部分成功不退,成本已花)。
+func (s *AgentService) runProductImages(productID, wsID uuid.UUID, photoURL string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
+	defer cancel()
+
+	urls := make([]string, len(productImageShots))
+	var wg sync.WaitGroup
+	for i, prompt := range productImageShots {
+		wg.Add(1)
+		go func(i int, prompt string) {
+			defer wg.Done()
+			u, err := s.listingImage(ctx, productID, i, prompt, photoURL)
+			if err != nil {
+				logger.Warn("[agent] 商品展示图生成失败",
+					logger.String("product", productID.String()), logger.Err(err))
+				return
+			}
+			urls[i] = u
+		}(i, prompt)
+	}
+	wg.Wait()
+
+	var done []string
+	for _, u := range urls {
+		if u != "" {
+			done = append(done, u)
+		}
+	}
+
+	wctx, wcancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer wcancel()
+	if len(done) == 0 {
+		s.db.WithContext(wctx).Model(&model.Product{}).
+			Where("id = ? AND workspace_id = ?", productID, wsID).
+			Update("images_status", listingImagesFailed)
+		rctx, rcancel := context.WithTimeout(context.Background(), 10*time.Second)
+		s.quota.Refund(rctx, productID, model.UsageImage)
+		rcancel()
+		return
+	}
+	b, _ := json.Marshal(done)
+	// 出好图:写全部展示图 + 封面换成第一张(白底图)+ 标 DONE。
+	s.db.WithContext(wctx).Model(&model.Product{}).
+		Where("id = ? AND workspace_id = ?", productID, wsID).
+		Updates(map[string]any{
+			"images":        model.JSONB(b),
+			"cover_url":     done[0],
+			"images_status": listingImagesDone,
+		})
+}
+
+// materialTitle 用素材文件名(去扩展名)作自建商品的临时标题;用户可在详情页改名。
 func (s *AgentService) materialTitle(ctx context.Context, wsID, materialID uuid.UUID) string {
 	var m model.Material
 	if err := s.db.WithContext(ctx).Select("original_name").
