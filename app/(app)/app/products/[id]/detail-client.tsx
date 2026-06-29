@@ -12,7 +12,6 @@ import {
   ImagePlus,
   Loader2,
   RefreshCw,
-  Shirt,
   Sparkles,
   Star,
   Check,
@@ -300,13 +299,6 @@ export function ProductDetail({
               <Clapperboard className="h-3.5 w-3.5" />
               为它做视频
             </button>
-            <button
-              onClick={() => router.push(`/app?agent=LISTING&productId=${productId}`)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100"
-            >
-              <Shirt className="h-3.5 w-3.5" />
-              做上身图
-            </button>
           </div>
         }
       />
@@ -504,7 +496,18 @@ export function ProductDetail({
 
               {listing.aplusSections && listing.aplusSections.length > 0 && (
                 <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
-                  <h3 className="mb-3 text-sm font-semibold text-zinc-900">A+ 图文结构</h3>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-zinc-900">A+ 图文结构</h3>
+                    <button
+                      onClick={rewriteListing}
+                      disabled={rewriting}
+                      title="重新生成整套 Listing(含 A+)"
+                      className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700 disabled:opacity-60"
+                    >
+                      {rewriting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                      重新生成
+                    </button>
+                  </div>
                   <div className="space-y-3">
                     {listing.aplusSections.map((sec, i) => (
                       <div key={i} className="rounded-lg bg-zinc-50 p-3">
