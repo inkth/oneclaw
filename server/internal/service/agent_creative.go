@@ -161,6 +161,18 @@ func (s *AgentService) productFacts(ctx context.Context, wsID, productID uuid.UU
 			}
 		}
 	}
+	// 自建商品(无 EchoTik 来源)用自己的主图/展示图作看图参考,否则 LISTING/DIRECTOR 看不到图、
+	// 走纯文本会照着文件名标题瞎编(出现过把保健盒写成 T 恤)。优先回写主图,其次首张展示图。
+	if coverURL == "" {
+		if p.CoverURL != nil && strings.TrimSpace(*p.CoverURL) != "" {
+			coverURL = strings.TrimSpace(*p.CoverURL)
+		} else if len(p.Images) > 0 {
+			var imgs []string
+			if json.Unmarshal(p.Images, &imgs) == nil && len(imgs) > 0 {
+				coverURL = strings.TrimSpace(imgs[0])
+			}
+		}
+	}
 	return b.String(), coverURL, region, hotCount, true
 }
 
