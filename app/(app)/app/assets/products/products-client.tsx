@@ -33,8 +33,12 @@ export type Product = {
   note: string | null;
   coverUrl?: string;
   listingStatus?: ListingStatus;
+  discoverProductId?: string | null; // 非空=EchoTik 收藏;空=用户自建(素材图生成)
   shop: { id: string; name: string; platform: string } | null;
 };
+
+// 商品范围:all=全部 · self=自建(资产/商品)· discover=EchoTik 收藏(收藏/商品)。
+export type ProductScope = "all" | "self" | "discover";
 
 const listingStatusMap: Record<"GENERATING" | "IMAGING" | "FAILED", { label: string; cls: string; spin: boolean }> = {
   GENERATING: { label: "文案生成中", cls: "bg-violet-50 text-violet-700", spin: true },
@@ -120,10 +124,12 @@ export function ProductsClient({
   workspaceId,
   initialProducts,
   embedded = false,
+  scope = "all",
 }: {
   workspaceId: string;
   initialProducts: Product[];
   embedded?: boolean;
+  scope?: ProductScope;
 }) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
@@ -134,16 +140,22 @@ export function ProductsClient({
   const [costDraft, setCostDraft] = useState("");
   const committedRef = useRef<string | null>(null); // 去重:Enter 后失焦不重复提交
 
+  // 按范围切分:self=自建(无 discoverProductId)· discover=EchoTik 收藏 · all=全部。
+  // 列表接口返回全部商品,这里据来源过滤,轮询刷新后过滤口径不变。
+  const scoped = products.filter((p) =>
+    scope === "self" ? !p.discoverProductId : scope === "discover" ? !!p.discoverProductId : true,
+  );
+
   const visible =
-    filter === "ALL" ? products : products.filter((p) => p.status === filter);
+    filter === "ALL" ? scoped : scoped.filter((p) => p.status === filter);
 
   // 把 Go 商品列表项归一成本组件的 Product(补 shop 兜底)。
   function mapGo(p: Partial<Product> & { id: string }): Product {
     return { shop: null, ...p } as Product;
   }
 
-  // 任一商品仍在生成(文案/主图)时轮询商品列表,卡片「生成中 → 成品」自填充。
-  const hasActive = products.some(
+  // 本范围内任一商品仍在生成(文案/主图)时轮询商品列表,卡片「生成中 → 成品」自填充。
+  const hasActive = scoped.some(
     (p) => p.listingStatus === "GENERATING" || p.listingStatus === "IMAGING",
   );
   useEffect(() => {
@@ -176,8 +188,8 @@ export function ProductsClient({
           {f.label}
           <span className={`ml-1 text-2xs ${filter === f.key ? "text-brand-200" : "text-zinc-400"}`}>
             {f.key === "ALL"
-              ? products.length
-              : products.filter((p) => p.status === f.key).length}
+              ? scoped.length
+              : scoped.filter((p) => p.status === f.key).length}
           </span>
         </button>
       ))}
@@ -237,10 +249,16 @@ export function ProductsClient({
     <div className="space-y-6">
       {embedded ? (
         <div className="flex justify-end">{filterBar}</div>
+      ) : scope === "self" ? (
+        <PageHeader
+          title="我的商品"
+          description="你在素材库「批量做商品」生成的商品,在这里管理、点进详情继续完善。"
+          actions={filterBar}
+        />
       ) : (
         <PageHeader
           title="收藏 · 商品"
-          description="你从爆品榜收藏的,或在素材库「批量做商品」生成的商品,按推进阶段管理。"
+          description="你从爆品榜收藏的商品,按推进阶段管理。"
           actions={filterBar}
         />
       )}
@@ -254,12 +272,23 @@ export function ProductsClient({
       {visible.length === 0 ? (
         <EmptyState
           icon={Package}
-          title={filter === "ALL" ? "还没有收藏的商品" : "这个分类下还没有商品"}
+          title={
+            filter !== "ALL"
+              ? "这个分类下还没有商品"
+              : scope === "self"
+                ? "还没有自建商品"
+                : "还没有收藏的商品"
+          }
           description={
-            <>
-              去 <Link href="/app/discover/products" className="text-brand-600">爆品榜</Link> 点「收藏」，
-              或在 <Link href="/app/assets/materials" className="text-brand-600">素材库</Link> 多选你拍的商品图「批量做商品」，一键生成商品卡 + Listing。
-            </>
+            scope === "self" ? (
+              <>
+                去 <Link href="/app/assets/materials" className="text-brand-600">素材库</Link> 多选你拍的商品图「批量做商品」，一键生成商品卡 + Listing。
+              </>
+            ) : (
+              <>
+                去 <Link href="/app/discover/products" className="text-brand-600">爆品榜</Link> 点「收藏」，商品会出现在这里。
+              </>
+            )
           }
         />
       ) : (

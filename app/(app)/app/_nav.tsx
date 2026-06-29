@@ -57,6 +57,7 @@ const BOARDS: Board[] = [
     paths: ["/app/assets", "/app/videos"],
     tabs: [
       { label: "作品", href: "/app/videos" },
+      { label: "商品", href: "/app/assets/products" },
       { label: "模特", href: "/app/assets/models" },
       { label: "素材库", href: "/app/assets/materials" },
     ],

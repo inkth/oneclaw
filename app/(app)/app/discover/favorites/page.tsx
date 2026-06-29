@@ -22,6 +22,7 @@ type GoProduct = {
   note: string | null;
   coverUrl?: string;
   listingStatus?: "GENERATING" | "IMAGING" | "READY" | "FAILED" | "";
+  discoverProductId?: string | null;
 };
 
 export default async function FavoritesPage() {
@@ -81,6 +82,7 @@ export default async function FavoritesPage() {
         note: p.note,
         coverUrl: p.coverUrl,
         listingStatus: p.listingStatus,
+        discoverProductId: p.discoverProductId,
         shop: null,
       }))}
       favorites={items}

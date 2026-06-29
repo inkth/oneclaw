@@ -128,7 +128,7 @@ export function MaterialsClient({
       });
       toast.success(`已创建 ${ids.length} 张商品卡,正在生成 Listing…`);
       exitSelect();
-      router.push("/app/discover/favorites"); // 去商品模块看卡片「生成中 → 成品」自填充
+      router.push("/app/assets/products"); // 去「资产 · 我的商品」看卡片「生成中 → 成品」自填充
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "批量生成失败");
     } finally {
