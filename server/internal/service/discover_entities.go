@@ -77,13 +77,11 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 	if p.Keyword != "" {
 		return s.searchSellers(ctx, p)
 	}
-	// 主流榜(第 1 页、无类目)读 DB:顺序表 + 主表,零 EchoTik。
-	if p.PageNum <= 1 && p.CategoryID == "" {
-		if res, ok := s.lookupSellerRanklist(ctx, p); ok {
-			return res
-		}
+	// 任意类目/页都先读 DB:顺序表(按页)+ 主表,零 EchoTik。回填后类目/翻页也走本地。
+	if res, ok := s.lookupSellerRanklist(ctx, p); ok {
+		return res
 	}
-	// 冷启动/类目/翻页兜底:拉 live(主流榜顺手落库供下次)。
+	// 未本地化的页:拉 live(顺手按页落库供下次)。
 	return s.fetchSellerRanklistLive(ctx, p)
 }
 
@@ -109,10 +107,8 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 	if p.Keyword != "" {
 		return s.searchInfluencers(ctx, p)
 	}
-	if p.PageNum <= 1 && p.CategoryID == "" {
-		if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
-			return res
-		}
+	if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
+		return res
 	}
 	return s.fetchInfluencerRanklistLive(ctx, p)
 }
@@ -139,10 +135,8 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 	if p.Keyword != "" {
 		return s.searchVideos(ctx, p)
 	}
-	if p.PageNum <= 1 && p.CategoryID == "" {
-		if res, ok := s.lookupVideoRanklist(ctx, p); ok {
-			return res
-		}
+	if res, ok := s.lookupVideoRanklist(ctx, p); ok {
+		return res
 	}
 	return s.fetchVideoRanklistLive(ctx, p)
 }

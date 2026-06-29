@@ -93,6 +93,7 @@ func (c *DiscoverCache) BeforeCreate(*gorm.DB) error {
 type DiscoverBackfillCursor struct {
 	ID         uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
 	Provider   string    `gorm:"not null;uniqueIndex:uq_dbc_key" json:"provider"`
+	Kind       string    `gorm:"not null;default:'product';uniqueIndex:uq_dbc_key" json:"kind"` // product|seller|influencer|video
 	Region     string    `gorm:"not null;uniqueIndex:uq_dbc_key" json:"region"`
 	CategoryID string    `gorm:"column:category_id;not null;uniqueIndex:uq_dbc_key" json:"categoryId"`
 	DonePages  int       `gorm:"column:done_pages;default:0" json:"donePages"`
@@ -385,17 +386,19 @@ func (s *DiscoverVideoSnapshot) BeforeCreate(*gorm.DB) error {
 }
 
 // EntityRanklistEntry 店铺/达人/视频榜单顺序快照。
-// (provider, kind, region, rank_type, rank_field, category_id) 唯一。
+// (provider, kind, region, rank_type, rank_field, category_id, page_num) 唯一。
 // 取代 DiscoverCache 存榜单:榜单读 = 本表顺序 + 关联实体主表渲染(零 EchoTik);job 定时刷新顺序。
-// 对标商品的 RanklistCacheEntry,但多 kind(三类共用)与 category_id(支持类目维度)。
+// 对标商品的 RanklistCacheEntry,但多 kind(三类共用)、category_id(类目维度)与 page_num(翻页维度)。
+// 注:page_num 是后加维度,旧唯一索引名 uq_ere_key 已废,改用 uq_ere_pg(main.go 启动时先 DROP 旧索引)。
 type EntityRanklistEntry struct {
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
-	Provider    string    `gorm:"not null;uniqueIndex:uq_ere_key" json:"provider"`
-	Kind        string    `gorm:"not null;uniqueIndex:uq_ere_key" json:"kind"`
-	Region      string    `gorm:"not null;uniqueIndex:uq_ere_key" json:"region"`
-	RankType    int       `gorm:"column:rank_type;not null;uniqueIndex:uq_ere_key" json:"rankType"`
-	RankField   int       `gorm:"column:rank_field;not null;uniqueIndex:uq_ere_key" json:"rankField"`
-	CategoryID  string    `gorm:"column:category_id;not null;default:'';uniqueIndex:uq_ere_key" json:"categoryId"`
+	Provider    string    `gorm:"not null;uniqueIndex:uq_ere_pg" json:"provider"`
+	Kind        string    `gorm:"not null;uniqueIndex:uq_ere_pg" json:"kind"`
+	Region      string    `gorm:"not null;uniqueIndex:uq_ere_pg" json:"region"`
+	RankType    int       `gorm:"column:rank_type;not null;uniqueIndex:uq_ere_pg" json:"rankType"`
+	RankField   int       `gorm:"column:rank_field;not null;uniqueIndex:uq_ere_pg" json:"rankField"`
+	CategoryID  string    `gorm:"column:category_id;not null;default:'';uniqueIndex:uq_ere_pg" json:"categoryId"`
+	PageNum     int       `gorm:"column:page_num;not null;default:1;uniqueIndex:uq_ere_pg" json:"pageNum"`
 	ExternalIDs []string  `gorm:"column:external_ids;serializer:json" json:"externalIds"`
 	FetchedAt   time.Time `gorm:"column:fetched_at" json:"fetchedAt"`
 }

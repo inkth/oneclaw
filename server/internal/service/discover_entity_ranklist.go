@@ -23,7 +23,16 @@ func strPtrOrNil(s string) *string {
 
 func gmvCentsToDollars(cents int) float64 { return float64(cents) / 100.0 }
 
-// writeEntityRanklist upsert 一条榜单顺序快照((provider,kind,region,rank_type,rank_field,category_id) 幂等)。
+// normPage 归一页码:<=0 视为第 1 页(顺序表与读路径共用,保证键对齐)。
+func normPage(n int) int {
+	if n <= 0 {
+		return 1
+	}
+	return n
+}
+
+// writeEntityRanklist upsert 一条榜单顺序快照
+// ((provider,kind,region,rank_type,rank_field,category_id,page_num) 幂等)。
 func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, p echotik.RanklistParams, ids []string) {
 	if s.db == nil || len(ids) == 0 {
 		return
@@ -31,26 +40,27 @@ func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, 
 	e := model.EntityRanklistEntry{
 		Provider: providerEchoTik, Kind: kind, Region: p.Region,
 		RankType: p.RankType, RankField: p.RankField, CategoryID: p.CategoryID,
+		PageNum:     normPage(p.PageNum),
 		ExternalIDs: ids, FetchedAt: time.Now(),
 	}
 	s.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{Name: "provider"}, {Name: "kind"}, {Name: "region"},
-			{Name: "rank_type"}, {Name: "rank_field"}, {Name: "category_id"},
+			{Name: "rank_type"}, {Name: "rank_field"}, {Name: "category_id"}, {Name: "page_num"},
 		},
 		DoUpdates: clause.AssignmentColumns([]string{"external_ids", "fetched_at"}),
 	}).Create(&e)
 }
 
-// lookupRanklistIDs 读榜单顺序。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,新鲜由 job 保证。
+// lookupRanklistIDs 读榜单顺序(按页)。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,新鲜由 job 保证。
 func (s *DiscoverService) lookupRanklistIDs(ctx context.Context, kind string, p echotik.RanklistParams) ([]string, time.Time, bool) {
 	if s.db == nil {
 		return nil, time.Time{}, false
 	}
 	var e model.EntityRanklistEntry
 	err := s.db.WithContext(ctx).
-		Where("provider = ? AND kind = ? AND region = ? AND rank_type = ? AND rank_field = ? AND category_id = ?",
-			providerEchoTik, kind, p.Region, p.RankType, p.RankField, p.CategoryID).
+		Where("provider = ? AND kind = ? AND region = ? AND rank_type = ? AND rank_field = ? AND category_id = ? AND page_num = ?",
+			providerEchoTik, kind, p.Region, p.RankType, p.RankField, p.CategoryID, normPage(p.PageNum)).
 		First(&e).Error
 	if err != nil || len(e.ExternalIDs) == 0 {
 		return nil, time.Time{}, false
@@ -106,13 +116,12 @@ func (s *DiscoverService) fetchSellerRanklistLive(ctx context.Context, p echotik
 	if err != nil || len(raw) == 0 {
 		return &EntityRanklistResult[SellerDTO]{State: "error", Rows: s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
 	}
-	if p.PageNum <= 1 {
-		s.upsertSellerList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "seller", p, sellerIDsOf(raw))
-		if res, ok := s.lookupSellerRanklist(ctx, p); ok {
-			res.State = "live"
-			return res
-		}
+	// 任意页都落库 + 写本页顺序,使该 (类目,页) 下次走本地;再回查以统一返回 COS/本地口径。
+	s.upsertSellerList(ctx, p.Region, raw)
+	s.writeEntityRanklist(ctx, "seller", p, sellerIDsOf(raw))
+	if res, ok := s.lookupSellerRanklist(ctx, p); ok {
+		res.State = "live"
+		return res
 	}
 	now := time.Now()
 	return &EntityRanklistResult[SellerDTO]{State: "live", FetchedAt: &now, Rows: s.signMapSellers(ctx, raw)}
@@ -176,13 +185,11 @@ func (s *DiscoverService) fetchInfluencerRanklistLive(ctx context.Context, p ech
 	if err != nil || len(raw) == 0 {
 		return &EntityRanklistResult[InfluencerDTO]{State: "error", Rows: s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
 	}
-	if p.PageNum <= 1 {
-		s.upsertInfluencerList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
-		if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
-			res.State = "live"
-			return res
-		}
+	s.upsertInfluencerList(ctx, p.Region, raw)
+	s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
+	if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
+		res.State = "live"
+		return res
 	}
 	now := time.Now()
 	return &EntityRanklistResult[InfluencerDTO]{State: "live", FetchedAt: &now, Rows: s.signMapInfluencers(ctx, raw)}
@@ -246,13 +253,11 @@ func (s *DiscoverService) fetchVideoRanklistLive(ctx context.Context, p echotik.
 	if err != nil || len(raw) == 0 {
 		return &EntityRanklistResult[VideoDTO]{State: "error", Rows: s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
 	}
-	if p.PageNum <= 1 {
-		s.upsertVideoList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
-		if res, ok := s.lookupVideoRanklist(ctx, p); ok {
-			res.State = "live"
-			return res
-		}
+	s.upsertVideoList(ctx, p.Region, raw)
+	s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
+	if res, ok := s.lookupVideoRanklist(ctx, p); ok {
+		res.State = "live"
+		return res
 	}
 	now := time.Now()
 	return &EntityRanklistResult[VideoDTO]{State: "live", FetchedAt: &now, Rows: s.signMapVideos(ctx, raw)}

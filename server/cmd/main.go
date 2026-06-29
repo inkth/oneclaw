@@ -47,6 +47,10 @@ func main() {
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
+	// EntityRanklistEntry 增加 page_num 维度:旧 6 列唯一索引 uq_ere_key 需先删,
+	// AutoMigrate 才会按新列集重建为 uq_ere_pg(GORM 不会改既有同名索引的列)。幂等:删后即 no-op。
+	db.Exec("DROP INDEX IF EXISTS uq_ere_key")
+
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.PhoneVerificationCode{},
@@ -138,11 +142,21 @@ func main() {
 		// 一次性:遍历所有站点 × 所有一级类目,把每组合前 5 页商品落库(1 req/s,断点续跑)。
 		// 用法:docker compose run --rm go-api ./server --backfill-products
 		if arg == "--backfill-products" {
-			ft, sk, err := discSvc.BackfillAllProducts(context.Background())
+			ft, sk, err := discSvc.BackfillDiscover(context.Background(), service.BackfillKindsProductOnly)
 			if err != nil {
 				logger.Fatal("[backfill] 商品全量回填失败", logger.Err(err))
 			}
 			logger.Info("[backfill] 商品全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
+			return
+		}
+		// 一次性:整个选品板块四榜(商品/店铺/达人/视频)全量本地化。同样 1 req/s、断点续跑。
+		// 用法:docker compose run --rm go-api ./server --backfill-discover
+		if arg == "--backfill-discover" {
+			ft, sk, err := discSvc.BackfillDiscover(context.Background(), service.BackfillKindsAll)
+			if err != nil {
+				logger.Fatal("[backfill] 选品板块全量回填失败", logger.Err(err))
+			}
+			logger.Info("[backfill] 选品板块全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
 			return
 		}
 	}

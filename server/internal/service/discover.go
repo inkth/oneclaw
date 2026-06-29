@@ -89,8 +89,8 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		}
 	}
 
-	// 1b. 类目筛选:本地按累计销量取(数据足够零 EchoTik);命中则后台刷新补新。
-	if p.CategoryID != "" && p.PageNum <= 1 {
+	// 1b. 类目筛选:本地按累计销量分页取(数据足够零 EchoTik);命中则后台刷新补新。
+	if p.CategoryID != "" {
 		if dps, ok := s.lookupProductsByCategory(ctx, p); ok {
 			if s.echo.Configured() {
 				goRefresh(ctx, "ranklist-category", func(bg context.Context) {
@@ -219,7 +219,8 @@ func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistPar
 	return ordered, entry.FetchedAt, true
 }
 
-// lookupProductsByCategory 本地按类目取商品榜(累计销量降序)。数据足够时类目筛选零 EchoTik。
+// lookupProductsByCategory 本地按类目分页取商品榜(累计销量降序)。数据足够时类目筛选/翻页零 EchoTik。
+// 全程同一排序(sale_cnt desc)+ offset 翻页,页间口径一致;offset 越界则返回空 → 调用方回退 live。
 func (s *DiscoverService) lookupProductsByCategory(ctx context.Context, p echotik.RanklistParams) ([]model.DiscoverProduct, bool) {
 	if s.db == nil {
 		return nil, false
@@ -227,7 +228,9 @@ func (s *DiscoverService) lookupProductsByCategory(ctx context.Context, p echoti
 	var dps []model.DiscoverProduct
 	if err := s.db.WithContext(ctx).
 		Where("provider = ? AND region = ? AND category_id = ?", providerEchoTik, p.Region, p.CategoryID).
-		Order("total_sale_cnt DESC").Limit(p.PageSize).Find(&dps).Error; err != nil || len(dps) == 0 {
+		Order("total_sale_cnt DESC").
+		Offset((normPage(p.PageNum) - 1) * p.PageSize).Limit(p.PageSize).
+		Find(&dps).Error; err != nil || len(dps) == 0 {
 		return nil, false
 	}
 	return dps, true
