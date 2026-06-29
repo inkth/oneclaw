@@ -11,7 +11,6 @@ import {
   Music,
   Trash2,
   Tag,
-  LayoutList,
   Wand2,
   Check,
   X,
@@ -108,14 +107,15 @@ export function MaterialsClient({
     });
   }
 
-  // 批量「把选中的商品图变成商品」:复用后端 listing-batches —— 每张图建一张商品卡 + 出 Listing(文案+主图)。
-  async function runBatch() {
+  // 「把商品图变成商品」:复用后端 listing-batches —— 每张图建一张商品卡 + 出 Listing(文案+主图)。
+  // 单图(卡片「做成商品」)与多选(底栏)走同一条链路,产出都落「资产 · 我的商品」。
+  async function submitBatch(ids: string[]) {
     if (gateGuest()) return;
-    const ids = Array.from(selected);
     if (ids.length === 0) return;
+    const noun = ids.length === 1 ? "这张图" : `${ids.length} 张图`;
     if (
       !confirm(
-        `将为 ${ids.length} 张图各生成一张商品卡和一套 Listing(标题/五点/A+/主图)。\n` +
+        `将为${noun}各生成一张商品卡和一套 Listing(标题/五点/A+/主图)。\n` +
           `预计最多消耗约 ${ids.length * PER_IMAGE_CREDITS} 积分(主图按实际生成张数计)。继续?`,
       )
     )
@@ -130,7 +130,7 @@ export function MaterialsClient({
       exitSelect();
       router.push("/app/assets/products"); // 去「资产 · 我的商品」看卡片「生成中 → 成品」自填充
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "批量生成失败");
+      toast.error(e instanceof Error ? e.message : "生成失败");
     } finally {
       setBatchBusy(false);
     }
@@ -169,15 +169,6 @@ export function MaterialsClient({
     router.refresh();
   }
 
-  // 带着这张商品图去做 Listing:后端会「看图」写文案,同一张图也作出图参考(真货入画)。
-  function makeListing(id: string) {
-    if (gateGuest()) return;
-    const prompt =
-      "为这张商品图生成 TikTok Shop Listing（标题/五点卖点/A+/主图）。补充：";
-    router.push(
-      `/app?agent=LISTING&materialId=${id}&prompt=${encodeURIComponent(prompt)}`,
-    );
-  }
 
   async function deleteMaterial(id: string) {
     if (!confirm("确定删除该素材？")) return;
@@ -350,14 +341,15 @@ export function MaterialsClient({
                       <Trash2 className="h-2.5 w-2.5" />
                     </button>
                   )}
-                  {!selectMode && (m.type === "IMAGE" || m.type === "LOGO" || m.type === "WATERMARK") && (
+                  {!selectMode && m.type === "IMAGE" && (
                     <button
-                      onClick={() => makeListing(m.id)}
-                      className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-sky-600/95 px-2 py-1 text-2xs font-medium text-white shadow-sm hover:bg-sky-700"
-                      title="用这张商品图生成 Listing(后端看图写标题/五点/A+,同图作主图参考)"
+                      onClick={() => submitBatch([m.id])}
+                      disabled={batchBusy}
+                      className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-brand-600/95 px-2 py-1 text-2xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
+                      title="用这张商品图建一张商品(看图写 Listing + 出主图),产出到「资产 · 我的商品」"
                     >
-                      <LayoutList className="h-2.5 w-2.5" />
-                      生成 Listing
+                      <Wand2 className="h-2.5 w-2.5" />
+                      做成商品
                     </button>
                   )}
                 </div>
@@ -390,7 +382,7 @@ export function MaterialsClient({
               清空
             </button>
             <button
-              onClick={runBatch}
+              onClick={() => submitBatch(Array.from(selected))}
               disabled={batchBusy}
               className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
             >

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package, MoreHorizontal, Pencil, Check, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, RotateCcw, Trash2, Loader2, Package, MoreHorizontal, Pencil, Check, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -100,16 +100,6 @@ function CostBadge({ source }: { source: CostSource }) {
       {c.label}
     </span>
   );
-}
-
-// 选品 → 创作的接力:带着产品上下文跳到工作台,预选对应 Agent 并预填指令。
-// 只带创作意图;价格/卖点/市场数据由后端按 productId 从收藏商品真实数据注入,避免 URL 里的快照过期。
-function videoPromptFor(p: Product): string {
-  return `为「${p.title}」生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感。`;
-}
-
-function listingPromptFor(p: Product): string {
-  return `为「${p.title}」生成一套 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案。`;
 }
 
 const filters: Array<{ key: "ALL" | Status; label: string }> = [
@@ -334,7 +324,7 @@ export function ProductsClient({
                           {p.listingStatus === "READY" && (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-2xs font-medium leading-none text-emerald-700"
-                              title="Listing 已生成,可在「为它做 Listing」查看/复制"
+                              title="Listing 已生成,点「打开详情」查看/复制/补主图"
                             >
                               <Sparkles className="h-2.5 w-2.5" />
                               Listing 就绪
@@ -437,32 +427,14 @@ export function ProductsClient({
                   <Td>
                     <div className="flex items-center justify-end gap-1.5">
                       {p.status !== "ARCHIVED" && (
-                        <>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/app?agent=DIRECTOR&productId=${p.id}&prompt=${encodeURIComponent(videoPromptFor(p))}`,
-                              )
-                            }
-                            className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-2xs font-medium text-brand-700 hover:bg-brand-100"
-                            title="带着这个产品的上下文去做短视频"
-                          >
-                            <Clapperboard className="h-2.5 w-2.5" />
-                            为它做视频
-                          </button>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/app?agent=LISTING&productId=${p.id}&prompt=${encodeURIComponent(listingPromptFor(p))}`,
-                              )
-                            }
-                            className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 text-2xs font-medium text-sky-700 hover:bg-sky-100"
-                            title="带着这个产品的上下文去做 Listing(标题/五点/A+/主图)"
-                          >
-                            <LayoutList className="h-2.5 w-2.5" />
-                            为它做 Listing
-                          </button>
-                        </>
+                        <Link
+                          href={`/app/products/${p.id}`}
+                          className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-medium text-brand-700 hover:bg-brand-100"
+                          title="进入商品详情:做 Listing / 补主图 / 为它做视频"
+                        >
+                          打开详情
+                          <ArrowRight className="h-2.5 w-2.5" />
+                        </Link>
                       )}
                       <Popover
                         align="end"
