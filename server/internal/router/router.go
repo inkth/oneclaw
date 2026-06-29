@@ -98,6 +98,7 @@ func New(d Deps) *gin.Engine {
 
 		priv.GET("/workspaces/:wid/products", prodH.List)
 		priv.GET("/workspaces/:wid/products/:pid/publish-kit", prodH.PublishKit)
+		priv.GET("/workspaces/:wid/products/:pid/images.zip", prodH.ImagesZip)
 		priv.POST("/workspaces/:wid/products", prodH.Create)
 		priv.PATCH("/workspaces/:wid/products/:pid", prodH.Update)
 		priv.DELETE("/workspaces/:wid/products/:pid", prodH.Delete)

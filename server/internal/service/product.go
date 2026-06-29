@@ -1,10 +1,16 @@
 package service
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -13,6 +19,9 @@ import (
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/echotik"
 )
+
+// zipHTTP 下载 COS 图打包用(服务器→COS 同区直连,快)。
+var zipHTTP = &http.Client{Timeout: 60 * time.Second}
 
 type ProductService struct {
 	db *gorm.DB
@@ -325,4 +334,90 @@ func (s *ProductService) PublishKit(ctx context.Context, wsID, pid uuid.UUID) (*
 		}
 	}
 	return kit, nil
+}
+
+// productImageURLs 该商品可下载的图:展示图(白底/场景/细节/俯拍)+ 当前主图,去重。
+func productImageURLs(p *model.Product) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(u string) {
+		u = strings.TrimSpace(u)
+		if u == "" || seen[u] {
+			return
+		}
+		seen[u] = true
+		out = append(out, u)
+	}
+	if len(p.Images) > 0 {
+		var imgs []string
+		if json.Unmarshal(p.Images, &imgs) == nil {
+			for _, u := range imgs {
+				add(u)
+			}
+		}
+	}
+	if p.CoverURL != nil {
+		add(*p.CoverURL)
+	}
+	return out
+}
+
+// ImagesZip 把商品的展示图打成一个 zip(服务器直拉 COS,无浏览器跨域下载限制)。无图则报错。
+func (s *ProductService) ImagesZip(ctx context.Context, wsID, pid uuid.UUID) ([]byte, string, error) {
+	p, err := s.get(ctx, wsID, pid)
+	if err != nil {
+		return nil, "", err
+	}
+	urls := productImageURLs(p)
+	if len(urls) == 0 {
+		return nil, "", apperr.BadRequest("该商品还没有可下载的图片")
+	}
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	got := 0
+	for i, u := range urls {
+		data, ct, derr := fetchImageBytes(ctx, u)
+		if derr != nil {
+			continue
+		}
+		ext := ".jpg"
+		switch {
+		case strings.Contains(ct, "png"):
+			ext = ".png"
+		case strings.Contains(ct, "webp"):
+			ext = ".webp"
+		}
+		w, werr := zw.Create(fmt.Sprintf("image-%d%s", i+1, ext))
+		if werr != nil {
+			continue
+		}
+		if _, werr := w.Write(data); werr != nil {
+			continue
+		}
+		got++
+	}
+	if err := zw.Close(); err != nil {
+		return nil, "", apperr.Wrap(apperr.CodeInternal, "打包失败", err)
+	}
+	if got == 0 {
+		return nil, "", apperr.Wrap(apperr.CodeInternal, "图片下载失败", fmt.Errorf("无可用图片"))
+	}
+	return buf.Bytes(), fmt.Sprintf("product-%s.zip", pid.String()[:8]), nil
+}
+
+func fetchImageBytes(ctx context.Context, url string) ([]byte, string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	res, err := zipHTTP.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		return nil, "", fmt.Errorf("HTTP %d", res.StatusCode)
+	}
+	data, err := io.ReadAll(res.Body)
+	return data, res.Header.Get("Content-Type"), err
 }

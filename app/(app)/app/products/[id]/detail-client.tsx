@@ -56,6 +56,9 @@ const statusLabel: Record<string, string> = {
   ARCHIVED: "已归档",
 };
 
+// 下载用同源相对路径(生产 nginx 同域);本地分端口时由 NEXT_PUBLIC_API_BASE 指定。
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function copy(text: string, label: string) {
@@ -309,21 +312,33 @@ export function ProductDetail({
           <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-zinc-900">商品图</h3>
-              {imagingShots ? (
-                <span className="inline-flex items-center gap-1 text-2xs text-violet-700">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  出图中…
-                </span>
-              ) : canAddImages && (
-                <button
-                  onClick={addImages}
-                  disabled={imaging}
-                  className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-                >
-                  {imaging ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
-                  {imaging ? "生成中…" : "补出主图"}
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {gallery.length > 0 && (
+                  <a
+                    href={`${API_BASE}/api/v1/workspaces/${workspaceId}/products/${productId}/images.zip`}
+                    className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-2xs font-medium text-zinc-700 hover:bg-zinc-200"
+                    title="把这些商品图打包成 zip 下载"
+                  >
+                    <Download className="h-3 w-3" />
+                    下载全部
+                  </a>
+                )}
+                {imagingShots ? (
+                  <span className="inline-flex items-center gap-1 text-2xs text-violet-700">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    出图中…
+                  </span>
+                ) : canAddImages && (
+                  <button
+                    onClick={addImages}
+                    disabled={imaging}
+                    className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                  >
+                    {imaging ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
+                    {imaging ? "生成中…" : "补出主图"}
+                  </button>
+                )}
+              </div>
             </div>
             {gallery.length === 0 ? (
               <div className="flex h-32 items-center justify-center rounded-lg bg-zinc-50 text-xs text-zinc-400">

@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -105,4 +108,24 @@ func (h *ProductHandler) PublishKit(c *gin.Context) {
 		return
 	}
 	OK(c, gin.H{"kit": kit})
+}
+
+// ImagesZip 把商品的展示图打成一个 zip 直接下载(服务器直拉 COS,绕开浏览器跨域下载限制)。
+func (h *ProductHandler) ImagesZip(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	pid, err := uuid.Parse(c.Param("pid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("商品 ID 无效"))
+		return
+	}
+	data, name, err := h.products.ImagesZip(c.Request.Context(), wid, pid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	c.Data(http.StatusOK, "application/zip", data)
 }
