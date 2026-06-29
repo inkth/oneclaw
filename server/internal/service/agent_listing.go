@@ -88,29 +88,48 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	if coverURL != "" {
 		user += "\n注:已有实拍参考图,出图时会作为参考让真货入画;imagePrompts 请围绕这个商品本身设计构图(白底/场景/细节/对比)。"
 	}
-	// 有实拍图就让 vision 模型看图写文案(标题/五点基于照片里的真货);
-	// vision 走 ReviewModel(gemini,prod 经代理可达)。失败则降级回纯文本,保证 Listing 仍出得来。
-	var res *llm.Result
-	var err error
-	if coverURL != "" {
-		res, err = s.llm.ChatVision(ctx, s.llm.ReviewModel(), listingSystem, user, []string{coverURL}, true, 2200)
-		if err != nil {
-			logger.Warn("[agent] listing vision 看图失败,降级回纯文本",
-				logger.String("workspace", wsID.String()), logger.Err(err))
-			res, err = s.llm.Chat(ctx, listingSystem, user, true, 2200)
+	// 解析一次 LLM 输出为 listingOut;空/截断/无效都算失败(交给调用方决定是否降级)。
+	parseListing := func(r *llm.Result) (listingOut, bool) {
+		var o listingOut
+		if r == nil {
+			return o, false
 		}
-	} else {
-		res, err = s.llm.Chat(ctx, listingSystem, user, true, 2200)
+		if json.Unmarshal([]byte(llm.ExtractJSON(r.Content)), &o) != nil {
+			return o, false
+		}
+		if o.Title == "" || len(o.SellingPoints) == 0 {
+			return o, false
+		}
+		return o, true
 	}
-	if err != nil {
-		return "", nil, llm.Usage{}, err
-	}
+
+	// 有实拍图就让 vision 模型看图写文案(标题/五点基于照片里的真货);vision 走 ReviewModel
+	// (gemini,prod 经代理)。但 gemini 经代理偶发「无报错却返回空/截断内容」,故不仅 transport
+	// 错误要降级,**解析失败(空/截断/无效)也降级**回纯文本(deepseek,prod 稳定),保证 Listing 出得来。
+	var res *llm.Result
 	var out listingOut
-	if err := json.Unmarshal([]byte(llm.ExtractJSON(res.Content)), &out); err != nil {
-		return "", nil, llm.Usage{}, fmt.Errorf("解析 Listing 输出失败: %w", err)
+	ok := false
+	if coverURL != "" {
+		if r, e := s.llm.ChatVision(ctx, s.llm.ReviewModel(), listingSystem, user, []string{coverURL}, true, 3000); e != nil {
+			logger.Warn("[agent] listing vision 看图失败,降级回纯文本",
+				logger.String("workspace", wsID.String()), logger.Err(e))
+		} else if o, good := parseListing(r); good {
+			res, out, ok = r, o, true
+		} else {
+			logger.Warn("[agent] listing vision 返回空/无效内容,降级回纯文本",
+				logger.String("workspace", wsID.String()))
+		}
 	}
-	if out.Title == "" || len(out.SellingPoints) == 0 {
-		return "", nil, llm.Usage{}, fmt.Errorf("模型未给出有效的 Listing 内容")
+	if !ok {
+		r, e := s.llm.Chat(ctx, listingSystem, user, true, 2200)
+		if e != nil {
+			return "", nil, llm.Usage{}, e
+		}
+		o, good := parseListing(r)
+		if !good {
+			return "", nil, llm.Usage{}, fmt.Errorf("模型未给出有效的 Listing 内容")
+		}
+		res, out = r, o
 	}
 
 	// 出图能力就绪才进入确认流程,否则只给 prompt(前端不出按钮)。
