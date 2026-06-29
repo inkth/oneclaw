@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -16,13 +17,25 @@ import (
 
 type Client struct {
 	cfg  config.FalConfig
-	http *http.Client
+	http *http.Client // 生成 API(queue.fal.run):国内直连可达
+	dl   *http.Client // 结果图下载(fal.media):可走代理,跨境直连会挂死
 }
 
 func New(cfg config.FalConfig) *Client {
 	// 大图模型(如 Seedream V4.5)同步出图跨境可能超过 2 分钟;
 	// 在线链路各调用方自带更短的 ctx 超时,不受这个上限影响。
-	return &Client{cfg: cfg, http: &http.Client{Timeout: 300 * time.Second}}
+	api := &http.Client{Timeout: 300 * time.Second}
+	dl := api
+	// 结果图托管在 fal.media,跨境直连 TLS 间歇挂死;配了代理就让下载走代理(实测 6s vs 直连超时)。
+	if cfg.DownloadProxy != "" {
+		if u, err := url.Parse(cfg.DownloadProxy); err == nil {
+			dl = &http.Client{
+				Timeout:   300 * time.Second,
+				Transport: &http.Transport{Proxy: http.ProxyURL(u)},
+			}
+		}
+	}
+	return &Client{cfg: cfg, http: api, dl: dl}
 }
 
 func (c *Client) Configured() bool { return c.cfg.Configured() }
@@ -235,9 +248,9 @@ func (c *Client) download(ctx context.Context, url string) ([]byte, string, erro
 	return nil, "", fmt.Errorf("fal: 下载图像失败(重试 3 次): %w", lastErr)
 }
 
-func (c *Client) downloadOnce(ctx context.Context, url string) ([]byte, string, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	res, err := c.http.Do(req)
+func (c *Client) downloadOnce(ctx context.Context, imgURL string) ([]byte, string, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, imgURL, nil)
+	res, err := c.dl.Do(req) // 结果图下载走代理(若配置),绕 fal.media 跨境挂死
 	if err != nil {
 		return nil, "", err
 	}

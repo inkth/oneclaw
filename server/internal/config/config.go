@@ -153,6 +153,10 @@ type FalConfig struct {
 	BaseURL    string // 默认 https://fal.run
 	ImageModel string // 默认 fal-ai/flux/schnell
 	TryOnModel string // 虚拟试穿:默认 fal-ai/fashn/tryon/v1.6
+	// DownloadProxy 结果图下载代理:生成 API(queue.fal.run)国内直连可达,但结果图托管在
+	// fal.media CDN,跨境 TLS 间歇挂死(实测直连 90s 下不完、经代理 6s)。仅下载结果图走此代理;
+	// 空=直连。默认复用 OPENROUTER_REVIEW_PROXY,生产已配则零额外配置。
+	DownloadProxy string
 }
 
 func (f FalConfig) Configured() bool { return f.APIKey != "" }
@@ -244,6 +248,8 @@ func Load() *Config {
 			BaseURL:    getEnv("FALAI_BASE_URL", "https://fal.run"),
 			ImageModel: getEnv("FALAI_DEFAULT_IMAGE_MODEL", "fal-ai/flux/schnell"),
 			TryOnModel: getEnv("FALAI_TRYON_MODEL", "fal-ai/fashn/tryon/v1.6"),
+			// 默认复用复盘代理:生产已配 OPENROUTER_REVIEW_PROXY,无需新增 env。
+			DownloadProxy: getEnv("FALAI_DOWNLOAD_PROXY", getEnv("OPENROUTER_REVIEW_PROXY", "")),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),
