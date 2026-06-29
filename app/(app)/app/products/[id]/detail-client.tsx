@@ -91,6 +91,7 @@ export function ProductDetail({
 
   const p = kit.product;
   const listing = kit.listing;
+  const videos = kit.videos ?? []; // 后端无成片时返回 null,这里兜底成空数组,避免 .length 崩页
   // 画廊 = 商品展示图(批量出的白底/场景/细节/俯拍)+ 当前封面 + Listing 主图(按需文案出的)。
   const gallery = Array.from(
     new Set([...(p.images ?? []), p.coverUrl, ...(listing?.images ?? [])].filter(Boolean) as string[]),
@@ -474,14 +475,14 @@ export function ProductDetail({
                     <div className="mb-1 flex items-center justify-between">
                       <span className="text-2xs font-medium text-zinc-400">五点卖点</span>
                       <button
-                        onClick={() => copy(listing.sellingPoints.map((s, i) => `${i + 1}. ${s}`).join("\n"), "五点")}
+                        onClick={() => copy((listing.sellingPoints ?? []).map((s, i) => `${i + 1}. ${s}`).join("\n"), "五点")}
                         className="text-zinc-400 hover:text-brand-600"
                       >
                         <Copy className="h-3 w-3" />
                       </button>
                     </div>
                     <ol className="list-decimal space-y-1 pl-4 text-xs text-zinc-700">
-                      {listing.sellingPoints.map((s, i) => (
+                      {(listing.sellingPoints ?? []).map((s, i) => (
                         <li key={i}>{s}</li>
                       ))}
                     </ol>
@@ -520,11 +521,11 @@ export function ProductDetail({
             </>
           )}
 
-          {kit.videos.length > 0 && (
+          {videos.length > 0 && (
             <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
               <h3 className="mb-3 text-sm font-semibold text-zinc-900">成片</h3>
               <div className="space-y-2">
-                {kit.videos.map((v) => (
+                {videos.map((v) => (
                   <div key={v.id} className="flex items-center justify-between gap-2 rounded-lg bg-zinc-50 p-2 text-xs">
                     <span className="truncate text-zinc-700">{v.title || "短视频"}</span>
                     {v.videoUrl && (

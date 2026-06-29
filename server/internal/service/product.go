@@ -272,7 +272,7 @@ func (s *ProductService) PublishKit(ctx context.Context, wsID, pid uuid.UUID) (*
 	if err != nil {
 		return nil, err
 	}
-	kit := &PublishKit{}
+	kit := &PublishKit{Videos: []PublishKitVideo{}} // 非 nil:JSON 输出 [] 而非 null,前端可安全 .length/.map
 	kit.Product.ID = p.ID
 	kit.Product.Title = p.Title
 	kit.Product.Emoji = p.Emoji
