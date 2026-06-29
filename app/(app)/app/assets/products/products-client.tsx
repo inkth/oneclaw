@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package, MoreHorizontal, Pencil, Check } from "lucide-react";
+import { Archive, Clapperboard, LayoutList, RotateCcw, Trash2, Loader2, Package, MoreHorizontal, Pencil, Check, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -14,6 +14,8 @@ import { Popover } from "@/components/ui/Popover";
 
 type Status = "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 type CostSource = "ESTIMATE" | "MANUAL" | "SOURCED";
+// 自建商品 Listing 生成进度(后端 ProductListItem.listingStatus);空 = 无 Listing 任务。
+type ListingStatus = "GENERATING" | "IMAGING" | "READY" | "FAILED" | "";
 
 export type Product = {
   id: string;
@@ -29,8 +31,34 @@ export type Product = {
   trendDelta: number;
   status: Status;
   note: string | null;
+  coverUrl?: string;
+  listingStatus?: ListingStatus;
   shop: { id: string; name: string; platform: string } | null;
 };
+
+const listingStatusMap: Record<"GENERATING" | "IMAGING" | "FAILED", { label: string; cls: string; spin: boolean }> = {
+  GENERATING: { label: "文案生成中", cls: "bg-violet-50 text-violet-700", spin: true },
+  IMAGING: { label: "主图生成中", cls: "bg-violet-50 text-violet-700", spin: true },
+  FAILED: { label: "生成失败", cls: "bg-rose-50 text-rose-600", spin: false },
+};
+
+// 商品缩略图:有封面用真图(失败回退渐变占位),无封面用 seed 占位。
+function Thumb({ src, seed }: { src?: string; seed: string }) {
+  const [failed, setFailed] = useState(false);
+  if (src && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="h-9 w-9 shrink-0 rounded-lg object-cover bg-zinc-100"
+      />
+    );
+  }
+  return <MediaPlaceholder seed={seed} rounded="rounded-lg" className="h-9 w-9 shrink-0" />;
+}
 
 const statusMap: Record<Status, { label: string; cls: string }> = {
   CANDIDATE: { label: "候选", cls: "bg-sky-50 text-sky-700" },
@@ -108,6 +136,30 @@ export function ProductsClient({
 
   const visible =
     filter === "ALL" ? products : products.filter((p) => p.status === filter);
+
+  // 把 Go 商品列表项归一成本组件的 Product(补 shop 兜底)。
+  function mapGo(p: Partial<Product> & { id: string }): Product {
+    return { shop: null, ...p } as Product;
+  }
+
+  // 任一商品仍在生成(文案/主图)时轮询商品列表,卡片「生成中 → 成品」自填充。
+  const hasActive = products.some(
+    (p) => p.listingStatus === "GENERATING" || p.listingStatus === "IMAGING",
+  );
+  useEffect(() => {
+    if (!hasActive) return;
+    const timer = setInterval(async () => {
+      try {
+        const data = await apiBrowser<{ products: Array<Partial<Product> & { id: string }> }>(
+          `/workspaces/${workspaceId}/products`,
+        );
+        setProducts(data.products.map(mapGo));
+      } catch {
+        /* 轮询失败静默重试 */
+      }
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [hasActive, workspaceId]);
 
   const filterBar = (
     <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
@@ -188,7 +240,7 @@ export function ProductsClient({
       ) : (
         <PageHeader
           title="收藏 · 商品"
-          description="你从爆品榜收藏的商品,按推进阶段管理。"
+          description="你从爆品榜收藏的,或在素材库「批量做商品」生成的商品,按推进阶段管理。"
           actions={filterBar}
         />
       )}
@@ -205,7 +257,8 @@ export function ProductsClient({
           title={filter === "ALL" ? "还没有收藏的商品" : "这个分类下还没有商品"}
           description={
             <>
-              去 <Link href="/app/discover/products" className="text-brand-600">爆品榜</Link> 点「收藏」，商品会出现在这里。
+              去 <Link href="/app/discover/products" className="text-brand-600">爆品榜</Link> 点「收藏」，
+              或在 <Link href="/app/assets/materials" className="text-brand-600">素材库</Link> 多选你拍的商品图「批量做商品」，一键生成商品卡 + Listing。
             </>
           }
         />
@@ -229,9 +282,36 @@ export function ProductsClient({
                 <Tr key={p.id}>
                   <Td>
                     <div className="flex items-center gap-3">
-                      <MediaPlaceholder seed={p.id} rounded="rounded-lg" className="h-9 w-9 shrink-0" />
+                      <Thumb src={p.coverUrl} seed={p.id} />
                       <div>
-                        <div className="font-medium" title={p.note ?? undefined}>{p.title}</div>
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/app/products/${p.id}`}
+                            className="font-medium hover:text-brand-700 hover:underline"
+                            title={p.note ?? "查看商品详情"}
+                          >
+                            {p.title}
+                          </Link>
+                          {p.listingStatus && p.listingStatus !== "READY" && listingStatusMap[p.listingStatus] && (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${listingStatusMap[p.listingStatus].cls}`}
+                            >
+                              {listingStatusMap[p.listingStatus].spin && (
+                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              )}
+                              {listingStatusMap[p.listingStatus].label}
+                            </span>
+                          )}
+                          {p.listingStatus === "READY" && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-2xs font-medium leading-none text-emerald-700"
+                              title="Listing 已生成,可在「为它做 Listing」查看/复制"
+                            >
+                              <Sparkles className="h-2.5 w-2.5" />
+                              Listing 就绪
+                            </span>
+                          )}
+                        </div>
                         <div className="text-2xs text-zinc-500 font-mono nums flex flex-wrap items-center gap-x-1 gap-y-0.5">
                           <span>${(p.priceCents / 100).toFixed(2)}</span>
                           <span className="text-zinc-300">·</span>

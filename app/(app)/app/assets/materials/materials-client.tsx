@@ -12,10 +12,18 @@ import {
   Trash2,
   Tag,
   LayoutList,
+  Wand2,
+  Check,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { apiBrowser } from "@/lib/api-browser";
+import { CREDIT_COST } from "@/lib/credits";
+
+// 批量「做商品」单张预估积分上限:文案 1 笔 + 主图最多 3 张(实际按生成张数扣)。
+const PER_IMAGE_CREDITS = CREDIT_COST.agentTask + CREDIT_COST.image * 3;
 
 type MaterialType = "IMAGE" | "VIDEO" | "AUDIO" | "LOGO" | "WATERMARK" | "FONT";
 
@@ -79,9 +87,54 @@ export function MaterialsClient({
   const [uploading, setUploading] = useState<string[]>([]); // 文件名列表，UI 显示 progress
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [batchBusy, setBatchBusy] = useState(false);
 
   const visible =
     filter === "ALL" ? materials : materials.filter((m) => m.type === filter);
+
+  function exitSelect() {
+    setSelectMode(false);
+    setSelected(new Set());
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // 批量「把选中的商品图变成商品」:复用后端 listing-batches —— 每张图建一张商品卡 + 出 Listing(文案+主图)。
+  async function runBatch() {
+    if (gateGuest()) return;
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    if (
+      !confirm(
+        `将为 ${ids.length} 张图各生成一张商品卡和一套 Listing(标题/五点/A+/主图)。\n` +
+          `预计最多消耗约 ${ids.length * PER_IMAGE_CREDITS} 积分(主图按实际生成张数计)。继续?`,
+      )
+    )
+      return;
+    setBatchBusy(true);
+    try {
+      await apiBrowser(`/workspaces/${workspaceId}/listing-batches`, {
+        method: "POST",
+        body: JSON.stringify({ materialIds: ids }),
+      });
+      toast.success(`已创建 ${ids.length} 张商品卡,正在生成 Listing…`);
+      exitSelect();
+      router.push("/app/discover/favorites"); // 去商品模块看卡片「生成中 → 成品」自填充
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "批量生成失败");
+    } finally {
+      setBatchBusy(false);
+    }
+  }
 
   async function uploadFiles(files: FileList | File[]) {
     if (gateGuest()) return;
@@ -150,6 +203,19 @@ export function MaterialsClient({
           </>
         }
         actions={
+          <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              selectMode
+                ? "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
+                : "bg-brand-600 text-white shadow-sm hover:bg-brand-700"
+            }`}
+            title="多选商品图,批量生成商品卡 + Listing"
+          >
+            {selectMode ? <X className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5" />}
+            {selectMode ? "退出多选" : "批量做商品"}
+          </button>
           <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
             {filters.map((f) => (
               <button
@@ -169,6 +235,7 @@ export function MaterialsClient({
                 </span>
               </button>
             ))}
+          </div>
           </div>
         }
       />
@@ -235,9 +302,33 @@ export function MaterialsClient({
           {visible.map((m) => {
             const tm = typeMeta[m.type];
             const Icon = tm.icon;
+            const selectable = m.type === "IMAGE"; // 只有商品图能「做商品」(后端也只认 IMAGE)
+            const isSel = selected.has(m.id);
+            const picking = selectMode && selectable;
             return (
-              <div key={m.id} className="group relative rounded-xl border border-zinc-200/80 bg-white overflow-hidden">
+              <div
+                key={m.id}
+                onClick={picking ? () => toggleSelect(m.id) : undefined}
+                className={`group relative rounded-xl border bg-white overflow-hidden transition ${
+                  picking ? "cursor-pointer" : ""
+                } ${
+                  isSel
+                    ? "border-brand-500 ring-2 ring-brand-500/40"
+                    : "border-zinc-200/80"
+                } ${selectMode && !selectable ? "opacity-40" : ""}`}
+              >
                 <div className="aspect-square bg-zinc-50 flex items-center justify-center relative">
+                  {picking && (
+                    <span
+                      className={`absolute right-2 top-2 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${
+                        isSel
+                          ? "border-brand-600 bg-brand-600 text-white"
+                          : "border-white bg-black/30 text-transparent"
+                      }`}
+                    >
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
                   {m.type === "IMAGE" || m.type === "LOGO" || m.type === "WATERMARK" ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.url} alt={m.originalName} className="absolute inset-0 h-full w-full object-cover" />
@@ -250,14 +341,16 @@ export function MaterialsClient({
                     <Icon className="h-2.5 w-2.5" />
                     {tm.cn}
                   </span>
-                  <button
-                    onClick={() => deleteMaterial(m.id)}
-                    className="absolute right-2 top-2 hidden group-hover:inline-flex items-center justify-center rounded-full bg-rose-500/90 p-1 text-white hover:bg-rose-600"
-                    title="删除"
-                  >
-                    <Trash2 className="h-2.5 w-2.5" />
-                  </button>
-                  {(m.type === "IMAGE" || m.type === "LOGO" || m.type === "WATERMARK") && (
+                  {!selectMode && (
+                    <button
+                      onClick={() => deleteMaterial(m.id)}
+                      className="absolute right-2 top-2 hidden group-hover:inline-flex items-center justify-center rounded-full bg-rose-500/90 p-1 text-white hover:bg-rose-600"
+                      title="删除"
+                    >
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                  {!selectMode && (m.type === "IMAGE" || m.type === "LOGO" || m.type === "WATERMARK") && (
                     <button
                       onClick={() => makeListing(m.id)}
                       className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-sky-600/95 px-2 py-1 text-2xs font-medium text-white shadow-sm hover:bg-sky-700"
@@ -280,6 +373,31 @@ export function MaterialsClient({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {selectMode && selected.size > 0 && (
+        <div className="sticky bottom-4 z-20 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full border border-zinc-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur">
+          <div className="text-xs text-zinc-600">
+            已选 <span className="font-semibold text-zinc-900">{selected.size}</span> 张
+            <span className="ml-1 text-zinc-400">· 预计最多约 {selected.size * PER_IMAGE_CREDITS} 积分</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelected(new Set())}
+              className="rounded-full px-3 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+            >
+              清空
+            </button>
+            <button
+              onClick={runBatch}
+              disabled={batchBusy}
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
+            >
+              {batchBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+              {batchBusy ? "提交中…" : "批量做商品"}
+            </button>
+          </div>
         </div>
       )}
     </div>

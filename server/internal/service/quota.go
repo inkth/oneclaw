@@ -162,6 +162,37 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 	})
 }
 
+// EnsureBudget 只读预检:本周期剩余积分是否够 need 这一整批消耗。不够返回 QUOTA_EXCEEDED。
+// 供批量操作的「整批前置校验」用(避免建到一半余额耗尽);逐笔 CheckAndRecord 仍是权威扣减。
+func (s *QuotaService) EnsureBudget(ctx context.Context, wsID uuid.UUID, need int) error {
+	if need <= 0 {
+		return nil
+	}
+	var ws model.Workspace
+	if err := s.db.WithContext(ctx).First(&ws, "id = ?", wsID).Error; err != nil {
+		return apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
+	}
+	plan := s.EffectivePlan(ctx, &ws)
+	limit := model.PlanCredits(plan)
+	if limit < 0 { // TEAM 不限量,不阻断
+		return nil
+	}
+	start, end := cycleBounds(billingAnchor(plan, &ws), time.Now())
+	used, _, err := cycleCredits(ctx, s.db, wsID, start, end)
+	if err != nil {
+		return err
+	}
+	if used+need > limit {
+		remain := limit - used
+		if remain < 0 {
+			remain = 0
+		}
+		return apperr.New(apperr.CodeQuotaExceeded,
+			fmt.Sprintf("本周期积分不足(剩 %d,本批需 %d),请减少数量或升级方案", remain, need))
+	}
+	return nil
+}
+
 // Refund 按来源退回配额(任务/视频终态失败时调用,best-effort)。
 func (s *QuotaService) Refund(ctx context.Context, refID uuid.UUID, kind string) {
 	if err := s.db.WithContext(ctx).
