@@ -21,6 +21,9 @@ const productBatchMax = 12
 // productShotCount 每个商品出几张展示图(各品类镜头组都保持这个数,前端积分预估也按它)。
 const productShotCount = 4
 
+// productMaxRefs 一个商品最多用几张原图作出图参考(同款多角度);过多反而干扰模型。
+const productMaxRefs = 4
+
 // productShotSets 各品类的「商品展示图」精选镜头组(每组 4 张):纯模板 + fal Seedream edit
 // (以用户原图为参考锚定真货),listingImage 会自动加「the exact same product…」前缀与
 // e-commerce 后缀,这里只描述构图。品类由 Gemini 看图判定(classifyProduct),判不出/失败回落 "other"。
@@ -121,70 +124,85 @@ type ProductBatchResult struct {
 	Items   []ProductBatchItem `json:"items"`
 }
 
-// CreateProductBatch 批量「把我拍的商品图变成商品」:每张已上传的图 → 建一张自建商品卡
-// (DiscoverProductID 为空)→ 据原图出 N 张商品展示图(白底/场景/细节/俯拍,fal edit,不调 LLM)。
-// 卡片随出图异步「出图中 → 就绪」自填充。文案不在这里出 —— 进商品详情页按需「生成 Listing」。
-func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, materialIDs []uuid.UUID) (*ProductBatchResult, error) {
+// CreateProductBatch 批量「把我拍的商品图变成商品」:每个 group(一组同款多角度的图)→ 建一张
+// 自建商品卡(DiscoverProductID 为空,SourceImages 存这组原图)→ 据这组图多参考出 N 张展示图
+// (白底/场景/细节/俯拍,fal edit,不调 LLM)。「各做1个」= 每组一张图;「合并为1个」= 一组多张。
+func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, groups [][]uuid.UUID) (*ProductBatchResult, error) {
 	if !s.fal.Configured() || !s.storage.Configured() {
 		return nil, apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
 	}
-	// 去重 + 上限。
-	seen := map[uuid.UUID]bool{}
-	ids := make([]uuid.UUID, 0, len(materialIDs))
-	for _, id := range materialIDs {
-		if id == uuid.Nil || seen[id] {
+	// 整理分组:组内去重、解析为有效图片 URL、参考图封顶;丢掉空组。
+	type grp struct {
+		ids  []uuid.UUID
+		urls []string
+	}
+	var prepared []grp
+	for _, g := range groups {
+		seen := map[uuid.UUID]bool{}
+		var ids []uuid.UUID
+		var urls []string
+		for _, id := range g {
+			if id == uuid.Nil || seen[id] {
+				continue
+			}
+			seen[id] = true
+			if u := s.materialImageURL(ctx, wsID, id); u != "" {
+				ids = append(ids, id)
+				urls = append(urls, u)
+			}
+		}
+		if len(urls) == 0 {
 			continue
 		}
-		seen[id] = true
-		ids = append(ids, id)
+		if len(urls) > productMaxRefs {
+			urls = urls[:productMaxRefs]
+			ids = ids[:productMaxRefs]
+		}
+		prepared = append(prepared, grp{ids: ids, urls: urls})
 	}
-	if len(ids) == 0 {
+	if len(prepared) == 0 {
 		return nil, apperr.BadRequest("请至少选择一张商品图")
 	}
-	if len(ids) > productBatchMax {
-		return nil, apperr.BadRequest(fmt.Sprintf("单批最多 %d 张,请分批处理", productBatchMax))
+	if len(prepared) > productBatchMax {
+		return nil, apperr.BadRequest(fmt.Sprintf("单批最多 %d 个商品,请分批处理", productBatchMax))
 	}
 
-	// 整批前置校验出图额度(每张商品 productShotCount 张图):不够整批拒,一张不建。
-	shots := productShotCount
-	need := model.CreditsFor(model.UsageImage, len(ids)*shots)
+	// 整批前置校验出图额度(每个商品 productShotCount 张图):不够整批拒,一个不建。
+	need := model.CreditsFor(model.UsageImage, len(prepared)*productShotCount)
 	if err := s.quota.EnsureBudget(ctx, wsID, need); err != nil {
 		return nil, err
 	}
 
 	res := &ProductBatchResult{BatchID: uuid.New()}
-	for _, mid := range ids {
-		url := s.materialImageURL(ctx, wsID, mid)
-		if url == "" {
-			logger.Warn("[agent] 批量做商品跳过无效素材", logger.String("material", mid.String()))
-			continue
-		}
+	for _, g := range prepared {
 		emoji := "🛍️"
+		cover := g.urls[0]
+		srcB, _ := json.Marshal(g.urls)
 		prod := model.Product{
 			WorkspaceID:  wsID,
-			Title:        s.materialTitle(ctx, wsID, mid),
+			Title:        s.materialTitle(ctx, wsID, g.ids[0]),
 			Category:     "我的商品",
 			Emoji:        &emoji,
 			CostSource:   model.CostSourceEstimate,
 			Status:       model.ProductEvaluating,
-			CoverURL:     &url, // 出图前先用原图占位,卡片即刻有图;出好后封面换成白底图。
+			CoverURL:     &cover, // 出图前先用原图占位,卡片即刻有图;出好后封面换成白底图。
+			SourceImages: model.JSONB(srcB),
 			ImagesStatus: listingImagesRunning,
 		}
 		if err := s.db.WithContext(ctx).Create(&prod).Error; err != nil {
-			logger.Warn("[agent] 批量建商品失败,跳过该图",
-				logger.String("material", mid.String()), logger.Err(err))
+			logger.Warn("[agent] 批量建商品失败,跳过该组", logger.Err(err))
 			continue
 		}
 		pid := prod.ID
 		// 出图额度逐商品扣(refID=商品):中途耗尽则该商品标失败并停,返回已建部分。
-		if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageImage, shots, &pid); err != nil {
+		if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageImage, productShotCount, &pid); err != nil {
 			s.db.WithContext(ctx).Model(&model.Product{}).Where("id = ?", pid).
 				Update("images_status", listingImagesFailed)
 			logger.Warn("[agent] 批量做商品额度耗尽,中止", logger.Err(err))
 			break
 		}
-		go s.runProductImages(pid, wsID, url)
-		res.Items = append(res.Items, ProductBatchItem{MaterialID: mid, ProductID: pid, Title: prod.Title})
+		go s.runProductImages(pid, wsID, g.urls)
+		res.Items = append(res.Items, ProductBatchItem{MaterialID: g.ids[0], ProductID: pid, Title: prod.Title})
 	}
 	if len(res.Items) == 0 {
 		return nil, apperr.BadRequest("没有可处理的商品图,请确认已上传图片素材")
@@ -194,19 +212,24 @@ func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, m
 
 // runProductImages 后台据原图并发出 N 张展示图 → 写 Product.Images + 封面(白底图)+ ImagesStatus。
 // 部分失败不拖垮:有图即 DONE;全军覆没 FAILED 并退回出图额度(部分成功不退,成本已花)。
-func (s *AgentService) runProductImages(productID, wsID uuid.UUID, photoURL string) {
+func (s *AgentService) runProductImages(productID, wsID uuid.UUID, photoURLs []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 	defer cancel()
 
-	// Gemini 看图判品类 → 该品类精选镜头组;判不出/失败回落通用 4 张(不阻断出图)。
-	shots := s.shotSetFor(ctx, photoURL)
+	ref0 := ""
+	if len(photoURLs) > 0 {
+		ref0 = photoURLs[0]
+	}
+	// Gemini 看(首张)图判品类 → 该品类精选镜头组;判不出/失败回落通用 4 张(不阻断出图)。
+	shots := s.shotSetFor(ctx, ref0)
 	urls := make([]string, len(shots))
 	var wg sync.WaitGroup
 	for i, prompt := range shots {
 		wg.Add(1)
 		go func(i int, prompt string) {
 			defer wg.Done()
-			u, err := s.listingImage(ctx, productID, i, prompt, photoURL)
+			// 多角度原图一起作参考(同款多图合并时),出图更保真一致。
+			u, err := s.listingImage(ctx, productID, i, prompt, photoURLs)
 			if err != nil {
 				logger.Warn("[agent] 商品展示图生成失败",
 					logger.String("product", productID.String()), logger.Err(err))

@@ -267,7 +267,8 @@ type PublishKit struct {
 		MarginPct  int       `json:"marginPct"`
 		Note         *string  `json:"note,omitempty"`
 		CoverURL     string   `json:"coverUrl,omitempty"`     // 当前商品主图
-		Images       []string `json:"images,omitempty"`       // 商品展示图(白底/场景/细节/俯拍)
+		Images       []string `json:"images,omitempty"`       // 生成的商品展示图(白底/场景/细节/俯拍)
+		SourceImages []string `json:"sourceImages,omitempty"` // 用户原图(多角度)
 		ImagesStatus string   `json:"imagesStatus,omitempty"` // 出图进度:RUNNING→详情页显示「出图中」
 	} `json:"product"`
 	Videos  []PublishKitVideo  `json:"videos"`
@@ -297,6 +298,9 @@ func (s *ProductService) PublishKit(ctx context.Context, wsID, pid uuid.UUID) (*
 	kit.Product.ImagesStatus = p.ImagesStatus
 	if len(p.Images) > 0 {
 		_ = json.Unmarshal(p.Images, &kit.Product.Images)
+	}
+	if len(p.SourceImages) > 0 {
+		_ = json.Unmarshal(p.SourceImages, &kit.Product.SourceImages)
 	}
 
 	// 该商品已出片的成片(可下载),新→旧。
@@ -348,17 +352,22 @@ func productImageURLs(p *model.Product) []string {
 		seen[u] = true
 		out = append(out, u)
 	}
-	if len(p.Images) > 0 {
+	addAll := func(raw model.JSONB) {
+		if len(raw) == 0 {
+			return
+		}
 		var imgs []string
-		if json.Unmarshal(p.Images, &imgs) == nil {
+		if json.Unmarshal(raw, &imgs) == nil {
 			for _, u := range imgs {
 				add(u)
 			}
 		}
 	}
+	addAll(p.Images) // 生成的展示图
 	if p.CoverURL != nil {
 		add(*p.CoverURL)
 	}
+	addAll(p.SourceImages) // 用户原图(多角度)
 	return out
 }
 

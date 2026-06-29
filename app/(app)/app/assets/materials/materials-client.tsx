@@ -108,16 +108,20 @@ export function MaterialsClient({
     });
   }
 
-  // 「把商品图变成商品」:每张图建一张商品卡 + 据原图出 4 张展示图(白底/场景/细节/俯拍)。
-  // 纯出图、不写文案(文案进商品详情页按需生成)。单图(卡片)与多选(底栏)走同一链路。
-  async function submitBatch(ids: string[]) {
+  // 「把商品图变成商品」:每个 group(一组图)= 一个商品,据组内原图(多角度多参考)出 4 张展示图。
+  // 纯出图、不写文案(文案进商品详情页按需生成)。groups 由调用方按「合并/各做」组装。
+  async function submitProducts(groups: string[][], merged: boolean) {
     if (gateGuest()) return;
-    if (ids.length === 0) return;
-    const noun = ids.length === 1 ? "这张图" : `${ids.length} 张图`;
+    const valid = groups.filter((g) => g.length > 0);
+    if (valid.length === 0) return;
+    const total = valid.reduce((n, g) => n + g.length, 0);
+    const desc = merged
+      ? `把选中的 ${total} 张图合并成 1 个商品(同款多角度),`
+      : `为 ${valid.length} 张图各做 1 个商品,`;
     if (
       !confirm(
-        `将为${noun}各做成一个商品,并据原图生成 ${SHOTS_PER_PRODUCT} 张商品展示图(白底/场景/细节/俯拍)。\n` +
-          `预计消耗约 ${ids.length * PER_IMAGE_CREDITS} 积分。继续?`,
+        `${desc}每个商品据原图生成 ${SHOTS_PER_PRODUCT} 张展示图(白底/场景/细节/俯拍)。\n` +
+          `预计消耗约 ${valid.length * PER_IMAGE_CREDITS} 积分。继续?`,
       )
     )
       return;
@@ -125,9 +129,9 @@ export function MaterialsClient({
     try {
       await apiBrowser(`/workspaces/${workspaceId}/product-batches`, {
         method: "POST",
-        body: JSON.stringify({ materialIds: ids }),
+        body: JSON.stringify({ groups: valid }),
       });
-      toast.success(`已创建 ${ids.length} 个商品,正在生成展示图…`);
+      toast.success(`已创建 ${valid.length} 个商品,正在生成展示图…`);
       exitSelect();
       router.push("/app/assets/products"); // 去「资产 · 我的商品」看卡片「出图中 → 已出图」自填充
     } catch (e) {
@@ -344,7 +348,7 @@ export function MaterialsClient({
                   )}
                   {!selectMode && m.type === "IMAGE" && (
                     <button
-                      onClick={() => submitBatch([m.id])}
+                      onClick={() => submitProducts([[m.id]], false)}
                       disabled={batchBusy}
                       className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-brand-600/95 px-2 py-1 text-2xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
                       title="用这张商品图建一张商品(看图写 Listing + 出主图),产出到「资产 · 我的商品」"
@@ -370,10 +374,9 @@ export function MaterialsClient({
       )}
 
       {selectMode && selected.size > 0 && (
-        <div className="sticky bottom-4 z-20 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full border border-zinc-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur">
+        <div className="sticky bottom-4 z-20 mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-full border border-zinc-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur">
           <div className="text-xs text-zinc-600">
             已选 <span className="font-semibold text-zinc-900">{selected.size}</span> 张
-            <span className="ml-1 text-zinc-400">· 预计最多约 {selected.size * PER_IMAGE_CREDITS} 积分</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -382,13 +385,24 @@ export function MaterialsClient({
             >
               清空
             </button>
+            {selected.size >= 2 && (
+              <button
+                onClick={() => submitProducts([Array.from(selected)], true)}
+                disabled={batchBusy}
+                title="选中的都是同一个商品的不同角度,合并成 1 个商品"
+                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+              >
+                合并为 1 个商品
+              </button>
+            )}
             <button
-              onClick={() => submitBatch(Array.from(selected))}
+              onClick={() => submitProducts(Array.from(selected).map((id) => [id]), false)}
               disabled={batchBusy}
+              title="每张图各做成一个商品"
               className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
             >
               {batchBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-              {batchBusy ? "提交中…" : "批量做商品"}
+              {batchBusy ? "提交中…" : selected.size >= 2 ? "各做 1 个商品" : "做成商品"}
             </button>
           </div>
         </div>

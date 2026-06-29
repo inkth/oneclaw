@@ -99,11 +99,11 @@ func (h *AgentHandler) Create(c *gin.Context) {
 }
 
 type productBatchReq struct {
-	// MaterialIDs 已上传到素材库的商品图 ID 列表(每张 → 一张自建商品卡 + N 张商品展示图)。
-	MaterialIDs []string `json:"materialIds" binding:"required"`
+	// Groups 分组:每个 group 是一组素材图 ID = 一个商品(「各做1个」→ 每组1张;「合并为1个」→ 一组多张)。
+	Groups [][]string `json:"groups" binding:"required"`
 }
 
-// ProductBatch 批量「把我拍的商品图变成商品」:多图一次扇出建商品卡 + 据原图出展示图(纯出图,无 LLM)。
+// ProductBatch 批量「把我拍的商品图变成商品」:按分组扇出建商品卡 + 据原图(多角度多参考)出展示图。
 func (h *AgentHandler) ProductBatch(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)
 	if !ok {
@@ -111,19 +111,25 @@ func (h *AgentHandler) ProductBatch(c *gin.Context) {
 	}
 	var in productBatchReq
 	if err := c.ShouldBindJSON(&in); err != nil {
-		_ = c.Error(apperr.BadRequest("参数缺失:需要 materialIds"))
+		_ = c.Error(apperr.BadRequest("参数缺失:需要 groups"))
 		return
 	}
-	ids := make([]uuid.UUID, 0, len(in.MaterialIDs))
-	for _, raw := range in.MaterialIDs {
-		v, err := uuid.Parse(strings.TrimSpace(raw))
-		if err != nil {
-			_ = c.Error(apperr.BadRequest("materialId 无效:" + raw))
-			return
+	groups := make([][]uuid.UUID, 0, len(in.Groups))
+	for _, g := range in.Groups {
+		ids := make([]uuid.UUID, 0, len(g))
+		for _, raw := range g {
+			v, err := uuid.Parse(strings.TrimSpace(raw))
+			if err != nil {
+				_ = c.Error(apperr.BadRequest("materialId 无效:" + raw))
+				return
+			}
+			ids = append(ids, v)
 		}
-		ids = append(ids, v)
+		if len(ids) > 0 {
+			groups = append(groups, ids)
+		}
 	}
-	res, err := h.agents.CreateProductBatch(c.Request.Context(), wid, ids)
+	res, err := h.agents.CreateProductBatch(c.Request.Context(), wid, groups)
 	if err != nil {
 		_ = c.Error(err)
 		return

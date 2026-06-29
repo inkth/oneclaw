@@ -260,12 +260,16 @@ func (s *AgentService) runListingImages(taskID, wsID uuid.UUID, prompts []string
 	}
 
 	urls := make([]string, len(prompts))
+	var refs []string
+	if coverURL != "" {
+		refs = []string{coverURL}
+	}
 	var wg sync.WaitGroup
 	for i, p := range prompts {
 		wg.Add(1)
 		go func(i int, prompt string) {
 			defer wg.Done()
-			u, err := s.listingImage(ctx, taskID, i, prompt, coverURL)
+			u, err := s.listingImage(ctx, taskID, i, prompt, refs)
 			if err != nil {
 				logger.Warn("[agent] listing 主图生成失败",
 					logger.String("task", taskID.String()), logger.Err(err))
@@ -314,12 +318,12 @@ func (s *AgentService) runListingImages(taskID, wsID uuid.UUID, prompts []string
 
 // listingImage 生成并上传单张主图(走 fal 队列 API,短请求轮询,跨境不被长连接卡死)。
 // 有商品实拍图时用 Seedream edit 以真货为参考锚定外观,否则 text-to-image;每张最多 2 次尝试。
-func (s *AgentService) listingImage(ctx context.Context, taskID uuid.UUID, idx int, prompt, coverURL string) (string, error) {
+func (s *AgentService) listingImage(ctx context.Context, taskID uuid.UUID, idx int, prompt string, refURLs []string) (string, error) {
 	const suffix = ", professional e-commerce product photo, clean composition, photorealistic, no text, no watermark"
 	modelPath, refs := personaT2IModel, []string(nil)
-	if coverURL != "" {
-		modelPath, refs = personaEditModel, []string{coverURL}
-		prompt = "the exact same product from the reference photo, " + prompt
+	if len(refURLs) > 0 {
+		modelPath, refs = personaEditModel, refURLs
+		prompt = "the exact same product from the reference photo(s), " + prompt
 	}
 	var lastErr error
 	for attempt := 1; attempt <= 2; attempt++ {

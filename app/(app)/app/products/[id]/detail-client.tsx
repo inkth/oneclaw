@@ -34,6 +34,7 @@ export type Kit = {
     note?: string | null;
     coverUrl?: string;
     images?: string[];
+    sourceImages?: string[];
     imagesStatus?: string;
   };
   videos: { id: string; title: string; videoUrl?: string | null; thumbnailUrl?: string | null }[];
@@ -94,9 +95,13 @@ export function ProductDetail({
   const p = kit.product;
   const listing = kit.listing;
   const videos = kit.videos ?? []; // 后端无成片时返回 null,这里兜底成空数组,避免 .length 崩页
-  // 画廊 = 商品展示图(批量出的白底/场景/细节/俯拍)+ 当前封面 + Listing 主图(按需文案出的)。
+  // 画廊 = 生成的展示图 + 当前封面 + Listing 主图 + 用户原图(多角度),去重。
   const gallery = Array.from(
-    new Set([...(p.images ?? []), p.coverUrl, ...(listing?.images ?? [])].filter(Boolean) as string[]),
+    new Set(
+      [...(p.images ?? []), p.coverUrl, ...(listing?.images ?? []), ...(p.sourceImages ?? [])].filter(
+        Boolean,
+      ) as string[],
+    ),
   );
   const imagingShots = p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING";
 
