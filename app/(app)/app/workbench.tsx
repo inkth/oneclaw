@@ -154,6 +154,8 @@ export function Workbench({
 
   function pickQuickAction(a: QuickAction) {
     if (a.agent) setActiveAgent(a.agent);
+    // Listing 卡带子模式:上身图卡切 tryon,文案卡回 copy(切走后再回也保持一致)。
+    if (a.listingMode) setListingMode(a.listingMode);
     if (a.promptTemplate) focusInput(a.promptTemplate);
   }
 
@@ -182,7 +184,8 @@ export function Workbench({
       materialId={materialId}
       onMaterialChange={setMaterialId}
       listingMode={listingMode}
-      onListingModeChange={setListingMode}
+      // 有快捷卡的页面(首页)靠卡切「文案/上身图」,不渲染底栏开关;会话页没卡,才给开关。
+      onListingModeChange={showQuickActions ? undefined : setListingMode}
       showAssetChips={showAssetChips}
       textareaRef={textareaRef}
       allowReview={allowReview}
@@ -254,8 +257,12 @@ export function Workbench({
         {composer}
       </div>
 
-      {showQuickActions && !(activeAgent === "LISTING" && listingMode === "tryon") && (
-        <QuickActionCards activeAgent={activeAgent} onPick={pickQuickAction} />
+      {showQuickActions && (
+        <QuickActionCards
+          activeAgent={activeAgent}
+          listingMode={listingMode}
+          onPick={pickQuickAction}
+        />
       )}
 
       {showPresets && (

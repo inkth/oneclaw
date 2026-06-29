@@ -135,8 +135,9 @@ export function AgentComposer({
   onPersonaChange?: (id: string | null) => void;
   materialId?: string | null;
   onMaterialChange?: (id: string | null) => void;
-  /** Listing 子模式:文案 / 上身图(试穿);由 Workbench 持有,切走 Listing 自动回 copy。 */
+  /** Listing 子模式:文案 / 上身图(试穿);由 Workbench 持有。 */
   listingMode?: ListingMode;
+  /** 传入则在底栏渲染「文案/上身图」分段开关:仅在没有快捷卡的会话页用(首页靠卡切换)。 */
   onListingModeChange?: (m: ListingMode) => void;
   /** 是否在底栏展示资产选择器(创作页开)。 */
   showAssetChips?: boolean;
@@ -311,25 +312,6 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
-        {/* Listing 子模式切换:文案 / 上身图(试穿)。仅 Listing 显示,折叠原虚拟试穿胶囊。 */}
-        {activeAgent === "LISTING" && (
-          <div className="flex flex-wrap items-center gap-1.5 px-4 pt-3">
-            <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
-              <SubModeButton active={!isTryOn} icon={LayoutList} onClick={() => onListingModeChange?.("copy")}>
-                文案
-              </SubModeButton>
-              <SubModeButton active={isTryOn} icon={Shirt} onClick={() => onListingModeChange?.("tryon")}>
-                上身图
-              </SubModeButton>
-            </div>
-            <span className="text-2xs text-zinc-400">
-              {isTryOn
-                ? "真人上身效果图 · 自动存入素材库，做视频可复用"
-                : "标题 / 卖点 / A+ / 主图方案"}
-            </span>
-          </div>
-        )}
-
         {/* 关联商品 chip:收藏接力带入(创作页有 AssetChips 时由选择器展示,不重复出 chip) */}
         {!showAssetChips && !isTryOn && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
@@ -399,6 +381,18 @@ export function AgentComposer({
 
         {/* 底栏:左「+ 添加」附件(仅含复盘的页面),右黑色发送 */}
         <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+          {/* 会话页没有快捷卡,用底栏分段开关切「文案/上身图」;首页该开关不渲染,改由快捷卡切换。 */}
+          {activeAgent === "LISTING" && onListingModeChange && (
+            <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
+              <SubModeButton active={!isTryOn} icon={LayoutList} onClick={() => onListingModeChange("copy")}>
+                文案
+              </SubModeButton>
+              <SubModeButton active={isTryOn} icon={Shirt} onClick={() => onListingModeChange("tryon")}>
+                上身图
+              </SubModeButton>
+            </div>
+          )}
+
           {isReview && (
             <>
               <input
