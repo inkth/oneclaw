@@ -91,7 +91,8 @@ export function FavoritesClient({
   const [tab, setTab] = useState<TabKey>("product");
 
   const counts: Record<TabKey, number> = {
-    product: products.length,
+    // 自建商品移到「资产 · 我的商品」,收藏页只计 EchoTik 收藏。
+    product: products.filter((p) => p.discoverProductId).length,
     seller: favorites.filter((f) => f.kind === "seller").length,
     influencer: favorites.filter((f) => f.kind === "influencer").length,
     video: favorites.filter((f) => f.kind === "video").length,
@@ -139,7 +140,7 @@ export function FavoritesClient({
       </div>
 
       {tab === "product" ? (
-        <ProductsClient embedded workspaceId={workspaceId} initialProducts={products} />
+        <ProductsClient embedded scope="discover" workspaceId={workspaceId} initialProducts={products} />
       ) : (
         <EntityGrid items={favorites.filter((f) => f.kind === tab)} rounded={tab === "influencer"} />
       )}

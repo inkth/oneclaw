@@ -234,11 +234,11 @@ export function ProductDetail({
   return (
     <div className="space-y-6">
       <Link
-        href="/app/discover/favorites"
+        href="/app/assets/products"
         className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-brand-700"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        返回商品
+        返回我的商品
       </Link>
 
       <PageHeader
