@@ -135,6 +135,7 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/agent-tasks/:tid/redraft", agentH.RedraftVideo)
 		priv.POST("/workspaces/:wid/agent-tasks/:tid/rewrite", agentH.RewriteVideo)
 		priv.POST("/workspaces/:wid/agent-tasks/:tid/images", agentH.GenerateImages)
+		priv.POST("/workspaces/:wid/listing-batches", agentH.ListingBatch)
 
 		priv.GET("/workspaces/:wid/videos", videoH.List)
 		priv.GET("/workspaces/:wid/videos/:vid", videoH.Detail)

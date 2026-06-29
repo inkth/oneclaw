@@ -20,6 +20,8 @@ type GoProduct = {
   trendDelta: number;
   status: "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
   note: string | null;
+  coverUrl?: string;
+  listingStatus?: "GENERATING" | "IMAGING" | "READY" | "FAILED" | "";
 };
 
 export default async function FavoritesPage() {
@@ -77,6 +79,8 @@ export default async function FavoritesPage() {
         trendDelta: p.trendDelta,
         status: p.status,
         note: p.note,
+        coverUrl: p.coverUrl,
+        listingStatus: p.listingStatus,
         shop: null,
       }))}
       favorites={items}

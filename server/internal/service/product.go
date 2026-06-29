@@ -53,9 +53,12 @@ type ProductPatch struct {
 }
 
 // ProductListItem 列表项:商品本体 + 关联 EchoTik 主图(coverUrl),供前端选择器显示缩略图。
+// ListingStatus:该商品最近一次 Listing 生成的进度(自建商品批量出 Listing 时,卡片据此显示
+// 「生成中 / 出图中 / 已就绪 / 失败」并轮询);无 Listing 任务时为空。
 type ProductListItem struct {
 	model.Product
-	CoverURL string `json:"coverUrl,omitempty"`
+	CoverURL      string `json:"coverUrl,omitempty"`
+	ListingStatus string `json:"listingStatus,omitempty"` // GENERATING | IMAGING | READY | FAILED | ""
 }
 
 func (s *ProductService) List(ctx context.Context, wsID uuid.UUID) ([]ProductListItem, error) {
@@ -93,6 +96,9 @@ func (s *ProductService) List(ctx context.Context, wsID uuid.UUID) ([]ProductLis
 		}
 	}
 
+	// 批量取每个商品最近一条 LISTING 任务的进度,一次查询避免 N+1。
+	listingStatus := s.listingStatusByProduct(ctx, wsID)
+
 	out := make([]ProductListItem, len(items))
 	for i, p := range items {
 		out[i] = ProductListItem{Product: p}
@@ -102,8 +108,57 @@ func (s *ProductService) List(ctx context.Context, wsID uuid.UUID) ([]ProductLis
 		} else if p.DiscoverProductID != nil {
 			out[i].CoverURL = coverByDP[*p.DiscoverProductID]
 		}
+		out[i].ListingStatus = listingStatus[p.ID.String()]
 	}
 	return out, nil
+}
+
+// listingStatusByProduct 返回每个商品最近一条 LISTING 任务的派生进度(productId → 状态)。
+// LISTING 任务把 productId 存在 metadata 里;按创建时间倒序,每个商品只取最新一条。
+func (s *ProductService) listingStatusByProduct(ctx context.Context, wsID uuid.UUID) map[string]string {
+	type row struct {
+		ProductID    string
+		Status       string
+		ImagesStatus string
+	}
+	var rows []row
+	if err := s.db.WithContext(ctx).Model(&model.AgentTask{}).
+		Select("metadata->>'productId' AS product_id, status, metadata->>'imagesStatus' AS images_status").
+		Where("workspace_id = ? AND agent = ? AND metadata->>'productId' <> ''", wsID, model.AgentListing).
+		Order("created_at DESC").
+		Scan(&rows).Error; err != nil {
+		return map[string]string{}
+	}
+	out := make(map[string]string, len(rows))
+	for _, r := range rows {
+		if r.ProductID == "" {
+			continue
+		}
+		if _, seen := out[r.ProductID]; seen {
+			continue // 仅取最新一条
+		}
+		out[r.ProductID] = deriveListingStatus(r.Status, r.ImagesStatus)
+	}
+	return out
+}
+
+// deriveListingStatus 把(任务状态, 出图状态)折成前端用的 Listing 进度。
+// 文案完成但出图还在跑 → IMAGING;出图失败仍算 READY(文案可用,出图可手动重试)。
+func deriveListingStatus(taskStatus, imagesStatus string) string {
+	switch taskStatus {
+	case model.TaskQueued, model.TaskRunning:
+		return "GENERATING"
+	case model.TaskFailed:
+		return "FAILED"
+	case model.TaskDone:
+		switch imagesStatus {
+		case listingImagesPending, listingImagesRunning:
+			return "IMAGING"
+		default:
+			return "READY"
+		}
+	}
+	return ""
 }
 
 func (s *ProductService) Create(ctx context.Context, wsID uuid.UUID, in ProductInput) (*model.Product, error) {
@@ -227,19 +282,35 @@ type PublishKitVideo struct {
 	ThumbnailURL *string   `json:"thumbnailUrl,omitempty"`
 }
 
+type PublishKitAplus struct {
+	Heading     string `json:"heading"`
+	Body        string `json:"body"`
+	ImagePrompt string `json:"imagePrompt"`
+}
+
 type PublishKitListing struct {
-	Title         string   `json:"title"`
-	SellingPoints []string `json:"sellingPoints"`
-	Hashtags      []string `json:"hashtags"`
-	Images        []string `json:"images,omitempty"`
+	TaskID        uuid.UUID         `json:"taskId"`
+	Title         string            `json:"title"`
+	SellingPoints []string          `json:"sellingPoints"`
+	Hashtags      []string          `json:"hashtags"`
+	AplusSections []PublishKitAplus `json:"aplusSections,omitempty"`
+	Images        []string          `json:"images,omitempty"`
+	ImagePrompts  []string          `json:"imagePrompts,omitempty"`
+	ImagesStatus  string            `json:"imagesStatus,omitempty"` // PENDING|RUNNING|DONE|FAILED;详情页据此显示「补主图」
 }
 
 type PublishKit struct {
 	Product struct {
-		ID     uuid.UUID `json:"id"`
-		Title  string    `json:"title"`
-		Emoji  *string   `json:"emoji,omitempty"`
-		Status string    `json:"status"`
+		ID         uuid.UUID `json:"id"`
+		Title      string    `json:"title"`
+		Emoji      *string   `json:"emoji,omitempty"`
+		Status     string    `json:"status"`
+		PriceCents int       `json:"priceCents"`
+		CostCents  int       `json:"costCents"`
+		CostSource string    `json:"costSource"`
+		MarginPct  int       `json:"marginPct"`
+		Note       *string   `json:"note,omitempty"`
+		CoverURL   string    `json:"coverUrl,omitempty"` // 当前商品主图(自建商品初始=用户原图)
 	} `json:"product"`
 	Videos  []PublishKitVideo  `json:"videos"`
 	Listing *PublishKitListing `json:"listing,omitempty"`
@@ -257,6 +328,14 @@ func (s *ProductService) PublishKit(ctx context.Context, wsID, pid uuid.UUID) (*
 	kit.Product.Title = p.Title
 	kit.Product.Emoji = p.Emoji
 	kit.Product.Status = p.Status
+	kit.Product.PriceCents = p.PriceCents
+	kit.Product.CostCents = p.CostCents
+	kit.Product.CostSource = p.CostSource
+	kit.Product.MarginPct = p.MarginPct
+	kit.Product.Note = p.Note
+	if p.CoverURL != nil {
+		kit.Product.CoverURL = strings.TrimSpace(*p.CoverURL)
+	}
 
 	// 该商品已出片的成片(可下载),新→旧。
 	var vids []model.Video
@@ -276,14 +355,19 @@ func (s *ProductService) PublishKit(ctx context.Context, wsID, pid uuid.UUID) (*
 			wsID, model.AgentListing, model.TaskDone, pid.String()).
 		Order("created_at DESC").First(&lt).Error; e == nil && len(lt.Metadata) > 0 {
 		var m struct {
-			Title         string   `json:"title"`
-			SellingPoints []string `json:"sellingPoints"`
-			Hashtags      []string `json:"hashtags"`
-			Images        []string `json:"images"`
+			Title         string            `json:"title"`
+			SellingPoints []string          `json:"sellingPoints"`
+			Hashtags      []string          `json:"hashtags"`
+			AplusSections []PublishKitAplus `json:"aplusSections"`
+			Images        []string          `json:"images"`
+			ImagePrompts  []string          `json:"imagePrompts"`
+			ImagesStatus  string            `json:"imagesStatus"`
 		}
 		if json.Unmarshal(lt.Metadata, &m) == nil && m.Title != "" {
 			kit.Listing = &PublishKitListing{
-				Title: m.Title, SellingPoints: m.SellingPoints, Hashtags: m.Hashtags, Images: m.Images,
+				TaskID: lt.ID, Title: m.Title, SellingPoints: m.SellingPoints, Hashtags: m.Hashtags,
+				AplusSections: m.AplusSections, Images: m.Images,
+				ImagePrompts: m.ImagePrompts, ImagesStatus: m.ImagesStatus,
 			}
 		}
 	}

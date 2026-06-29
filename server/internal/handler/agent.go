@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -89,6 +91,41 @@ func (h *AgentHandler) Create(c *gin.Context) {
 		return
 	}
 	Created(c, gin.H{"task": t})
+}
+
+type listingBatchReq struct {
+	// MaterialIDs 已上传到素材库的商品图 ID 列表(每张 → 一张自建商品卡 + 一个 LISTING 任务)。
+	MaterialIDs []string `json:"materialIds" binding:"required"`
+	// Prompt 可选补充说明(留空用默认看图指令)。
+	Prompt string `json:"prompt"`
+}
+
+// ListingBatch 批量「把我拍的商品图变成商品」:多图一次扇出建商品卡 + 文案+主图一起出。
+func (h *AgentHandler) ListingBatch(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	var in listingBatchReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数缺失:需要 materialIds"))
+		return
+	}
+	ids := make([]uuid.UUID, 0, len(in.MaterialIDs))
+	for _, raw := range in.MaterialIDs {
+		v, err := uuid.Parse(strings.TrimSpace(raw))
+		if err != nil {
+			_ = c.Error(apperr.BadRequest("materialId 无效:" + raw))
+			return
+		}
+		ids = append(ids, v)
+	}
+	res, err := h.agents.CreateListingBatch(c.Request.Context(), wid, ids, in.Prompt)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	Created(c, gin.H{"batch": res})
 }
 
 type confirmVideoReq struct {
