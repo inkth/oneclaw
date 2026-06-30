@@ -18,6 +18,9 @@ import (
 // 服务端单页最多 10 条;要更多就多页并发拉。
 const maxPageSize = 10
 
+// maxPageConcurrency 单次榜单多页拉取的最大并发,防深页预热把 EchoTik 打到 429。
+const maxPageConcurrency = 4
+
 type Client struct {
 	cfg  config.EchoTikConfig
 	http *http.Client
@@ -91,6 +94,9 @@ func (c *Client) GetProductRanklist(ctx context.Context, p RanklistParams) ([]Pr
 	for _, date := range dates {
 		results := make([][]ProductListItem, pagesNeeded)
 		g, gctx := errgroup.WithContext(ctx)
+		// 限并发:深页预热(page_size=160→16 页)若全并发会被 EchoTik 429。
+		// 4 与旧默认(page_size=30→3 页)同量级,既不限流又够快。
+		g.SetLimit(maxPageConcurrency)
 		for i := 0; i < pagesNeeded; i++ {
 			i := i
 			g.Go(func() error {
