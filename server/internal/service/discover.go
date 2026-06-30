@@ -126,9 +126,11 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		state = "mock"
 	}
 
-	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;cache/snapshot 仅 live 且非类目筛选;
-	//    封面永久化对所有 live 数据都做——含类目筛选,修复"切分类后无图")。
-	dps := s.persist(ctx, p, raw, state == "live" && useCache, state == "live")
+	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;封面永久化对所有 live 数据都做——含类目筛选)。
+	//    榜单缓存(整张有序 ExternalIDs)只许「全部·第 1 页」这种完整深度拉取写入;page>1 的兜底
+	//    只取该页 16 条,若也写缓存会把整张榜覆盖成单页(useCache 已放宽到前 10 页,故不能再用它当写闸)。
+	writeCache := state == "live" && p.CategoryID == "" && p.PageNum <= 1
+	dps := s.persist(ctx, p, raw, writeCache, state == "live")
 	var fetchedAt *time.Time
 	if state == "live" {
 		now := time.Now()
