@@ -24,6 +24,9 @@ const productShotCount = 4
 // productMaxRefs 一个商品最多用几张原图作出图参考(同款多角度);过多反而干扰模型。
 const productMaxRefs = 4
 
+// defaultProductTitle 自建商品的占位标题;生成 Listing 后回填成 Listing 标题(仍是此值才覆盖,不动用户改过的)。
+const defaultProductTitle = "我的商品"
+
 // productShotSets 各品类的「商品展示图」精选镜头组(每组 4 张):纯模板 + fal Seedream edit
 // (以用户原图为参考锚定真货),listingImage 会自动加「the exact same product…」前缀与
 // e-commerce 后缀,这里只描述构图。品类由 Gemini 看图判定(classifyProduct),判不出/失败回落 "other"。
@@ -180,7 +183,7 @@ func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, g
 		srcB, _ := json.Marshal(g.urls)
 		prod := model.Product{
 			WorkspaceID:  wsID,
-			Title:        s.materialTitle(ctx, wsID, g.ids[0]),
+			Title:        defaultProductTitle, // 占位;生成 Listing 后回填成 Listing 标题
 			Category:     "我的商品",
 			Emoji:        &emoji,
 			CostSource:   model.CostSourceEstimate,
@@ -267,21 +270,4 @@ func (s *AgentService) runProductImages(productID, wsID uuid.UUID, photoURLs []s
 			"cover_url":     done[0],
 			"images_status": listingImagesDone,
 		})
-}
-
-// materialTitle 用素材文件名(去扩展名)作自建商品的临时标题;用户可在详情页改名。
-func (s *AgentService) materialTitle(ctx context.Context, wsID, materialID uuid.UUID) string {
-	var m model.Material
-	if err := s.db.WithContext(ctx).Select("original_name").
-		Where("id = ? AND workspace_id = ?", materialID, wsID).First(&m).Error; err != nil {
-		return "我的商品"
-	}
-	name := strings.TrimSpace(m.OriginalName)
-	if i := strings.LastIndex(name, "."); i > 0 {
-		name = strings.TrimSpace(name[:i])
-	}
-	if name == "" {
-		return "我的商品"
-	}
-	return name
 }

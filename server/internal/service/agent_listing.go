@@ -176,6 +176,13 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	}
 	if productID != nil {
 		meta["productId"] = productID.String()
+		// Listing 文案生成后,把商品标题从占位(空/「我的商品」)回填成 Listing 标题;
+		// 已被用户/上次改过名的(其它值)不覆盖。截断防过长。
+		if out.Title != "" {
+			s.db.WithContext(ctx).Model(&model.Product{}).
+				Where("id = ? AND workspace_id = ? AND (title = '' OR title = ?)", *productID, wsID, defaultProductTitle).
+				Update("title", firstN(out.Title, 120))
+		}
 	}
 	if coverURL != "" {
 		meta["coverUrl"] = coverURL

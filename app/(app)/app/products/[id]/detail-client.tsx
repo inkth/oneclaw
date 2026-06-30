@@ -87,7 +87,6 @@ export function ProductDetail({
   const [costDraft, setCostDraft] = useState((kit.product.costCents / 100).toFixed(2));
   const [savingInfo, setSavingInfo] = useState(false);
   const [imaging, setImaging] = useState(false);
-  const [rewriting, setRewriting] = useState(false);
   const [coverBusy, setCoverBusy] = useState<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -211,42 +210,12 @@ export function ProductDetail({
     }
   }
 
-  // 重写 Listing:基于当前商品派一个新的 LISTING 任务(文案),完成后刷新详情。
-  async function rewriteListing() {
-    if (!confirm("将基于这个商品重新生成一套 Listing 文案(约 3 积分)。继续?")) return;
-    setRewriting(true);
-    try {
-      const { task } = await apiBrowser<{ task: { id: string } }>(
-        `/workspaces/${workspaceId}/agent-tasks`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            agent: "LISTING",
-            productId,
-            input: `为「${p.title}」重新生成一套 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案。`,
-          }),
-        },
-      );
-      for (let i = 0; i < 36 && mounted.current; i++) {
-        await sleep(5000);
-        const { task: t } = await apiBrowser<{ task: { status: string } }>(
-          `/workspaces/${workspaceId}/agent-tasks/${task.id}`,
-        );
-        if (t.status === "DONE" || t.status === "FAILED") {
-          if (t.status === "DONE") {
-            await refetchKit();
-            toast.success("Listing 已重写,可继续补主图");
-          } else {
-            toast.error("重写失败,请重试");
-          }
-          break;
-        }
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "重写失败");
-    } finally {
-      if (mounted.current) setRewriting(false);
-    }
+  // 生成/重写 Listing 进入会话:带商品上下文跳工作台,在会话里可用语言指挥改哪里、强调什么,
+  // 反复优化(一次性在详情页改不如对话顺手)。生成的 Listing 关联本商品,回详情即见最新。
+  function goListingChat() {
+    const prompt =
+      "为这个商品生成/优化一套 TikTok Shop Listing(标题/五点卖点/A+/主图)。可以直接说要强调什么、改哪一段。";
+    router.push(`/app?agent=LISTING&productId=${productId}&prompt=${encodeURIComponent(prompt)}`);
   }
 
   const canAddImages = !!listing && (listing.imagePrompts?.length ?? 0) > 0 && listing.imagesStatus !== "RUNNING";
@@ -449,11 +418,10 @@ export function ProductDetail({
               <Sparkles className="mx-auto h-6 w-6 text-zinc-300" />
               <p className="mt-2 text-sm text-zinc-600">这个商品还没有 Listing</p>
               <button
-                onClick={rewriteListing}
-                disabled={rewriting}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                onClick={goListingChat}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
               >
-                {rewriting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                <Sparkles className="h-3.5 w-3.5" />
                 生成 Listing
               </button>
             </div>
@@ -463,12 +431,12 @@ export function ProductDetail({
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-zinc-900">Listing 文案</h3>
                   <button
-                    onClick={rewriteListing}
-                    disabled={rewriting}
-                    className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700 disabled:opacity-60"
+                    onClick={goListingChat}
+                    title="去会话里重新生成,可用语言指挥改哪段、强调什么"
+                    className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
                   >
-                    {rewriting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                    重写
+                    <RefreshCw className="h-3 w-3" />
+                    去会话重写
                   </button>
                 </div>
 
@@ -519,13 +487,12 @@ export function ProductDetail({
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-zinc-900">A+ 图文结构</h3>
                     <button
-                      onClick={rewriteListing}
-                      disabled={rewriting}
-                      title="重新生成整套 Listing(含 A+)"
-                      className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700 disabled:opacity-60"
+                      onClick={goListingChat}
+                      title="去会话里重新生成,可用语言指挥改哪段、强调什么"
+                      className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
                     >
-                      {rewriting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                      重新生成
+                      <RefreshCw className="h-3 w-3" />
+                      去会话重新生成
                     </button>
                   </div>
                   <div className="space-y-3">
