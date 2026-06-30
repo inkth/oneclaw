@@ -21,6 +21,12 @@ import (
 const (
 	providerEchoTik = "echotik"
 	cacheTTL        = 6 * time.Hour
+
+	// maxDiscoverPageNum 商品榜本地化的页数上限,与 handler.maxDiscoverPage 对齐。
+	maxDiscoverPageNum = 10
+	// ranklistPageSize 前端商品榜每页条数,与 page.tsx 的 page_size 对齐;
+	// 缓存整张深度 = maxDiscoverPageNum * ranklistPageSize = 160(见 DISCOVER_SYNC_PAGE_SIZE)。
+	ranklistPageSize = 16
 )
 
 type DiscoverService struct {
@@ -72,15 +78,22 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		return s.searchProducts(ctx, wsID, p), nil
 	}
 
-	// 全局榜单缓存键不含 category/页码,按类目筛选或翻页(第 2 页起)时绕过缓存(实时拉、不写缓存)。
-	useCache := p.CategoryID == "" && p.PageNum <= 1
+	// 「全部」榜单:整张有序 ExternalIDs 缓存在一条记录里,前 maxDiscoverPage(10)页都按页切片本地读、
+	// 零 EchoTik;预热深度由 DISCOVER_SYNC_PAGE_SIZE(160)保证。超出预热范围的深页 lookupCache 返回 false 回退实时拉。
+	// 按类目筛选另走 lookupProductsByCategory 本地分页。
+	useCache := p.CategoryID == "" && p.PageNum <= maxDiscoverPageNum
 
 	// 1. 缓存命中?有就用(不看 TTL,EchoTik 不可用也能读);陈旧则后台刷新,不阻塞用户。
 	if useCache {
 		if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
-			if s.echo.Configured() && time.Since(fetchedAt) > cacheTTL {
+			// 陈旧则后台刷新:只在第 1 页触发,且按完整深度刷整张榜,
+			// 避免深页的小 PageSize 把整张有序缓存覆盖成单页。
+			if s.echo.Configured() && p.PageNum <= 1 && time.Since(fetchedAt) > cacheTTL {
+				full := p
+				full.PageNum = 1
+				full.PageSize = maxDiscoverPageNum * ranklistPageSize
 				goRefresh(ctx, "ranklist", func(bg context.Context) {
-					if _, e := s.RefreshRanklist(bg, p); e != nil {
+					if _, e := s.RefreshRanklist(bg, full); e != nil {
 						logger.Warn("商品榜后台刷新失败", logger.String("region", p.Region), logger.Err(e))
 					}
 				})
@@ -196,25 +209,41 @@ func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistPar
 	if err != nil || len(entry.ExternalIDs) == 0 {
 		return nil, time.Time{}, false
 	}
+	// 整张有序 ExternalIDs 按页码切窗:只取当前页对应的 ID 段(保留 EchoTik 真实榜序)。
+	// 越界(深页超出预热范围)→ 返回 false,调用方回退实时拉。
+	pageSize := p.PageSize
+	if pageSize <= 0 {
+		pageSize = ranklistPageSize
+	}
+	start := (normPage(p.PageNum) - 1) * pageSize
+	if start >= len(entry.ExternalIDs) {
+		return nil, time.Time{}, false
+	}
+	end := start + pageSize
+	if end > len(entry.ExternalIDs) {
+		end = len(entry.ExternalIDs)
+	}
+	pageIDs := entry.ExternalIDs[start:end]
+
 	var dps []model.DiscoverProduct
 	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, entry.ExternalIDs).
+		Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, pageIDs).
 		Find(&dps).Error; err != nil {
 		return nil, time.Time{}, false
 	}
 	// 按缓存顺序排列。
-	ordered := make([]model.DiscoverProduct, 0, len(dps))
 	byID := make(map[string]model.DiscoverProduct, len(dps))
 	for _, d := range dps {
 		byID[d.ExternalID] = d
 	}
-	for _, id := range entry.ExternalIDs {
+	ordered := make([]model.DiscoverProduct, 0, len(pageIDs))
+	for _, id := range pageIDs {
 		if d, ok := byID[id]; ok {
 			ordered = append(ordered, d)
 		}
 	}
 	if len(ordered) == 0 {
-		ordered = dps
+		return nil, time.Time{}, false
 	}
 	return ordered, entry.FetchedAt, true
 }

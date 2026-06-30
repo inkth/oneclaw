@@ -221,7 +221,9 @@ func Load() *Config {
 			Enabled:  getEnvBool("DISCOVER_SYNC_ENABLED", true),
 			Interval: time.Duration(getEnvInt("DISCOVER_SYNC_INTERVAL_HOURS", 6)) * time.Hour,
 			Combos:   parseSyncCombos(getEnv("DISCOVER_SYNC_COMBOS", "US,ID,TH,VN")),
-			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 30),
+			// 预热前 maxDiscoverPage(10)页商品榜:10 页 × 前端 page_size 16 = 160,
+			// 让「全部」类目前 10 页全命中缓存零 EchoTik。改小会让深页回退实时拉。
+			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 160),
 		},
 		OverflowSettle: OverflowSettleConfig{
 			Enabled:  getEnvBool("OVERFLOW_SETTLE_ENABLED", true),
