@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -102,34 +103,46 @@ func (c *Client) GetVideoRanklist(ctx context.Context, p RanklistParams) ([]Vide
 func (c *Client) GetProductCovers(ctx context.Context, productIDs []string, region string) (map[string][]string, error) {
 	out := make(map[string][]string, len(productIDs))
 	const detailBatch = 10
+	// 深页预热(160 商品=16 批)若串行跑跨境 detail 会撑爆 combo 超时;限并发 4 提速。
+	var mu sync.Mutex
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxPageConcurrency)
 	for i := 0; i < len(productIDs); i += detailBatch {
 		end := i + detailBatch
 		if end > len(productIDs) {
 			end = len(productIDs)
 		}
 		chunk := productIDs[i:end]
-		params := map[string]string{
-			"product_ids": strings.Join(chunk, ","),
-			"region":      region,
-		}
-		var env Envelope[[]ProductDetail]
-		if err := c.call(ctx, "/echotik/product/detail", params, &env); err != nil {
-			return out, err
-		}
-		if env.Code != 0 && env.Code != 200 {
-			return out, fmt.Errorf("echotik code %d: %s", env.Code, env.Message)
-		}
-		for _, d := range env.Data {
-			covers := ParseCovers(d.CoverURL)
-			if len(covers) == 0 {
-				continue
+		g.Go(func() error {
+			params := map[string]string{
+				"product_ids": strings.Join(chunk, ","),
+				"region":      region,
 			}
-			urls := make([]string, 0, len(covers))
-			for _, cv := range covers {
-				urls = append(urls, cv.URL)
+			var env Envelope[[]ProductDetail]
+			if err := c.call(gctx, "/echotik/product/detail", params, &env); err != nil {
+				return err
 			}
-			out[d.ProductID] = urls
-		}
+			if env.Code != 0 && env.Code != 200 {
+				return fmt.Errorf("echotik code %d: %s", env.Code, env.Message)
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			for _, d := range env.Data {
+				covers := ParseCovers(d.CoverURL)
+				if len(covers) == 0 {
+					continue
+				}
+				urls := make([]string, 0, len(covers))
+				for _, cv := range covers {
+					urls = append(urls, cv.URL)
+				}
+				out[d.ProductID] = urls
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return out, err
 	}
 	return out, nil
 }
@@ -157,22 +170,32 @@ func (c *Client) SignCovers(ctx context.Context, urls []string) map[string]strin
 	}
 
 	const batch = 10
+	// 同 GetProductCovers:160 商品=16 批签名,限并发 4 提速;签名失败吞错降级占位图。
+	var mu sync.Mutex
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxPageConcurrency)
 	for i := 0; i < len(eligible); i += batch {
 		end := i + batch
 		if end > len(eligible) {
 			end = len(eligible)
 		}
 		chunk := eligible[i:end]
-		// 响应 data 是 [ {sourceUrl: signedUrl}, ... ]——每个对象一对映射。
-		var env Envelope[[]map[string]string]
-		if err := c.call(ctx, "/echotik/batch/cover/download", map[string]string{"cover_urls": strings.Join(chunk, ",")}, &env); err != nil {
-			continue
-		}
-		for _, obj := range env.Data {
-			for src, dst := range obj {
-				out[src] = dst
+		g.Go(func() error {
+			// 响应 data 是 [ {sourceUrl: signedUrl}, ... ]——每个对象一对映射。
+			var env Envelope[[]map[string]string]
+			if err := c.call(gctx, "/echotik/batch/cover/download", map[string]string{"cover_urls": strings.Join(chunk, ",")}, &env); err != nil {
+				return nil // 吞错:单批签名失败不拖累其它批,缺的走占位图
 			}
-		}
+			mu.Lock()
+			defer mu.Unlock()
+			for _, obj := range env.Data {
+				for src, dst := range obj {
+					out[src] = dst
+				}
+			}
+			return nil
+		})
 	}
+	_ = g.Wait()
 	return out
 }

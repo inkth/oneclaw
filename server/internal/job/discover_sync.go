@@ -95,7 +95,8 @@ const trackedRefreshPerRun = 10
 
 func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
 	// 商品榜 + 店铺/达人/视频三榜串行(视频榜还要批量签封面),留足跨境拉取时间。
-	cctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	// 深页预热(160 商品=封面 32 批跨境调用,即便限并发 4)冷启动较慢,放宽到 6 分钟避免整 combo 超时回滚成 0。
+	cctx, cancel := context.WithTimeout(ctx, 6*time.Minute)
 	defer cancel()
 
 	// 1. 商品榜:落库 + 每日快照 + 预热 RanklistCacheEntry。
