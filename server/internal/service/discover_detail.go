@@ -32,6 +32,7 @@ type ProductDetailDTO struct {
 	Videos           []ProductVideoDTO      `json:"videos"`
 	Trend            []TrendPointDTO        `json:"trend"`
 	Score            *ScoreDTO              `json:"score"`
+	Warming          bool                   `json:"warming,omitempty"` // 首见:详情扩展后台拉取中,前端可稍后重取
 }
 
 // WindowsDTO 近 7/30/90 天窗口指标(金额 cents)。
@@ -140,11 +141,13 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 			})
 		}
 	} else {
-		// 首见:同步刷一次并落库。
-		ex, infls, vids, e := s.refreshProductDetail(ctx, externalID, region)
-		if e == nil {
-			extras, dto.Influencers, dto.Videos = ex, infls, vids
-		}
+		// 首见:不阻塞——后台异步拉详情扩展并落库,本次仅返回基础(榜单级)视图 + warming,下次即有详情。
+		dto.Warming = true
+		goRefresh(ctx, "product-detail-first", func(bg context.Context) {
+			if _, _, _, e := s.refreshProductDetail(bg, externalID, region); e != nil {
+				logger.Warn("选品详情首见后台拉取失败", logger.String("id", externalID), logger.Err(e))
+			}
+		})
 	}
 
 	if extras != nil {

@@ -98,14 +98,14 @@ func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
 	cctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
 
-	// 1. 商品榜:落库 + 每日快照 + 预热 RanklistCacheEntry。
+	// 1. 商品榜:落库 + 每日快照 + 预热 RanklistCacheEntry(累积前 Pages 页供本地翻页)。
 	start := time.Now()
-	n, err := j.discover.RefreshRanklist(cctx, echotik.RanklistParams{
+	n, err := j.discover.RefreshRanklistDeep(cctx, echotik.RanklistParams{
 		Region:    c.Region,
 		RankType:  c.RankType,
 		RankField: c.RankField,
 		PageSize:  j.cfg.PageSize,
-	})
+	}, j.cfg.Pages)
 	if err != nil {
 		logger.Warn("[job] 商品榜同步失败",
 			logger.String("region", c.Region),
@@ -126,7 +126,7 @@ func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
 		RankType:  c.RankType,
 		RankField: c.RankField,
 		PageSize:  entityPrewarmPageSize,
-	}); err != nil {
+	}, j.cfg.Pages); err != nil {
 		logger.Warn("[job] entity 榜预热失败",
 			logger.String("region", c.Region),
 			logger.Err(err))

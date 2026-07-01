@@ -2,17 +2,19 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm/clause"
 
+	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/echotik"
 )
 
 // 榜单读 DB 化:店铺/达人/视频榜 = EntityRanklistEntry 顺序 + 关联实体主表渲染(零 EchoTik)。
-// 封面用主表已 rehost 的 COS 永久 URL。job(PrewarmEntities)与冷启动兜底负责写顺序表。
-// 仅主流榜(page1 + 无类目)走 DB;类目/翻页暂走 live 兜底(③ 再 DB 化)。
+// 封面用主表已 rehost 的 COS 永久 URL。job(PrewarmEntities)/冷启动异步补全(warmEntityRanklist)写顺序表。
+// 所有维度(任意类目/页)都读 DB;读路径绝不同步打 EchoTik,miss/陈旧/超深度走后台异步补。
 
 func strPtrOrNil(s string) *string {
 	if s == "" {
@@ -42,7 +44,7 @@ func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, 
 	}).Create(&e)
 }
 
-// lookupRanklistIDs 读榜单顺序。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,新鲜由 job 保证。
+// lookupRanklistIDs 读榜单顺序。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,新鲜由 job/异步补全保证。
 func (s *DiscoverService) lookupRanklistIDs(ctx context.Context, kind string, p echotik.RanklistParams) ([]string, time.Time, bool) {
 	if s.db == nil {
 		return nil, time.Time{}, false
@@ -56,6 +58,108 @@ func (s *DiscoverService) lookupRanklistIDs(ctx context.Context, kind string, p 
 		return nil, time.Time{}, false
 	}
 	return e.ExternalIDs, e.FetchedAt, true
+}
+
+// ── 后台异步补全(读路径零同步 EchoTik) ────────────────────────────────────────
+
+// warmEntityIfNeeded 命中后台保鲜判定:顺序表陈旧(>cacheTTL)或请求页超出已存深度 → 异步拉深。
+func (s *DiscoverService) warmEntityIfNeeded(ctx context.Context, kind string, p echotik.RanklistParams, fetchedAt *time.Time, rowCount int) {
+	if !s.echo.Configured() {
+		return
+	}
+	stale := fetchedAt != nil && time.Since(*fetchedAt) > cacheTTL
+	beyond := rowCount == 0 && p.PageNum > 1 // 请求页超出已存深度
+	if !stale && !beyond {
+		return
+	}
+	depth := p.PageNum
+	if depth < defaultRanklistDepth {
+		depth = defaultRanklistDepth
+	}
+	s.warmEntityRanklist(ctx, kind, p, depth)
+}
+
+// warmEntityRanklist 后台异步拉取某类实体榜前 upto 页并落库(非阻塞,不随请求 ctx 取消)。
+func (s *DiscoverService) warmEntityRanklist(ctx context.Context, kind string, p echotik.RanklistParams, upto int) {
+	if !s.echo.Configured() {
+		return
+	}
+	goRefresh(ctx, "entity-ranklist-"+kind, func(bg context.Context) {
+		if err := s.prewarmEntityKind(bg, kind, p, upto); err != nil {
+			logger.Warn("实体榜后台拉取失败",
+				logger.String("kind", kind), logger.String("region", p.Region), logger.Err(err))
+		}
+	})
+}
+
+// fetchEntityPage 拉取某类实体榜一页 + upsert 主表,返回该页有序 ID 与条数。
+func (s *DiscoverService) fetchEntityPage(ctx context.Context, kind string, p echotik.RanklistParams) ([]string, int, error) {
+	switch kind {
+	case "seller":
+		raw, err := s.echo.GetSellerRanklist(ctx, p)
+		if err != nil {
+			return nil, 0, err
+		}
+		s.upsertSellerList(ctx, p.Region, raw)
+		return sellerIDsOf(raw), len(raw), nil
+	case "influencer":
+		raw, err := s.echo.GetInfluencerRanklist(ctx, p)
+		if err != nil {
+			return nil, 0, err
+		}
+		s.upsertInfluencerList(ctx, p.Region, raw)
+		return influencerIDsOf(raw), len(raw), nil
+	case "video":
+		raw, err := s.echo.GetVideoRanklist(ctx, p)
+		if err != nil {
+			return nil, 0, err
+		}
+		s.upsertVideoList(ctx, p.Region, raw)
+		return videoIDsOf(raw), len(raw), nil
+	}
+	return nil, 0, fmt.Errorf("未知实体类型 %s", kind)
+}
+
+// prewarmEntityKind 同步拉取某类实体榜前 upto 页并累积落库(主表 + 顺序表)。供 job/backfill/异步补全调用。
+func (s *DiscoverService) prewarmEntityKind(ctx context.Context, kind string, p echotik.RanklistParams, upto int) error {
+	if !s.echo.Configured() {
+		return nil
+	}
+	if p.PageSize <= 0 {
+		p.PageSize = 20
+	}
+	if upto < 1 {
+		upto = 1
+	}
+	var allIDs []string
+	seen := make(map[string]struct{})
+	for page := 1; page <= upto; page++ {
+		pp := p
+		pp.PageNum = page
+		ids, n, err := s.fetchEntityPage(ctx, kind, pp)
+		if err != nil {
+			if page == 1 {
+				return err
+			}
+			break // 部分深度可接受
+		}
+		if n == 0 {
+			break
+		}
+		for _, id := range ids {
+			if _, dup := seen[id]; !dup {
+				seen[id] = struct{}{}
+				allIDs = append(allIDs, id)
+			}
+		}
+		if n < p.PageSize {
+			break // 不足一页=没有更多
+		}
+	}
+	if len(allIDs) > 0 {
+		s.writeEntityRanklist(ctx, kind, p, allIDs)
+	}
+	return nil
 }
 
 // ── 店铺 ──────────────────────────────────────────────────────────────────────
@@ -74,48 +178,25 @@ func (s *DiscoverService) lookupSellerRanklist(ctx context.Context, p echotik.Ra
 	if !ok {
 		return nil, false
 	}
+	pageIDs := pageSlice(ids, p.PageNum, p.PageSize)
 	var rows []model.DiscoverSeller
-	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, ids).
-		Find(&rows).Error; err != nil {
-		return nil, false
+	if len(pageIDs) > 0 {
+		s.db.WithContext(ctx).
+			Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, pageIDs).
+			Find(&rows)
 	}
 	byID := make(map[string]model.DiscoverSeller, len(rows))
 	for _, r := range rows {
 		byID[r.ExternalID] = r
 	}
-	out := make([]SellerDTO, 0, len(ids))
-	for _, id := range ids {
+	out := make([]SellerDTO, 0, len(pageIDs))
+	for _, id := range pageIDs {
 		if r, ok := byID[id]; ok {
 			out = append(out, mapSellerFromModel(r))
 		}
 	}
-	if len(out) == 0 {
-		return nil, false
-	}
 	at := fetchedAt
-	return &EntityRanklistResult[SellerDTO]{State: "cached", FetchedAt: &at, Rows: out}, true
-}
-
-// fetchSellerRanklistLive 冷启动/类目/翻页兜底:拉 raw;主流榜(page1)落库供下次,其余只签名映射返回。
-func (s *DiscoverService) fetchSellerRanklistLive(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[SellerDTO] {
-	if !s.echo.Configured() {
-		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
-	}
-	raw, err := s.echo.GetSellerRanklist(ctx, p)
-	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[SellerDTO]{State: "error", Rows: s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
-	}
-	if p.PageNum <= 1 {
-		s.upsertSellerList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "seller", p, sellerIDsOf(raw))
-		if res, ok := s.lookupSellerRanklist(ctx, p); ok {
-			res.State = "live"
-			return res
-		}
-	}
-	now := time.Now()
-	return &EntityRanklistResult[SellerDTO]{State: "live", FetchedAt: &now, Rows: s.signMapSellers(ctx, raw)}
+	return &EntityRanklistResult[SellerDTO]{State: "cached", FetchedAt: &at, Warming: len(out) == 0 && s.echo.Configured(), Rows: out}, true
 }
 
 func sellerIDsOf(raw []echotik.SellerListItem) []string {
@@ -145,47 +226,25 @@ func (s *DiscoverService) lookupInfluencerRanklist(ctx context.Context, p echoti
 	if !ok {
 		return nil, false
 	}
+	pageIDs := pageSlice(ids, p.PageNum, p.PageSize)
 	var rows []model.DiscoverInfluencer
-	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, ids).
-		Find(&rows).Error; err != nil {
-		return nil, false
+	if len(pageIDs) > 0 {
+		s.db.WithContext(ctx).
+			Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, pageIDs).
+			Find(&rows)
 	}
 	byID := make(map[string]model.DiscoverInfluencer, len(rows))
 	for _, r := range rows {
 		byID[r.ExternalID] = r
 	}
-	out := make([]InfluencerDTO, 0, len(ids))
-	for _, id := range ids {
+	out := make([]InfluencerDTO, 0, len(pageIDs))
+	for _, id := range pageIDs {
 		if r, ok := byID[id]; ok {
 			out = append(out, mapInfluencerFromModel(r))
 		}
 	}
-	if len(out) == 0 {
-		return nil, false
-	}
 	at := fetchedAt
-	return &EntityRanklistResult[InfluencerDTO]{State: "cached", FetchedAt: &at, Rows: out}, true
-}
-
-func (s *DiscoverService) fetchInfluencerRanklistLive(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[InfluencerDTO] {
-	if !s.echo.Configured() {
-		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
-	}
-	raw, err := s.echo.GetInfluencerRanklist(ctx, p)
-	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[InfluencerDTO]{State: "error", Rows: s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
-	}
-	if p.PageNum <= 1 {
-		s.upsertInfluencerList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
-		if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
-			res.State = "live"
-			return res
-		}
-	}
-	now := time.Now()
-	return &EntityRanklistResult[InfluencerDTO]{State: "live", FetchedAt: &now, Rows: s.signMapInfluencers(ctx, raw)}
+	return &EntityRanklistResult[InfluencerDTO]{State: "cached", FetchedAt: &at, Warming: len(out) == 0 && s.echo.Configured(), Rows: out}, true
 }
 
 func influencerIDsOf(raw []echotik.InfluencerListItem) []string {
@@ -215,47 +274,25 @@ func (s *DiscoverService) lookupVideoRanklist(ctx context.Context, p echotik.Ran
 	if !ok {
 		return nil, false
 	}
+	pageIDs := pageSlice(ids, p.PageNum, p.PageSize)
 	var rows []model.DiscoverVideo
-	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, ids).
-		Find(&rows).Error; err != nil {
-		return nil, false
+	if len(pageIDs) > 0 {
+		s.db.WithContext(ctx).
+			Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, pageIDs).
+			Find(&rows)
 	}
 	byID := make(map[string]model.DiscoverVideo, len(rows))
 	for _, r := range rows {
 		byID[r.ExternalID] = r
 	}
-	out := make([]VideoDTO, 0, len(ids))
-	for _, id := range ids {
+	out := make([]VideoDTO, 0, len(pageIDs))
+	for _, id := range pageIDs {
 		if r, ok := byID[id]; ok {
 			out = append(out, mapVideoFromModel(r))
 		}
 	}
-	if len(out) == 0 {
-		return nil, false
-	}
 	at := fetchedAt
-	return &EntityRanklistResult[VideoDTO]{State: "cached", FetchedAt: &at, Rows: out}, true
-}
-
-func (s *DiscoverService) fetchVideoRanklistLive(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
-	if !s.echo.Configured() {
-		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
-	}
-	raw, err := s.echo.GetVideoRanklist(ctx, p)
-	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[VideoDTO]{State: "error", Rows: s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
-	}
-	if p.PageNum <= 1 {
-		s.upsertVideoList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
-		if res, ok := s.lookupVideoRanklist(ctx, p); ok {
-			res.State = "live"
-			return res
-		}
-	}
-	now := time.Now()
-	return &EntityRanklistResult[VideoDTO]{State: "live", FetchedAt: &now, Rows: s.signMapVideos(ctx, raw)}
+	return &EntityRanklistResult[VideoDTO]{State: "cached", FetchedAt: &at, Warming: len(out) == 0 && s.echo.Configured(), Rows: out}, true
 }
 
 func videoIDsOf(raw []echotik.VideoListItem) []string {

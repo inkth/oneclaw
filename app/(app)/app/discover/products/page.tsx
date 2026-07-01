@@ -24,6 +24,7 @@ type DecoratedProduct = {
 type RanklistResult = {
   state: string;
   fetchedAt?: string | null;
+  warming?: boolean;
   products: DecoratedProduct[];
 };
 
@@ -71,6 +72,7 @@ export default async function DiscoverProductsPage({
       keyword={q}
       state={result.state as "live" | "cached" | "empty" | "mock" | "error"}
       fetchedAt={result.fetchedAt ?? null}
+      warming={result.warming ?? false}
       products={result.products.map((p) => ({
         productId: p.productId,
         productName: p.name,

@@ -132,12 +132,13 @@ func (s *DiscoverService) SellerDetailFull(ctx context.Context, sellerID, region
 		return s.sellerDTOFromModel(ctx, &ds), nil
 	}
 
-	// 首见:同步拉一次;失败(实体不存在/EchoTik 错)返回空而非 500。
-	dto, e := s.refreshSellerDetail(ctx, sellerID, region)
-	if e != nil {
-		return nil, nil
-	}
-	return dto, nil
+	// 首见(DB 无):不阻塞——后台异步拉详情落库,本次返回空(下次即有)。读路径零同步 EchoTik。
+	goRefresh(ctx, "seller-detail-first", func(bg context.Context) {
+		if _, err := s.refreshSellerDetail(bg, sellerID, region); err != nil {
+			logger.Warn("店铺详情首见后台拉取失败", logger.String("sellerId", sellerID), logger.Err(err))
+		}
+	})
+	return nil, nil
 }
 
 // ── 达人详情入口 ──────────────────────────────────────────────────────────────
@@ -178,12 +179,13 @@ func (s *DiscoverService) InfluencerDetailFull(ctx context.Context, userID, regi
 		return s.influencerDTOFromModel(ctx, &di), nil
 	}
 
-	// 首见:同步拉一次;失败(实体不存在/EchoTik 错)返回空而非 500。
-	dto, e := s.refreshInfluencerDetail(ctx, userID, region)
-	if e != nil {
-		return nil, nil
-	}
-	return dto, nil
+	// 首见(DB 无):不阻塞——后台异步拉详情落库,本次返回空(下次即有)。读路径零同步 EchoTik。
+	goRefresh(ctx, "influencer-detail-first", func(bg context.Context) {
+		if _, err := s.refreshInfluencerDetail(bg, userID, region); err != nil {
+			logger.Warn("达人详情首见后台拉取失败", logger.String("userId", userID), logger.Err(err))
+		}
+	})
+	return nil, nil
 }
 
 // ── 视频详情 DTO ──────────────────────────────────────────────────────────────
@@ -242,12 +244,13 @@ func (s *DiscoverService) VideoDetailFull(ctx context.Context, videoID, region s
 		return videoDTOFromModel(&dv), nil
 	}
 
-	// 首见:同步拉一次;失败(实体不存在/EchoTik 错)返回空而非 500。
-	dto, e := s.refreshVideoDetail(ctx, videoID, region)
-	if e != nil {
-		return nil, nil
-	}
-	return dto, nil
+	// 首见(DB 无):不阻塞——后台异步拉详情落库,本次返回空(下次即有)。读路径零同步 EchoTik。
+	goRefresh(ctx, "video-detail-first", func(bg context.Context) {
+		if _, err := s.refreshVideoDetail(bg, videoID, region); err != nil {
+			logger.Warn("视频详情首见后台拉取失败", logger.String("videoId", videoID), logger.Err(err))
+		}
+	})
+	return nil, nil
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────

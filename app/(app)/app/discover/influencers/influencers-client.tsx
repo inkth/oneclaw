@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { RankMedal } from "@/components/ui/RankMedal";
 import { fmt, fmtMoney } from "../_components/format";
+import { useWarmingRefresh } from "../_components/useWarmingRefresh";
 
 export type Influencer = {
   userId: string;
@@ -35,6 +36,7 @@ export function InfluencersClient({
   categories,
   keyword = "",
   state,
+  warming,
   influencers,
   page,
   hasNext,
@@ -46,10 +48,12 @@ export function InfluencersClient({
   categories: CategoryOption[];
   keyword?: string;
   state: DiscoverState;
+  warming?: boolean;
   influencers: Influencer[];
   page: number;
   hasNext: boolean;
 }) {
+  useWarmingRefresh(warming);
   const searching = keyword.trim().length > 0;
   return (
     <div className="space-y-6">

@@ -6,7 +6,7 @@ import { SellersClient, type Seller } from "./sellers-client";
 
 export const metadata = { title: "选品 · 店铺榜 · 发现猫" };
 
-type Result = { state: DiscoverState; fetchedAt: string | null; rows: Seller[] };
+type Result = { state: DiscoverState; fetchedAt: string | null; warming?: boolean; rows: Seller[] };
 
 export default async function DiscoverSellersPage({
   searchParams,
@@ -41,6 +41,7 @@ export default async function DiscoverSellersPage({
       categories={categories}
       keyword={q}
       state={result.state}
+      warming={result.warming ?? false}
       sellers={result.rows}
       page={page}
       hasNext={!q && result.rows.length >= 20 && page < 10}

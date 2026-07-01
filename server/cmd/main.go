@@ -145,6 +145,16 @@ func main() {
 			logger.Info("[backfill] 商品全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
 			return
 		}
+		// 一次性:遍历所有站点 × 类目 × 三类实体(店铺/达人/视频),把每组合前 N 页落库(1 req/s,断点续跑)。
+		// 用法:docker compose run --rm go-api ./server --backfill-entities
+		if arg == "--backfill-entities" {
+			ft, sk, err := discSvc.BackfillAllEntities(context.Background())
+			if err != nil {
+				logger.Fatal("[backfill] 实体全量回填失败", logger.Err(err))
+			}
+			logger.Info("[backfill] 实体全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
+			return
+		}
 	}
 
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)

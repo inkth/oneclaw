@@ -105,6 +105,7 @@ type DiscoverSyncConfig struct {
 	Interval time.Duration // 与榜单缓存 TTL(6h)对齐
 	Combos   []SyncCombo   // 抓取的 region × 榜单组合
 	PageSize int           // 每榜抓取条数
+	Pages    int           // 每组合预热的页数(累积到顺序表,供本地翻页);默认 3
 }
 
 // SyncCombo 一组榜单抓取参数。RankType/RankField 取值见 echotik 包枚举(1=热销榜/销量)。
@@ -218,6 +219,7 @@ func Load() *Config {
 			Interval: time.Duration(getEnvInt("DISCOVER_SYNC_INTERVAL_HOURS", 6)) * time.Hour,
 			Combos:   parseSyncCombos(getEnv("DISCOVER_SYNC_COMBOS", "US,ID,TH,VN")),
 			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 30),
+			Pages:    getEnvInt("DISCOVER_SYNC_PAGES", 3),
 		},
 		OverflowSettle: OverflowSettleConfig{
 			Enabled:  getEnvBool("OVERFLOW_SETTLE_ENABLED", true),

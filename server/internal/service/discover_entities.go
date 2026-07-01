@@ -11,10 +11,11 @@ import (
 // 店铺/达人/视频三榜:不落库、不导入、不收藏,只「取数 → 签图 → 映射 DTO」。
 // 与商品榜共用 EchoTik 客户端,未配置凭证时降级到 mock。
 
-// EntityRanklistResult 三榜统一返回信封。state: live | mock | error | empty。
+// EntityRanklistResult 三榜统一返回信封。state: cached | mock | empty。
 type EntityRanklistResult[T any] struct {
 	State     string     `json:"state"`
 	FetchedAt *time.Time `json:"fetchedAt,omitempty"`
+	Warming   bool       `json:"warming,omitempty"` // 当前返回为空/部分,已触发后台异步补全
 	Rows      []T        `json:"rows"`
 }
 
@@ -69,7 +70,8 @@ type VideoDTO struct {
 	TotalVideoSaleGmvAmt float64 `json:"totalVideoSaleGmvAmt"`
 }
 
-// SellerRanklist 店铺榜(缓存优先);带关键词时走搜索(不缓存)。
+// SellerRanklist 店铺榜:读路径**零同步 EchoTik**。所有维度(任意类目/页)先查 DB 顺序表+主表,
+// 按页切片;miss/陈旧/超出深度 → goRefresh 后台拉取落库,当前按库存返回(可能空+warming)。
 func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[SellerDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
@@ -77,14 +79,15 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 	if p.Keyword != "" {
 		return s.searchSellers(ctx, p)
 	}
-	// 主流榜(第 1 页、无类目)读 DB:顺序表 + 主表,零 EchoTik。
-	if p.PageNum <= 1 && p.CategoryID == "" {
-		if res, ok := s.lookupSellerRanklist(ctx, p); ok {
-			return res
-		}
+	if res, ok := s.lookupSellerRanklist(ctx, p); ok {
+		s.warmEntityIfNeeded(ctx, "seller", p, res.FetchedAt, len(res.Rows))
+		return res
 	}
-	// 冷启动/类目/翻页兜底:拉 live(主流榜顺手落库供下次)。
-	return s.fetchSellerRanklistLive(ctx, p)
+	if !s.echo.Configured() {
+		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
+	}
+	s.warmEntityRanklist(ctx, "seller", p, defaultRanklistDepth)
+	return &EntityRanklistResult[SellerDTO]{State: "cached", Warming: true, Rows: []SellerDTO{}}
 }
 
 // signMapSellers 签封面 + 映射 DTO(榜单 / 搜索共用)。
@@ -101,7 +104,7 @@ func (s *DiscoverService) signMapSellers(ctx context.Context, raw []echotik.Sell
 	return rows
 }
 
-// InfluencerRanklist 达人榜(缓存优先);带关键词时走搜索(不缓存)。
+// InfluencerRanklist 达人榜:读路径**零同步 EchoTik**(同 SellerRanklist)。
 func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[InfluencerDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
@@ -109,12 +112,15 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 	if p.Keyword != "" {
 		return s.searchInfluencers(ctx, p)
 	}
-	if p.PageNum <= 1 && p.CategoryID == "" {
-		if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
-			return res
-		}
+	if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
+		s.warmEntityIfNeeded(ctx, "influencer", p, res.FetchedAt, len(res.Rows))
+		return res
 	}
-	return s.fetchInfluencerRanklistLive(ctx, p)
+	if !s.echo.Configured() {
+		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
+	}
+	s.warmEntityRanklist(ctx, "influencer", p, defaultRanklistDepth)
+	return &EntityRanklistResult[InfluencerDTO]{State: "cached", Warming: true, Rows: []InfluencerDTO{}}
 }
 
 // signMapInfluencers 签头像 + 映射 DTO(榜单 / 搜索共用)。
@@ -131,7 +137,7 @@ func (s *DiscoverService) signMapInfluencers(ctx context.Context, raw []echotik.
 	return rows
 }
 
-// VideoRanklist 带货视频榜(缓存优先);带关键词时走搜索(不缓存)。
+// VideoRanklist 带货视频榜:读路径**零同步 EchoTik**(同 SellerRanklist)。
 func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
 	if p.PageSize <= 0 {
 		p.PageSize = 20
@@ -139,12 +145,15 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 	if p.Keyword != "" {
 		return s.searchVideos(ctx, p)
 	}
-	if p.PageNum <= 1 && p.CategoryID == "" {
-		if res, ok := s.lookupVideoRanklist(ctx, p); ok {
-			return res
-		}
+	if res, ok := s.lookupVideoRanklist(ctx, p); ok {
+		s.warmEntityIfNeeded(ctx, "video", p, res.FetchedAt, len(res.Rows))
+		return res
 	}
-	return s.fetchVideoRanklistLive(ctx, p)
+	if !s.echo.Configured() {
+		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
+	}
+	s.warmEntityRanklist(ctx, "video", p, defaultRanklistDepth)
+	return &EntityRanklistResult[VideoDTO]{State: "cached", Warming: true, Rows: []VideoDTO{}}
 }
 
 // signMapVideos 签封面/头像 + 映射 DTO(榜单 / 搜索共用)。
@@ -161,39 +170,24 @@ func (s *DiscoverService) signMapVideos(ctx context.Context, raw []echotik.Video
 	return rows
 }
 
-// PrewarmEntities 供定时任务预热店铺/达人/视频三榜:强制拉取并回写缓存(绕过读缓存,
-// 确保 TTL 过期前主动刷新)。p.PageSize 必须与前端一致(20),否则缓存键含 page_size
-// 不匹配、预热失效。三榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
-func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.RanklistParams) error {
+// PrewarmEntities 供定时任务/回填预热店铺/达人/视频三榜:强制拉取前 pages 页并累积落库
+// (主表 + 顺序表)。p.PageSize 必须与前端一致(20),否则顺序表键含 page_size 不匹配、预热失效。
+// 三榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
+func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.RanklistParams, pages int) error {
 	if !s.echo.Configured() {
 		return nil
 	}
 	if p.PageSize <= 0 {
 		p.PageSize = 20
 	}
-	p.PageNum = 1 // 预热第 1 页,与前端默认页缓存键对齐
+	if pages < 1 {
+		pages = 1
+	}
 	var firstErr error
-	if raw, err := s.echo.GetSellerRanklist(ctx, p); err != nil {
-		firstErr = err
-	} else if len(raw) > 0 {
-		s.upsertSellerList(ctx, p.Region, raw) // 落主表(含 COS 封面)+ 当日快照
-		s.writeEntityRanklist(ctx, "seller", p, sellerIDsOf(raw))
-	}
-	if raw, err := s.echo.GetInfluencerRanklist(ctx, p); err != nil {
-		if firstErr == nil {
+	for _, kind := range []string{"seller", "influencer", "video"} {
+		if err := s.prewarmEntityKind(ctx, kind, p, pages); err != nil && firstErr == nil {
 			firstErr = err
 		}
-	} else if len(raw) > 0 {
-		s.upsertInfluencerList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
-	}
-	if raw, err := s.echo.GetVideoRanklist(ctx, p); err != nil {
-		if firstErr == nil {
-			firstErr = err
-		}
-	} else if len(raw) > 0 {
-		s.upsertVideoList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
 	}
 	return firstErr
 }
