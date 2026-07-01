@@ -91,7 +91,7 @@ func (s *DiscoverService) hostMapSellers(ctx context.Context, raw []echotik.Sell
 	for _, it := range raw {
 		imgs = append(imgs, it.CoverURL)
 	}
-	hosted := s.rehostCovers(ctx, imgs)
+	hosted := s.hostCoversAsync(ctx, imgs)
 	rows := make([]SellerDTO, 0, len(raw))
 	for _, it := range raw {
 		rows = append(rows, mapSeller(it, hosted))
@@ -119,7 +119,7 @@ func (s *DiscoverService) hostMapInfluencers(ctx context.Context, raw []echotik.
 	for _, it := range raw {
 		imgs = append(imgs, it.Avatar)
 	}
-	hosted := s.rehostCovers(ctx, imgs)
+	hosted := s.hostCoversAsync(ctx, imgs)
 	rows := make([]InfluencerDTO, 0, len(raw))
 	for _, it := range raw {
 		rows = append(rows, mapInfluencer(it, hosted))
@@ -147,7 +147,7 @@ func (s *DiscoverService) hostMapVideos(ctx context.Context, raw []echotik.Video
 	for _, it := range raw {
 		imgs = append(imgs, it.ReflowCover, it.Avatar)
 	}
-	hosted := s.rehostCovers(ctx, imgs)
+	hosted := s.hostCoversAsync(ctx, imgs)
 	rows := make([]VideoDTO, 0, len(raw))
 	for _, it := range raw {
 		rows = append(rows, mapVideo(it, hosted))

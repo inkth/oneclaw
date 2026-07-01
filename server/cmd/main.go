@@ -194,6 +194,7 @@ func main() {
 	defer jobCancel()
 	job.NewDiscoverSync(cfg.DiscoverSync, discSvc, echoClient).Start(jobCtx)
 	job.NewOverflowSettle(cfg.OverflowSettle, billingSvc).Start(jobCtx)
+	discSvc.StartCoverRehost(jobCtx) // 封面转存后台 worker(读路径投递、异步存 COS)
 
 	r := router.New(router.Deps{
 		Cfg:       cfg,

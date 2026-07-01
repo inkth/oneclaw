@@ -87,6 +87,132 @@ func (s *DiscoverService) BackfillCovers(ctx context.Context) (updated, skipped 
 	return updated, skipped, nil
 }
 
+// coverAssetHits 查 cover_asset:已永久化的 rawURL 直接给 COS 永久 URL(填进 hits),其余作为 pending 返回。
+// rehostCovers(同步转存)与 hostCoversAsync(读路径快速返回)共用,保证去重口径一致。
+func (s *DiscoverService) coverAssetHits(ctx context.Context, uniq []string, hashByRaw map[string]string) (hits map[string]string, pending []string) {
+	hits = make(map[string]string, len(uniq))
+	if s.db == nil {
+		return hits, uniq
+	}
+	hashes := make([]string, 0, len(uniq))
+	for _, u := range uniq {
+		hashes = append(hashes, hashByRaw[u])
+	}
+	var assets []model.CoverAsset
+	s.db.WithContext(ctx).Where("raw_hash IN ?", hashes).Find(&assets)
+	cosByHash := make(map[string]string, len(assets))
+	for _, a := range assets {
+		if a.CosURL != "" {
+			cosByHash[a.RawHash] = a.CosURL
+		}
+	}
+	pending = make([]string, 0, len(uniq))
+	for _, u := range uniq {
+		if cos, ok := cosByHash[hashByRaw[u]]; ok {
+			hits[u] = cos
+		} else {
+			pending = append(pending, u)
+		}
+	}
+	return hits, pending
+}
+
+// coverRehostWorkers 封面转存后台 worker 数;与榜单多页拉取同量级,统一限速防 EchoTik 429。
+const coverRehostWorkers = 3
+
+// StartCoverRehost 启动封面转存后台 worker;ctx 为应用生命周期(非请求 ctx),取消即退出。
+func (s *DiscoverService) StartCoverRehost(ctx context.Context) {
+	for i := 0; i < coverRehostWorkers; i++ {
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case urls := <-s.rehostCh:
+					s.rehostCovers(ctx, urls) // 副作用:落 cover_asset + 传 COS,下次读即命中永久 URL
+					s.clearInflight(urls)
+				}
+			}
+		}()
+	}
+	logger.Info("[job] 封面转存 worker 已启动", logger.Int("workers", coverRehostWorkers))
+}
+
+// enqueueRehost 非阻塞投递待转存 rawURL;inflight 跨请求去重,channel 满则丢弃(下次访问会再触发)。
+func (s *DiscoverService) enqueueRehost(rawURLs []string) {
+	if s.rehostCh == nil || len(rawURLs) == 0 {
+		return
+	}
+	s.rehostMu.Lock()
+	todo := make([]string, 0, len(rawURLs))
+	for _, u := range rawURLs {
+		if u == "" {
+			continue
+		}
+		if _, ok := s.rehostInflight[u]; ok {
+			continue
+		}
+		s.rehostInflight[u] = struct{}{}
+		todo = append(todo, u)
+	}
+	s.rehostMu.Unlock()
+	if len(todo) == 0 {
+		return
+	}
+	select {
+	case s.rehostCh <- todo:
+	default:
+		s.clearInflight(todo) // 队列满,放弃这批(不阻塞调用方)
+	}
+}
+
+func (s *DiscoverService) clearInflight(urls []string) {
+	s.rehostMu.Lock()
+	for _, u := range urls {
+		delete(s.rehostInflight, u)
+	}
+	s.rehostMu.Unlock()
+}
+
+// hostCoversAsync 读路径(搜索/榜单 live 兜底)用:立即返回可用封面 URL,不阻塞在下载转存上。
+//   - 已永久化(cover_asset 命中)→ 直接给 COS 永久 URL。
+//   - 未永久化 → 先给 3 天签名 URL 兜住本次展示,并投递后台 worker 转存,下次访问即 COS。
+func (s *DiscoverService) hostCoversAsync(ctx context.Context, rawURLs []string) map[string]string {
+	out := map[string]string{}
+	seen := map[string]bool{}
+	uniq := make([]string, 0, len(rawURLs))
+	for _, u := range rawURLs {
+		if u == "" || seen[u] {
+			continue
+		}
+		seen[u] = true
+		uniq = append(uniq, u)
+	}
+	if len(uniq) == 0 {
+		return out
+	}
+	hashByRaw := make(map[string]string, len(uniq))
+	for _, u := range uniq {
+		hashByRaw[u] = coverHash(u)
+	}
+	hits, pending := s.coverAssetHits(ctx, uniq, hashByRaw)
+	for u, cos := range hits {
+		out[u] = cos
+	}
+	if len(pending) == 0 {
+		return out
+	}
+	// 未永久化:签名兜本次展示(快,单批接口无下载)+ 投递后台转存。
+	signed := s.echo.SignCovers(ctx, pending)
+	for _, u := range pending {
+		if su := signed[u]; su != "" {
+			out[u] = su
+		}
+	}
+	s.enqueueRehost(pending)
+	return out
+}
+
 // rehostCovers 把 EchoTik 防盗链原始封面 URL 永久化到自有 COS,返回 rawURL -> 可用 URL。
 //
 // 治本要点(替代原来"只签名、3 天过期"的方案):
@@ -118,29 +244,9 @@ func (s *DiscoverService) rehostCovers(ctx context.Context, rawURLs []string) ma
 	}
 
 	// 1. 查 cover_asset 缓存:已永久化的直接复用,免下载。
-	pending := uniq
-	if s.db != nil {
-		hashes := make([]string, 0, len(uniq))
-		for _, u := range uniq {
-			hashes = append(hashes, hashByRaw[u])
-		}
-		var assets []model.CoverAsset
-		s.db.WithContext(ctx).Where("raw_hash IN ?", hashes).Find(&assets)
-		cosByHash := make(map[string]string, len(assets))
-		for _, a := range assets {
-			if a.CosURL != "" {
-				cosByHash[a.RawHash] = a.CosURL
-			}
-		}
-		rest := make([]string, 0, len(uniq))
-		for _, u := range uniq {
-			if cos, ok := cosByHash[hashByRaw[u]]; ok {
-				out[u] = cos
-			} else {
-				rest = append(rest, u)
-			}
-		}
-		pending = rest
+	hits, pending := s.coverAssetHits(ctx, uniq, hashByRaw)
+	for u, cos := range hits {
+		out[u] = cos
 	}
 	if len(pending) == 0 {
 		return out

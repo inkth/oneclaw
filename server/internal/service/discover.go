@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,14 +35,22 @@ type DiscoverService struct {
 	echo      *echotik.Client
 	storage   *storage.Storage
 	coverHTTP *http.Client
+
+	// 封面转存后台调度:读路径(搜索/首见)只投递 rawURL、立即返回,worker 异步 rehost 到 COS。
+	// 有界 channel + 固定 worker 数统一限速(防 EchoTik 429),inflight 集合跨请求去重。
+	rehostCh       chan []string
+	rehostInflight map[string]struct{}
+	rehostMu       sync.Mutex
 }
 
 func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage) *DiscoverService {
 	return &DiscoverService{
-		db:        db,
-		echo:      echo,
-		storage:   store,
-		coverHTTP: &http.Client{Timeout: 30 * time.Second},
+		db:             db,
+		echo:           echo,
+		storage:        store,
+		coverHTTP:      &http.Client{Timeout: 30 * time.Second},
+		rehostCh:       make(chan []string, 256),
+		rehostInflight: make(map[string]struct{}),
 	}
 }
 
