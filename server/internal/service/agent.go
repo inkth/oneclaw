@@ -36,10 +36,11 @@ func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover 
 }
 
 var validAgents = map[string]bool{
-	model.AgentAnalyst:  true,
-	model.AgentDirector: true,
-	model.AgentListing:  true,
-	model.AgentTryOn:    true,
+	model.AgentAnalyst:       true,
+	model.AgentDirector:      true,
+	model.AgentListing:       true,
+	model.AgentTryOn:         true,
+	model.AgentVideoAnalysis: true,
 }
 
 // AgentCreateOpts 派活时的可选关联资产,创作类 Agent 按需消费。
@@ -118,7 +119,12 @@ func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.
 
 // execute 后台执行单个任务。任何 panic/错误都落库为 FAILED。
 func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts AgentCreateOpts) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	// 视频解析要下载视频 + ffmpeg 抽音轨 + 多模态转录,比纯文本派活慢,放宽超时。
+	timeout := 2 * time.Minute
+	if agent == model.AgentVideoAnalysis {
+		timeout = 5 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	defer func() {
 		if r := recover(); r != nil {
@@ -145,6 +151,8 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 		output, meta, usage, err = s.runListing(ctx, wsID, input, opts)
 	case model.AgentTryOn:
 		output, meta, usage, err = s.runTryOn(ctx, taskID, wsID, opts)
+	case model.AgentVideoAnalysis:
+		output, meta, usage, err = s.runVideoAnalysis(ctx, wsID, input, opts)
 	default:
 		err = fmt.Errorf("agent %s 尚未在 Go 端实现", agent)
 	}

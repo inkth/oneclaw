@@ -136,6 +136,42 @@ func (c *Client) ChatVision(ctx context.Context, model, system, user string, ima
 	return c.do(ctx, model, msgs, jsonMode, maxTokens)
 }
 
+// AudioPart 是一段内联音频(base64,不带 data: 前缀),喂给支持音频输入的多模态模型。
+type AudioPart struct {
+	Data   string // base64 编码的音频字节
+	Format string // wav|mp3|ogg|m4a... 须与音频实际编码一致
+}
+
+// ChatAV 让多模态模型同时「听音频」+「看若干帧画面」对话:用于视频解析(转录口播 + 翻译 + 带货拆解)。
+// model 须指向支持 audio 输入的多模态模型(如 google/gemini-3.5-flash);prod 该模型经 reviewHTTP 代理出网。
+// audio 可空(无口播时退化为纯看帧);imageDataURLs 传 data:image/... base64 或公网 URL 均可。
+func (c *Client) ChatAV(ctx context.Context, model, system, user string, audio *AudioPart, imageDataURLs []string, jsonMode bool, maxTokens int) (*Result, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
+	}
+	if model == "" {
+		model = c.cfg.Model
+	}
+	// user 消息体构造为 content-parts 数组:文本 → 音频 → 逐帧图(沿用 ChatVision 的 image_url 写法)。
+	parts := []map[string]any{{"type": "text", "text": user}}
+	if audio != nil && strings.TrimSpace(audio.Data) != "" {
+		parts = append(parts, map[string]any{
+			"type":        "input_audio",
+			"input_audio": map[string]string{"data": audio.Data, "format": audio.Format},
+		})
+	}
+	for _, u := range imageDataURLs {
+		if u = strings.TrimSpace(u); u != "" {
+			parts = append(parts, map[string]any{
+				"type":      "image_url",
+				"image_url": map[string]string{"url": u},
+			})
+		}
+	}
+	msgs := []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: parts}}
+	return c.do(ctx, model, msgs, jsonMode, maxTokens)
+}
+
 // do 是 chat completion 的公共执行体:构造请求 + 选 client(复盘/vision 模型走代理)+ 发送 + 解析 usage。
 func (c *Client) do(ctx context.Context, model string, msgs []chatMsg, jsonMode bool, maxTokens int) (*Result, error) {
 	if maxTokens <= 0 {

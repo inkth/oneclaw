@@ -5,6 +5,7 @@ import {
   BarChart3,
   Clapperboard,
   LayoutList,
+  ScanText,
   Shirt,
   TrendingUp,
   type LucideIcon,
@@ -36,6 +37,7 @@ export const AGENT_IDENTITY = {
   LISTING: { label: "Listing 内容", icon: LayoutList as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },
   REVIEW: { label: "投放复盘", icon: BarChart3 as LucideIcon, tone: "success" as Tone, dot: "bg-emerald-500" },
   TRYON: { label: "虚拟试穿", icon: Shirt as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },
+  VIDEO_ANALYSIS: { label: "视频解析", icon: ScanText as LucideIcon, tone: "fuchsia" as Tone, dot: "bg-fuchsia-500" },
 } as const;
 
 export type AgentKey = keyof typeof AGENT_IDENTITY;

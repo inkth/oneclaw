@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MessagesSquare } from "lucide-react";
 import { authFetch } from "@/lib/api-browser";
-import { AgentComposer, AgentPills, type ComposerKind, type ListingMode } from "./agent-composer";
+import {
+  AgentComposer,
+  AgentPills,
+  type ComposerKind,
+  type DirectorMode,
+  type ListingMode,
+} from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
 import { ReviewTrend } from "./review-trend";
@@ -73,6 +79,8 @@ export function Workbench({
   const [materialId, setMaterialId] = useState<string | null>(initialMaterialId ?? null);
   // Listing 子模式(文案 / 上身图试穿):切走 Listing 自动回 copy(见下方 effect)。
   const [listingMode, setListingMode] = useState<ListingMode>("copy");
+  // 短视频子模式(做视频 / 视频解析):切走 DIRECTOR 自动回 create(见下方 effect)。
+  const [directorMode, setDirectorMode] = useState<DirectorMode>("create");
   // 所有 Agent(含同步复盘)统一落任务表,流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -106,6 +114,7 @@ export function Workbench({
   // 切到非 Listing 的 Agent 时,Listing 子模式回到「文案」,避免下次选 Listing 仍停在试穿。
   useEffect(() => {
     if (activeAgent !== "LISTING") setListingMode("copy");
+    if (activeAgent !== "DIRECTOR") setDirectorMode("create");
   }, [activeAgent]);
 
   // 有排队/执行中的任务时轮询当前会话的任务流,全部到达终态自动停。
@@ -186,6 +195,9 @@ export function Workbench({
       listingMode={listingMode}
       // 有快捷卡的页面(首页)靠卡切「文案/上身图」,不渲染底栏开关;会话页没卡,才给开关。
       onListingModeChange={showQuickActions ? undefined : setListingMode}
+      directorMode={directorMode}
+      // 视频解析无快捷卡,DIRECTOR 在任何页面都用底栏开关切「做视频/视频解析」。
+      onDirectorModeChange={setDirectorMode}
       showAssetChips={showAssetChips}
       textareaRef={textareaRef}
       allowReview={allowReview}

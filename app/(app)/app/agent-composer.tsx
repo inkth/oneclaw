@@ -4,14 +4,18 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Check,
+  Clapperboard,
   FileSpreadsheet,
+  FileVideo,
   LayoutList,
   Loader2,
   Package,
   Plus,
+  ScanText,
   Send,
   Shirt,
   Sparkles,
+  Upload,
   X,
 } from "lucide-react";
 import { type ReviewResult } from "@/lib/review/types";
@@ -29,6 +33,9 @@ export type ComposerKind = "ANALYST" | "DIRECTOR" | "LISTING" | "TRYON" | "REVIE
 
 /** Listing 内容的两个子模式:文案(标题/卖点/A+/主图)与上身图(虚拟试穿)。 */
 export type ListingMode = "copy" | "tryon";
+
+/** 短视频创作的两个子模式:做视频(写脚本→出片)与视频解析(拆解一条参考带货视频)。 */
+export type DirectorMode = "create" | "analyze";
 
 /** 胶囊行展示的 Agent(4 个;虚拟试穿并入 Listing 子模式)。 */
 const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
@@ -113,6 +120,8 @@ export function AgentComposer({
   onMaterialChange,
   listingMode = "copy",
   onListingModeChange,
+  directorMode = "create",
+  onDirectorModeChange,
   showAssetChips = false,
   textareaRef,
   onDispatched,
@@ -139,6 +148,10 @@ export function AgentComposer({
   listingMode?: ListingMode;
   /** 传入则在底栏渲染「文案/上身图」分段开关:仅在没有快捷卡的会话页用(首页靠卡切换)。 */
   onListingModeChange?: (m: ListingMode) => void;
+  /** 短视频子模式:做视频 / 视频解析;由 Workbench 持有。 */
+  directorMode?: DirectorMode;
+  /** 传入则在 DIRECTOR 底栏渲染「做视频/视频解析」分段开关。 */
+  onDirectorModeChange?: (m: DirectorMode) => void;
   /** 是否在底栏展示资产选择器(创作页开)。 */
   showAssetChips?: boolean;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
@@ -160,17 +173,31 @@ export function AgentComposer({
   const [targetRoi, setTargetRoi] = useState("3.0");
   const prevAgentRef = useRef<ComposerKind>("ANALYST");
   const fileRef = useRef<HTMLInputElement>(null);
+  // 视频解析:上传的待解析视频(已落库为 VIDEO 素材)+ 上传中状态。
+  const [analyzeVideo, setAnalyzeVideo] = useState<{ id: string; name: string } | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const videoRef = useRef<HTMLInputElement>(null);
   const { open: openAuthModal } = useAuthModal();
 
   const isReview = activeAgent === "REVIEW";
+  // 视频解析 = 短视频创作的子模式:输入是一条上传的视频,选填关注点,传完才可发。
+  const isAnalyze = activeAgent === "DIRECTOR" && directorMode === "analyze";
   // 虚拟试穿 = Listing 的「上身图」子模式:输入是「模特 + 服饰图」两张图而非文字,凑齐才可发。
   const isTryOn = activeAgent === "LISTING" && listingMode === "tryon";
   const tryOnReady = !!personaId && (!!materialId || !!productId);
   const placeholder =
     isReview && attachedFile
       ? "可补充说明(选填),例:重点看 ROI 低于 2 的素材该停还是改"
-      : PLACEHOLDERS[activeAgent];
-  const canSend = attachedFile ? true : isTryOn ? tryOnReady : !isReview && !!input.trim();
+      : isAnalyze
+        ? "可选:想重点拆解什么?例:重点看开头钩子怎么写(留空=全面解析)"
+        : PLACEHOLDERS[activeAgent];
+  const canSend = attachedFile
+    ? true
+    : isTryOn
+      ? tryOnReady
+      : isAnalyze
+        ? !!analyzeVideo && !uploadingVideo
+        : !isReview && !!input.trim();
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
@@ -197,12 +224,51 @@ export function AgentComposer({
     onAgentChange(prevAgentRef.current === "REVIEW" ? "ANALYST" : prevAgentRef.current);
   }
 
+  // 上传待解析视频:落库为该工作台的 VIDEO 素材,拿回 materialId 供派活引用。
+  async function uploadVideo(f: File) {
+    if (!f.type.startsWith("video/")) {
+      toast("请选择视频文件(mp4 / mov 等)");
+      return;
+    }
+    if (gateGuest()) return;
+    setUploadingVideo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.error?.message || json?.message || "上传失败,稍后再试");
+        return;
+      }
+      const m = json.data?.material ?? json.material;
+      if (m?.id) setAnalyzeVideo({ id: m.id as string, name: (m.originalName as string) ?? f.name });
+    } catch {
+      toast.error("网络异常,上传失败");
+    } finally {
+      setUploadingVideo(false);
+    }
+  }
+
   async function submitTask() {
     setSubmitting(true);
     const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: JSON.stringify(
+        isAnalyze
+          ? {
+              // 视频解析:派活 VIDEO_ANALYSIS,带上传视频素材;input 作选填关注点 + 会话气泡标题
+              ...(conversationId ? { conversationId } : {}),
+              agent: "VIDEO_ANALYSIS",
+              input: input.trim() || "解析视频脚本",
+              ...(analyzeVideo ? { materialId: analyzeVideo.id } : {}),
+            }
+          : {
         // 归属会话:在某会话内派活则带上,新对话页留空由后端建会话
         ...(conversationId ? { conversationId } : {}),
         // 试穿子模式派活落 TRYON 任务(后端不变),其余按当前 Agent
@@ -236,6 +302,7 @@ export function AgentComposer({
       return;
     }
     onInputChange("");
+    setAnalyzeVideo(null);
     // 新任务气泡立即出现在输入框下方,无需跳转提示
     const task = (json.data?.task ?? json.task) as StreamTask | undefined;
     if (task) onDispatched?.(task);
@@ -292,6 +359,15 @@ export function AgentComposer({
     if (isTryOn) {
       if (!tryOnReady) {
         toast("请先选择模特和服饰图");
+        return;
+      }
+      await submitTask();
+      return;
+    }
+    if (isAnalyze) {
+      if (uploadingVideo) return;
+      if (!analyzeVideo) {
+        toast("请先上传要解析的视频");
         return;
       }
       await submitTask();
@@ -358,6 +434,23 @@ export function AgentComposer({
           </div>
         )}
 
+        {/* 视频解析:已上传待解析视频 chip */}
+        {isAnalyze && analyzeVideo && (
+          <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 py-1 pl-2 pr-1 text-xs font-medium text-fuchsia-700">
+              <FileVideo className="h-3.5 w-3.5" />
+              <span className="max-w-48 truncate">{analyzeVideo.name}</span>
+              <button
+                onClick={() => setAnalyzeVideo(null)}
+                className="rounded-full p-0.5 text-fuchsia-400 hover:bg-fuchsia-100 hover:text-fuchsia-700"
+                aria-label="移除视频"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+        )}
+
         {isTryOn ? (
           // 与非试穿的 textarea(rows=4)等高,切换 Agent 时输入卡不跳变
           <div className="flex min-h-[118px] items-center px-4 py-3.5">
@@ -391,6 +484,51 @@ export function AgentComposer({
                 上身图
               </SubModeButton>
             </div>
+          )}
+
+          {/* 短视频:做视频 / 视频解析 分段开关 */}
+          {activeAgent === "DIRECTOR" && onDirectorModeChange && (
+            <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
+              <SubModeButton active={!isAnalyze} icon={Clapperboard} onClick={() => onDirectorModeChange("create")}>
+                做视频
+              </SubModeButton>
+              <SubModeButton active={isAnalyze} icon={ScanText} onClick={() => onDirectorModeChange("analyze")}>
+                视频解析
+              </SubModeButton>
+            </div>
+          )}
+
+          {/* 视频解析:上传待解析视频 */}
+          {isAnalyze && (
+            <>
+              <input
+                ref={videoRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadVideo(f);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (gateGuest()) return;
+                  videoRef.current?.click();
+                }}
+                disabled={uploadingVideo}
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink disabled:opacity-50"
+                title="上传要解析的带货视频"
+              >
+                {uploadingVideo ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Upload className="h-3.5 w-3.5" />
+                )}
+                {uploadingVideo ? "上传中…" : analyzeVideo ? "换一个视频" : "上传视频"}
+              </button>
+            </>
           )}
 
           {isReview && (
@@ -436,8 +574,8 @@ export function AgentComposer({
             </>
           )}
 
-          {/* 创作工具链:商品 / 出镜人设 / 首帧素材(试穿子模式用专属「选择模特与服饰」,不重复出) */}
-          {showAssetChips && !isTryOn && (
+          {/* 创作工具链:商品 / 出镜人设 / 首帧素材(试穿、视频解析子模式不用这套,不重复出) */}
+          {showAssetChips && !isTryOn && !isAnalyze && (
             <AssetChips
               workspaceId={workspaceId}
               activeAgent={activeAgent}
@@ -472,6 +610,8 @@ export function AgentComposer({
                 <Sparkles className="h-4 w-4" />
               ) : isTryOn ? (
                 <Shirt className="h-4 w-4" />
+              ) : isAnalyze ? (
+                <ScanText className="h-4 w-4" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
@@ -480,12 +620,16 @@ export function AgentComposer({
                   ? "分析中…"
                   : isTryOn
                     ? "生成中…"
-                    : "发送中…"
+                    : isAnalyze
+                      ? "解析中…"
+                      : "发送中…"
                 : attachedFile
                   ? "开始复盘"
                   : isTryOn
                     ? "生成上身图"
-                    : "发送"}
+                    : isAnalyze
+                      ? "开始解析"
+                      : "发送"}
             </button>
           </div>
         </div>

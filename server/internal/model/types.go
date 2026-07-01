@@ -38,10 +38,11 @@ const (
 	ModelGenderMale       = "MALE"
 	ModelGenderNeutral    = "NEUTRAL"
 
-	AgentAnalyst  = "ANALYST"
-	AgentDirector = "DIRECTOR"
-	AgentListing  = "LISTING"
-	AgentTryOn    = "TRYON" // 虚拟试穿:模特图 + 服饰图 → 上身图(纯出图,不走 LLM)
+	AgentAnalyst       = "ANALYST"
+	AgentDirector      = "DIRECTOR"
+	AgentListing       = "LISTING"
+	AgentTryOn         = "TRYON"          // 虚拟试穿:模特图 + 服饰图 → 上身图(纯出图,不走 LLM)
+	AgentVideoAnalysis = "VIDEO_ANALYSIS" // 视频解析:上传带货视频 → 抽音轨喂多模态模型 → 逐句脚本+中文翻译+带货拆解
 	// REVIEW 由 review/analyze 同步产出后落库(不走异步队列,不在 validAgents 内)。
 	AgentReview = "REVIEW"
 

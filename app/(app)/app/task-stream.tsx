@@ -33,6 +33,7 @@ import { REGIONS, REGION_LANG, type Region } from "./discover/_components/region
 import { ReviewResults } from "./review-panel";
 import { ListingResults } from "./listing-results";
 import { TryOnResult } from "./try-on-result";
+import { VideoAnalysisResult } from "./video-analysis-result";
 import { usePersonas } from "./use-personas";
 
 export type StreamTask = {
@@ -84,6 +85,15 @@ export type StreamTask = {
     modelUrl?: string;
     garmentUrl?: string;
     imagesError?: string;
+    /** VIDEO_ANALYSIS 任务:逐句脚本 + 中文翻译 + 带货结构拆解 + 改编建议(kind="videoAnalysis")。 */
+    kind?: string;
+    videoUrl?: string;
+    lang?: string;
+    summary?: string;
+    lines?: { t?: string; original?: string; zh?: string }[];
+    structure?: { hook?: string; pain?: string; selling?: string; cta?: string };
+    reusablePoints?: string[];
+    adaptations?: string[];
   } | null;
   createdAt: string;
 };
@@ -293,6 +303,9 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
 
   // TRYON 虚拟试穿:DONE 后异步出图,按 imagesStatus 自轮询展示上身图。
   const isTryOn = t.agent === "TRYON" && t.status === "DONE";
+
+  // VIDEO_ANALYSIS 视频解析:DONE 后用结构化面板渲染脚本/翻译/带货拆解/改编建议。
+  const isVideoAnalysis = t.agent === "VIDEO_ANALYSIS" && t.status === "DONE";
 
   // DIRECTOR 脚本草稿:确认后才真正出片。本地 videoId 覆盖 metadata(确认成功立即切换 UI)。
   const isDirector = t.agent === "DIRECTOR";
@@ -520,6 +533,8 @@ function TaskBubble({ task, newest = false }: { task: StreamTask; newest?: boole
           <ListingResults task={t} />
         ) : isTryOn ? (
           <TryOnResult task={t} />
+        ) : isVideoAnalysis ? (
+          <VideoAnalysisResult task={t} />
         ) : (
           <>
             <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">
