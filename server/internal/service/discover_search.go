@@ -90,14 +90,14 @@ func (s *DiscoverService) searchSellers(ctx context.Context, p echotik.RanklistP
 					raw[i].Region = p.Region
 				}
 			}
-			return &EntityRanklistResult[SellerDTO]{State: "live", Rows: s.signMapSellers(ctx, raw)}
+			return &EntityRanklistResult[SellerDTO]{State: "live", Rows: s.hostMapSellers(ctx, raw)}
 		}
 	}
 	if rows, ok := s.searchLocalSellers(ctx, p); ok {
 		return &EntityRanklistResult[SellerDTO]{State: "cached", Rows: rows}
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.signMapSellers(ctx, echotik.MockSearchSellers(p.Region, p.Keyword, p.PageSize))}
+		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.hostMapSellers(ctx, echotik.MockSearchSellers(p.Region, p.Keyword, p.PageSize))}
 	}
 	return &EntityRanklistResult[SellerDTO]{State: "empty", Rows: []SellerDTO{}}
 }
@@ -105,14 +105,14 @@ func (s *DiscoverService) searchSellers(ctx context.Context, p echotik.RanklistP
 func (s *DiscoverService) searchInfluencers(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[InfluencerDTO] {
 	if s.echo.Configured() {
 		if raw, err := s.echo.SearchInfluencers(ctx, p.Keyword, p.Region, p.PageSize); err == nil && len(raw) > 0 {
-			return &EntityRanklistResult[InfluencerDTO]{State: "live", Rows: s.signMapInfluencers(ctx, raw)}
+			return &EntityRanklistResult[InfluencerDTO]{State: "live", Rows: s.hostMapInfluencers(ctx, raw)}
 		}
 	}
 	if rows, ok := s.searchLocalInfluencers(ctx, p); ok {
 		return &EntityRanklistResult[InfluencerDTO]{State: "cached", Rows: rows}
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.signMapInfluencers(ctx, echotik.MockSearchInfluencers(p.Region, p.Keyword, p.PageSize))}
+		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.hostMapInfluencers(ctx, echotik.MockSearchInfluencers(p.Region, p.Keyword, p.PageSize))}
 	}
 	return &EntityRanklistResult[InfluencerDTO]{State: "empty", Rows: []InfluencerDTO{}}
 }
@@ -120,14 +120,14 @@ func (s *DiscoverService) searchInfluencers(ctx context.Context, p echotik.Rankl
 func (s *DiscoverService) searchVideos(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
 	if s.echo.Configured() {
 		if raw, err := s.echo.SearchVideos(ctx, p.Keyword, p.Region, p.PageSize); err == nil && len(raw) > 0 {
-			return &EntityRanklistResult[VideoDTO]{State: "live", Rows: s.signMapVideos(ctx, raw)}
+			return &EntityRanklistResult[VideoDTO]{State: "live", Rows: s.hostMapVideos(ctx, raw)}
 		}
 	}
 	if rows, ok := s.searchLocalVideos(ctx, p); ok {
 		return &EntityRanklistResult[VideoDTO]{State: "cached", Rows: rows}
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.signMapVideos(ctx, echotik.MockSearchVideos(p.Region, p.Keyword, p.PageSize))}
+		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.hostMapVideos(ctx, echotik.MockSearchVideos(p.Region, p.Keyword, p.PageSize))}
 	}
 	return &EntityRanklistResult[VideoDTO]{State: "empty", Rows: []VideoDTO{}}
 }

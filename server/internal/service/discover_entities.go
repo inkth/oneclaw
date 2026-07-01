@@ -85,16 +85,16 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 	return s.fetchSellerRanklistLive(ctx, p)
 }
 
-// signMapSellers 签封面 + 映射 DTO(榜单 / 搜索共用)。
-func (s *DiscoverService) signMapSellers(ctx context.Context, raw []echotik.SellerListItem) []SellerDTO {
+// hostMapSellers 封面转存 COS + 映射 DTO(榜单 / 搜索共用)。
+func (s *DiscoverService) hostMapSellers(ctx context.Context, raw []echotik.SellerListItem) []SellerDTO {
 	imgs := make([]string, 0, len(raw))
 	for _, it := range raw {
 		imgs = append(imgs, it.CoverURL)
 	}
-	signed := s.echo.SignCovers(ctx, imgs)
+	hosted := s.rehostCovers(ctx, imgs)
 	rows := make([]SellerDTO, 0, len(raw))
 	for _, it := range raw {
-		rows = append(rows, mapSeller(it, signed))
+		rows = append(rows, mapSeller(it, hosted))
 	}
 	return rows
 }
@@ -113,16 +113,16 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 	return s.fetchInfluencerRanklistLive(ctx, p)
 }
 
-// signMapInfluencers 签头像 + 映射 DTO(榜单 / 搜索共用)。
-func (s *DiscoverService) signMapInfluencers(ctx context.Context, raw []echotik.InfluencerListItem) []InfluencerDTO {
+// hostMapInfluencers 头像转存 COS + 映射 DTO(榜单 / 搜索共用)。
+func (s *DiscoverService) hostMapInfluencers(ctx context.Context, raw []echotik.InfluencerListItem) []InfluencerDTO {
 	imgs := make([]string, 0, len(raw))
 	for _, it := range raw {
 		imgs = append(imgs, it.Avatar)
 	}
-	signed := s.echo.SignCovers(ctx, imgs)
+	hosted := s.rehostCovers(ctx, imgs)
 	rows := make([]InfluencerDTO, 0, len(raw))
 	for _, it := range raw {
-		rows = append(rows, mapInfluencer(it, signed))
+		rows = append(rows, mapInfluencer(it, hosted))
 	}
 	return rows
 }
@@ -141,16 +141,16 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 	return s.fetchVideoRanklistLive(ctx, p)
 }
 
-// signMapVideos 签封面/头像 + 映射 DTO(榜单 / 搜索共用)。
-func (s *DiscoverService) signMapVideos(ctx context.Context, raw []echotik.VideoListItem) []VideoDTO {
+// hostMapVideos 封面/头像转存 COS + 映射 DTO(榜单 / 搜索共用)。
+func (s *DiscoverService) hostMapVideos(ctx context.Context, raw []echotik.VideoListItem) []VideoDTO {
 	imgs := make([]string, 0, len(raw)*2)
 	for _, it := range raw {
 		imgs = append(imgs, it.ReflowCover, it.Avatar)
 	}
-	signed := s.echo.SignCovers(ctx, imgs)
+	hosted := s.rehostCovers(ctx, imgs)
 	rows := make([]VideoDTO, 0, len(raw))
 	for _, it := range raw {
-		rows = append(rows, mapVideo(it, signed))
+		rows = append(rows, mapVideo(it, hosted))
 	}
 	return rows
 }
@@ -197,7 +197,7 @@ func mapSeller(it echotik.SellerListItem, signed map[string]string) SellerDTO {
 		SellerID:        it.SellerID,
 		SellerName:      it.SellerName,
 		Region:          it.Region,
-		CoverURL:        signedURL(it.CoverURL, signed),
+		CoverURL:        hostedURL(it.CoverURL, signed),
 		Rating:          it.Rating.Float(),
 		Categories:      parseCategoryNames(it.MostProductCategoryList, 2),
 		TotalProductCnt: it.TotalProductCnt,
@@ -215,7 +215,7 @@ func mapInfluencer(it echotik.InfluencerListItem, signed map[string]string) Infl
 		UniqueID:          it.UniqueID,
 		NickName:          it.NickName,
 		Region:            it.Region,
-		AvatarURL:         signedURL(it.Avatar, signed),
+		AvatarURL:         hostedURL(it.Avatar, signed),
 		Category:          it.Category,
 		EcScore:           it.EcScore,
 		TotalFollowersCnt: it.TotalFollowersCnt,
@@ -234,8 +234,8 @@ func mapVideo(it echotik.VideoListItem, signed map[string]string) VideoDTO {
 		NickName:             it.NickName,
 		UniqueID:             it.UniqueID,
 		Region:               it.Region,
-		CoverURL:             signedURL(it.ReflowCover, signed),
-		AvatarURL:            signedURL(it.Avatar, signed),
+		CoverURL:             hostedURL(it.ReflowCover, signed),
+		AvatarURL:            hostedURL(it.Avatar, signed),
 		Desc:                 it.VideoDesc,
 		Category:             it.Category,
 		Duration:             it.Duration,
@@ -249,13 +249,13 @@ func mapVideo(it echotik.VideoListItem, signed map[string]string) VideoDTO {
 	}
 }
 
-// signedURL 把原始防盗链 URL 换成签名后的;签名缺失(mock / 非 TOS host)返回 nil → 前端走占位图。
-// 注:店铺/达人/视频三榜走签名 URL(3 天有效,前端 onError 兜底);仅商品榜走 COS 永久化(rehostCovers)。
-func signedURL(raw string, signed map[string]string) *string {
-	if raw == "" || signed == nil {
+// hostedURL 把原始防盗链 URL 换成转存后的可用 URL;缺失(mock / 非 TOS host / 转存失败)返回 nil → 前端走占位图。
+// 注:四榜(商品/店铺/达人/视频)封面统一走 COS 永久化(rehostCovers),失败自动回退 3 天签名 URL。
+func hostedURL(raw string, hosted map[string]string) *string {
+	if raw == "" || hosted == nil {
 		return nil
 	}
-	if dst, ok := signed[raw]; ok && dst != "" {
+	if dst, ok := hosted[raw]; ok && dst != "" {
 		return &dst
 	}
 	return nil

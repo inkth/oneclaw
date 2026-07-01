@@ -110,11 +110,11 @@ func (s *DiscoverService) lookupSellerRanklist(ctx context.Context, p echotik.Ra
 // fetchSellerRanklistLive 冷启动/类目/翻页兜底:拉 raw;主流榜(page1)落库供下次,其余只签名映射返回。
 func (s *DiscoverService) fetchSellerRanklistLive(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[SellerDTO] {
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
+		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.hostMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
 	}
 	raw, err := s.echo.GetSellerRanklist(ctx, p)
 	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[SellerDTO]{State: "error", Rows: s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
+		return &EntityRanklistResult[SellerDTO]{State: "error", Rows: s.hostMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
 	}
 	// 任意页都落库 + 写本页顺序,使该 (类目,页) 下次走本地;再回查以统一返回 COS/本地口径。
 	s.upsertSellerList(ctx, p.Region, raw)
@@ -124,7 +124,7 @@ func (s *DiscoverService) fetchSellerRanklistLive(ctx context.Context, p echotik
 		return res
 	}
 	now := time.Now()
-	return &EntityRanklistResult[SellerDTO]{State: "live", FetchedAt: &now, Rows: s.signMapSellers(ctx, raw)}
+	return &EntityRanklistResult[SellerDTO]{State: "live", FetchedAt: &now, Rows: s.hostMapSellers(ctx, raw)}
 }
 
 func sellerIDsOf(raw []echotik.SellerListItem) []string {
@@ -179,11 +179,11 @@ func (s *DiscoverService) lookupInfluencerRanklist(ctx context.Context, p echoti
 
 func (s *DiscoverService) fetchInfluencerRanklistLive(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[InfluencerDTO] {
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
+		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.hostMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
 	}
 	raw, err := s.echo.GetInfluencerRanklist(ctx, p)
 	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[InfluencerDTO]{State: "error", Rows: s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
+		return &EntityRanklistResult[InfluencerDTO]{State: "error", Rows: s.hostMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
 	}
 	s.upsertInfluencerList(ctx, p.Region, raw)
 	s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
@@ -192,7 +192,7 @@ func (s *DiscoverService) fetchInfluencerRanklistLive(ctx context.Context, p ech
 		return res
 	}
 	now := time.Now()
-	return &EntityRanklistResult[InfluencerDTO]{State: "live", FetchedAt: &now, Rows: s.signMapInfluencers(ctx, raw)}
+	return &EntityRanklistResult[InfluencerDTO]{State: "live", FetchedAt: &now, Rows: s.hostMapInfluencers(ctx, raw)}
 }
 
 func influencerIDsOf(raw []echotik.InfluencerListItem) []string {
@@ -247,11 +247,11 @@ func (s *DiscoverService) lookupVideoRanklist(ctx context.Context, p echotik.Ran
 
 func (s *DiscoverService) fetchVideoRanklistLive(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
+		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.hostMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
 	}
 	raw, err := s.echo.GetVideoRanklist(ctx, p)
 	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[VideoDTO]{State: "error", Rows: s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
+		return &EntityRanklistResult[VideoDTO]{State: "error", Rows: s.hostMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
 	}
 	s.upsertVideoList(ctx, p.Region, raw)
 	s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
@@ -260,7 +260,7 @@ func (s *DiscoverService) fetchVideoRanklistLive(ctx context.Context, p echotik.
 		return res
 	}
 	now := time.Now()
-	return &EntityRanklistResult[VideoDTO]{State: "live", FetchedAt: &now, Rows: s.signMapVideos(ctx, raw)}
+	return &EntityRanklistResult[VideoDTO]{State: "live", FetchedAt: &now, Rows: s.hostMapVideos(ctx, raw)}
 }
 
 func videoIDsOf(raw []echotik.VideoListItem) []string {
