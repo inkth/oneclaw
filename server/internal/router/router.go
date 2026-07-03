@@ -56,6 +56,7 @@ func New(d Deps) *gin.Engine {
 	videoH := handler.NewVideoHandler(d.Video, d.Workspace)
 	tplH := handler.NewTemplateHandler(d.Template, d.Workspace)
 	reviewH := handler.NewReviewHandler(d.Workspace, d.Agent)
+	guideH := handler.NewGuideHandler(d.Workspace, d.Agent)
 	billH := handler.NewBillingHandler(d.Billing, d.Quota, d.Workspace)
 
 	r.GET("/health", handler.Health)
@@ -112,6 +113,9 @@ func New(d Deps) *gin.Engine {
 		priv.GET("/workspaces/:wid/discover/favorites/check", discH.FavoriteCheck)
 
 		priv.POST("/workspaces/:wid/review/analyze", reviewH.Analyze)
+
+		// 新手指南:个性化起步路线(同步 LLM,免积分)
+		priv.POST("/workspaces/:wid/guide/plan", guideH.Plan)
 
 		priv.GET("/workspaces/:wid/shops", shopH.List)
 		priv.POST("/workspaces/:wid/shops", shopH.Create)
