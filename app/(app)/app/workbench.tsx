@@ -240,6 +240,12 @@ export function Workbench({
                     ? "选个 Agent，在下面写一句指令试试。登录后对话会存进这里。"
                     : "还没有对话。选个 Agent，在下面写一句指令开始。"}
                 </p>
+                <a
+                  href="/app/guide"
+                  className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                >
+                  不知道从哪开始？看看新手指南 →
+                </a>
               </div>
             ) : (
               <TaskStream items={visibleTasks} chronological />
