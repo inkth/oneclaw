@@ -80,26 +80,26 @@ const CATEGORIES: Category[] = [
     services: [
       {
         label: "智能物流",
-        desc: "对接头程与海外仓，一键比价下单、同步轨迹。",
+        desc: "对接主流头程专线与海外仓渠道，下单前一键比价选最优线路，发出后轨迹自动同步、异常件主动提醒。适合刚起量、还没有固定货代的新卖家。",
         icon: Truck,
         status: "beta",
-        tags: ["多渠道比价", "轨迹同步"],
+        tags: ["多渠道比价", "轨迹同步", "异常提醒"],
         regions: ["us", "uk", "sea", "mx", "eu", "me"],
       },
       {
         label: "海外仓",
-        desc: "一件代发、退货换标、本地尾程，旺季不爆仓。",
+        desc: "主流市场的本地仓资源：一件代发、退货换标、本地尾程配送，旺季不爆仓、时效更稳。适合已有稳定出单、想把物流体验做上去的卖家。",
         icon: Warehouse,
         status: "soon",
-        tags: ["一件代发", "退换处理"],
+        tags: ["一件代发", "退换处理", "本地尾程"],
         regions: ["us", "uk", "sea", "eu", "mx"],
       },
       {
         label: "清关报关",
-        desc: "进出口报关与合规申报，避免卡关与扣货。",
+        desc: "进出口报关与商品合规申报由持牌报关行代理，发货前预审品类资质，避免卡关与扣货。适合带电、美妆等对合规敏感的品类。",
         icon: PackageCheck,
         status: "soon",
-        tags: ["进出口", "合规申报"],
+        tags: ["进出口", "合规申报", "品类预审"],
         regions: ["us", "uk", "sea", "eu", "mx", "me"],
       },
     ],
@@ -111,26 +111,26 @@ const CATEGORIES: Category[] = [
     services: [
       {
         label: "达人对接",
-        desc: "寄样、建联、佣金管理，找到适合你商品的带货达人。",
+        desc: "帮你筛选匹配品类的带货达人，代发建联、跟进寄样与佣金方案，进展定期同步，避免寄了样没下文。适合没有海外 BD 团队的卖家。",
         icon: Users,
         status: "beta",
-        tags: ["建联寄样", "佣金管理"],
+        tags: ["建联寄样", "佣金管理", "进展同步"],
         regions: ["us", "uk", "sea", "mx"],
       },
       {
         label: "直播代播",
-        desc: "专业主播团队代播，覆盖多时段排期与脚本。",
+        desc: "本土主播团队按时段排期代播，含直播脚本、货品讲解与场后数据复盘。适合想试水直播、但还养不起自有主播的卖家。",
         icon: Radio,
         status: "soon",
-        tags: ["多时段排期", "脚本支持"],
+        tags: ["多时段排期", "脚本支持", "场后复盘"],
         regions: ["sea", "us", "uk"],
       },
       {
         label: "广告开户",
-        desc: "GMV Max 广告搭建、托管优化与预算控制。",
+        desc: "TikTok 广告账户开户，GMV Max 计划搭建与托管优化，预算消耗与投产周度汇报。适合自然流量见顶、想放量的店铺。",
         icon: Megaphone,
         status: "soon",
-        tags: ["GMV Max", "托管优化"],
+        tags: ["GMV Max", "托管优化", "周度汇报"],
         regions: ["global"],
       },
     ],
@@ -142,26 +142,26 @@ const CATEGORIES: Category[] = [
     services: [
       {
         label: "跨境收款",
-        desc: "多币种结汇、低费率提现，资金到账更快更稳。",
+        desc: "对接主流跨境收款通道，多币种结汇、低费率提现到国内账户，到账时效与汇损透明可查。开店第一步就能用上。",
         icon: Wallet,
         status: "live",
-        tags: ["多币种", "低费率"],
+        tags: ["多币种", "低费率", "透明汇损"],
         regions: ["global"],
       },
       {
         label: "税务合规",
-        desc: "VAT / 销售税注册与申报，远离平台合规风险。",
+        desc: "VAT / 销售税注册与按期代理申报，申报节点自动提醒，远离平台合规下架风险。适合已在英欧市场稳定出单的卖家。",
         icon: ReceiptText,
         status: "soon",
-        tags: ["VAT 注册", "代理申报"],
+        tags: ["VAT 注册", "代理申报", "到期提醒"],
         regions: ["us", "uk", "eu"],
       },
       {
         label: "公司与店铺",
-        desc: "海外主体注册、店铺入驻资质，一站式办妥。",
+        desc: "海外公司主体注册、TikTok Shop 入驻资质材料准备与提审跟进，一站式办妥。适合想从个人店升级为正规主体经营的卖家。",
         icon: ShieldCheck,
         status: "soon",
-        tags: ["主体注册", "入驻资质"],
+        tags: ["主体注册", "入驻资质", "提审跟进"],
         regions: ["us", "uk", "sea", "eu"],
       },
     ],
@@ -193,7 +193,7 @@ export default function ServicesPage() {
               <p className="mt-0.5 text-xs text-zinc-400">{c.desc}</p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-3">
               {c.services.map((svc) => (
                 <ServiceCard key={svc.label} service={svc} onContact={setContactTopic} />
               ))}
@@ -232,34 +232,33 @@ function ServiceCard({
   return (
     <div
       className={
-        "flex h-full flex-col rounded-xl border p-5 transition-colors " +
+        "rounded-xl border p-5 transition-colors sm:flex sm:items-center sm:gap-4 " +
         (actionable
           ? "border-zinc-200/80 bg-white hover:border-brand-200 hover:bg-brand-50/30"
           : "border-zinc-100 bg-zinc-50/60")
       }
     >
-      <div className="flex items-center gap-2.5">
-        <div
-          className={
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " +
-            (actionable ? "bg-brand-50 text-brand-500" : "bg-zinc-100 text-zinc-400")
-          }
-        >
-          <Icon className="h-4.5 w-4.5" />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            className={
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " +
+              (actionable ? "bg-brand-50 text-brand-500" : "bg-zinc-100 text-zinc-400")
+            }
+          >
+            <Icon className="h-4.5 w-4.5" />
+          </div>
+          <span className="font-medium text-zinc-900">{label}</span>
+          <Badge tone={meta.tone} outline={false}>
+            {meta.label}
+          </Badge>
+          <span className="text-2xs text-zinc-400">适用 · {regionText(service)}</span>
         </div>
-        <span className="font-medium text-zinc-900">{label}</span>
-        <Badge tone={meta.tone} className="ml-auto" outline={false}>
-          {meta.label}
-        </Badge>
-      </div>
 
-      <p className="mt-2.5 text-sm leading-relaxed text-zinc-500">{desc}</p>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-500">{desc}</p>
 
-      <p className="mt-2 text-2xs text-zinc-400">适用 · {regionText(service)}</p>
-
-      <div className="mt-auto space-y-3 pt-3">
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
             {tags.map((t) => (
               <span key={t} className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-2xs text-zinc-500">
                 {t}
@@ -267,16 +266,17 @@ function ServiceCard({
             ))}
           </div>
         )}
-        <Button
-          variant={status === "live" ? "primary" : status === "beta" ? "secondary" : "ghost"}
-          size="sm"
-          className="w-full"
-          onClick={() => onContact(label)}
-        >
-          <Headset className="h-3.5 w-3.5" />
-          {status === "beta" ? "申请内测" : "预约咨询"}
-        </Button>
       </div>
+
+      <Button
+        variant={status === "live" ? "primary" : status === "beta" ? "secondary" : "ghost"}
+        size="sm"
+        className="mt-4 w-full shrink-0 sm:mt-0 sm:w-auto"
+        onClick={() => onContact(label)}
+      >
+        <Headset className="h-3.5 w-3.5" />
+        {status === "beta" ? "申请内测" : "预约咨询"}
+      </Button>
     </div>
   );
 }
