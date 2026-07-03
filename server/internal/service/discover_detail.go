@@ -171,6 +171,7 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 	if dto.Videos == nil {
 		dto.Videos = []ProductVideoDTO{}
 	}
+	normalizeVideoPlayAddrs(dto.Videos)
 	dto.Trend = trend
 	dto.Score = s.scoreProduct(dp, extras, trend)
 	return dto, nil
@@ -285,7 +286,7 @@ func (s *DiscoverService) fetchProductVideos(ctx context.Context, id, region str
 			VideoID:      r.VideoID,
 			Cover:        hosted[r.ReflowCover],
 			Desc:         r.VideoDesc,
-			PlayAddr:     r.PlayAddr,
+			PlayAddr:     tiktokVideoURL(r.VideoID),
 			CreateTime:   string(r.CreateTime),
 			Views:        r.TotalViewsCnt.Int(),
 			Digg:         r.TotalDiggCnt.Int(),
@@ -296,6 +297,24 @@ func (s *DiscoverService) fetchProductVideos(ctx context.Context, id, region str
 		})
 	}
 	return out
+}
+
+// tiktokVideoURL 由视频 ID 构造 TikTok 公开链接(TikTok 按 video id 重定向,handle 任意)。
+// 不用 EchoTik 的 play_addr:那是防盗链签名地址,会过期,不能落库/给前端长期用。
+func tiktokVideoURL(videoID string) string {
+	if videoID == "" {
+		return ""
+	}
+	return "https://www.tiktok.com/@_/video/" + videoID
+}
+
+// normalizeVideoPlayAddrs 把历史落库的签名 play_addr 就地换成公开链接(读时自愈,无需回填)。
+func normalizeVideoPlayAddrs(vids []ProductVideoDTO) {
+	for i := range vids {
+		if !strings.HasPrefix(vids[i].PlayAddr, "https://www.tiktok.com/") {
+			vids[i].PlayAddr = tiktokVideoURL(vids[i].VideoID)
+		}
+	}
 }
 
 // persistProductDetail 落库详情子资源(仅更新本轮拿到的块 + detail_fetched_at)。

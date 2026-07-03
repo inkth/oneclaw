@@ -90,6 +90,10 @@ func (s *DiscoverService) searchSellers(ctx context.Context, p echotik.RanklistP
 					raw[i].Region = p.Region
 				}
 			}
+			// 同商品搜索:live 结果落主表,支持收藏/导入 + 养大本地搜索兜底库。后台执行不拖慢响应。
+			goRefresh(ctx, "search-upsert:seller", func(bg context.Context) {
+				s.upsertSellerList(bg, p.Region, raw)
+			})
 			return &EntityRanklistResult[SellerDTO]{State: "live", Rows: s.hostMapSellers(ctx, raw)}
 		}
 	}
@@ -105,6 +109,9 @@ func (s *DiscoverService) searchSellers(ctx context.Context, p echotik.RanklistP
 func (s *DiscoverService) searchInfluencers(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[InfluencerDTO] {
 	if s.echo.Configured() {
 		if raw, err := s.echo.SearchInfluencers(ctx, p.Keyword, p.Region, p.PageSize); err == nil && len(raw) > 0 {
+			goRefresh(ctx, "search-upsert:influencer", func(bg context.Context) {
+				s.upsertInfluencerList(bg, p.Region, raw)
+			})
 			return &EntityRanklistResult[InfluencerDTO]{State: "live", Rows: s.hostMapInfluencers(ctx, raw)}
 		}
 	}
@@ -120,6 +127,9 @@ func (s *DiscoverService) searchInfluencers(ctx context.Context, p echotik.Rankl
 func (s *DiscoverService) searchVideos(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
 	if s.echo.Configured() {
 		if raw, err := s.echo.SearchVideos(ctx, p.Keyword, p.Region, p.PageSize); err == nil && len(raw) > 0 {
+			goRefresh(ctx, "search-upsert:video", func(bg context.Context) {
+				s.upsertVideoList(bg, p.Region, raw)
+			})
 			return &EntityRanklistResult[VideoDTO]{State: "live", Rows: s.hostMapVideos(ctx, raw)}
 		}
 	}
