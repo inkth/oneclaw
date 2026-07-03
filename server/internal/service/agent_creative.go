@@ -39,7 +39,7 @@ func directorSystemFor(v voiceSpec) string {
 若用户消息含「本店投放经验」,据其漏斗短板优先调整(钩子弱就强化前 2 秒、转化弱就强化卖点+结尾 CTA),并让角度贴近其中列出的「跑赢角度」;这是本店真实成绩,优先级高于通用套路。
 
 规则:
-- 视频总时长 4-15 秒,按镜头数合理分配(3 镜头约 9-12 秒),时间轴必须连续且与总时长一致
+- 视频总时长 4-15 秒,原则是「讲完就停」:钩子+核心卖点+行动号召能在 6-9 秒讲完就不要拖长(3 镜头、每镜头 2-3 秒);只有叙事确实需要过程展示(如效果前后对比、多配件开箱)才用 10-15 秒;时间轴必须连续且与总时长一致
 - 口播是%s(%s观众听的),地道口语化 UGC 语气,短句,每镜头一句;要像母语者随手拍,不要翻译腔
 - videoPrompt 是多镜头提示词:视觉描述用英文,逐镜头描述画面/运镜/光线,并把口播台词用引号原文写进对应镜头
   (视频模型支持音画联合生成,会按引号内台词输出配音,所以引号内必须是%s台词),镜头间用自然剪切衔接
@@ -50,8 +50,8 @@ func directorSystemFor(v voiceSpec) string {
   "style": "UNBOXING | COMPARISON | SCENE | BEFORE_AFTER 之一",
   "title": "视频标题(中文,≤20字)",
   "script": "分镜脚本,3-5 个镜头,每镜头一行,格式:镜头N(起-止秒)|画面(中文)|口播原文(%s)",
-  "videoPrompt": "Shot 1 (0-3s): visual description, camera move, lighting. VO: \"spoken line in target language.\" Shot 2 (3-7s): ...",
-  "durationSec": 12,
+  "videoPrompt": "Shot 1 (0-3s): visual description, camera move, lighting. VO: \"spoken line in target language.\" Shot 2 (3-6s): ...",
+  "durationSec": 8,
   "aspectRatio": "9:16"
 }`, v.MarketCN, v.LangCN, v.LangCN, v.MarketCN, v.LangCN, v.Directive, v.LangCN)
 }
@@ -185,7 +185,7 @@ type directorContext struct {
 	persona       *model.ModelAsset
 	region        string // 已归一的目标市场 code(voiceFor 处理过)
 	instruction   string // 可选:一句话重写指令(空表示直接换一版)
-	durationSec   int    // 用户在「设置」锁的时长(秒);0=AI 自选/默认 12s
+	durationSec   int    // 用户在「设置」锁的时长(秒);0=AI 自选/默认 8s
 	aspectRatio   string // 用户在「设置」锁的比例(9:16/16:9/1:1);空=AI/默认 9:16
 	hotVideoCount int    // productFacts 注入的真实爆款参考条数(>0 时在草稿回显)
 	playbook      string // workspace 级「本店投放经验」(复盘蒸馏,空=无)
@@ -280,13 +280,13 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	if strings.TrimSpace(out.VideoPrompt) == "" {
 		out.VideoPrompt = input
 	}
-	// 时长:用户在「设置」显式锁的优先于 AI 自选;都没有时给 12s(够放 3 个镜头)。统一夹 Seedance 2.0 的 4-15s。
+	// 时长:用户在「设置」显式锁的优先于 AI 自选;都没有时给 8s(3 镜头紧凑配速;生成按秒计费,短=省)。统一夹 Seedance 2.0 的 4-15s。
 	if d := clampDuration(dc.durationSec); d > 0 {
 		out.DurationSec = d
 	} else {
 		switch {
 		case out.DurationSec <= 0:
-			out.DurationSec = 12
+			out.DurationSec = 8
 		case out.DurationSec < 4:
 			out.DurationSec = 4
 		case out.DurationSec > 15:
