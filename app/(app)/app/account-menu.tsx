@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Coins, Settings, LogOut, Sparkles } from "lucide-react";
+import { Coins, Settings, LogOut, Sparkles, Megaphone, ShieldCheck } from "lucide-react";
 import { Popover } from "@/components/ui/Popover";
 import { apiBrowser } from "@/lib/api-browser";
 
@@ -18,11 +18,15 @@ export function AccountMenu({
   plan,
   creditsUsed,
   creditsLimit,
+  isAgency,
+  isAdmin,
 }: {
   display: string;
   plan: string | null;
   creditsUsed: number | null;
   creditsLimit: number | null;
+  isAgency?: boolean;
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
 
@@ -131,6 +135,26 @@ export function AccountMenu({
                 >
                   <Sparkles className="h-4 w-4 text-brand-500" />
                   升级会员
+                </Link>
+              )}
+              {isAgency && (
+                <Link
+                  href="/app/agency"
+                  onClick={close}
+                  className="flex items-center gap-2.5 px-3.5 py-2 text-zinc-700 hover:bg-zinc-50"
+                >
+                  <Megaphone className="h-4 w-4 text-zinc-400" />
+                  推广中心
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/app/admin"
+                  onClick={close}
+                  className="flex items-center gap-2.5 px-3.5 py-2 text-zinc-700 hover:bg-zinc-50"
+                >
+                  <ShieldCheck className="h-4 w-4 text-zinc-400" />
+                  管理后台
                 </Link>
               )}
               <Link

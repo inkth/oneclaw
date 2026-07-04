@@ -19,12 +19,16 @@ export function AppHeader({
   plan,
   creditsUsed,
   creditsLimit,
+  isAgency,
+  isAdmin,
 }: {
   loggedIn: boolean;
   display: string;
   plan: string | null;
   creditsUsed: number | null;
   creditsLimit: number | null;
+  isAgency?: boolean;
+  isAdmin?: boolean;
 }) {
   const { open } = useAuthModal();
 
@@ -44,6 +48,8 @@ export function AppHeader({
             plan={plan}
             creditsUsed={creditsUsed}
             creditsLimit={creditsLimit}
+            isAgency={isAgency}
+            isAdmin={isAdmin}
           />
         ) : (
           <button

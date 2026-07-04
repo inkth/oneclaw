@@ -11,6 +11,8 @@ import {
   Boxes,
   LayoutGrid,
   Settings,
+  Megaphone,
+  ShieldCheck,
 } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
 
@@ -87,6 +89,8 @@ const BOARDS: Board[] = [
 ];
 
 const settingsItem = { href: "/app/settings", label: "设置", icon: Settings };
+const agencyItem = { href: "/app/agency", label: "推广", icon: Megaphone };
+const adminItem = { href: "/app/admin", label: "管理", icon: ShieldCheck };
 
 function matchPath(prefix: string, pathname: string) {
   return pathname === prefix || pathname.startsWith(prefix + "/");
@@ -229,7 +233,13 @@ function RailItem({
   );
 }
 
-export function SidebarNav() {
+export function SidebarNav({
+  isAgency,
+  isAdmin,
+}: {
+  isAgency?: boolean;
+  isAdmin?: boolean;
+}) {
   const pathname = usePathname();
   const active = activeBoard(pathname);
 
@@ -245,7 +255,24 @@ export function SidebarNav() {
         />
       ))}
 
-      <div className="mt-auto pt-2">
+      {/* 代理商 / 管理入口:按身份显示,不进 BOARDS(避免动 activeBoard 板块归属)。 */}
+      <div className="mt-auto flex w-full flex-col items-center gap-1 pt-2">
+        {isAgency && (
+          <RailItem
+            href={agencyItem.href}
+            label={agencyItem.label}
+            icon={agencyItem.icon}
+            active={matchPath(agencyItem.href, pathname)}
+          />
+        )}
+        {isAdmin && (
+          <RailItem
+            href={adminItem.href}
+            label={adminItem.label}
+            icon={adminItem.icon}
+            active={matchPath(adminItem.href, pathname)}
+          />
+        )}
         <RailItem
           href={settingsItem.href}
           label={settingsItem.label}

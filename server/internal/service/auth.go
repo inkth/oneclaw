@@ -16,13 +16,14 @@ import (
 
 // AuthService 账号 + 令牌。手机号 + 短信验证码登录(首次自动注册 + 建默认工作台)。
 type AuthService struct {
-	db  *gorm.DB
-	cfg *config.Config
-	sms *SMSService
+	db     *gorm.DB
+	cfg    *config.Config
+	sms    *SMSService
+	agency *AgencyService
 }
 
-func NewAuthService(db *gorm.DB, cfg *config.Config, sms *SMSService) *AuthService {
-	return &AuthService{db: db, cfg: cfg, sms: sms}
+func NewAuthService(db *gorm.DB, cfg *config.Config, sms *SMSService, agency *AgencyService) *AuthService {
+	return &AuthService{db: db, cfg: cfg, sms: sms, agency: agency}
 }
 
 // SendCode 发送登录验证码,返回 devCode(仅 dev 非空)。
@@ -38,7 +39,8 @@ type LoginResult struct {
 }
 
 // LoginByCode 手机号 + 验证码登录,首次自动注册并建默认工作台。
-func (s *AuthService) LoginByCode(ctx context.Context, phone, code string) (*LoginResult, error) {
+// inviteCode 仅在首次注册时用于代理商归因绑定(老用户忽略);无效码静默跳过,不阻断登录。
+func (s *AuthService) LoginByCode(ctx context.Context, phone, code, inviteCode string) (*LoginResult, error) {
 	if err := s.sms.Verify(ctx, phone, code); err != nil {
 		return nil, err
 	}
@@ -61,6 +63,12 @@ func (s *AuthService) LoginByCode(ctx context.Context, phone, code string) (*Log
 				return e
 			}
 			ws = w
+			// 首次注册:代理商归因绑定 + 赠送积分(同事务;无效码/停用静默 nil)。
+			if s.agency != nil {
+				if e := s.agency.BindReferralTx(tx, user.ID, w.ID, inviteCode, now); e != nil {
+					return e
+				}
+			}
 			return nil
 		} else if e != nil {
 			return e

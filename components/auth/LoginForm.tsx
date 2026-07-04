@@ -7,8 +7,10 @@ import { apiBrowser } from "@/lib/api-browser";
 
 const PHONE_RE = /^1[3-9]\d{9}$/;
 
-/** 手机号 + 验证码两步登录表单。成功后只调 onSuccess，导航/刷新交给调用方（/login 页跳 callbackUrl，弹窗原地 refresh）。 */
-export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
+/** 手机号 + 验证码两步登录表单。成功后只调 onSuccess，导航/刷新交给调用方（/login 页跳 callbackUrl，弹窗原地 refresh）。
+ *  inviteCode：代理商邀请码。/login 页由 ?invite= 传入；弹窗登录无 prop，回退读 localStorage("oc_invite")
+ *  （落地页 /r/[code] 已写入），两条登录路径都能带上归因码。仅首次注册时后端用于绑定。 */
+export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; inviteCode?: string }) {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -60,10 +62,14 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     setVerifying(true);
     setError(null);
     try {
+      const invite =
+        inviteCode ??
+        (typeof window !== "undefined" ? localStorage.getItem("oc_invite") ?? undefined : undefined);
       await apiBrowser("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ phone, code }),
+        body: JSON.stringify({ phone, code, inviteCode: invite }),
       });
+      if (typeof window !== "undefined") localStorage.removeItem("oc_invite");
       onSuccess();
     } catch (e) {
       setError(e instanceof Error ? e.message : "登录失败，请稍后再试");

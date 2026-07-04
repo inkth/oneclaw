@@ -17,6 +17,8 @@ export default async function AppLayout({
   const user = me?.user ?? null;
   const workspace = me?.workspace ?? null;
   const display = user?.name || user?.phone || user?.email || "游客";
+  const isAgency = !!me?.agency && me.agency.status === "ACTIVE";
+  const isAdmin = me?.role === "admin";
 
   // 顶栏要显示积分余额/套餐:登录后取用量;失败则降级(不显示积分,仍可升级)。
   let usage: Usage | null = null;
@@ -38,7 +40,7 @@ export default async function AppLayout({
           <BrandTile className="h-10 w-10 rounded-2xl" />
         </Link>
 
-        <SidebarNav />
+        <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />
       </aside>
 
       {/* 会话列表面板:仅「会话」板块(/app/agents*)出现,自身按路由判断,其它板块返回 null */}
@@ -51,6 +53,8 @@ export default async function AppLayout({
           plan={usage?.plan ?? null}
           creditsUsed={usage?.credits.used ?? null}
           creditsLimit={usage?.credits.limit ?? null}
+          isAgency={isAgency}
+          isAdmin={isAdmin}
         />
         <main className="relative flex-1 p-4 sm:p-8">
           {/* 活力氛围:全工作台顶部极淡 violet/fuchsia 柔光,统一去「纯白感」 */}

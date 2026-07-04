@@ -14,24 +14,29 @@ func TestQuotaDecisionFreePro(t *testing.T) {
 		kind        string
 		qty         int
 		used        int
+		bonus       int
 		wantAllowed bool
 	}{
 		// FREE=450,出片(VIDEO)=175
-		{"FREE 首条出片", model.PlanFree, model.UsageVideo, 1, 0, true},
-		{"FREE 恰好用满-边界放行", model.PlanFree, model.UsageVideo, 1, 275, true}, // 275+175=450
-		{"FREE 超一积分即拒", model.PlanFree, model.UsageVideo, 1, 276, false},   // 451>450
-		{"FREE 余量不足整条", model.PlanFree, model.UsageVideo, 1, 350, false},   // 525>450
+		{"FREE 首条出片", model.PlanFree, model.UsageVideo, 1, 0, 0, true},
+		{"FREE 恰好用满-边界放行", model.PlanFree, model.UsageVideo, 1, 275, 0, true}, // 275+175=450
+		{"FREE 超一积分即拒", model.PlanFree, model.UsageVideo, 1, 276, 0, false},   // 451>450
+		{"FREE 余量不足整条", model.PlanFree, model.UsageVideo, 1, 350, 0, false},   // 525>450
 		// PRO=6000
-		{"PRO 余量充足", model.PlanPro, model.UsageVideo, 1, 5000, true},
-		{"PRO 恰好用满", model.PlanPro, model.UsageVideo, 1, 5825, true},  // 5825+175=6000
-		{"PRO 超一即拒", model.PlanPro, model.UsageVideo, 1, 5826, false}, // 6001>6000
+		{"PRO 余量充足", model.PlanPro, model.UsageVideo, 1, 5000, 0, true},
+		{"PRO 恰好用满", model.PlanPro, model.UsageVideo, 1, 5825, 0, true},  // 5825+175=6000
+		{"PRO 超一即拒", model.PlanPro, model.UsageVideo, 1, 5826, 0, false}, // 6001>6000
 		// 未知方案按 FREE 处理
-		{"未知方案按 FREE 限额", "GARBAGE", model.UsageVideo, 1, 350, false},
+		{"未知方案按 FREE 限额", "GARBAGE", model.UsageVideo, 1, 350, 0, false},
 		// 出图便宜(6/张),批量仍按总额判
-		{"FREE 出图十张够", model.PlanFree, model.UsageImage, 10, 0, true}, // 60<=450
+		{"FREE 出图十张够", model.PlanFree, model.UsageImage, 10, 0, 0, true}, // 60<=450
+		// 赠送积分抬高上限:FREE 450+300=750
+		{"FREE+bonus 原超限转放行", model.PlanFree, model.UsageVideo, 1, 350, 300, true}, // 525<=750
+		{"FREE+bonus 恰好用满", model.PlanFree, model.UsageVideo, 1, 575, 300, true},  // 575+175=750
+		{"FREE+bonus 超一即拒", model.PlanFree, model.UsageVideo, 1, 576, 300, false}, // 751>750
 	}
 	for _, c := range cases {
-		gotAllowed, gotBillable := quotaDecision(c.plan, c.kind, c.qty, c.used)
+		gotAllowed, gotBillable := quotaDecision(c.plan, c.kind, c.qty, c.used, c.bonus)
 		if gotAllowed != c.wantAllowed {
 			t.Errorf("%s: allowed=%v, want %v", c.name, gotAllowed, c.wantAllowed)
 		}
@@ -54,7 +59,7 @@ func TestQuotaDecisionTeamBaseline(t *testing.T) {
 		{"超基线计费", 35000, true},
 	}
 	for _, c := range cases {
-		allowed, billable := quotaDecision(model.PlanTeam, model.UsageVideo, 1, c.used)
+		allowed, billable := quotaDecision(model.PlanTeam, model.UsageVideo, 1, c.used, 0)
 		if !allowed {
 			t.Errorf("%s: TEAM 应恒放行(不限量)", c.name)
 		}

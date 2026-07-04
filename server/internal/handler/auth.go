@@ -14,11 +14,12 @@ import (
 type AuthHandler struct {
 	auth   *service.AuthService
 	ws     *service.WorkspaceService
+	agency *service.AgencyService
 	cookie config.CookieConfig
 }
 
-func NewAuthHandler(a *service.AuthService, ws *service.WorkspaceService, cookie config.CookieConfig) *AuthHandler {
-	return &AuthHandler{auth: a, ws: ws, cookie: cookie}
+func NewAuthHandler(a *service.AuthService, ws *service.WorkspaceService, agency *service.AgencyService, cookie config.CookieConfig) *AuthHandler {
+	return &AuthHandler{auth: a, ws: ws, agency: agency, cookie: cookie}
 }
 
 type sendCodeReq struct {
@@ -44,8 +45,9 @@ func (h *AuthHandler) SendCode(c *gin.Context) {
 }
 
 type loginReq struct {
-	Phone string `json:"phone" binding:"required,len=11"`
-	Code  string `json:"code" binding:"required,len=6"`
+	Phone      string `json:"phone" binding:"required,len=11"`
+	Code       string `json:"code" binding:"required,len=6"`
+	InviteCode string `json:"inviteCode"` // 可选:代理商邀请码,仅首次注册时归因绑定
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -54,7 +56,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		_ = c.Error(apperr.BadRequest("参数缺失"))
 		return
 	}
-	res, err := h.auth.LoginByCode(c.Request.Context(), in.Phone, in.Code)
+	res, err := h.auth.LoginByCode(c.Request.Context(), in.Phone, in.Code, in.InviteCode)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -84,7 +86,15 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	OK(c, gin.H{"user": u, "workspace": ws})
+	role, _ := middleware.Role(c)
+	// agency 非空即当前用户是代理商(前端据此显示「推广」入口);非代理为 null。
+	var agencyInfo any
+	if h.agency != nil {
+		if ag, aerr := h.agency.GetByUser(c.Request.Context(), uid); aerr == nil && ag != nil {
+			agencyInfo = gin.H{"code": ag.Code, "status": ag.Status, "commissionBp": ag.CommissionBP}
+		}
+	}
+	OK(c, gin.H{"user": u, "workspace": ws, "role": role, "agency": agencyInfo})
 }
 
 func (h *AuthHandler) setSession(c *gin.Context, token string, maxAge int) {

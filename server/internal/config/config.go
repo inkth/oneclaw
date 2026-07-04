@@ -27,8 +27,18 @@ type Config struct {
 	Storage        StorageConfig
 	OpenRouter     OpenRouterConfig
 	Fal            FalConfig
+	Agency         AgencyConfig
 	CORS           CORSConfig
 	Log            LogConfig
+}
+
+// AgencyConfig 代理商系统。BonusCredits 经邀请码注册的新人一次性赠送积分;
+// DefaultCommissionBP 新开通代理商的默认佣金比例(万分比,2000=20%);
+// CommissionOnMock 仅 dev 生效:是否让 mock 支付也计佣(联调计佣链路用,默认 false 保持「mock 不计佣」)。
+type AgencyConfig struct {
+	BonusCredits        int
+	DefaultCommissionBP int
+	CommissionOnMock    bool
 }
 
 type ServerConfig struct {
@@ -252,6 +262,11 @@ func Load() *Config {
 			TryOnModel: getEnv("FALAI_TRYON_MODEL", "fal-ai/fashn/tryon/v1.6"),
 			// 默认复用复盘代理:生产已配 OPENROUTER_REVIEW_PROXY,无需新增 env。
 			DownloadProxy: getEnv("FALAI_DOWNLOAD_PROXY", getEnv("OPENROUTER_REVIEW_PROXY", "")),
+		},
+		Agency: AgencyConfig{
+			BonusCredits:        getEnvInt("AGENCY_BONUS_CREDITS", 300),
+			DefaultCommissionBP: getEnvInt("AGENCY_DEFAULT_COMMISSION_BP", 2000),
+			CommissionOnMock:    getEnvBool("AGENCY_COMMISSION_ON_MOCK", false),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

@@ -21,12 +21,23 @@ import (
 // 微信/支付宝商户凭证未接入前走 mock 渠道:二维码为占位,dev 模式可 mock-confirm 闭环;
 // 真实渠道接入时在 createQRCode 按 provider 分发即可,订单/升级逻辑不变。
 type BillingService struct {
-	db  *gorm.DB
-	dev bool
+	db     *gorm.DB
+	dev    bool
+	agency *AgencyService
+	// commissionOnMock 仅 dev 生效:是否让 mock 支付也计佣(联调计佣链路用)。
+	commissionOnMock bool
 }
 
-func NewBillingService(db *gorm.DB, dev bool) *BillingService {
-	return &BillingService{db: db, dev: dev}
+func NewBillingService(db *gorm.DB, dev bool, agency *AgencyService, commissionOnMock bool) *BillingService {
+	return &BillingService{db: db, dev: dev, agency: agency, commissionOnMock: commissionOnMock}
+}
+
+// shouldCommission 是否为这笔付费计佣:真实付费恒计;mock 付费仅 dev+开关时计(默认 mock 不计)。
+func (s *BillingService) shouldCommission(isMock bool) bool {
+	if !isMock {
+		return true
+	}
+	return s.dev && s.commissionOnMock
 }
 
 // 月度价目(分)。周期折扣:3 个月 9 折,12 个月 7.5 折。与 /pricing 页一致。
@@ -166,6 +177,12 @@ func (s *BillingService) markPaid(ctx context.Context, o *model.PaymentOrder) er
 			Updates(map[string]any{"plan": o.Plan, "plan_expires_at": expires, "billing_cycle_anchor": anchor}).Error; err != nil {
 			return apperr.Wrap(apperr.CodeInternal, "升级方案失败", err)
 		}
+		// 代理商归因计佣(同事务,佣金与订单状态原子一致;无归因/mock 不计佣时静默跳过)。
+		if s.agency != nil && s.shouldCommission(o.IsMock) {
+			if err := s.agency.RecordCommissionTx(tx, model.CommissionSourceOrder, o.ID, o.UserID, o.AmountCents); err != nil {
+				return apperr.Wrap(apperr.CodeInternal, "计佣失败", err)
+			}
+		}
 		o.Status = model.OrderPaid
 		o.PaidAt = &now
 		logger.Info("[billing] 支付成功,方案已升级",
@@ -296,20 +313,38 @@ func (s *BillingService) ListOverflowBills(ctx context.Context, wsID uuid.UUID) 
 
 // MarkOverflowPaid 把一笔超额账单标记为已结算(幂等:仅 PENDING 单生效)。
 // 接入微信/支付宝代扣后由支付回调调用;MVP 阶段供 dev 联调与人工核销入口复用。
+// 结算成功时按 workspace owner 归因计佣(OverflowBill 无 UserID,TEAM 付费主体=owner)。
 func (s *BillingService) MarkOverflowPaid(ctx context.Context, wsID, billID uuid.UUID, note string) (*model.OverflowBill, error) {
 	now := time.Now()
-	res := s.db.WithContext(ctx).Model(&model.OverflowBill{}).
-		Where("id = ? AND workspace_id = ? AND status = ?", billID, wsID, model.OverflowPending).
-		Updates(map[string]any{"status": model.OverflowPaid, "paid_at": now, "note": note})
-	if res.Error != nil {
-		return nil, apperr.Wrap(apperr.CodeInternal, "更新超额账单失败", res.Error)
-	}
-	if res.RowsAffected == 0 {
-		return nil, apperr.BadRequest("账单不存在或已结算")
-	}
 	var bill model.OverflowBill
-	if err := s.db.WithContext(ctx).First(&bill, "id = ?", billID).Error; err != nil {
-		return nil, apperr.Wrap(apperr.CodeInternal, "查询超额账单失败", err)
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&model.OverflowBill{}).
+			Where("id = ? AND workspace_id = ? AND status = ?", billID, wsID, model.OverflowPending).
+			Updates(map[string]any{"status": model.OverflowPaid, "paid_at": now, "note": note})
+		if res.Error != nil {
+			return apperr.Wrap(apperr.CodeInternal, "更新超额账单失败", res.Error)
+		}
+		if res.RowsAffected == 0 {
+			return apperr.BadRequest("账单不存在或已结算")
+		}
+		if err := tx.First(&bill, "id = ?", billID).Error; err != nil {
+			return apperr.Wrap(apperr.CodeInternal, "查询超额账单失败", err)
+		}
+		// 超额账单无 IsMock 字段:dev 下的结算(MockSettleOverflow)视为 mock,由开关决定计佣;
+		// 生产由真实核销/代扣触发,恒计佣。故用 s.dev 作为「是否 mock」。
+		if s.agency != nil && s.shouldCommission(s.dev) {
+			var ws model.Workspace
+			if err := tx.Select("owner_id").First(&ws, "id = ?", wsID).Error; err != nil {
+				return apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
+			}
+			if err := s.agency.RecordCommissionTx(tx, model.CommissionSourceOverflow, bill.ID, ws.OwnerID, bill.AmountCents); err != nil {
+				return apperr.Wrap(apperr.CodeInternal, "计佣失败", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	logger.Info("[settle] 超额账单已结算",
 		logger.String("ws", wsID.String()), logger.String("period", bill.Period),

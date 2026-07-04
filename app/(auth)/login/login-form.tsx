@@ -8,9 +8,11 @@ export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/app";
+  const invite = params.get("invite") || undefined;
 
   return (
     <SharedLoginForm
+      inviteCode={invite}
       onSuccess={() => {
         router.push(callbackUrl);
         router.refresh();

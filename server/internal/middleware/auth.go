@@ -50,3 +50,25 @@ func UserID(c *gin.Context) (uuid.UUID, bool) {
 	id, ok := v.(uuid.UUID)
 	return id, ok
 }
+
+// Role 从 ctx 取当前登录用户角色(JWT claims 写入,见 Auth)。
+func Role(c *gin.Context) (string, bool) {
+	v, ok := c.Get(CtxUserRole)
+	if !ok {
+		return "", false
+	}
+	role, ok := v.(string)
+	return role, ok
+}
+
+// RequireAdmin 仅放行 role=admin。须挂在 Auth 之后(依赖 ctx 里的 role)。
+func RequireAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if role, _ := Role(c); role != "admin" {
+			_ = c.Error(apperr.New(apperr.CodeForbidden, "需要管理员权限"))
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}

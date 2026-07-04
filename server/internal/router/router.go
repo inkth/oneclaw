@@ -25,6 +25,7 @@ type Deps struct {
 	Template  *service.TemplateService
 	Billing   *service.BillingService
 	Quota     *service.QuotaService
+	Agency    *service.AgencyService
 	// Ready 就绪探针(如 DB ping);任一失败 /ready 返回 503。空则 /ready 恒 200。
 	Ready []func() error
 }
@@ -44,7 +45,7 @@ func New(d Deps) *gin.Engine {
 		middleware.ErrorHandler(),
 	)
 
-	authH := handler.NewAuthHandler(d.Auth, d.Workspace, d.Cfg.Cookie)
+	authH := handler.NewAuthHandler(d.Auth, d.Workspace, d.Agency, d.Cfg.Cookie)
 	wsH := handler.NewWorkspaceHandler(d.Workspace)
 	prodH := handler.NewProductHandler(d.Product, d.Workspace)
 	discH := handler.NewDiscoverHandler(d.Discover, d.Workspace, d.Agent)
@@ -57,6 +58,8 @@ func New(d Deps) *gin.Engine {
 	tplH := handler.NewTemplateHandler(d.Template, d.Workspace)
 	reviewH := handler.NewReviewHandler(d.Workspace, d.Agent)
 	billH := handler.NewBillingHandler(d.Billing, d.Quota, d.Workspace)
+	agencyH := handler.NewAgencyHandler(d.Agency)
+	adminH := handler.NewAdminHandler(d.Agency)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready(d.Ready...))
@@ -163,6 +166,25 @@ func New(d Deps) *gin.Engine {
 		priv.POST("/workspaces/:wid/templates/optimize", tplH.Optimize)
 		priv.PATCH("/workspaces/:wid/templates/:tid", tplH.Update)
 		priv.DELETE("/workspaces/:wid/templates/:tid", tplH.Delete)
+
+		// 代理商本人视角(身份挂 user,非 workspace)。
+		priv.GET("/agency/summary", agencyH.Summary)
+		priv.GET("/agency/customers", agencyH.Customers)
+		priv.GET("/agency/commissions", agencyH.Commissions)
+		priv.GET("/agency/withdrawals", agencyH.Withdrawals)
+		priv.POST("/agency/withdrawals", agencyH.CreateWithdrawal)
+
+		// 管理端(仅 role=admin)。
+		adm := priv.Group("/admin")
+		adm.Use(middleware.RequireAdmin())
+		{
+			adm.GET("/overview", adminH.Overview)
+			adm.GET("/agencies", adminH.ListAgencies)
+			adm.POST("/agencies", adminH.CreateAgency)
+			adm.PATCH("/agencies/:aid", adminH.UpdateAgency)
+			adm.GET("/withdrawals", adminH.ListWithdrawals)
+			adm.POST("/withdrawals/:wid/review", adminH.ReviewWithdrawal)
+		}
 	}
 
 	return r

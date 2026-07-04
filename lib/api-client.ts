@@ -20,6 +20,9 @@ export type Me = {
     slug: string;
     plan: string;
   };
+  role?: string;
+  // 非 null 即当前用户是代理商(前端据此显示「推广」入口)。
+  agency?: { code: string; status: string; commissionBp: number } | null;
 };
 
 export class ApiError extends Error {

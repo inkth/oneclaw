@@ -94,6 +94,16 @@ func cycleCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID, start, end t
 	return total, counts, nil
 }
 
+// bonusCredits 汇总该 workspace 当前有效的赠送积分(ExpiresAt 未过);抬高本周期额度上限。
+// db 可传事务 tx。无赠送时返回 0(绝大多数工作台)。
+func bonusCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID, now time.Time) int {
+	var sum int64
+	db.WithContext(ctx).Model(&model.BonusCreditGrant{}).
+		Where("workspace_id = ? AND expires_at > ?", wsID, now).
+		Select("COALESCE(SUM(credits),0)").Scan(&sum)
+	return int(sum)
+}
+
 // EffectivePlan 返回工作台当前生效方案:到期的付费方案惰性降回 FREE(顺手落库)。
 func (s *QuotaService) EffectivePlan(ctx context.Context, ws *model.Workspace) string {
 	if ws.Plan == model.PlanFree {
@@ -114,10 +124,11 @@ func (s *QuotaService) EffectivePlan(ctx context.Context, ws *model.Workspace) s
 // 与 CheckAndRecord 的取数/落库分离,便于无 DB 单测覆盖边界。
 //   - FREE/PRO(limit≥0):硬上限,used + 本次消耗 > limit 即拒绝(allowed=false)。
 //   - TEAM(limit<0):不限量,但 used 已达基线则本次标记 billable(待结算),不阻断出片。
-func quotaDecision(plan, kind string, qty, used int) (allowed, billable bool) {
+//   - bonus:赠送积分,抬高 FREE/PRO 的本周期上限(limit+bonus);TEAM(limit<0)不受影响。
+func quotaDecision(plan, kind string, qty, used, bonus int) (allowed, billable bool) {
 	limit := model.PlanCredits(plan)
 	if limit >= 0 {
-		return used+model.CreditsFor(kind, qty) <= limit, false
+		return used+model.CreditsFor(kind, qty) <= limit+bonus, false
 	}
 	return true, used >= model.TeamBaselineCredits
 }
@@ -142,17 +153,19 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 				return apperr.Wrap(apperr.CodeInternal, "方案降级失败", err)
 			}
 		}
-		start, end := cycleBounds(billingAnchor(plan, &ws), time.Now())
+		now := time.Now()
+		start, end := cycleBounds(billingAnchor(plan, &ws), now)
 		used, _, err := cycleCredits(ctx, tx, wsID, start, end)
 		if err != nil {
 			return err
 		}
+		bonus := bonusCredits(ctx, tx, wsID, now)
 		limit := model.PlanCredits(plan)
-		allowed, billable := quotaDecision(plan, kind, qty, used)
+		allowed, billable := quotaDecision(plan, kind, qty, used, bonus)
 		if !allowed {
 			// FREE/PRO 硬上限:本周期超额拒绝(TEAM 不限量,只在 quotaDecision 里标 billable)。
 			return apperr.New(apperr.CodeQuotaExceeded,
-				fmt.Sprintf("本周期积分已用完(%d/%d),升级方案可继续", used, limit))
+				fmt.Sprintf("本周期积分已用完(%d/%d),升级方案可继续", used, limit+bonus))
 		}
 		rec := model.UsageRecord{WorkspaceID: wsID, Kind: kind, Qty: qty, RefID: refID, Billable: billable}
 		if err := tx.Create(&rec).Error; err != nil {
@@ -177,11 +190,13 @@ func (s *QuotaService) EnsureBudget(ctx context.Context, wsID uuid.UUID, need in
 	if limit < 0 { // TEAM 不限量,不阻断
 		return nil
 	}
-	start, end := cycleBounds(billingAnchor(plan, &ws), time.Now())
+	now := time.Now()
+	start, end := cycleBounds(billingAnchor(plan, &ws), now)
 	used, _, err := cycleCredits(ctx, s.db, wsID, start, end)
 	if err != nil {
 		return err
 	}
+	limit += bonusCredits(ctx, s.db, wsID, now) // 赠送积分抬高本周期上限
 	if used+need > limit {
 		remain := limit - used
 		if remain < 0 {
@@ -235,8 +250,9 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 	if err := s.db.WithContext(ctx).First(&ws, "id = ?", wsID).Error; err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
 	}
+	now := time.Now()
 	plan := s.EffectivePlan(ctx, &ws)
-	start, end := cycleBounds(billingAnchor(plan, &ws), time.Now())
+	start, end := cycleBounds(billingAnchor(plan, &ws), now)
 
 	usedCredits, counts, err := cycleCredits(ctx, s.db, wsID, start, end)
 	if err != nil {
@@ -268,12 +284,18 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		}
 	}
 
+	// 赠送积分抬高本周期上限;TEAM(limit=-1)不受影响,仍返回 -1(不限)。
+	planLimit := model.PlanCredits(plan)
+	if planLimit >= 0 {
+		planLimit += bonusCredits(ctx, s.db, wsID, now)
+	}
+
 	return &UsageSummary{
 		Plan:          plan,
 		PlanExpiresAt: ws.PlanExpiresAt,
 		PeriodStart:   start,
 		PeriodEnd:     end,
-		Credits:       CreditItem{Used: usedCredits, Limit: model.PlanCredits(plan)},
+		Credits:       CreditItem{Used: usedCredits, Limit: planLimit},
 		Breakdown: UsageBreakdown{
 			AgentTasks: counts[model.UsageAgentTask],
 			Videos:     counts[model.UsageVideo],
