@@ -11,6 +11,7 @@ export const metadata = { title: "选品详情 · 发现猫" };
 type DetailDTO = {
   productId: string;
   name: string;
+  nameZh: string;
   region: string;
   avgPriceCents: number;
   minPriceCents: number;
@@ -110,6 +111,7 @@ export default async function ProductDetailPage({
   const product: DetailProduct = {
     productId: dto.productId,
     name: dto.name,
+    nameZh: dto.nameZh ?? "",
     region: dto.region,
     minPrice: dto.minPriceCents / 100,
     maxPrice: dto.maxPriceCents / 100,

@@ -95,11 +95,11 @@ func main() {
 	prodSvc := service.NewProductService(db)
 	echoClient := echotik.New(cfg.EchoTik)
 	store := storage.New(cfg.Storage)
-	discSvc := service.NewDiscoverService(db, echoClient, store)
+	llmClient := llm.New(cfg.OpenRouter)
+	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient)
 	mktSvc := service.NewMarketingService(db)
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
-	llmClient := llm.New(cfg.OpenRouter)
 	falClient := fal.New(cfg.Fal)
 	quotaSvc := service.NewQuotaService(db)
 	matSvc := service.NewMaterialService(db, store, falClient, quotaSvc)
@@ -137,6 +137,16 @@ func main() {
 				logger.Fatal("[backfill] 封面回填失败", logger.Err(err))
 			}
 			logger.Info("[backfill] 封面回填完成", zap.Int("updated", up), zap.Int("skipped", sk))
+			return
+		}
+		// 一次性:把存量未翻译的商品标题/视频文案批量译成中文回填后退出(幂等,已译跳过)。
+		// 用法:docker compose run --rm go-api ./server --backfill-translations
+		if arg == "--backfill-translations" {
+			q, err := discSvc.BackfillTranslations(context.Background())
+			if err != nil {
+				logger.Fatal("[backfill] 翻译回填失败", logger.Err(err))
+			}
+			logger.Info("[backfill] 翻译回填完成", zap.Int("queued", q))
 			return
 		}
 		// 一次性:遍历所有站点 × 所有一级类目,把每组合前 5 页商品落库(1 req/s,断点续跑)。
@@ -195,6 +205,7 @@ func main() {
 	job.NewDiscoverSync(cfg.DiscoverSync, discSvc, echoClient).Start(jobCtx)
 	job.NewOverflowSettle(cfg.OverflowSettle, billingSvc).Start(jobCtx)
 	discSvc.StartCoverRehost(jobCtx) // 封面转存后台 worker(读路径投递、异步存 COS)
+	discSvc.StartTranslate(jobCtx)   // 外文字段翻译后台 worker(落库投递、异步译中文回填)
 
 	r := router.New(router.Deps{
 		Cfg:       cfg,

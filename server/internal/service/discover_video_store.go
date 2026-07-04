@@ -24,6 +24,7 @@ func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, ra
 	}
 	hosted := s.rehostCovers(ctx, imgs)
 	today := time.Now().Format("2006-01-02")
+	var transJobs []translateJob
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, it := range raw {
 			if it.VideoID == "" {
@@ -70,6 +71,9 @@ func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, ra
 				providerEchoTik, it.VideoID, region).First(&stored).Error; err != nil {
 				continue
 			}
+			if stored.DescZh == "" && stored.Desc != "" {
+				transJobs = append(transJobs, translateJob{Table: "discover_videos", Column: "desc_zh", ID: stored.ID, Text: stored.Desc})
+			}
 			snap := model.DiscoverVideoSnapshot{
 				DiscoverVideoID: stored.ID, Dt: today,
 				Views: it.TotalViewsCnt, SaleCnt: it.TotalVideoSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalVideoSaleGmvAmt),
@@ -81,6 +85,7 @@ func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, ra
 		}
 		return nil
 	})
+	s.enqueueTranslate(transJobs)
 }
 
 // refreshVideoDetail 拉视频详情 + 带货商品,封面/头像永久化到 COS,upsert 主表(详情级全字段)并写当日快照。
@@ -175,6 +180,9 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 		if e := s.db.WithContext(ctx).Where("provider = ? AND external_id = ? AND region = ?",
 			providerEchoTik, d.VideoID, region).First(&stored).Error; e == nil {
 			target = stored
+			if stored.DescZh == "" && stored.Desc != "" {
+				s.enqueueTranslate([]translateJob{{Table: "discover_videos", Column: "desc_zh", ID: stored.ID, Text: stored.Desc}})
+			}
 			today := time.Now().Format("2006-01-02")
 			snap := model.DiscoverVideoSnapshot{
 				DiscoverVideoID: stored.ID, Dt: today,
@@ -197,6 +205,7 @@ func videoDTOFromModel(dv *model.DiscoverVideo) *VideoDetailDTO {
 		UniqueID:     dv.UniqueID,
 		Region:       dv.Region,
 		Desc:         dv.Desc,
+		DescZh:       dv.DescZh,
 		Cover:        dv.CoverURL,
 		Avatar:       dv.AvatarURL,
 		Duration:     dv.Duration,
