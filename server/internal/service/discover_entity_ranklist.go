@@ -211,7 +211,7 @@ func mapVideoFromModel(dv model.DiscoverVideo) VideoDTO {
 	return VideoDTO{
 		VideoID: dv.ExternalID, NickName: dv.NickName, UniqueID: dv.UniqueID, Region: dv.Region,
 		CoverURL: strPtrOrNil(dv.CoverURL), AvatarURL: strPtrOrNil(dv.AvatarURL),
-		Desc: dv.Desc, Category: dv.Category, Duration: dv.Duration, CreateTime: dv.CreateTime,
+		Desc: dv.Desc, DescZh: dv.DescZh, Category: dv.Category, Duration: dv.Duration, CreateTime: dv.CreateTime,
 		TotalViewsCnt: dv.Views, TotalDiggCnt: dv.Digg, TotalCommentsCnt: dv.Comments, TotalSharesCnt: dv.Shares,
 		TotalVideoSaleCnt: dv.SaleCnt, TotalVideoSaleGmvAmt: gmvCentsToDollars(dv.SaleGmvCents),
 	}

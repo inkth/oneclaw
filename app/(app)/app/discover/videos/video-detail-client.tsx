@@ -31,6 +31,7 @@ export type VideoDetail = {
   uniqueId: string;
   region: string;
   desc: string;
+  descZh: string;
   cover: string;
   avatar: string;
   duration: number;
@@ -91,7 +92,7 @@ export function VideoDetailClient({
       </Link>
 
       <PageHeader
-        title={<span className="line-clamp-2">{v.desc || "带货视频"}</span>}
+        title={<span className="line-clamp-2">{v.descZh || v.desc || "带货视频"}</span>}
         badge={<Badge tone="neutral">{v.region}</Badge>}
         description={
           <span className="text-xs">
@@ -188,7 +189,14 @@ export function VideoDetailClient({
             )}
           </div>
 
-          {v.desc && <p className="text-sm leading-relaxed text-zinc-600 line-clamp-4">{v.desc}</p>}
+          {(v.descZh || v.desc) && (
+            <div className="space-y-1">
+              <p className="text-sm leading-relaxed text-zinc-600 line-clamp-4">{v.descZh || v.desc}</p>
+              {v.descZh && v.desc && (
+                <p className="text-xs leading-relaxed text-zinc-400 line-clamp-3">{v.desc}</p>
+              )}
+            </div>
+          )}
         </div>
       </Card>
 

@@ -18,6 +18,7 @@ type DiscoverProduct struct {
 	ExternalID     string    `gorm:"column:external_id;not null;uniqueIndex:uq_dp_provider_ext_region" json:"externalId"`
 	Region         string    `gorm:"not null;uniqueIndex:uq_dp_provider_ext_region" json:"region"`
 	Name           string    `gorm:"default:''" json:"name"`
+	NameZh         string    `gorm:"column:name_zh;type:text;default:''" json:"nameZh"` // 商品标题中文译文,后台异步翻译回填(空=尚未翻译,前端退回原文)
 	CategoryID     string    `gorm:"column:category_id;default:''" json:"categoryId"`
 	CategoryL2ID   string    `gorm:"column:category_l2_id;default:''" json:"categoryL2Id"`
 	CategoryL3ID   string    `gorm:"column:category_l3_id;default:''" json:"categoryL3Id"`
@@ -333,6 +334,7 @@ type DiscoverVideo struct {
 	CoverURL     string `gorm:"column:cover_url;type:text;default:''" json:"coverUrl"`   // 永久化 COS
 	AvatarURL    string `gorm:"column:avatar_url;type:text;default:''" json:"avatarUrl"` // 永久化 COS
 	Desc         string `gorm:"column:video_desc;type:text;default:''" json:"desc"`
+	DescZh       string `gorm:"column:desc_zh;type:text;default:''" json:"descZh"` // 视频文案中文译文,后台异步翻译回填(空=尚未翻译,前端退回原文)
 	Category     string `gorm:"default:''" json:"category"`
 	Duration     int    `gorm:"default:0" json:"duration"`
 	CreateTime   string `gorm:"column:create_time;default:''" json:"createTime"`
