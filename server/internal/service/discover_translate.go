@@ -127,7 +127,8 @@ func (s *DiscoverService) translateChunk(ctx context.Context, jobs []translateJo
 
 	cctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
-	res, err := s.llm.Chat(cctx, translateSystemPrompt, string(payload), true, 2000)
+	// 专用翻译模型(默认 deepseek/deepseek-v4-flash,快且便宜);未配置时 ChatWithModel 回退默认文本模型。
+	res, err := s.llm.ChatWithModel(cctx, s.llm.TranslateModel(), translateSystemPrompt, string(payload), true, 2000)
 	if err != nil {
 		logger.Warn("[translate] LLM 翻译失败", logger.Int("n", len(jobs)), logger.Err(err))
 		return
