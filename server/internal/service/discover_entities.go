@@ -58,6 +58,7 @@ type VideoDTO struct {
 	CoverURL             *string `json:"coverUrl"`
 	AvatarURL            *string `json:"avatarUrl"`
 	Desc                 string  `json:"desc"`
+	DescZh               string  `json:"descZh"` // 中文译文(空=尚未翻译,前端退回 desc)
 	Category             string  `json:"category"`
 	Duration             int     `json:"duration"`
 	CreateTime           string  `json:"createTime"`

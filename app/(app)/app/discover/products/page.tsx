@@ -8,6 +8,7 @@ export const metadata = { title: "发现 · TikTok 爆品 · 发现猫" };
 type DecoratedProduct = {
   productId: string;
   name: string;
+  nameZh: string;
   region: string;
   avgPriceCents: number;
   minPriceCents: number;
@@ -74,6 +75,7 @@ export default async function DiscoverProductsPage({
       products={result.products.map((p) => ({
         productId: p.productId,
         productName: p.name,
+        productNameZh: p.nameZh ?? "",
         region: p.region,
         minPrice: p.minPriceCents / 100,
         maxPrice: p.maxPriceCents / 100,

@@ -13,6 +13,7 @@ type DTO = {
   uniqueId: string;
   region: string;
   desc: string;
+  descZh: string;
   cover: string;
   avatar: string;
   duration: number;
@@ -69,6 +70,7 @@ export default async function VideoDetailPage({
     uniqueId: dto.uniqueId,
     region: dto.region,
     desc: dto.desc,
+    descZh: dto.descZh ?? "",
     cover: dto.cover,
     avatar: dto.avatar,
     duration: dto.duration,

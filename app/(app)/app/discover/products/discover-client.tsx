@@ -41,6 +41,7 @@ type AnalysisInfo = {
 type DiscoverProduct = {
   productId: string;
   productName: string;
+  productNameZh: string;
   region: string;
   minPrice: number;
   maxPrice: number;
@@ -206,14 +207,19 @@ export function DiscoverClient({
                     href={`/app/discover/products/${p.productId}?region=${p.region}`}
                     className="flex items-start gap-2.5 group"
                   >
-                    <Thumb src={p.coverUrl} name={p.productName} className="h-10 w-10 rounded-md" />
+                    <Thumb src={p.coverUrl} name={p.productNameZh || p.productName} className="h-10 w-10 rounded-md" />
                     <div className="min-w-0">
                       <div
                         className="font-medium truncate group-hover:text-brand-700 transition-colors"
-                        title={p.productName}
+                        title={p.productNameZh || p.productName}
                       >
-                        {p.productName}
+                        {p.productNameZh || p.productName}
                       </div>
+                      {p.productNameZh && p.productNameZh !== p.productName && (
+                        <div className="truncate text-2xs text-zinc-400" title={p.productName}>
+                          {p.productName}
+                        </div>
+                      )}
                       <div className="mt-0.5 flex items-center gap-1.5 text-2xs text-zinc-500 font-mono">
                         <span>
                           {p.region} · {p.productId.slice(0, 12)}

@@ -37,6 +37,7 @@ type Signal = { key: string; label: string; tone: string; value: string; hint: s
 export type DetailProduct = {
   productId: string;
   name: string;
+  nameZh: string;
   region: string;
   minPrice: number;
   maxPrice: number;
@@ -235,11 +236,16 @@ export function ProductDetailClient({
       </Link>
 
       <PageHeader
-        title={<span className="line-clamp-2">{p.name}</span>}
+        title={<span className="line-clamp-2">{p.nameZh || p.name}</span>}
         description={
-          <span className="flex flex-wrap items-center gap-2">
-            <Badge tone="neutral">{p.region}</Badge>
-            <span className="font-mono text-xs">{p.productId}</span>
+          <span className="flex flex-col gap-1">
+            {p.nameZh && p.nameZh !== p.name && (
+              <span className="line-clamp-2 text-xs text-zinc-400">{p.name}</span>
+            )}
+            <span className="flex flex-wrap items-center gap-2">
+              <Badge tone="neutral">{p.region}</Badge>
+              <span className="font-mono text-xs">{p.productId}</span>
+            </span>
           </span>
         }
         actions={

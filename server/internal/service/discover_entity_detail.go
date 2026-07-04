@@ -194,6 +194,7 @@ type VideoDetailDTO struct {
 	UniqueID     string             `json:"uniqueId"`
 	Region       string             `json:"region"`
 	Desc         string             `json:"desc"`
+	DescZh       string             `json:"descZh"` // 中文译文(空=尚未翻译,前端退回 desc)
 	Cover        string             `json:"cover"`  // 已签名
 	Avatar       string             `json:"avatar"` // 已签名
 	Duration     int                `json:"duration"`

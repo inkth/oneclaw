@@ -17,6 +17,7 @@ export type Video = {
   coverUrl: string | null;
   avatarUrl: string | null;
   desc: string;
+  descZh: string;
   category: string;
   duration: number;
   createTime: string;
@@ -140,8 +141,11 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <p className="line-clamp-2 min-h-[2.4em] text-xs leading-snug text-zinc-800" title={v.desc}>
-          {v.desc || "(无描述)"}
+        <p
+          className="line-clamp-2 min-h-[2.4em] text-xs leading-snug text-zinc-800"
+          title={v.descZh ? `${v.descZh}\n${v.desc}` : v.desc}
+        >
+          {v.descZh || v.desc || "(无描述)"}
         </p>
         <div className="flex min-w-0 items-center gap-1.5 text-2xs text-zinc-500">
           <Thumb src={v.avatarUrl} name={v.nickName} className="h-5 w-5 rounded-full" rounded />

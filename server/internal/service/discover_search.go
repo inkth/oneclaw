@@ -19,7 +19,7 @@ func (s *DiscoverService) searchLocalProducts(ctx context.Context, p echotik.Ran
 	var dps []model.DiscoverProduct
 	like := "%" + p.Keyword + "%"
 	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND name ILIKE ?", providerEchoTik, p.Region, like).
+		Where("provider = ? AND region = ? AND (name ILIKE ? OR name_zh ILIKE ?)", providerEchoTik, p.Region, like, like).
 		Order("total_sale_cnt DESC").Limit(p.PageSize).Find(&dps).Error; err != nil || len(dps) == 0 {
 		return nil, false
 	}
@@ -69,7 +69,7 @@ func (s *DiscoverService) searchLocalVideos(ctx context.Context, p echotik.Rankl
 	var rows []model.DiscoverVideo
 	like := "%" + p.Keyword + "%"
 	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND (video_desc ILIKE ? OR nick_name ILIKE ?)", providerEchoTik, p.Region, like, like).
+		Where("provider = ? AND region = ? AND (video_desc ILIKE ? OR desc_zh ILIKE ? OR nick_name ILIKE ?)", providerEchoTik, p.Region, like, like, like).
 		Order("views DESC").Limit(p.PageSize).Find(&rows).Error; err != nil || len(rows) == 0 {
 		return nil, false
 	}

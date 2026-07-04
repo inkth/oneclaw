@@ -16,6 +16,7 @@ import (
 	"github.com/oneclaw/server/internal/logger"
 	"github.com/oneclaw/server/internal/model"
 	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/oneclaw/server/internal/service/llm"
 	"github.com/oneclaw/server/internal/storage"
 )
 
@@ -34,6 +35,7 @@ type DiscoverService struct {
 	db        *gorm.DB
 	echo      *echotik.Client
 	storage   *storage.Storage
+	llm       *llm.Client // 榜单外文字段(商品标题/视频文案)后台翻译成中文;nil/未配置时跳过翻译
 	coverHTTP *http.Client
 
 	// 封面转存后台调度:读路径(搜索/首见)只投递 rawURL、立即返回,worker 异步 rehost 到 COS。
@@ -41,16 +43,25 @@ type DiscoverService struct {
 	rehostCh       chan []string
 	rehostInflight map[string]struct{}
 	rehostMu       sync.Mutex
+
+	// 外文字段翻译后台调度:落库后投递(id, 原文),worker 批量调 LLM 译成中文回填 name_zh/desc_zh。
+	// 同封面套路——有界 channel + 固定 worker + inflight 去重,读路径零阻塞。
+	translateCh       chan []translateJob
+	translateInflight map[string]struct{}
+	translateMu       sync.Mutex
 }
 
-func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage) *DiscoverService {
+func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage, llmc *llm.Client) *DiscoverService {
 	return &DiscoverService{
-		db:             db,
-		echo:           echo,
-		storage:        store,
-		coverHTTP:      &http.Client{Timeout: 30 * time.Second},
-		rehostCh:       make(chan []string, 256),
-		rehostInflight: make(map[string]struct{}),
+		db:                db,
+		echo:              echo,
+		storage:           store,
+		llm:               llmc,
+		coverHTTP:         &http.Client{Timeout: 30 * time.Second},
+		rehostCh:          make(chan []string, 256),
+		rehostInflight:    make(map[string]struct{}),
+		translateCh:       make(chan []translateJob, 256),
+		translateInflight: make(map[string]struct{}),
 	}
 }
 
@@ -58,6 +69,7 @@ func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storag
 type DecoratedProduct struct {
 	ProductID         string   `json:"productId"` // EchoTik external id
 	Name              string   `json:"name"`
+	NameZh            string   `json:"nameZh"` // 中文译文(空=尚未翻译,前端退回 name)
 	Region            string   `json:"region"`
 	AvgPriceCents     int      `json:"avgPriceCents"`
 	MinPriceCents     int      `json:"minPriceCents"`
@@ -362,6 +374,16 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 		}
 		return nil
 	})
+
+	// 落库后投递未翻译的标题给后台翻译 worker(仅 name_zh 为空且有原文的行)。
+	jobs := make([]translateJob, 0, len(out))
+	for _, d := range out {
+		if d.NameZh == "" && d.Name != "" {
+			jobs = append(jobs, translateJob{Table: "discover_products", Column: "name_zh", ID: d.ID, Text: d.Name})
+		}
+	}
+	s.enqueueTranslate(jobs)
+
 	return out
 }
 
@@ -391,7 +413,7 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 	out := make([]DecoratedProduct, 0, len(dps))
 	for _, d := range dps {
 		dp := DecoratedProduct{
-			ProductID: d.ExternalID, Name: d.Name, Region: d.Region,
+			ProductID: d.ExternalID, Name: d.Name, NameZh: d.NameZh, Region: d.Region,
 			AvgPriceCents: d.AvgPriceCents, MinPriceCents: d.MinPriceCents, MaxPriceCents: d.MaxPriceCents,
 			CommissionRate: d.CommissionRate, TotalSaleCnt: d.TotalSaleCnt, TotalSaleGmvCents: d.TotalSaleGmv,
 			TotalIflCnt: d.TotalIflCnt, TotalVideoCnt: d.TotalVideoCnt,
