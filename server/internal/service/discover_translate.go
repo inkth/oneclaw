@@ -19,8 +19,9 @@ import (
 // 店铺名/达人昵称不译(是找人对号的专有名词,译了反而搜不到),故此处只处理商品与视频两类。
 
 const (
-	translateWorkers   = 2  // 后台翻译 worker 数(LLM 调用不抢 EchoTik 带宽,少量即可)
-	translateBatchSize = 20 // 单次 LLM 调用翻译的条数上限
+	translateWorkers   = 2    // 后台翻译 worker 数(LLM 调用不抢 EchoTik 带宽,少量即可)
+	translateBatchSize = 10   // 单次 LLM 调用翻译的条数上限(过大译文会撑爆 max_tokens 被截断成非法 JSON)
+	translateMaxTokens = 4000 // 单次翻译响应上限,给 batchSize 条中文译文留足空间
 )
 
 // translateJob 一条待翻译记录:回填到 Table.Column WHERE id=ID。
@@ -128,7 +129,7 @@ func (s *DiscoverService) translateChunk(ctx context.Context, jobs []translateJo
 	cctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 	// 专用翻译模型(默认 deepseek/deepseek-v4-flash,快且便宜);未配置时 ChatWithModel 回退默认文本模型。
-	res, err := s.llm.ChatWithModel(cctx, s.llm.TranslateModel(), translateSystemPrompt, string(payload), true, 2000)
+	res, err := s.llm.ChatWithModel(cctx, s.llm.TranslateModel(), translateSystemPrompt, string(payload), true, translateMaxTokens)
 	if err != nil {
 		logger.Warn("[translate] LLM 翻译失败", logger.Int("n", len(jobs)), logger.Err(err))
 		return
