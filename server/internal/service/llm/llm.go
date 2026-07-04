@@ -42,9 +42,10 @@ func New(cfg config.OpenRouterConfig) *Client {
 	return c
 }
 
-func (c *Client) Configured() bool    { return c.cfg.Configured() }
-func (c *Client) Model() string       { return c.cfg.Model }
-func (c *Client) ReviewModel() string { return c.cfg.ReviewModel }
+func (c *Client) Configured() bool       { return c.cfg.Configured() }
+func (c *Client) Model() string          { return c.cfg.Model }
+func (c *Client) TranslateModel() string { return c.cfg.TranslateModel }
+func (c *Client) ReviewModel() string    { return c.cfg.ReviewModel }
 func (c *Client) VideoModel() string {
 	return c.cfg.VideoModel
 }
