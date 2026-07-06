@@ -1,0 +1,176 @@
+// 服务板块数据源 —— 从页面组件里抽离，集中维护、便于日后由后端接管。
+// 改服务、合作方、联系方式，只改这一个文件，不用再动组件（别写死在 TSX 里）。
+//
+// 三条原则：
+//  ① 合作方非平台背书：标注了 partners 的服务由第三方渠道提供，卡片会打「合作方 · 非平台背书」。
+//  ② 可配置：数据全在这里，字段结构按未来能被 Go 后端接管来设计（图标用字符串名、纯可序列化）。
+//  ③ 联系脱敏 + 走引导：合作方的电话/微信/二维码一律不落到用户端，用户只走「预约咨询」，由平台居中对接。
+
+import type { Tone } from "@/lib/ui/tokens";
+
+export type Status = "live" | "beta" | "soon";
+
+export const STATUS_META: Record<Status, { label: string; tone: Tone }> = {
+  live: { label: "可预约", tone: "success" },
+  beta: { label: "内测中", tone: "warning" },
+  soon: { label: "即将上线", tone: "neutral" },
+};
+
+// TikTok Shop 主要目标市场。"global" = 与市场无关（如客服、收款），卡片上标注为「全球通用」。
+export type Region = "us" | "uk" | "sea" | "mx" | "eu" | "me" | "global";
+
+export const REGION_LABEL: Record<Region, string> = {
+  us: "美国",
+  uk: "英国",
+  sea: "东南亚",
+  mx: "墨西哥",
+  eu: "欧洲",
+  me: "中东",
+  global: "全球通用",
+};
+
+// 合作方 = 提供该服务的第三方渠道。只展示「机构名 + 一句话资质」，
+// 真实电话/微信/二维码一律不在此暴露，联系统一走「预约咨询」由平台居中对接。
+export type Partner = {
+  name: string; // 机构展示名
+  note?: string; // 一句话资质 / 定位
+};
+
+export type Service = {
+  label: string;
+  desc: string;
+  icon: string; // lucide 图标名，组件侧映射为图标组件
+  status: Status;
+  tags: string[]; // 卖点标签
+  regions: Region[]; // 适用市场
+  partners?: Partner[]; // 有合作方 → 卡片显示「合作方 · 非平台背书」
+};
+
+export type Category = {
+  key: string;
+  label: string;
+  desc: string;
+  services: Service[];
+};
+
+// ── 对接配置 ──────────────────────────────────────────────────────────
+// 「预约咨询」弹窗里的平台自有联系方式（不是合作方的）。填好任意一项即生效；
+// 全留空则弹窗显示占位提示 + 邮件兜底。用户永远联系到平台，由平台转介合作方。
+export const CONTACT = {
+  wecomUrl: "", // 企业微信「联系我」活码链接 → 自动渲染成二维码，扫码即加顾问
+  qrImageSrc: "", // 或：客服微信/企微二维码图片，放进 public/ 后填路径，如 "/contact-qr.png"
+  wechatId: "", // 备用：客服微信号，弹窗内展示并支持一键复制
+  email: "hello@oneclaw.ai", // 兜底：始终展示的邮件入口
+};
+
+// 合作方名录（脱敏版，用户端可见字段）。完整联系方式见团队内部对接手册，不进代码/用户端。
+const YIKE: Partner = { name: "宜客跨境", note: "TikTok for Business 官方授权一级代理" };
+const VINCENT: Partner = { name: "Vincent 海外代播", note: "TikTok 电商代播 · 团播" };
+const CHAOREN: Partner = { name: "潮人跨境", note: "全球本土店解决方案服务商" };
+const UVA: Partner = { name: "鱿鱼 · UVA", note: "主角跨境 · 主体入驻与财税合规" };
+
+export const CATEGORIES: Category[] = [
+  {
+    key: "fulfillment",
+    label: "物流履约",
+    desc: "把货又快又省地送到买家手里。",
+    services: [
+      {
+        label: "智能物流",
+        desc: "对接主流头程专线与海外仓渠道，下单前一键比价选最优线路，发出后轨迹自动同步、异常件主动提醒。适合刚起量、还没有固定货代的新卖家。",
+        icon: "Truck",
+        status: "beta",
+        tags: ["多渠道比价", "轨迹同步", "异常提醒"],
+        regions: ["us", "uk", "sea", "mx", "eu", "me"],
+      },
+      {
+        label: "海外仓",
+        desc: "主流市场的本地仓资源：一件代发、退货换标、本地尾程配送，旺季不爆仓、时效更稳。适合已有稳定出单、想把物流体验做上去的卖家。",
+        icon: "Warehouse",
+        status: "soon",
+        tags: ["一件代发", "退换处理", "本地尾程"],
+        regions: ["us", "uk", "sea", "eu", "mx"],
+      },
+      {
+        label: "清关报关",
+        desc: "进出口报关与商品合规申报由持牌报关行代理，发货前预审品类资质，避免卡关与扣货。适合带电、美妆等对合规敏感的品类。",
+        icon: "PackageCheck",
+        status: "soon",
+        tags: ["进出口", "合规申报", "品类预审"],
+        regions: ["us", "uk", "sea", "eu", "mx", "me"],
+      },
+    ],
+  },
+  {
+    key: "marketing",
+    label: "营销推广",
+    desc: "让更多对的人看到你的商品。",
+    services: [
+      {
+        label: "达人对接",
+        desc: "帮你筛选匹配品类的带货达人，代发建联、跟进寄样与佣金方案，进展定期同步，避免寄了样没下文。适合没有海外 BD 团队的卖家。",
+        icon: "Users",
+        status: "live",
+        tags: ["建联寄样", "佣金管理", "进展同步"],
+        regions: ["us", "uk", "sea", "mx"],
+        partners: [YIKE],
+      },
+      {
+        label: "直播代播",
+        desc: "本土主播团队按时段排期代播，含直播脚本、货品讲解与场后数据复盘；也可做短视频真人代拍。适合想试水直播、但还养不起自有主播的卖家。",
+        icon: "Radio",
+        status: "live",
+        tags: ["多时段排期", "脚本支持", "场后复盘"],
+        regions: ["sea", "us", "uk"],
+        partners: [VINCENT],
+      },
+      {
+        label: "广告开户",
+        desc: "TikTok 广告账户开户，GMV Max 计划搭建与托管优化，预算消耗与投产周度汇报。适合自然流量见顶、想放量的店铺。",
+        icon: "Megaphone",
+        status: "live",
+        tags: ["GMV Max", "托管优化", "周度汇报"],
+        regions: ["global"],
+        partners: [YIKE],
+      },
+    ],
+  },
+  {
+    key: "finance",
+    label: "资金财税",
+    desc: "钱安全地收回来，合规地报出去。",
+    services: [
+      {
+        label: "跨境收款",
+        desc: "对接主流跨境收款通道，多币种结汇、低费率提现到国内账户，到账时效与汇损透明可查。开店第一步就能用上。",
+        icon: "Wallet",
+        status: "live",
+        tags: ["多币种", "低费率", "透明汇损"],
+        regions: ["global"],
+      },
+      {
+        label: "税务合规",
+        desc: "VAT / 销售税注册与按期代理申报，申报节点自动提醒，远离平台合规下架风险。适合已在英欧市场稳定出单的卖家。",
+        icon: "ReceiptText",
+        status: "soon",
+        tags: ["VAT 注册", "代理申报", "到期提醒"],
+        regions: ["us", "uk", "eu"],
+      },
+      {
+        label: "公司与店铺",
+        desc: "海外公司主体注册、TikTok Shop / TEMU / Walmart / Amazon 本土店入驻资质材料准备与提审跟进，一站式办妥。适合想从个人店升级为正规主体经营的卖家。",
+        icon: "ShieldCheck",
+        status: "live",
+        tags: ["主体注册", "本土店入驻", "提审跟进"],
+        regions: ["us", "uk", "sea", "eu"],
+        partners: [CHAOREN, UVA],
+      },
+    ],
+  },
+];
+
+// 适用市场展示文案：含 global 显示「全球通用」，否则列出市场名。
+export function regionText(svc: Service): string {
+  if (svc.regions.includes("global")) return "全球通用";
+  return svc.regions.map((r) => REGION_LABEL[r]).join(" · ");
+}
