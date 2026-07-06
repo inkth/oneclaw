@@ -51,6 +51,15 @@ func main() {
 	// AutoMigrate 才会按新列集重建为 uq_ere_pg(GORM 不会改既有同名索引的列)。幂等:删后即 no-op。
 	db.Exec("DROP INDEX IF EXISTS uq_ere_key")
 
+	// DiscoverBackfillCursor 增加 kind 维度:旧 3 列唯一索引(provider,region,category_id)与
+	// saveBackfillCursor 的 ON CONFLICT 4 列不匹配(42P10 → 游标 upsert 全失败、断点续跑失效)。
+	// 仅当索引还是旧列集(缺 kind)时删除,AutoMigrate 按模型标签重建 4 列版;新环境/已修复则 no-op。
+	db.Exec(`DO $$ BEGIN
+		IF EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'uq_dbc_key' AND indexdef NOT LIKE '%kind%') THEN
+			EXECUTE 'DROP INDEX uq_dbc_key';
+		END IF;
+	END $$`)
+
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.PhoneVerificationCode{},
