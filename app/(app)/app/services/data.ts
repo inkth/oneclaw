@@ -4,7 +4,8 @@
 // 三条原则：
 //  ① 合作方非平台背书：标注了 partners 的服务由第三方渠道提供，卡片会打「合作方 · 非平台背书」。
 //  ② 可配置：数据全在这里，字段结构按未来能被 Go 后端接管来设计（图标用字符串名、纯可序列化）。
-//  ③ 联系脱敏 + 走引导：合作方的电话/微信/二维码一律不落到用户端，用户只走「预约咨询」，由平台居中对接。
+//  ③ 联系直连：点某服务的「预约咨询」，直接展示该服务对应合作方的联系方式（电话/微信/邮箱）。
+//     没有合作方的服务（物流/收款/税务等）仍走平台兜底联系方式 CONTACT。
 
 import type { Tone } from "@/lib/ui/tokens";
 
@@ -29,11 +30,13 @@ export const REGION_LABEL: Record<Region, string> = {
   global: "全球通用",
 };
 
-// 合作方 = 提供该服务的第三方渠道。只展示「机构名 + 一句话资质」，
-// 真实电话/微信/二维码一律不在此暴露，联系统一走「预约咨询」由平台居中对接。
+// 合作方 = 提供该服务的第三方渠道。「预约咨询」弹窗直接展示其联系方式（非平台背书）。
 export type Partner = {
   name: string; // 机构展示名
   note?: string; // 一句话资质 / 定位
+  phone?: string; // 电话（可拨打 / 复制）
+  wechat?: string; // 微信号（复制添加）
+  email?: string; // 邮箱
 };
 
 export type Service = {
@@ -54,8 +57,7 @@ export type Category = {
 };
 
 // ── 对接配置 ──────────────────────────────────────────────────────────
-// 「预约咨询」弹窗里的平台自有联系方式（不是合作方的）。填好任意一项即生效；
-// 全留空则弹窗显示占位提示 + 邮件兜底。用户永远联系到平台，由平台转介合作方。
+// 平台兜底联系方式：仅用于「没有合作方」的服务（物流/收款/税务等）。有合作方的服务直接显示合作方联系方式。
 export const CONTACT = {
   wecomUrl: "", // 企业微信「联系我」活码链接 → 自动渲染成二维码，扫码即加顾问
   qrImageSrc: "", // 或：客服微信/企微二维码图片，放进 public/ 后填路径，如 "/contact-qr.png"
@@ -63,11 +65,28 @@ export const CONTACT = {
   email: "hello@oneclaw.ai", // 兜底：始终展示的邮件入口
 };
 
-// 合作方名录（脱敏版，用户端可见字段）。完整联系方式见团队内部对接手册，不进代码/用户端。
-const YIKE: Partner = { name: "宜客跨境", note: "TikTok for Business 官方授权一级代理" };
-const VINCENT: Partner = { name: "Vincent 海外代播", note: "TikTok 电商代播 · 团播" };
-const CHAOREN: Partner = { name: "潮人跨境", note: "全球本土店解决方案服务商" };
-const UVA: Partner = { name: "鱿鱼 · UVA", note: "主角跨境 · 主体入驻与财税合规" };
+// 合作方名录。联系方式会在对应服务的「预约咨询」弹窗里直接展示。
+const YIKE: Partner = {
+  name: "宜客跨境",
+  note: "TikTok for Business 官方授权一级代理",
+  phone: "+86 137 2500 0556",
+  email: "2721973630@qq.com",
+};
+const VINCENT: Partner = {
+  name: "Vincent 海外代播",
+  note: "TikTok 电商代播 · 团播",
+  wechat: "17840717105",
+};
+const CHAOREN: Partner = {
+  name: "潮人跨境",
+  note: "全球本土店解决方案服务商",
+  email: "Guoge678@gmail.com",
+};
+const UVA: Partner = {
+  name: "鱿鱼 · UVA",
+  note: "主角跨境 · 主体入驻与财税合规",
+  phone: "+86 189 2523 9734",
+};
 
 export const CATEGORIES: Category[] = [
   {
