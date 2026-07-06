@@ -27,9 +27,19 @@ const (
 	FieldGMV    = 2
 	FieldGrowth = 3
 
-	// 店铺/达人/视频榜的排序字段只接受 1=销量 / 2=GMV。
-	EntityFieldSales = 1
-	EntityFieldGMV   = 2
+	// 店铺/达人/视频三榜(entity ranklist)的排序字段语义各不相同,不是「1=销量/2=GMV」:
+	//   店铺 seller_rank_field:     1=total_sale_cnt(热销)      2=total_ifl_cnt(合作达人数)
+	//   达人 influencer_rank_field: 1=total_followers_cnt(粉丝) 2=total_sale_cnt(带货)
+	//   视频 video_rank_field:      1=total_views_cnt(播放热门) 2=total_video_sale_cnt(带货)
+	// 选品场景默认:店铺=热销(1),达人/视频=带货(2)。
+	// 另注意:三榜的 rank_type 是周期(1=日/2=周/3=月),与商品榜的 hot/rising/new 不同,
+	// 现默认传 RankHot(=1) 恰好等于日榜。
+	SellerFieldSales         = 1
+	SellerFieldPromoters     = 2
+	InfluencerFieldFollowers = 1
+	InfluencerFieldSales     = 2
+	VideoFieldViews          = 1
+	VideoFieldSales          = 2
 )
 
 // FlexString 兼容 EchoTik 把数值字段(如 create_time)有时返回数字、有时返回字符串。

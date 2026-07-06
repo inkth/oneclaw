@@ -38,7 +38,8 @@ func Error(msg string, fields ...zap.Field) { Log.Error(msg, fields...) }
 func Debug(msg string, fields ...zap.Field) { Log.Debug(msg, fields...) }
 func Fatal(msg string, fields ...zap.Field) { Log.Fatal(msg, fields...) }
 
-func String(k, v string) zap.Field  { return zap.String(k, v) }
-func Int(k string, v int) zap.Field { return zap.Int(k, v) }
-func Err(err error) zap.Field       { return zap.Error(err) }
-func Any(k string, v any) zap.Field { return zap.Any(k, v) }
+func String(k, v string) zap.Field    { return zap.String(k, v) }
+func Int(k string, v int) zap.Field   { return zap.Int(k, v) }
+func Bool(k string, v bool) zap.Field { return zap.Bool(k, v) }
+func Err(err error) zap.Field         { return zap.Error(err) }
+func Any(k string, v any) zap.Field   { return zap.Any(k, v) }

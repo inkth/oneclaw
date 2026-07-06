@@ -16,7 +16,8 @@ export default async function DiscoverVideosPage({
   const sp = await searchParams;
   const region = (REGION_CODES.includes(sp.region as Region) ? sp.region : "US") as Region;
   const rankType = Number(sp.rank_type) || 1;
-  const field = Number(sp.field) === 2 ? 2 : 1;
+  // 默认带货榜(video_rank_field=2, total_video_sale_cnt);1=播放热门榜。
+  const field = Number(sp.field) === 1 ? 1 : 2;
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
   const q = (sp.q ?? "").trim();

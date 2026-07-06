@@ -111,10 +111,11 @@ func (e EchoTikConfig) Configured() bool { return e.Username != "" && e.Password
 // DiscoverSyncConfig 选品榜单定时同步:预热榜单缓存 + 保证每日快照连续。
 // 仅在 EchoTik 已配置时生效(mock 模式无预热价值)。
 type DiscoverSyncConfig struct {
-	Enabled  bool
-	Interval time.Duration // 与榜单缓存 TTL(6h)对齐
-	Combos   []SyncCombo   // 抓取的 region × 榜单组合
-	PageSize int           // 每榜抓取条数
+	Enabled       bool
+	Interval      time.Duration // 与榜单缓存 TTL(6h)对齐
+	Combos        []SyncCombo   // 抓取的 region × 榜单组合
+	PageSize      int           // 每榜抓取条数
+	CategorySweep bool          // 每日一轮 combo 站点 × 全一级类目 × 四榜第 1 页(类目首屏保鲜)
 }
 
 // SyncCombo 一组榜单抓取参数。RankType/RankField 取值见 echotik 包枚举(1=热销榜/销量)。
@@ -235,6 +236,8 @@ func Load() *Config {
 			// 预热前 maxDiscoverPage(10)页商品榜:10 页 × 前端 page_size 16 = 160,
 			// 让「全部」类目前 10 页全命中缓存零 EchoTik。改小会让深页回退实时拉。
 			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 160),
+			// 每日类目扫:combo 站点 × 全一级类目 × 四榜第 1 页,约 500 请求/天。
+			CategorySweep: getEnvBool("DISCOVER_SYNC_CATEGORY_SWEEP", true),
 		},
 		OverflowSettle: OverflowSettleConfig{
 			Enabled:  getEnvBool("OVERFLOW_SETTLE_ENABLED", true),

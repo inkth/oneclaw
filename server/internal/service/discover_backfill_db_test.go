@@ -53,7 +53,8 @@ func openTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-// fakePages 第 1/2 页满 10 条,第 3 页 3 条(触发提前收尾),其余空。
+// fakePages EchoTik 页(10 条/页)第 1/2 页满、第 3 页 3 条,其余空。
+// 回填页粒度=前端页(20 条):第 1 前端页 = EchoTik 页 1+2(满 20),第 2 前端页 = 页 3(13 条,不满)。
 var fakePages = map[string]int{"1": 10, "2": 10, "3": 3}
 
 // TestBackfillProducts 商品榜回填:分页落库 + 游标推进 + 重跑跳过已完成(已有数据不再请求)。
@@ -90,27 +91,27 @@ func TestBackfillProducts(t *testing.T) {
 
 	svc := NewDiscoverService(db, echotik.New(config.EchoTikConfig{BaseURL: srv.URL, Username: "u", Password: "p"}), nil, nil)
 
-	// 第一轮:第 3 页不足 10 条 => 提前收尾;10+10+3=23。
+	// 第一轮:1 个前端页(20 条)= EchoTik 页 1+2 两次请求。
 	fetched, skipped, err := svc.BackfillDiscover(context.Background(), BackfillKindsProductOnly)
 	if err != nil {
 		t.Fatalf("回填失败: %v", err)
 	}
-	if fetched != 23 || skipped != 0 {
-		t.Errorf("第一轮 fetched=%d skipped=%d, 期望 23/0", fetched, skipped)
+	if fetched != 20 || skipped != 0 {
+		t.Errorf("第一轮 fetched=%d skipped=%d, 期望 20/0", fetched, skipped)
 	}
-	if got := atomic.LoadInt64(&ranklistReqs); got != 3 {
-		t.Errorf("第一轮商品榜请求=%d, 期望 3", got)
+	if got := atomic.LoadInt64(&ranklistReqs); got != 2 {
+		t.Errorf("第一轮商品榜请求=%d, 期望 2(前端页=2 个 EchoTik 页)", got)
 	}
 	var cnt int64
 	db.Model(&model.DiscoverProduct{}).
 		Where("region = ? AND category_id = ?", "US", "601152").Count(&cnt)
-	if cnt != 23 {
-		t.Errorf("库内商品数=%d, 期望 23", cnt)
+	if cnt != 20 {
+		t.Errorf("库内商品数=%d, 期望 20", cnt)
 	}
 	var cur model.DiscoverBackfillCursor
 	db.Where("kind = ? AND region = ? AND category_id = ?", boardProduct, "US", "601152").First(&cur)
-	if cur.DonePages != 3 || !cur.Completed {
-		t.Errorf("游标 donePages=%d completed=%v, 期望 3/true", cur.DonePages, cur.Completed)
+	if cur.DonePages != 1 || !cur.Completed {
+		t.Errorf("游标 donePages=%d completed=%v, 期望 1/true", cur.DonePages, cur.Completed)
 	}
 
 	// 第二轮:已 completed,整组跳过,不再请求。
@@ -162,36 +163,36 @@ func TestBackfillSellerReadPath(t *testing.T) {
 		t.Fatalf("店铺回填失败: %v", err)
 	}
 
-	// 店铺主表落库:同一 (page,i) 跨「全部/类目」组合 id 相同 → 去重后 23 个 distinct。
+	// 店铺主表落库:第 1 前端页 = EchoTik 页 1+2 = 20 个 distinct(跨「全部/类目」组合 id 相同)。
 	var sellers int64
 	db.Model(&model.DiscoverSeller{}).Where("region = ?", "US").Count(&sellers)
-	if sellers != 23 {
-		t.Errorf("店铺主表行数=%d, 期望 23", sellers)
+	if sellers != 20 {
+		t.Errorf("店铺主表行数=%d, 期望 20", sellers)
 	}
 
-	// 顺序表:全部类目("") + 类目(601152) 各 3 页 = 6 条。
+	// 顺序表:全部类目("") + 类目(601152) 各 1 个前端页 = 2 条(各 20 id)。
 	var entries int64
 	db.Model(&model.EntityRanklistEntry{}).Where("kind = ? AND region = ?", boardSeller, "US").Count(&entries)
-	if entries != 6 {
-		t.Errorf("顺序表条数=%d, 期望 6", entries)
+	if entries != 2 {
+		t.Errorf("顺序表条数=%d, 期望 2", entries)
 	}
 
-	// 读路径:类目 601152 第 2 页应命中本地(cached),返回该页 10 行。
+	// 读路径:类目 601152 第 1 页命中本地(cached),完整 20 行(前端 hasNext 依赖 rows>=20)。
 	p := echotik.RanklistParams{
-		Region: "US", RankType: echotik.RankHot, RankField: echotik.EntityFieldSales,
-		CategoryID: "601152", PageNum: 2, PageSize: 20,
+		Region: "US", RankType: echotik.RankHot, RankField: echotik.SellerFieldSales,
+		CategoryID: "601152", PageNum: 1, PageSize: 20,
 	}
-	res := svc.SellerRanklist(context.Background(), p)
-	if res.State != "cached" {
-		t.Errorf("类目第2页 state=%q, 期望 cached(读本地)", res.State)
+	if r1 := svc.SellerRanklist(context.Background(), p); r1.State != "cached" || len(r1.Rows) != 20 {
+		t.Errorf("类目第1页 state=%q rows=%d, 期望 cached/20", r1.State, len(r1.Rows))
 	}
-	if len(res.Rows) != 10 {
-		t.Errorf("类目第2页行数=%d, 期望 10", len(res.Rows))
+	// 第 2 页未回填:首访 live(前端页 2 → EchoTik 页 3+4 = 3 条,与第 1 页零重叠)
+	// 并落顺序表,再访命中本地。
+	p.PageNum = 2
+	if r2 := svc.SellerRanklist(context.Background(), p); r2.State != "live" || len(r2.Rows) != 3 {
+		t.Errorf("类目第2页首访 state=%q rows=%d, 期望 live/3", r2.State, len(r2.Rows))
 	}
-	// 第 1 页同样本地命中。
-	p.PageNum = 1
-	if r1 := svc.SellerRanklist(context.Background(), p); r1.State != "cached" || len(r1.Rows) != 10 {
-		t.Errorf("类目第1页 state=%q rows=%d, 期望 cached/10", r1.State, len(r1.Rows))
+	if r2b := svc.SellerRanklist(context.Background(), p); r2b.State != "cached" || len(r2b.Rows) != 3 {
+		t.Errorf("类目第2页再访 state=%q rows=%d, 期望 cached/3", r2b.State, len(r2b.Rows))
 	}
 }
 

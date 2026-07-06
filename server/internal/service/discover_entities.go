@@ -80,6 +80,9 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 	}
 	// 任意类目/页都先读 DB:顺序表(按页)+ 主表,零 EchoTik。回填后类目/翻页也走本地。
 	if res, ok := s.lookupSellerRanklist(ctx, p); ok {
+		if res.FetchedAt != nil {
+			s.maybeRefreshEntityRanklist(ctx, "seller", p, *res.FetchedAt) // 陈旧则 SWR 后台刷
+		}
 		return res
 	}
 	// 未本地化的页:拉 live(顺手按页落库供下次)。
@@ -109,6 +112,9 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 		return s.searchInfluencers(ctx, p)
 	}
 	if res, ok := s.lookupInfluencerRanklist(ctx, p); ok {
+		if res.FetchedAt != nil {
+			s.maybeRefreshEntityRanklist(ctx, "influencer", p, *res.FetchedAt) // 陈旧则 SWR 后台刷
+		}
 		return res
 	}
 	return s.fetchInfluencerRanklistLive(ctx, p)
@@ -137,6 +143,9 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 		return s.searchVideos(ctx, p)
 	}
 	if res, ok := s.lookupVideoRanklist(ctx, p); ok {
+		if res.FetchedAt != nil {
+			s.maybeRefreshEntityRanklist(ctx, "video", p, *res.FetchedAt) // 陈旧则 SWR 后台刷
+		}
 		return res
 	}
 	return s.fetchVideoRanklistLive(ctx, p)
@@ -158,7 +167,9 @@ func (s *DiscoverService) hostMapVideos(ctx context.Context, raw []echotik.Video
 
 // PrewarmEntities 供定时任务预热店铺/达人/视频三榜:强制拉取并回写缓存(绕过读缓存,
 // 确保 TTL 过期前主动刷新)。p.PageSize 必须与前端一致(20),否则缓存键含 page_size
-// 不匹配、预热失效。三榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
+// 不匹配、预热失效。RankField 在此按榜单固定(店铺=热销/达人=带货/视频=带货),
+// 与 handler 各榜默认一致——combo 的 RankField 只描述商品榜,三榜 field 语义各异不可共用。
+// 三榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
 func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.RanklistParams) error {
 	if !s.echo.Configured() {
 		return nil
@@ -168,27 +179,33 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 	}
 	p.PageNum = 1 // 预热第 1 页,与前端默认页缓存键对齐
 	var firstErr error
-	if raw, err := s.echo.GetSellerRanklist(ctx, p); err != nil {
+	sp := p
+	sp.RankField = echotik.SellerFieldSales
+	if raw, err := s.echo.GetSellerRanklist(ctx, sp); err != nil {
 		firstErr = err
 	} else if len(raw) > 0 {
-		s.upsertSellerList(ctx, p.Region, raw) // 落主表(含 COS 封面)+ 当日快照
-		s.writeEntityRanklist(ctx, "seller", p, sellerIDsOf(raw))
+		s.upsertSellerList(ctx, sp.Region, raw) // 落主表(含 COS 封面)+ 当日快照
+		s.writeEntityRanklist(ctx, "seller", sp, sellerIDsOf(raw))
 	}
-	if raw, err := s.echo.GetInfluencerRanklist(ctx, p); err != nil {
+	ip := p
+	ip.RankField = echotik.InfluencerFieldSales
+	if raw, err := s.echo.GetInfluencerRanklist(ctx, ip); err != nil {
 		if firstErr == nil {
 			firstErr = err
 		}
 	} else if len(raw) > 0 {
-		s.upsertInfluencerList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
+		s.upsertInfluencerList(ctx, ip.Region, raw)
+		s.writeEntityRanklist(ctx, "influencer", ip, influencerIDsOf(raw))
 	}
-	if raw, err := s.echo.GetVideoRanklist(ctx, p); err != nil {
+	vp := p
+	vp.RankField = echotik.VideoFieldSales
+	if raw, err := s.echo.GetVideoRanklist(ctx, vp); err != nil {
 		if firstErr == nil {
 			firstErr = err
 		}
 	} else if len(raw) > 0 {
-		s.upsertVideoList(ctx, p.Region, raw)
-		s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
+		s.upsertVideoList(ctx, vp.Region, raw)
+		s.writeEntityRanklist(ctx, "video", vp, videoIDsOf(raw))
 	}
 	return firstErr
 }

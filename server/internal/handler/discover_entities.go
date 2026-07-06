@@ -7,13 +7,14 @@ import (
 )
 
 // 店铺/达人/视频三榜:公开只读,无需工作台上下文。query: region & rank_type & field & page_size & date。
-// field 仅 1=销量 / 2=GMV。服务层始终返回结果(失败降级 mock),故 handler 不返回错误。
+// field 语义随榜单不同(见 echotik 包枚举注释),选品默认:店铺=热销、达人/视频=带货。
+// 服务层始终返回结果(失败降级 mock),故 handler 不返回错误。
 
-func entityParams(c *gin.Context) echotik.RanklistParams {
+func entityParams(c *gin.Context, defaultField int) echotik.RanklistParams {
 	return echotik.RanklistParams{
 		Region:     defaultStr(c.Query("region"), "US"),
 		RankType:   defaultInt(c.Query("rank_type"), echotik.RankHot),
-		RankField:  entityField(c.Query("field")),
+		RankField:  entityField(c.Query("field"), defaultField),
 		CategoryID: c.Query("category_id"),
 		PageSize:   defaultInt(c.Query("page_size"), 20),
 		PageNum:    pageNumParam(c),
@@ -22,26 +23,29 @@ func entityParams(c *gin.Context) echotik.RanklistParams {
 	}
 }
 
-func entityField(v string) int {
-	if v == "2" {
-		return echotik.EntityFieldGMV
+func entityField(v string, def int) int {
+	switch v {
+	case "1":
+		return 1
+	case "2":
+		return 2
 	}
-	return echotik.EntityFieldSales
+	return def
 }
 
-// SellerRanklist GET /discover/seller-ranklist
+// SellerRanklist GET /discover/seller-ranklist —— 默认热销榜(total_sale_cnt)。
 func (h *DiscoverHandler) SellerRanklist(c *gin.Context) {
-	OK(c, h.discover.SellerRanklist(c.Request.Context(), entityParams(c)))
+	OK(c, h.discover.SellerRanklist(c.Request.Context(), entityParams(c, echotik.SellerFieldSales)))
 }
 
-// InfluencerRanklist GET /discover/influencer-ranklist
+// InfluencerRanklist GET /discover/influencer-ranklist —— 默认带货榜(total_sale_cnt),非粉丝榜。
 func (h *DiscoverHandler) InfluencerRanklist(c *gin.Context) {
-	OK(c, h.discover.InfluencerRanklist(c.Request.Context(), entityParams(c)))
+	OK(c, h.discover.InfluencerRanklist(c.Request.Context(), entityParams(c, echotik.InfluencerFieldSales)))
 }
 
-// VideoRanklist GET /discover/video-ranklist
+// VideoRanklist GET /discover/video-ranklist —— 默认带货榜(total_video_sale_cnt),非播放热门榜。
 func (h *DiscoverHandler) VideoRanklist(c *gin.Context) {
-	OK(c, h.discover.VideoRanklist(c.Request.Context(), entityParams(c)))
+	OK(c, h.discover.VideoRanklist(c.Request.Context(), entityParams(c, echotik.VideoFieldSales)))
 }
 
 // Categories GET /discover/categories?region=US —— 一级类目筛选项。

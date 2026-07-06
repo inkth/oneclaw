@@ -37,18 +37,21 @@ var backfillRegions = []string{
 }
 
 const (
-	backfillPagesPerCombo = 5  // 每个(地区×类目)拉前 5 页
-	backfillPageSize      = 10 // EchoTik 单页上限 10,一页恰好一次 API 请求
+	// 页粒度=前端页(20 条),与 entity 页请求 / 预热 / live 兜底同构——顺序表一条 20 id,
+	// 前端分页(rows>=20 才有下一页)才能正常工作。EchoTik 上限 10/页,客户端内部并发拉 2 页拼一屏。
+	backfillPagesPerCombo = 1  // 每个(地区×类目)灌前端第 1 页;第 2 页起用户首访 live 落库 + SWR 保鲜
+	backfillPageSize      = 20 // 前端页大小(= entityPrewarmPageSize)
 )
 
-// backfillReqInterval 每次 EchoTik 请求后限速 1s(防限流);测试里调小以免干等。
-var backfillReqInterval = 1 * time.Second
+// backfillReqInterval 每"前端页"含 2 次 EchoTik 请求,间隔 2s 保持均值 1 req/s(防限流);测试里调小以免干等。
+var backfillReqInterval = 2 * time.Second
 
-// BackfillDiscover 遍历所有站点 × 所有一级类目 × 前 5 页,把 kinds 指定的榜单数据落库:
+// BackfillDiscover 遍历所有站点 × 所有一级类目 × 前端第 1 页,把 kinds 指定的榜单数据落库:
 //   - 商品榜:只回填「具体类目」(全部类目由定时 job 维护——RanklistCacheEntry 无页维度,多页会互相覆盖)。
-//   - 店铺/达人/视频三榜:回填「全部类目 + 各具体类目」,按页落 EntityRanklistEntry(页维度),读路径据此本地分页。
+//   - 店铺/达人/视频三榜:回填「全部类目 + 各具体类目」,落 EntityRanklistEntry(页维度),读路径据此本地分页。
 //
-// 每次 EchoTik 请求间隔 1 秒;DiscoverBackfillCursor 按 (kind, region, category) 记录进度,
+// 全量一轮 ≈ 16 站点 × (商品 16 类目 + 三榜 17 类目) × 2 请求 ≈ 2200 次、约 36 分钟。
+// DiscoverBackfillCursor 按 (kind, region, category) 记录进度,
 // 已完成组合/已拉页直接跳过 → 可中断重跑(已有数据不再请求)。封面不在此补取,交给 --backfill-covers。
 func (s *DiscoverService) BackfillDiscover(ctx context.Context, kinds []string) (fetched, skipped int, err error) {
 	if !s.echo.Configured() {
@@ -104,7 +107,8 @@ func (s *DiscoverService) BackfillDiscover(ctx context.Context, kinds []string) 
 	return fetched, skipped, nil
 }
 
-// backfillCombo 回填单个 (kind, region, category) 组合的前 5 页;返回该组合落库行数与跳过组合数(0/1)。
+// backfillCombo 回填单个 (kind, region, category) 组合的前 backfillPagesPerCombo 个前端页;
+// 返回该组合落库行数与跳过组合数(0/1)。
 func (s *DiscoverService) backfillCombo(ctx context.Context, kind, region, cat string) (fetched, skipped int) {
 	cur := s.loadBackfillCursor(ctx, kind, region, cat)
 	if cur.Completed {
@@ -143,13 +147,26 @@ func (s *DiscoverService) backfillCombo(ctx context.Context, kind, region, cat s
 	return fetched, 0
 }
 
+// backfillRankField 各榜回填用的排序字段,必须与 handler 默认读一致,否则顺序表键
+// (rank_field)对不上、回填白做。field 语义随榜单不同,见 echotik 包枚举注释。
+func backfillRankField(kind string) int {
+	switch kind {
+	case boardInfluencer:
+		return echotik.InfluencerFieldSales
+	case boardVideo:
+		return echotik.VideoFieldSales
+	default: // product/seller: 1=销量
+		return echotik.FieldSales
+	}
+}
+
 // backfillPage 拉某榜单单页并落库,返回该页行数。商品榜走 RefreshRanklist(类目路径只 upsert 行);
 // 三榜各自 upsert 主表+当日快照,并按页写 EntityRanklistEntry 顺序。
 func (s *DiscoverService) backfillPage(ctx context.Context, kind, region, cat string, page int) (int, error) {
 	p := echotik.RanklistParams{
 		Region:     region,
 		RankType:   echotik.RankHot,
-		RankField:  echotik.FieldSales, // 三榜的 EntityFieldSales 同值=1,与默认读对齐
+		RankField:  backfillRankField(kind), // 与各榜默认读对齐(店铺/商品=销量,达人/视频=带货)
 		CategoryID: cat,
 		PageNum:    page,
 		PageSize:   backfillPageSize,

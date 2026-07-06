@@ -50,8 +50,18 @@ func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region strin
 			}
 			cols := []string{
 				"unique_id", "nick_name", "category", "ec_score",
-				"followers", "digg_cnt", "product_cnt", "post_video_cnt", "live_cnt",
 				"sale_cnt", "sale_gmv_cents", "list_fetched_at", "updated_at",
+			}
+			// 带货榜(influencer_rank_field=2)行的粉丝/互动/产出数可能缺失(0):
+			// 0 视为缺失,不覆盖详情/粉丝榜已积累的非零值。
+			for col, v := range map[string]int{
+				"followers": it.TotalFollowersCnt, "digg_cnt": it.TotalDiggCnt,
+				"product_cnt": it.TotalProductCnt, "post_video_cnt": it.TotalPostVideoCnt,
+				"live_cnt": it.TotalLiveCnt,
+			} {
+				if v > 0 {
+					cols = append(cols, col)
+				}
 			}
 			if cos := hosted[it.Avatar]; cos != "" {
 				di.AvatarURL = cos
@@ -67,9 +77,10 @@ func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region strin
 				providerEchoTik, it.UserID, region).First(&stored).Error; err != nil {
 				continue
 			}
+			// 快照 followers 取 upsert 后的主表值:榜单行有值即新值,缺失(0)沿用旧值,避免趋势假 0。
 			snap := model.DiscoverInfluencerSnapshot{
 				DiscoverInfluencerID: stored.ID, Dt: today,
-				Followers: it.TotalFollowersCnt, SaleCnt: it.TotalSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalSaleGmvAmt),
+				Followers: stored.Followers, SaleCnt: it.TotalSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalSaleGmvAmt),
 			}
 			tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "discover_influencer_id"}, {Name: "dt"}},

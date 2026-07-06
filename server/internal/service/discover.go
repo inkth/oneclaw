@@ -49,6 +49,9 @@ type DiscoverService struct {
 	translateCh       chan []translateJob
 	translateInflight map[string]struct{}
 	translateMu       sync.Mutex
+
+	// 实体三榜顺序表 SWR 的 in-flight 去重(键=kind+榜单参数),防同组合并发重复拉。
+	ranklistRefreshing sync.Map
 }
 
 func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage, llmc *llm.Client) *DiscoverService {

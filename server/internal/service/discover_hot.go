@@ -100,7 +100,7 @@ func (s *DiscoverService) categoryHotVideos(ctx context.Context, region, categor
 	rows, err := s.echo.GetVideoRanklist(ctx, echotik.RanklistParams{
 		Region:     region,
 		RankType:   echotik.RankHot,
-		RankField:  echotik.EntityFieldSales,
+		RankField:  echotik.VideoFieldSales, // 带货榜;此前误传 1(播放热门榜)混入零转化娱乐视频
 		CategoryID: categoryID,
 		PageSize:   10,
 	})

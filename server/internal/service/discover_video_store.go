@@ -50,8 +50,17 @@ func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, ra
 			}
 			cols := []string{
 				"nick_name", "unique_id", "video_desc", "category", "duration", "create_time",
-				"views", "digg", "comments", "shares", "sale_cnt", "sale_gmv_cents",
-				"list_fetched_at", "updated_at",
+				"sale_cnt", "sale_gmv_cents", "list_fetched_at", "updated_at",
+			}
+			// 带货榜(video_rank_field=2)行的播放/互动数上游不回填(恒 0):0 视为缺失,
+			// 不覆盖详情/热门榜已积累的非零值(同封面「成功才更新」原则)。
+			for col, v := range map[string]int{
+				"views": it.TotalViewsCnt, "digg": it.TotalDiggCnt,
+				"comments": it.TotalCommentsCnt, "shares": it.TotalSharesCnt,
+			} {
+				if v > 0 {
+					cols = append(cols, col)
+				}
 			}
 			if cos := hosted[it.ReflowCover]; cos != "" {
 				dv.CoverURL = cos
@@ -74,9 +83,10 @@ func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, ra
 			if stored.DescZh == "" && stored.Desc != "" {
 				transJobs = append(transJobs, translateJob{Table: "discover_videos", Column: "desc_zh", ID: stored.ID, Text: stored.Desc})
 			}
+			// 快照 views 取 upsert 后的主表值:榜单行有值即新值,缺失(0)沿用旧值,避免趋势里出现假 0。
 			snap := model.DiscoverVideoSnapshot{
 				DiscoverVideoID: stored.ID, Dt: today,
-				Views: it.TotalViewsCnt, SaleCnt: it.TotalVideoSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalVideoSaleGmvAmt),
+				Views: stored.Views, SaleCnt: it.TotalVideoSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalVideoSaleGmvAmt),
 			}
 			tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "discover_video_id"}, {Name: "dt"}},

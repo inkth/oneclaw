@@ -40,7 +40,8 @@ export default async function DashboardPage({
   // 爆款短视频示例：临时用真实 EchoTik 带货视频榜填充（公共端点，游客可见）。
   // 注：这是别人的 TikTok 成片（封面 + 点开进详情），非本平台产出；自制样片就绪后替换。
   const sampleVideos = await apiServer<{ rows: VideoRow[] }>(
-    `/discover/video-ranklist?region=US&rank_type=1&field=1&page_size=8`,
+    // field=2=带货榜,与视频榜页/预热键一致(field=1 播放榜的顺序表已不再被 job 刷新)。
+    `/discover/video-ranklist?region=US&rank_type=1&field=2&page_size=8`,
   )
     .then((d): SampleVid[] =>
       (d.rows ?? []).slice(0, 6).map((r) => ({

@@ -134,10 +134,12 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
           <Play className="h-2.5 w-2.5 fill-white" />
           {fmtDuration(v.duration)}
         </span>
-        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white">
-          <Eye className="h-2.5 w-2.5" />
-          {fmt(v.totalViewsCnt)}
-        </span>
+        {v.totalViewsCnt > 0 && (
+          <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white">
+            <Eye className="h-2.5 w-2.5" />
+            {fmt(v.totalViewsCnt)}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
@@ -152,13 +154,16 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
           <span className="truncate" title={v.nickName}>{v.nickName}</span>
         </div>
 
-        <div className="mt-auto grid grid-cols-3 gap-1 text-2xs text-zinc-500">
-          <Metric icon={<Heart className="h-2.5 w-2.5" />} value={fmt(v.totalDiggCnt)} />
-          <Metric icon={<MessageCircle className="h-2.5 w-2.5" />} value={fmt(v.totalCommentsCnt)} />
-          <Metric icon={<Share2 className="h-2.5 w-2.5" />} value={fmt(v.totalSharesCnt)} />
-        </div>
+        {/* 带货榜行上游不回填播放/互动数(0=缺失),全 0 时整行不渲染,避免看着像坏数据。 */}
+        {(v.totalDiggCnt > 0 || v.totalCommentsCnt > 0 || v.totalSharesCnt > 0) && (
+          <div className="grid grid-cols-3 gap-1 text-2xs text-zinc-500">
+            <Metric icon={<Heart className="h-2.5 w-2.5" />} value={fmt(v.totalDiggCnt)} />
+            <Metric icon={<MessageCircle className="h-2.5 w-2.5" />} value={fmt(v.totalCommentsCnt)} />
+            <Metric icon={<Share2 className="h-2.5 w-2.5" />} value={fmt(v.totalSharesCnt)} />
+          </div>
+        )}
 
-        <div className="flex items-center justify-between rounded-lg bg-zinc-50 px-2 py-1.5">
+        <div className="mt-auto flex items-center justify-between rounded-lg bg-zinc-50 px-2 py-1.5">
           <div>
             <div className="text-2xs uppercase tracking-wider text-zinc-400">带货销量</div>
             <div className="text-xs font-semibold tabular-nums text-zinc-900">{fmt(v.totalVideoSaleCnt)}</div>

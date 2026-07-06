@@ -18,15 +18,16 @@ func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldPar
 	if desired <= 0 {
 		desired = 20
 	}
-	pageSize := desired
-	if pageSize > maxPageSize {
-		pageSize = maxPageSize
+	pagesNeeded := (desired + maxPageSize - 1) / maxPageSize
+	// 均分到各 EchoTik 页(真实调用方 8/10/20 都整除),使 EchoTik 页边界与调用方页宽对齐。
+	pageSize := (desired + pagesNeeded - 1) / pagesNeeded
+	page := p.PageNum
+	if page <= 0 {
+		page = 1
 	}
-	startPage := p.PageNum
-	if startPage <= 0 {
-		startPage = 1
-	}
-	pagesNeeded := (desired + pageSize - 1) / pageSize
+	// 调用方页码(宽 desired)换算 EchoTik 起始页(宽 pageSize)。直接拿 p.PageNum 当起始页
+	// 会在 desired>10 时与上一页重叠(20 条页的第 2 页应取 EchoTik 页 3-4,而非 2-3)。
+	startPage := (page-1)*pagesNeeded + 1
 
 	dates := []string{p.Date}
 	if p.Date == "" {

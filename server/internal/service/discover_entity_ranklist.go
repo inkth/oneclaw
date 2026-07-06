@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm/clause"
@@ -52,7 +53,45 @@ func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, 
 	}).Create(&e)
 }
 
-// lookupRanklistIDs 读榜单顺序(按页)。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,新鲜由 job 保证。
+// entityRanklistStaleTTL 顺序表条目的新鲜期。四榜都是日榜(一天一版),超过一天的条目
+// 在命中时触发 SWR 后台刷新:先返回旧值不阻塞,下一次访问拿到新数据。
+const entityRanklistStaleTTL = 24 * time.Hour
+
+// maybeRefreshEntityRanklist 实体榜顺序表 SWR:条目陈旧(>24h)则后台重拉该组合落库。
+// 默认榜第 1 页另有 job 6h 保鲜;这里是类目页/深页/非 combo 站点等长尾组合的唯一保鲜途径
+//(否则落库即永久冻结)。in-flight 去重防同组合并发重复拉;失败静默,旧值继续可读。
+func (s *DiscoverService) maybeRefreshEntityRanklist(ctx context.Context, kind string, p echotik.RanklistParams, fetchedAt time.Time) {
+	if !s.echo.Configured() || time.Since(fetchedAt) < entityRanklistStaleTTL {
+		return
+	}
+	key := fmt.Sprintf("%s:%s:%d:%d:%s:%d", kind, p.Region, p.RankType, p.RankField, p.CategoryID, normPage(p.PageNum))
+	if _, inflight := s.ranklistRefreshing.LoadOrStore(key, struct{}{}); inflight {
+		return
+	}
+	goRefresh(ctx, "ranklist-"+kind, func(bg context.Context) {
+		defer s.ranklistRefreshing.Delete(key)
+		switch kind {
+		case "seller":
+			if raw, err := s.echo.GetSellerRanklist(bg, p); err == nil && len(raw) > 0 {
+				s.upsertSellerList(bg, p.Region, raw)
+				s.writeEntityRanklist(bg, kind, p, sellerIDsOf(raw))
+			}
+		case "influencer":
+			if raw, err := s.echo.GetInfluencerRanklist(bg, p); err == nil && len(raw) > 0 {
+				s.upsertInfluencerList(bg, p.Region, raw)
+				s.writeEntityRanklist(bg, kind, p, influencerIDsOf(raw))
+			}
+		case "video":
+			if raw, err := s.echo.GetVideoRanklist(bg, p); err == nil && len(raw) > 0 {
+				s.upsertVideoList(bg, p.Region, raw)
+				s.writeEntityRanklist(bg, kind, p, videoIDsOf(raw))
+			}
+		}
+	})
+}
+
+// lookupRanklistIDs 读榜单顺序(按页)。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,
+// 新鲜由 job(默认榜/类目扫)+ SWR(长尾组合)保证。
 func (s *DiscoverService) lookupRanklistIDs(ctx context.Context, kind string, p echotik.RanklistParams) ([]string, time.Time, bool) {
 	if s.db == nil {
 		return nil, time.Time{}, false

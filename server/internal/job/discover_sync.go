@@ -17,6 +17,10 @@ type DiscoverSync struct {
 	cfg      config.DiscoverSyncConfig
 	discover *service.DiscoverService
 	echo     *echotik.Client
+
+	// lastSweepDay 当日类目扫完成标记(yyyy-MM-dd)。内存态:重启后当天会再扫一轮,
+	// 幂等(upsert)且量小(~500 req),可接受。
+	lastSweepDay string
 }
 
 func NewDiscoverSync(cfg config.DiscoverSyncConfig, d *service.DiscoverService, e *echotik.Client) *DiscoverSync {
@@ -56,7 +60,8 @@ func (j *DiscoverSync) Start(ctx context.Context) {
 	logger.Info("[job] 选品同步已启动",
 		logger.String("interval", j.cfg.Interval.String()),
 		logger.Int("combos", len(j.cfg.Combos)),
-		logger.Int("pageSize", j.cfg.PageSize))
+		logger.Int("pageSize", j.cfg.PageSize),
+		logger.Bool("categorySweep", j.cfg.CategorySweep))
 }
 
 // runOnce 串行刷新所有组合。单组合失败只告警不中断;combo 间限速防 EchoTik 限流。
@@ -84,6 +89,13 @@ func (j *DiscoverSync) runOnce(ctx context.Context) {
 	if ctx.Err() == nil {
 		j.discover.RefreshTrackedDetails(ctx, trackedRefreshPerRun)
 	}
+
+	// 每日一轮类目扫(放最后:优先级低于默认榜预热与收藏刷新)。
+	today := time.Now().Format("2006-01-02")
+	if j.cfg.CategorySweep && j.lastSweepDay != today && ctx.Err() == nil {
+		j.sweepCategories(ctx)
+		j.lastSweepDay = today
+	}
 }
 
 // entityPrewarmPageSize 预热店铺/达人/视频三榜的条数,必须与前端各 entity 页请求的
@@ -92,6 +104,48 @@ const entityPrewarmPageSize = 20
 
 // trackedRefreshPerRun 每轮主动刷新的 tracked(被收藏)实体数上限(每类)。
 const trackedRefreshPerRun = 10
+
+// sweepCategories 每日类目扫:combo 站点 × 全一级类目 × 四榜第 1 页(实体三榜 20 条顺序表 +
+// 商品榜 20 行主表),保证「切类目的第一屏」秒开且不超过一天陈旧。深页/非 combo 站点交给
+// 用户首访 live 落库 + 读路径 SWR。约 4 站点 × 16 类目 × 8 请求 ≈ 500 请求/轮,类目间限速 2s。
+func (j *DiscoverSync) sweepCategories(ctx context.Context) {
+	start := time.Now()
+	combos, cats := 0, 0
+	for _, c := range j.cfg.Combos {
+		if ctx.Err() != nil {
+			return
+		}
+		// 每站点一个独立超时预算:16 类目 × (拉取+落库+限速) 正常 3~5 分钟,封面冷启动放宽到 20 分钟。
+		cctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
+		for _, cat := range j.discover.Categories(cctx, c.Region) {
+			if cctx.Err() != nil {
+				break
+			}
+			p := echotik.RanklistParams{
+				Region: c.Region, RankType: c.RankType, RankField: c.RankField,
+				CategoryID: cat.ID, PageSize: entityPrewarmPageSize,
+			}
+			if err := j.discover.PrewarmEntities(cctx, p); err != nil {
+				logger.Warn("[job] 类目扫 entity 榜失败",
+					logger.String("region", c.Region), logger.String("cat", cat.ID), logger.Err(err))
+			}
+			if _, err := j.discover.RefreshRanklist(cctx, p); err != nil {
+				logger.Warn("[job] 类目扫商品榜失败",
+					logger.String("region", c.Region), logger.String("cat", cat.ID), logger.Err(err))
+			}
+			cats++
+			select { // 类目间限速,防 EchoTik 429
+			case <-time.After(2 * time.Second):
+			case <-cctx.Done():
+			}
+		}
+		cancel()
+		combos++
+	}
+	logger.Info("[job] 每日类目扫完成",
+		logger.Int("regions", combos), logger.Int("categories", cats),
+		logger.String("duration", time.Since(start).Round(time.Second).String()))
+}
 
 func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
 	// 商品榜 + 店铺/达人/视频三榜串行(视频榜还要批量签封面),留足跨境拉取时间。
