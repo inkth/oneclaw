@@ -1,5 +1,7 @@
-// 选品各榜共用的地区配置（TikTok Shop 全部开放站点）。
-// 这是国家列表的唯一来源：FilterBar、各 discover 页、参数校验都从这里取，扩国家只改此文件。
+// 选品各榜共用的地区配置（TikTok Shop 开放站点 ∩ EchoTik 数据源支持站点）。
+// 这是国家列表的唯一来源：FilterBar、各 discover 页、参数校验、做视频目标市场都从这里取,扩国家只改此文件。
+// 注意:IE(爱尔兰)是 TikTok Shop 站点但 EchoTik 不支持(整站 code 500),2026-07 已移除;
+// EchoTik 还支持 SA(沙特),前端未开,要加先确认 TikTok Shop 已开站。
 export type Region =
   | "US"
   | "GB"
@@ -15,8 +17,7 @@ export type Region =
   | "FR"
   | "IT"
   | "BR"
-  | "JP"
-  | "IE";
+  | "JP";
 
 // lang 是该市场短视频口播语言的中文名,仅做选择前的下拉预览;
 // 生成侧权威映射在 Go 端 server/internal/service/region_lang.go(regionVoices),
@@ -37,7 +38,6 @@ export const REGIONS: Array<{ code: Region; cn: string; flag: string; lang: stri
   { code: "IT", cn: "意大利", flag: "🇮🇹", lang: "意大利语" },
   { code: "BR", cn: "巴西", flag: "🇧🇷", lang: "葡萄牙语" },
   { code: "JP", cn: "日本", flag: "🇯🇵", lang: "日语" },
-  { code: "IE", cn: "爱尔兰", flag: "🇮🇪", lang: "英语" },
 ];
 
 export const REGION_CODES: Region[] = REGIONS.map((r) => r.code);

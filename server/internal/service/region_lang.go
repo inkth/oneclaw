@@ -18,7 +18,6 @@ type voiceSpec struct {
 var regionVoices = map[string]voiceSpec{
 	"US": {"美国", "英语", "English (casual American accent)"},
 	"GB": {"英国", "英语", "English (British accent)"},
-	"IE": {"爱尔兰", "英语", "English (British accent)"},
 	"SG": {"新加坡", "英语", "English"},
 	"ID": {"印尼", "印尼语", "Indonesian (Bahasa Indonesia)"},
 	"TH": {"泰国", "泰语", "Thai"},
