@@ -29,11 +29,13 @@ var (
 	BackfillKindsProductOnly = []string{boardProduct}
 )
 
-// backfillRegions 与前端 app/(app)/app/discover/_components/regions.ts 对齐的 TikTok Shop 全部开放站点。
+// backfillRegions 取「前端 regions.ts 站点 ∩ EchoTik 支持站点」。EchoTik 白名单
+//(2026-07 实测 code 500 报错回显):US|ID|TH|PH|MY|VN|GB|MX|SG|SA|BR|ES|DE|FR|JP|IT。
+// 前端有 IE(爱尔兰)但 EchoTik 不支持(整站 500),故不在此列;SA 反之(EchoTik 有、前端没有)。
 // 可用 BACKFILL_PRODUCTS_REGIONS=US,GB,... 覆盖(逗号分隔)。
 var backfillRegions = []string{
 	"US", "GB", "ID", "TH", "VN", "MY", "PH", "SG",
-	"ES", "MX", "DE", "FR", "IT", "BR", "JP", "IE",
+	"ES", "MX", "DE", "FR", "IT", "BR", "JP",
 }
 
 const (
