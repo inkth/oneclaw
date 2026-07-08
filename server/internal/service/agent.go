@@ -67,11 +67,8 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 	}
 	t := model.AgentTask{ID: uuid.New(), WorkspaceID: wsID, Agent: agent, Status: model.TaskQueued, Input: input}
 	// 配额前置:超额直接拒绝;任务终态失败时 fail() 会退回这笔额度。
-	// 顾问(ADVISOR)免积分:引导/获客定位,与新手指南路线同口径(失败路径的 Refund 无记录可退,空跑无害)。
-	if agent != model.AgentAdvisor {
-		if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
-			return nil, err
-		}
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
+		return nil, err
 	}
 	// 归属会话:命中传入 ID 则追加并置顶,否则按首句新建。配额已过、建会话失败要退回额度,避免白扣。
 	cid, err := s.ensureConversation(ctx, wsID, opts.ConversationID, input, agent)
@@ -251,11 +248,9 @@ func (s *AgentService) Retry(ctx context.Context, wsID, taskID uuid.UUID) (*mode
 		return nil, apperr.BadRequest("该任务类型不支持一键重试,请重新派活")
 	}
 	opts := optsFromTask(t)
-	// 失败时额度已退回,重试重新占一笔(沿用同一 task ID 作计费键,与视频重试同口径);顾问免积分。
-	if t.Agent != model.AgentAdvisor {
-		if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
-			return nil, err
-		}
+	// 失败时额度已退回,重试重新占一笔(沿用同一 task ID 作计费键,与视频重试同口径)。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
+		return nil, err
 	}
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", t.ID).
 		Updates(map[string]any{

@@ -29,7 +29,7 @@ import { AssetPickerModal } from "./create/asset-picker-modal";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
 // TRYON 不再是独立胶囊:并入 LISTING 作「上身图」子模式(派活时仍落 TRYON 任务),故不在 PILL_AGENTS。
-// ADVISOR 是全局对话式顾问(答疑/排路线/接力派活,免积分),排在所有产出型胶囊之前。
+// ADVISOR 是对话式跨境顾问(答疑/排路线),与其他 Agent 同流程(照常计积分),排在产出型胶囊之前。
 export type ComposerKind = "ADVISOR" | "ANALYST" | "DIRECTOR" | "LISTING" | "TRYON" | "REVIEW";
 
 /** Listing 内容的两个子模式:文案(标题/卖点/A+/主图)与上身图(虚拟试穿)。 */
@@ -44,7 +44,7 @@ const PILL_AGENTS = (["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as 
 );
 
 const PLACEHOLDERS: Record<ComposerKind, string> = {
-  ADVISOR: "例:预算 5000,没有货源,想做美国市场,我该从哪一步开始?(跨境问题随便问,免积分)",
+  ADVISOR: "例:预算 5000,没有货源,想做美国市场,我该从哪一步开始?(跨境问题随便问)",
   ANALYST: "例:从美国热销榜帮我挑 3 个高佣金潜力品(基于 EchoTik 真实榜单筛选)",
   DIRECTOR: "例:为推荐榜首产品生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感",
   LISTING: "例:为「便携榨汁杯」生成 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案",
@@ -594,12 +594,9 @@ export function AgentComposer({
           )}
 
           <div className="ml-auto flex items-center gap-2">
-            {!isReview && !attachedFile && !isTryOn &&
-              (activeAgent === "ADVISOR" ? (
-                <span className="text-2xs text-zinc-400">免费</span>
-              ) : (
-                <CreditCost credits={CREDIT_COST.agentTask} />
-              ))}
+            {!isReview && !attachedFile && !isTryOn && (
+              <CreditCost credits={CREDIT_COST.agentTask} />
+            )}
             {isTryOn && !attachedFile && <CreditCost credits={CREDIT_COST.image} />}
             {!isTryOn && (
               <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 发送</span>

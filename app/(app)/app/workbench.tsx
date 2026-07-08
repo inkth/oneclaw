@@ -173,14 +173,6 @@ export function Workbench({
     focusInput(prompt);
   }
 
-  // 顾问接力建议 → 同会话内切 Agent 并预填输入框(用户看一眼就能发,不跳页)。
-  const RELAY_KINDS = new Set<ComposerKind>(["ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
-  function relayFromAdvisor(agent: string, prompt: string) {
-    if (!RELAY_KINDS.has(agent as ComposerKind)) return;
-    setActiveAgent(agent as ComposerKind);
-    focusInput(prompt);
-  }
-
   const allowReview = !agents || agents.includes("REVIEW");
 
   // 输入卡只定义一处,聊天页与首页 launcher 复用,避免两套 props 漂移。
@@ -248,15 +240,9 @@ export function Workbench({
                     ? "选个 Agent，在下面写一句指令试试。登录后对话会存进这里。"
                     : "还没有对话。选个 Agent，在下面写一句指令开始。"}
                 </p>
-                <a
-                  href="/app/guide"
-                  className="text-xs font-medium text-brand-600 hover:text-brand-700"
-                >
-                  不知道从哪开始？看看新手指南 →
-                </a>
               </div>
             ) : (
-              <TaskStream items={visibleTasks} chronological onRelay={relayFromAdvisor} />
+              <TaskStream items={visibleTasks} chronological />
             )}
           </div>
 

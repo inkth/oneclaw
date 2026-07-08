@@ -2,7 +2,6 @@ import { getMe, apiServer } from "@/lib/api-client";
 import { Workbench } from "./workbench";
 import { type ComposerKind } from "./agent-composer";
 import { SampleVideos, type SampleVid } from "./sample-videos";
-import { GuideBanner } from "./guide-banner";
 
 export const metadata = { title: "工作台 · 发现猫" };
 
@@ -81,9 +80,6 @@ export default async function DashboardPage({
         showQuickActions
         showAssetChips
       />
-
-      {/* 新手认知入口:全流程地图 + AI 起步路线(guide 页) */}
-      <GuideBanner />
 
       <SampleVideos videos={sampleVideos} />
     </div>

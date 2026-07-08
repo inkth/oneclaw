@@ -46,8 +46,6 @@ export type StreamTask = {
   output?: string | null;
   errorMessage?: string | null;
   metadata?: {
-    /** ADVISOR 任务:顾问给出的接力建议,渲染为派活 chip(点击预填当前会话的输入框)。 */
-    suggestions?: { agent: string; prompt?: string; label?: string }[];
     /** REVIEW 任务:完整复盘结果,流内还原仪表盘。 */
     review?: ReviewResult;
     /** ANALYST 任务:写入收藏的商品,externalId 存在时可跳转发现页详情。 */
@@ -114,7 +112,6 @@ export function TaskStream({
   limit,
   moreHref,
   chronological = false,
-  onRelay,
 }: {
   items: StreamTask[];
   /** 仅展示最近 N 条,溢出时显示「查看全部」链接(工作台首页用)。 */
@@ -122,8 +119,6 @@ export function TaskStream({
   moreHref?: string;
   /** 正序排列(旧→新,最新一条在底部),用于底部输入框的聊天布局;默认新→旧(倒序)。 */
   chronological?: boolean;
-  /** 顾问接力建议点击:切 Agent 并预填当页输入框(同会话接力);不传则退化为跳工作台链接。 */
-  onRelay?: (agent: string, prompt: string) => void;
 }) {
   if (items.length === 0) return null;
   // items 传入为新→旧(状态顺序)。聊天布局反转为旧→新,最新一条排在最底、紧贴底部输入框。
@@ -138,7 +133,7 @@ export function TaskStream({
   return (
     <div className="space-y-5">
       {visible.map((task, i) => (
-        <TaskBubble key={task.id} task={task} newest={i === newestIndex} onRelay={onRelay} />
+        <TaskBubble key={task.id} task={task} newest={i === newestIndex} />
       ))}
       {overflow > 0 && moreHref && (
         <div className="text-center">
@@ -290,58 +285,12 @@ function PersonaPicker({
   );
 }
 
-/** ADVISOR 顾问接力建议 chip 行:有 onRelay 时就地预填输入框,否则跳工作台预填。 */
-function AdvisorSuggestions({
-  suggestions,
-  onRelay,
-}: {
-  suggestions: NonNullable<NonNullable<StreamTask["metadata"]>["suggestions"]>;
-  onRelay?: (agent: string, prompt: string) => void;
-}) {
-  const chips = suggestions.filter((s) => s.agent in AGENT_IDENTITY);
-  if (chips.length === 0) return null;
-  const cls =
-    "press inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-100";
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {chips.map((s, i) => {
-        const identity = AGENT_IDENTITY[s.agent as AgentKey];
-        const label = s.label?.trim() || `派活给${identity.label}`;
-        const prompt = s.prompt ?? "";
-        const body = (
-          <>
-            <identity.icon className="h-3.5 w-3.5" />
-            {label}
-            <ArrowRight className="h-3 w-3" />
-          </>
-        );
-        return onRelay ? (
-          <button key={`${s.agent}-${i}`} title={prompt} onClick={() => onRelay(s.agent, prompt)} className={cls}>
-            {body}
-          </button>
-        ) : (
-          <Link
-            key={`${s.agent}-${i}`}
-            title={prompt}
-            href={`/app?agent=${s.agent}${prompt ? `&prompt=${encodeURIComponent(prompt)}` : ""}`}
-            className={cls}
-          >
-            {body}
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
 function TaskBubble({
   task,
   newest = false,
-  onRelay,
 }: {
   task: StreamTask;
   newest?: boolean;
-  onRelay?: (agent: string, prompt: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   // 确认卡改目标市场会触发后端重写脚本,完成后用返回的新任务就地覆盖展示(脚本/口播语言一起换)。
@@ -606,9 +555,6 @@ function TaskBubble({
               </button>
             )}
             {!!t.metadata?.products?.length && <ProductChips products={t.metadata.products} />}
-            {t.agent === "ADVISOR" && t.status === "DONE" && !!t.metadata?.suggestions?.length && (
-              <AdvisorSuggestions suggestions={t.metadata.suggestions} onRelay={onRelay} />
-            )}
             {awaitingConfirm && (
               <div className="mt-3 space-y-2.5">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
