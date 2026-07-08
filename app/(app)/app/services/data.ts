@@ -160,22 +160,6 @@ export const CATEGORIES: Category[] = [
     desc: "钱安全地收回来，合规地报出去。",
     services: [
       {
-        label: "跨境收款",
-        desc: "对接主流跨境收款通道，多币种结汇、低费率提现到国内账户，到账时效与汇损透明可查。开店第一步就能用上。",
-        icon: "Wallet",
-        status: "live",
-        tags: ["多币种", "低费率", "透明汇损"],
-        regions: ["global"],
-      },
-      {
-        label: "税务合规",
-        desc: "VAT / 销售税注册与按期代理申报，申报节点自动提醒，远离平台合规下架风险。适合已在英欧市场稳定出单的卖家。",
-        icon: "ReceiptText",
-        status: "soon",
-        tags: ["VAT 注册", "代理申报", "到期提醒"],
-        regions: ["us", "uk", "eu"],
-      },
-      {
         label: "公司与店铺",
         desc: "海外公司主体注册、TikTok Shop / TEMU / Walmart / Amazon 本土店入驻资质材料准备与提审跟进，一站式办妥。适合想从个人店升级为正规主体经营的卖家。",
         icon: "ShieldCheck",
