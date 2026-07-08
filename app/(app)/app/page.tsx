@@ -6,8 +6,8 @@ import { GuideBanner } from "./guide-banner";
 
 export const metadata = { title: "工作台 · 发现猫" };
 
-// 工作台是统一派活台：创作类(短视频 DIRECTOR / Listing —— 含「上身图」虚拟试穿子模式) + 选品分析(ANALYST) + 投放复盘(REVIEW)同处一框。
-const AGENT_KINDS = new Set(["ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
+// 工作台是统一派活台：跨境顾问(ADVISOR) + 创作类(短视频 DIRECTOR / Listing —— 含「上身图」虚拟试穿子模式) + 选品分析(ANALYST) + 投放复盘(REVIEW)同处一框。
+const AGENT_KINDS = new Set(["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
 
 // 「爆款短视频示例」临时取数：EchoTik 带货视频榜（公共端点，游客可见）。
 type VideoRow = {
@@ -62,8 +62,8 @@ export default async function DashboardPage({
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-500">
           {!workspace
-            ? "选个 Agent —— 做视频、写 Listing、选品分析、投放复盘，写一句指令就能开干。登录后产出会存进你的资产库。"
-            : "做视频、写 Listing、选品分析、投放复盘，都在这一框。短视频成片归「资产 · 作品」，分析与复盘的对话和结果都在「会话」里。"}
+            ? "不知道从哪开始？先问跨境顾问。选品分析、做视频、写 Listing、投放复盘，写一句指令就能开干。登录后产出会存进你的资产库。"
+            : "不知道从哪开始？先问跨境顾问。选品、做视频、Listing、复盘都在这一框，对话和结果都在「会话」里，短视频成片归「资产 · 作品」。"}
         </p>
       </div>
 
@@ -77,7 +77,7 @@ export default async function DashboardPage({
         initialInput={initialInput}
         initialProductId={initialProductId}
         initialMaterialId={initialMaterialId}
-        agents={["DIRECTOR", "LISTING", "ANALYST", "REVIEW"]}
+        agents={["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"]}
         showQuickActions
         showAssetChips
       />

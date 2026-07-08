@@ -70,7 +70,7 @@ export function Workbench({
   showStream?: boolean;
 }) {
   const [activeAgent, setActiveAgent] = useState<ComposerKind>(
-    initialAgent ?? agents?.[0] ?? "ANALYST",
+    initialAgent ?? agents?.[0] ?? "ADVISOR",
   );
   const [input, setInput] = useState(initialInput ?? "");
   const [productId, setProductId] = useState<string | null>(initialProductId ?? null);
@@ -173,6 +173,14 @@ export function Workbench({
     focusInput(prompt);
   }
 
+  // 顾问接力建议 → 同会话内切 Agent 并预填输入框(用户看一眼就能发,不跳页)。
+  const RELAY_KINDS = new Set<ComposerKind>(["ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
+  function relayFromAdvisor(agent: string, prompt: string) {
+    if (!RELAY_KINDS.has(agent as ComposerKind)) return;
+    setActiveAgent(agent as ComposerKind);
+    focusInput(prompt);
+  }
+
   const allowReview = !agents || agents.includes("REVIEW");
 
   // 输入卡只定义一处,聊天页与首页 launcher 复用,避免两套 props 漂移。
@@ -248,7 +256,7 @@ export function Workbench({
                 </a>
               </div>
             ) : (
-              <TaskStream items={visibleTasks} chronological />
+              <TaskStream items={visibleTasks} chronological onRelay={relayFromAdvisor} />
             )}
           </div>
 

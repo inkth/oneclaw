@@ -17,7 +17,7 @@ export function GuideBanner() {
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold text-ink">第一次做跨境带货？</span>
         <span className="block truncate text-xs text-zinc-500">
-          60 秒看懂从开店到回款的全流程，再让 AI 给你排条起步路线
+          60 秒看懂从开店到回款的全流程；有问题随时问上面的跨境顾问
         </span>
       </span>
       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-600">

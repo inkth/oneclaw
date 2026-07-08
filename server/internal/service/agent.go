@@ -36,6 +36,7 @@ func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover 
 }
 
 var validAgents = map[string]bool{
+	model.AgentAdvisor:       true,
 	model.AgentAnalyst:       true,
 	model.AgentDirector:      true,
 	model.AgentListing:       true,
@@ -66,8 +67,11 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 	}
 	t := model.AgentTask{ID: uuid.New(), WorkspaceID: wsID, Agent: agent, Status: model.TaskQueued, Input: input}
 	// 配额前置:超额直接拒绝;任务终态失败时 fail() 会退回这笔额度。
-	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
-		return nil, err
+	// 顾问(ADVISOR)免积分:引导/获客定位,与新手指南路线同口径(失败路径的 Refund 无记录可退,空跑无害)。
+	if agent != model.AgentAdvisor {
+		if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
+			return nil, err
+		}
 	}
 	// 归属会话:命中传入 ID 则追加并置顶,否则按首句新建。配额已过、建会话失败要退回额度,避免白扣。
 	cid, err := s.ensureConversation(ctx, wsID, opts.ConversationID, input, agent)
@@ -143,6 +147,8 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 		err    error
 	)
 	switch agent {
+	case model.AgentAdvisor:
+		output, meta, usage, err = s.runAdvisor(ctx, taskID, input)
 	case model.AgentAnalyst:
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input)
 	case model.AgentDirector:
@@ -194,6 +200,7 @@ func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
 // TRYON 不在内 —— 其 metadata 只存解析后的图 URL,丢了 PersonaID/MaterialID,重试必败,
 // 这类失败引导用户回素材选择器重派。
 var retryableAgents = map[string]bool{
+	model.AgentAdvisor:  true,
 	model.AgentAnalyst:  true,
 	model.AgentDirector: true,
 	model.AgentListing:  true,
@@ -244,9 +251,11 @@ func (s *AgentService) Retry(ctx context.Context, wsID, taskID uuid.UUID) (*mode
 		return nil, apperr.BadRequest("该任务类型不支持一键重试,请重新派活")
 	}
 	opts := optsFromTask(t)
-	// 失败时额度已退回,重试重新占一笔(沿用同一 task ID 作计费键,与视频重试同口径)。
-	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
-		return nil, err
+	// 失败时额度已退回,重试重新占一笔(沿用同一 task ID 作计费键,与视频重试同口径);顾问免积分。
+	if t.Agent != model.AgentAdvisor {
+		if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageAgentTask, 1, &t.ID); err != nil {
+			return nil, err
+		}
 	}
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", t.ID).
 		Updates(map[string]any{

@@ -114,6 +114,28 @@ func (c *Client) ChatWithModel(ctx context.Context, model, system, user string, 
 	return c.do(ctx, model, msgs, jsonMode, maxTokens)
 }
 
+// Message 一轮对话消息(Role=user|assistant),供带多轮历史的调用点(如跨境顾问)构造上下文。
+type Message struct {
+	Role    string
+	Content string
+}
+
+// ChatThread 带多轮历史的对话:system + 依次的历史消息(model 空回退默认文本模型)。
+func (c *Client) ChatThread(ctx context.Context, model, system string, thread []Message, jsonMode bool, maxTokens int) (*Result, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
+	}
+	if model == "" {
+		model = c.cfg.Model
+	}
+	msgs := make([]chatMsg, 0, len(thread)+1)
+	msgs = append(msgs, chatMsg{Role: "system", Content: system})
+	for _, m := range thread {
+		msgs = append(msgs, chatMsg{Role: m.Role, Content: m.Content})
+	}
+	return c.do(ctx, model, msgs, jsonMode, maxTokens)
+}
+
 // ChatVision 让多模态模型「看图」对话:user 文本 + 一张或多张图片 URL 一起喂给模型。
 // model 须指向 vision-capable 模型(如 google/gemini-3.5-flash);prod 该模型经 reviewHTTP 代理出网。
 func (c *Client) ChatVision(ctx context.Context, model, system, user string, imageURLs []string, jsonMode bool, maxTokens int) (*Result, error) {

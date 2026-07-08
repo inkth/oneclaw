@@ -4,6 +4,7 @@
 import {
   BarChart3,
   Clapperboard,
+  Compass,
   LayoutList,
   ScanText,
   Shirt,
@@ -32,6 +33,7 @@ export type Tone = keyof typeof STATUS_TONES;
 /** Agent 身份：链路导向的产出物胶囊 + 任务列表小 chip 标识，不大面积渐变。
  *  图标统一用 lucide 线性图标(不用 emoji),与全站 Stripe/Linear 风格一致。 */
 export const AGENT_IDENTITY = {
+  ADVISOR: { label: "跨境顾问", icon: Compass as LucideIcon, tone: "warning" as Tone, dot: "bg-amber-500" },
   ANALYST: { label: "选品分析", icon: TrendingUp as LucideIcon, tone: "brand" as Tone, dot: "bg-brand-500" },
   DIRECTOR: { label: "短视频创作", icon: Clapperboard as LucideIcon, tone: "violet" as Tone, dot: "bg-violet-500" },
   LISTING: { label: "Listing 内容", icon: LayoutList as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },

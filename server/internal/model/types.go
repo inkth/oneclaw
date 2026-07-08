@@ -38,6 +38,7 @@ const (
 	ModelGenderMale       = "MALE"
 	ModelGenderNeutral    = "NEUTRAL"
 
+	AgentAdvisor       = "ADVISOR" // 跨境顾问:全局对话式助理(答疑/排路线/接力派活),免积分
 	AgentAnalyst       = "ANALYST"
 	AgentDirector      = "DIRECTOR"
 	AgentListing       = "LISTING"

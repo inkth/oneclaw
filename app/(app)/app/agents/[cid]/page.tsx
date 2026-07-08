@@ -38,7 +38,7 @@ export default async function ConversationPage({
             会话
           </span>
         }
-        description="选品分析 / 做视频 / Listing / 投放复盘——这条会话里你和 AI 的全部往来。"
+        description="跨境顾问 / 选品分析 / 做视频 / Listing / 投放复盘——这条会话里你和 AI 的全部往来。"
       />
       <Workbench
         workspaceId={ws.id}

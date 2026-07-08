@@ -29,7 +29,8 @@ import { AssetPickerModal } from "./create/asset-picker-modal";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式(上传报表 → 就地仪表盘)。
 // TRYON 不再是独立胶囊:并入 LISTING 作「上身图」子模式(派活时仍落 TRYON 任务),故不在 PILL_AGENTS。
-export type ComposerKind = "ANALYST" | "DIRECTOR" | "LISTING" | "TRYON" | "REVIEW";
+// ADVISOR 是全局对话式顾问(答疑/排路线/接力派活,免积分),排在所有产出型胶囊之前。
+export type ComposerKind = "ADVISOR" | "ANALYST" | "DIRECTOR" | "LISTING" | "TRYON" | "REVIEW";
 
 /** Listing 内容的两个子模式:文案(标题/卖点/A+/主图)与上身图(虚拟试穿)。 */
 export type ListingMode = "copy" | "tryon";
@@ -37,12 +38,13 @@ export type ListingMode = "copy" | "tryon";
 /** 短视频创作的两个子模式:做视频(写脚本→出片)与视频解析(拆解一条参考带货视频)。 */
 export type DirectorMode = "create" | "analyze";
 
-/** 胶囊行展示的 Agent(4 个;虚拟试穿并入 Listing 子模式)。 */
-const PILL_AGENTS = (["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
+/** 胶囊行展示的 Agent(5 个;虚拟试穿并入 Listing 子模式)。顾问打头:新手先问路,再派活。 */
+const PILL_AGENTS = (["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
   (kind) => ({ kind: kind as ComposerKind, ...AGENT_IDENTITY[kind] }),
 );
 
 const PLACEHOLDERS: Record<ComposerKind, string> = {
+  ADVISOR: "例:预算 5000,没有货源,想做美国市场,我该从哪一步开始?(跨境问题随便问,免积分)",
   ANALYST: "例:从美国热销榜帮我挑 3 个高佣金潜力品(基于 EchoTik 真实榜单筛选)",
   DIRECTOR: "例:为推荐榜首产品生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感",
   LISTING: "例:为「便携榨汁杯」生成 TikTok Shop Listing:标题、五点卖点、A+ 结构、主图方案",
@@ -203,7 +205,7 @@ export function AgentComposer({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可使用 Agent",
-      desc: "派活给选品分析、短视频创作、Listing、虚拟试穿、投放复盘 Agent 需要账号。",
+      desc: "跨境顾问答疑,以及派活给选品分析、短视频创作、Listing、虚拟试穿、投放复盘 Agent,都需要账号。",
     });
     return true;
   }
@@ -592,9 +594,12 @@ export function AgentComposer({
           )}
 
           <div className="ml-auto flex items-center gap-2">
-            {!isReview && !attachedFile && !isTryOn && (
-              <CreditCost credits={CREDIT_COST.agentTask} />
-            )}
+            {!isReview && !attachedFile && !isTryOn &&
+              (activeAgent === "ADVISOR" ? (
+                <span className="text-2xs text-zinc-400">免费</span>
+              ) : (
+                <CreditCost credits={CREDIT_COST.agentTask} />
+              ))}
             {isTryOn && !attachedFile && <CreditCost credits={CREDIT_COST.image} />}
             {!isTryOn && (
               <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 发送</span>

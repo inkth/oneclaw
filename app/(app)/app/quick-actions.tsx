@@ -3,10 +3,13 @@
 import { toast } from "sonner";
 import {
   BarChart3,
+  BookOpen,
   Clapperboard,
+  Compass,
   Images,
   LayoutPanelTop,
   LineChart,
+  Route,
   Search,
   Shirt,
   Sparkles,
@@ -38,6 +41,44 @@ export type QuickAction = {
  * 键覆盖全部 ComposerKind(选品/视频/Listing/试穿/复盘);试穿走 composer 内联选择,无快捷卡。
  */
 const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
+  ADVISOR: [
+    {
+      key: "advisor-route",
+      title: "起步路线",
+      desc: "结合预算排先后顺序",
+      icon: Route,
+      status: "live",
+      agent: "ADVISOR",
+      promptTemplate: "预算「」元,没有货源,想做美国市场,帮我排一条起步路线",
+    },
+    {
+      key: "advisor-cost",
+      title: "成本摸底",
+      desc: "起步到底要花多少钱",
+      icon: Wallet,
+      status: "live",
+      agent: "ADVISOR",
+      promptTemplate: "做 TikTok Shop 美区,从开店到出第一单大概要准备多少钱?都花在哪些地方?",
+    },
+    {
+      key: "advisor-term",
+      title: "术语扫盲",
+      desc: "行业黑话一次讲明白",
+      icon: BookOpen,
+      status: "live",
+      agent: "ADVISOR",
+      promptTemplate: "用大白话解释:全托管、POP 自运营、GMV Max、ROI 分别是什么?新手该走哪条路?",
+    },
+    {
+      key: "advisor-next",
+      title: "下一步干嘛",
+      desc: "按你的进度给建议",
+      icon: Compass,
+      status: "live",
+      agent: "ADVISOR",
+      promptTemplate: "我目前已经「」,下一步该干什么?帮我理一下",
+    },
+  ],
   ANALYST: [
     {
       key: "analyst-bluesea",
