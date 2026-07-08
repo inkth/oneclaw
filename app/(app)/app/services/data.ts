@@ -53,6 +53,8 @@ export type Category = {
   key: string;
   label: string;
   desc: string;
+  icon: string; // 分类图标（lucide 名）
+  accent: "sky" | "brand" | "emerald"; // 分类色调（表头图标色签）
   services: Service[];
 };
 
@@ -93,6 +95,8 @@ export const CATEGORIES: Category[] = [
     key: "fulfillment",
     label: "物流履约",
     desc: "把货又快又省地送到买家手里。",
+    icon: "Boxes",
+    accent: "sky",
     services: [
       {
         label: "智能物流",
@@ -124,6 +128,8 @@ export const CATEGORIES: Category[] = [
     key: "marketing",
     label: "营销推广",
     desc: "让更多对的人看到你的商品。",
+    icon: "TrendingUp",
+    accent: "brand",
     services: [
       {
         label: "达人对接",
@@ -158,6 +164,8 @@ export const CATEGORIES: Category[] = [
     key: "finance",
     label: "资金财税",
     desc: "钱安全地收回来，合规地报出去。",
+    icon: "Landmark",
+    accent: "emerald",
     services: [
       {
         label: "跨境收款",

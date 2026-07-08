@@ -11,6 +11,9 @@ import {
   ReceiptText,
   ShieldCheck,
   Megaphone,
+  Boxes,
+  TrendingUp,
+  Landmark,
   Handshake,
   Headset,
   Phone,
@@ -18,10 +21,12 @@ import {
   Mail,
   Copy,
   Check,
+  ChevronRight,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -29,12 +34,13 @@ import {
   CONTACT,
   STATUS_META,
   regionText,
+  type Category,
   type Partner,
   type Service,
 } from "./data";
 
 // 服务板块 = 跨境经营全链路要用到的「外部能力」目录。数据在 ./data.ts，这里只负责渲染。
-// 标注了合作方的服务，「预约咨询」直接展示该合作方的联系方式（非平台背书）；无合作方的走平台兜底。
+// 排版：每个分类一张分组卡（表头 + 分隔行）；标注了合作方的服务，「预约咨询」直接展示其联系方式。
 
 // 图标名 → 组件映射（数据文件里图标存的是字符串名，便于日后由后端接管）。
 const ICONS: Record<string, LucideIcon> = {
@@ -47,6 +53,16 @@ const ICONS: Record<string, LucideIcon> = {
   ReceiptText,
   ShieldCheck,
   Megaphone,
+  Boxes,
+  TrendingUp,
+  Landmark,
+};
+
+// 分类色调 → 表头图标色签。
+const ACCENT: Record<Category["accent"], string> = {
+  sky: "bg-sky-50 text-sky-600 ring-sky-100",
+  brand: "bg-brand-50 text-brand-600 ring-brand-100",
+  emerald: "bg-emerald-50 text-emerald-600 ring-emerald-100",
 };
 
 // 「预约咨询」弹窗的目标：标题 + 该服务的合作方（有则直接展示其联系方式，无则走平台兜底）。
@@ -56,40 +72,57 @@ export default function ServicesPage() {
   const [contact, setContact] = useState<ContactTarget | null>(null);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
         title="服务"
         description="把跨境经营全链路要用到的外部能力聚合到一处：物流、达人、收款、财税…… 标注「合作方」的由第三方渠道提供，预约咨询直接给到对接方式、非平台背书。"
       />
 
-      <div className="space-y-8">
-        {CATEGORIES.map((c) => (
-          <section key={c.key} className="space-y-3">
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-900">{c.label}</h2>
-              <p className="mt-0.5 text-xs text-zinc-400">{c.desc}</p>
-            </div>
+      <div className="space-y-6">
+        {CATEGORIES.map((c) => {
+          const CatIcon = ICONS[c.icon] ?? Boxes;
+          const liveCount = c.services.filter((s) => s.status !== "soon").length;
+          return (
+            <Card key={c.key} padded={false} className="overflow-hidden">
+              <header className="flex items-center gap-3 border-b border-zinc-100 bg-zinc-50/50 px-5 py-3.5">
+                <span
+                  className={
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 " + ACCENT[c.accent]
+                  }
+                >
+                  <CatIcon className="h-4.5 w-4.5" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-[15px] font-semibold leading-tight text-ink">{c.label}</h2>
+                  <p className="mt-0.5 truncate text-xs text-zinc-400">{c.desc}</p>
+                </div>
+                <span className="ml-auto shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-2xs text-zinc-500">
+                  {liveCount}/{c.services.length} 可对接
+                </span>
+              </header>
 
-            <div className="space-y-3">
-              {c.services.map((svc) => (
-                <ServiceCard key={svc.label} service={svc} onContact={setContact} />
-              ))}
-            </div>
-          </section>
-        ))}
+              <div className="divide-y divide-zinc-100">
+                {c.services.map((svc) => (
+                  <ServiceRow key={svc.label} service={svc} onContact={setContact} />
+                ))}
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
-      <div className="space-y-3 border-t border-zinc-100 pt-5">
-        <div className="text-center">
-          <p className="text-xs text-zinc-400">没找到需要的服务，或想加快某个对接？</p>
+      <div className="space-y-3 pt-1">
+        <div className="flex flex-col items-center gap-1 rounded-2xl border border-dashed border-zinc-200 px-5 py-6 text-center">
+          <p className="text-sm text-zinc-500">没找到需要的服务，或想加快某个对接？</p>
           <button
             onClick={() => setContact({ title: "其他服务需求" })}
-            className="mt-1 text-xs font-medium text-brand-600 transition-colors hover:text-brand-700"
+            className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
           >
-            预约咨询，告诉我们你的优先级 →
+            预约咨询，告诉我们你的优先级
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
-        <p className="text-center text-2xs leading-relaxed text-zinc-300">
+        <p className="px-4 text-center text-2xs leading-relaxed text-zinc-300">
           标注「合作方」的服务由第三方渠道提供，发现猫仅做筛选与对接引导、不对其资质与结果作担保或背书；
           合作条款、收费与交付以你与合作方另行约定为准。
         </p>
@@ -100,7 +133,7 @@ export default function ServicesPage() {
   );
 }
 
-function ServiceCard({
+function ServiceRow({
   service,
   onContact,
 }: {
@@ -110,29 +143,23 @@ function ServiceCard({
   const { label, desc, icon, status, tags, partners } = service;
   const Icon = ICONS[icon] ?? Headset;
   const meta = STATUS_META[status];
-  // 可预约 / 内测中 = 现在就能对接，亮色卡；即将上线 = 灰卡，弱化但仍可留资。
+  // 可预约 / 内测中 = 现在就能对接，图标高亮；即将上线 = 弱化。
   const actionable = status !== "soon";
   const hasPartners = Boolean(partners && partners.length > 0);
 
   return (
-    <div
-      className={
-        "rounded-xl border p-5 transition-colors sm:flex sm:items-center sm:gap-4 " +
-        (actionable
-          ? "border-zinc-200/80 bg-white hover:border-brand-200 hover:bg-brand-50/30"
-          : "border-zinc-100 bg-zinc-50/60")
-      }
-    >
+    <div className="flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-brand-50/20 sm:flex-row sm:items-start">
+      <div
+        className={
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " +
+          (actionable ? "bg-brand-50 text-brand-500" : "bg-zinc-100 text-zinc-400")
+        }
+      >
+        <Icon className="h-4.5 w-4.5" />
+      </div>
+
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <div
-            className={
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " +
-              (actionable ? "bg-brand-50 text-brand-500" : "bg-zinc-100 text-zinc-400")
-            }
-          >
-            <Icon className="h-4.5 w-4.5" />
-          </div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-medium text-zinc-900">{label}</span>
           <Badge tone={meta.tone} outline={false}>
             {meta.label}
@@ -145,7 +172,7 @@ function ServiceCard({
           <span className="text-2xs text-zinc-400">适用 · {regionText(service)}</span>
         </div>
 
-        <p className="mt-2 text-sm leading-relaxed text-zinc-500">{desc}</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{desc}</p>
 
         {tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -175,7 +202,7 @@ function ServiceCard({
       <Button
         variant={status === "live" ? "primary" : status === "beta" ? "secondary" : "ghost"}
         size="sm"
-        className="mt-4 w-full shrink-0 sm:mt-0 sm:w-auto"
+        className="w-full shrink-0 sm:w-auto"
         onClick={() => onContact({ title: label, partners })}
       >
         <Headset className="h-3.5 w-3.5" />
