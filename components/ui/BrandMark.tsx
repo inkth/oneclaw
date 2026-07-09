@@ -42,8 +42,9 @@ type BrandTileProps = {
   strokeWidth?: number;
 };
 
-/** 渐变方块 + 白色猫标记：app 图标式锁定(侧栏 / 顶栏 / 登录面板)。
- *  渐变用 Tailwind 调色板(非 brand 变量)，故在 .app-skin 近黑皮肤下仍保留这一抹电紫。 */
+/** 品牌方块 + 白色猫标记：app 图标式锁定(侧栏 / 顶栏 / 登录面板)。
+ *  Design Language §4/§16：单一强调色实底(去 indigo→fuchsia 三色渐变)。
+ *  用字面值 #6E56FF(非 brand 变量)，故在 .app-skin 近黑皮肤下仍保留这一抹电紫。 */
 export function BrandTile({
   className,
   markClassName,
@@ -52,7 +53,7 @@ export function BrandTile({
   return (
     <span
       className={
-        "inline-flex shrink-0 items-center justify-center bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-sm " +
+        "inline-flex shrink-0 items-center justify-center bg-[#6e56ff] text-white shadow-sm " +
         (className ?? "h-10 w-10 rounded-2xl")
       }
     >

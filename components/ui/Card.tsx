@@ -31,7 +31,8 @@ export function CardLink({
       href={href}
       className={cn(
         base,
-        "group block p-5 lift hover:border-black/15",
+        // §13：hover 上浮 2px + 描边转品牌色（不加重阴影）
+        "group block p-5 lift hover:border-brand-300",
         className
       )}
     >

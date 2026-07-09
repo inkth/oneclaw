@@ -524,7 +524,7 @@ function TaskBubble({
               <button
                 onClick={retryTask}
                 disabled={retrying}
-                className="press inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
+                className="press inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
               >
                 {retrying ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -606,7 +606,7 @@ function TaskBubble({
                   <button
                     onClick={rewrite}
                     disabled={rewriting || redrafting || confirming}
-                    className="press inline-flex shrink-0 items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1.5 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 disabled:pointer-events-none"
+                    className="press inline-flex shrink-0 items-center gap-1 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {rewriting ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -620,7 +620,7 @@ function TaskBubble({
                   <button
                     onClick={confirmVideo}
                     disabled={confirming || redrafting || rewriting}
-                    className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
+                    className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {confirming ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />

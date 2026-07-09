@@ -175,7 +175,7 @@ function SearchRow({
         </div>
         <button
           type="submit"
-          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-500 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
+          className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-brand-500 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
         >
           <Search className="h-3.5 w-3.5" />
           搜索
@@ -229,7 +229,7 @@ function CategoryRow({
       {overflow && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-600 hover:bg-brand-100"
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-xl bg-brand-50 px-3 py-1 text-sm font-medium text-brand-600 hover:bg-brand-100"
         >
           {expanded ? "收起" : "展开"}
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

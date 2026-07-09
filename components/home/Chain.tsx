@@ -59,7 +59,7 @@ export function Chain() {
           {/* 流水线连接光带（仅大屏） */}
           <div
             aria-hidden
-            className="absolute left-[12%] right-[12%] top-4 hidden h-px bg-gradient-to-r from-brand-300 via-fuchsia-300 to-emerald-300 lg:block"
+            className="absolute left-[12%] right-[12%] top-4 hidden h-px bg-brand-200 lg:block"
           />
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {STEPS.map((s) => (
@@ -117,7 +117,7 @@ function ProductVisual() {
             <span className="font-semibold text-brand-600 nums">ROI {r.roi}</span>
           </div>
           <div className="mt-1 h-1 overflow-hidden rounded-full bg-brand-100">
-            <div className={`h-full ${r.w} rounded-full bg-gradient-to-r from-brand-500 to-fuchsia-500`} />
+            <div className={`h-full ${r.w} rounded-full bg-brand-500`} />
           </div>
         </div>
       ))}

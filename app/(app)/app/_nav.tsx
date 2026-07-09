@@ -215,7 +215,7 @@ function RailItem({
         className={
           "flex h-11 w-11 items-center justify-center rounded-2xl transition-colors " +
           (active
-            ? "dk-rail-item text-ink"
+            ? "bg-accent-pop-soft text-accent-pop"
             : "text-zinc-500 group-hover:bg-black/[0.04] group-hover:text-ink")
         }
       >
@@ -224,7 +224,7 @@ function RailItem({
       <span
         className={
           "text-[11px] leading-none transition-colors " +
-          (active ? "font-medium text-ink" : "text-zinc-500 group-hover:text-ink")
+          (active ? "text-accent-pop font-medium" : "text-zinc-500 group-hover:text-ink")
         }
       >
         {label}
