@@ -15,6 +15,7 @@ type VideoRow = {
   coverUrl: string | null;
   desc: string;
   totalViewsCnt: number;
+  videoUrl?: string;
 };
 
 export default async function DashboardPage({
@@ -49,6 +50,7 @@ export default async function DashboardPage({
         coverUrl: r.coverUrl,
         desc: r.desc,
         views: r.totalViewsCnt,
+        videoUrl: r.videoUrl ?? "",
       })),
     )
     .catch((): SampleVid[] => []);

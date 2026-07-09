@@ -253,6 +253,7 @@ func mapVideoFromModel(dv model.DiscoverVideo) VideoDTO {
 		Desc: dv.Desc, DescZh: dv.DescZh, Category: dv.Category, Duration: dv.Duration, CreateTime: dv.CreateTime,
 		TotalViewsCnt: dv.Views, TotalDiggCnt: dv.Digg, TotalCommentsCnt: dv.Comments, TotalSharesCnt: dv.Shares,
 		TotalVideoSaleCnt: dv.SaleCnt, TotalVideoSaleGmvAmt: gmvCentsToDollars(dv.SaleGmvCents),
+		VideoURL: dv.VideoURL,
 	}
 }
 
@@ -297,6 +298,25 @@ func (s *DiscoverService) fetchVideoRanklistLive(ctx context.Context, p echotik.
 	if res, ok := s.lookupVideoRanklist(ctx, p); ok {
 		res.State = "live"
 		return res
+	}
+	now := time.Now()
+	return &EntityRanklistResult[VideoDTO]{State: "live", FetchedAt: &now, Rows: s.hostMapVideos(ctx, raw)}
+}
+
+// fetchVideoRanklistAI AI 视频筛选专用实时旁路。created_by_ai 是与榜单正交的维度,
+// 不进榜单顺序缓存键(uq_ere_pg)——否则会与默认榜(不限)互相覆盖串味,且牵动索引迁移。
+// 故仿关键词搜索:直接打上游取该过滤视图、封面转存 COS 后返回,不写顺序表/主表。
+// 代价是该视图不落 DB 缓存(每次实时拉),但 AI 筛选是二级维度、访问量低,可接受。
+func (s *DiscoverService) fetchVideoRanklistAI(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
+	if !s.echo.Configured() {
+		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.hostMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
+	}
+	raw, err := s.echo.GetVideoRanklist(ctx, p)
+	if err != nil {
+		return &EntityRanklistResult[VideoDTO]{State: "error"}
+	}
+	if len(raw) == 0 {
+		return &EntityRanklistResult[VideoDTO]{State: "empty"}
 	}
 	now := time.Now()
 	return &EntityRanklistResult[VideoDTO]{State: "live", FetchedAt: &now, Rows: s.hostMapVideos(ctx, raw)}

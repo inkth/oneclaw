@@ -221,6 +221,7 @@ func main() {
 	job.NewOverflowSettle(cfg.OverflowSettle, billingSvc).Start(jobCtx)
 	discSvc.StartCoverRehost(jobCtx) // 封面转存后台 worker(读路径投递、异步存 COS)
 	discSvc.StartTranslate(jobCtx)   // 外文字段翻译后台 worker(落库投递、异步译中文回填)
+	discSvc.StartVideoPipeline(jobCtx, cfg.VideoPipeline) // 爆款视频下载转存 COS + AI 拆解(sale_cnt>阈值,后台预计算)
 
 	r := router.New(router.Deps{
 		Cfg:       cfg,

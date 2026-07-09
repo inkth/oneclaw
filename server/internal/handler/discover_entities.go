@@ -20,6 +20,8 @@ func entityParams(c *gin.Context, defaultField int) echotik.RanklistParams {
 		PageNum:    pageNumParam(c),
 		Date:       c.Query("date"),
 		Keyword:    c.Query("keyword"),
+		// 仅视频榜前端会传;店铺/达人榜不发此参数(即便传了上游也忽略)。
+		CreatedByAI: c.Query("created_by_ai"),
 	}
 }
 

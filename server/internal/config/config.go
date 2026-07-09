@@ -23,6 +23,7 @@ type Config struct {
 	SMS            SMSConfig
 	EchoTik        EchoTikConfig
 	DiscoverSync   DiscoverSyncConfig
+	VideoPipeline  DiscoverVideoPipelineConfig
 	OverflowSettle OverflowSettleConfig
 	Storage        StorageConfig
 	OpenRouter     OpenRouterConfig
@@ -123,6 +124,19 @@ type SyncCombo struct {
 	Region    string
 	RankType  int
 	RankField int
+}
+
+// DiscoverVideoPipelineConfig 爆款视频永久化 + AI 拆解后台管线。
+// 对某站点 sale_cnt>阈值 的热门带货视频:下载无水印 mp4 转存 COS + 复用多模态管线做 AI 拆解,
+// 全后台预计算。需 EchoTik + COS + LLM 三者都配置才启动(缺一即跳过)。
+type DiscoverVideoPipelineConfig struct {
+	Enabled       bool
+	Interval      time.Duration
+	Region        string // 只处理该站点(先只跑美国站)
+	SaleThreshold int    // 带货销量门槛,超过才处理
+	PerRun        int    // 每轮每支路认领上限(成本闸门:直接封顶 EchoTik 实时调用 + gemini 调用数)
+	Concurrency   int    // 并发处理数(gemini 多模态 + ffmpeg 均重,宜小)
+	MaxAttempts   int    // 单条失败退避上限
 }
 
 // OverflowSettleConfig TEAM 超额月度结算 job:把上一账期 billable 用量出账(幂等)。
@@ -238,6 +252,15 @@ func Load() *Config {
 			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 160),
 			// 每日类目扫:combo 站点 × 全一级类目 × 四榜第 1 页,约 500 请求/天。
 			CategorySweep: getEnvBool("DISCOVER_SYNC_CATEGORY_SWEEP", true),
+		},
+		VideoPipeline: DiscoverVideoPipelineConfig{
+			Enabled:       getEnvBool("VIDEO_PIPELINE_ENABLED", true),
+			Interval:      time.Duration(getEnvInt("VIDEO_PIPELINE_INTERVAL_MINUTES", 10)) * time.Minute,
+			Region:        getEnv("VIDEO_PIPELINE_REGION", "US"),
+			SaleThreshold: getEnvInt("VIDEO_PIPELINE_SALE_THRESHOLD", 500),
+			PerRun:        getEnvInt("VIDEO_PIPELINE_PER_RUN", 20),
+			Concurrency:   getEnvInt("VIDEO_PIPELINE_CONCURRENCY", 2),
+			MaxAttempts:   getEnvInt("VIDEO_PIPELINE_MAX_ATTEMPTS", 3),
 		},
 		OverflowSettle: OverflowSettleConfig{
 			Enabled:  getEnvBool("OVERFLOW_SETTLE_ENABLED", true),

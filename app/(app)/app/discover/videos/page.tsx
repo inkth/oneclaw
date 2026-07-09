@@ -21,11 +21,13 @@ export default async function DiscoverVideosPage({
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
   const q = (sp.q ?? "").trim();
+  // AI 视频筛选(仅榜单态生效;搜索接口不支持 created_by_ai)。后端对该视图走实时旁路、不落缓存。
+  const ai = sp.ai === "1" || sp.ai === "true";
   // 类目=按带货视频的「商品类目」过滤(后端映射到 EchoTik product_category_id)。
   // 搜索:走关键词搜索(只认 region,单次 ≤30、无分页);否则正常榜单+类目+分页。
   const query = q
     ? `region=${region}&page_size=30&keyword=${encodeURIComponent(q)}`
-    : `region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=20&page_num=${page}`;
+    : `region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}${ai ? "&created_by_ai=true" : ""}&page_size=20&page_num=${page}`;
 
   const [result, categories] = await Promise.all([
     apiServer<Result>(`/discover/video-ranklist?${query}`).catch(
@@ -42,6 +44,7 @@ export default async function DiscoverVideosPage({
       categoryId={categoryId}
       categories={categories}
       keyword={q}
+      ai={ai}
       state={result.state}
       videos={result.rows}
       page={page}

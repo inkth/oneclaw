@@ -164,9 +164,14 @@ func (s *AgentService) materialVideoURL(ctx context.Context, wsID, materialID uu
 	return strings.TrimSpace(m.URL)
 }
 
-// downloadVideoBytes 从公读 URL 下载视频字节(限大小,防异常大文件)。
+// downloadVideoBytes 从公读 URL 下载视频字节(限大小,防异常大文件)。交互式解析用默认 60s。
 func downloadVideoBytes(ctx context.Context, url string) ([]byte, error) {
-	dctx, cancel := context.WithTimeout(ctx, vaDownloadLimit)
+	return downloadVideoBytesTimeout(ctx, url, vaDownloadLimit)
+}
+
+// downloadVideoBytesTimeout 同上但超时可指定:后台管线拉热门视频(可能更大)用更长超时。
+func downloadVideoBytesTimeout(ctx context.Context, url string, timeout time.Duration) ([]byte, error) {
+	dctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(dctx, http.MethodGet, url, nil)
 	if err != nil {

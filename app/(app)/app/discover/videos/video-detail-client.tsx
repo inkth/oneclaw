@@ -8,6 +8,7 @@ import { Stat } from "@/components/ui/Stat";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FavoriteButton } from "../_components/FavoriteButton";
+import { VideoAnalysisResult, type VideoAnalysisData } from "../../video-analysis-result";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, initial, stringToGradient } from "../_components/format";
 import {
   ArrowLeft,
@@ -55,6 +56,8 @@ export type VideoDetail = {
     commissionRate: number;
     rating: number;
   }[];
+  videoUrl: string; // COS 永久 mp4;非空=站内可直接播放
+  analysis: VideoAnalysisData | null; // AI 拆解结果;非空=已拆解
 };
 
 function Img({ src, seed, className }: { src: string; seed: string; className: string }) {
@@ -127,24 +130,35 @@ export function VideoDetailClient({
         }
       />
 
-      {/* Hero:封面 + 创作者 + 关键数据 */}
+      {/* Hero:视频(站内可播则直接 <video>,否则封面外链 TikTok)+ 创作者 + 关键数据 */}
       <Card className="grid gap-6 sm:grid-cols-[260px_1fr]">
-        <a
-          href={tiktokUrl || undefined}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-zinc-100"
-        >
-          <Img src={v.cover} seed={v.desc || v.videoId} className="h-full w-full object-cover" />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity group-hover:opacity-100">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm">
-              <Play className="h-3 w-3 fill-zinc-900" /> 在 TikTok 查看
+        {v.videoUrl ? (
+          <video
+            src={v.videoUrl}
+            poster={v.cover || undefined}
+            controls
+            playsInline
+            preload="metadata"
+            className="aspect-[9/16] w-full rounded-xl bg-zinc-900 object-contain"
+          />
+        ) : (
+          <a
+            href={tiktokUrl || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-zinc-100"
+          >
+            <Img src={v.cover} seed={v.desc || v.videoId} className="h-full w-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm">
+                <Play className="h-3 w-3 fill-zinc-900" /> 在 TikTok 查看
+              </span>
+            </div>
+            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs text-white">
+              <Play className="h-2.5 w-2.5 fill-white" /> {fmtDuration(v.duration)}
             </span>
-          </div>
-          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs text-white">
-            <Play className="h-2.5 w-2.5 fill-white" /> {fmtDuration(v.duration)}
-          </span>
-        </a>
+          </a>
+        )}
 
         <div className="space-y-4">
           {/* 创作者 → 达人详情 */}
@@ -214,6 +228,18 @@ export function VideoDetailClient({
           <Stat icon={ShoppingBag} label="带货销量" value={fmt(v.saleCnt)} hint="本视频累计成交件数" />
           <Stat icon={DollarSign} label="带货 GMV" value={fmtMoney(v.saleGmv)} hint="本视频累计成交额" />
         </div>
+      )}
+
+      {/* AI 拆解:逐句脚本 + 带货结构 + 可复用要点 + 改编建议(后台预生成) */}
+      {v.analysis && (
+        <Card>
+          <div className="mb-1 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-fuchsia-500" />
+            <span className="text-sm font-medium text-zinc-900">AI 拆解</span>
+            <span className="text-xs text-zinc-400">这条为什么爆 · 可直接借鉴</span>
+          </div>
+          <VideoAnalysisResult data={v.analysis} />
+        </Card>
       )}
 
       {/* 视频带货商品 */}

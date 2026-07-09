@@ -355,6 +355,13 @@ type DiscoverVideo struct {
 	Products    JSONB  `gorm:"type:jsonb" json:"-"` // []EntityProductDTO 带货商品
 	Raw         JSONB  `gorm:"type:jsonb" json:"-"`
 
+	// ── 爆款永久化 + AI 拆解(sale_cnt>阈值 的热门视频后台预计算,见 discover_video_pipeline.go)──
+	VideoURL         string    `gorm:"column:video_url;type:text;default:''" json:"videoUrl"` // 无水印 mp4 转存 COS 永久地址;空=未转存
+	Analysis         JSONB     `gorm:"type:jsonb" json:"-"`                                   // videoAnalysisOut 拆解结果;空=未拆解
+	AnalyzedAt       time.Time `gorm:"column:analyzed_at" json:"-"`
+	VideoAttempts    int       `gorm:"column:video_attempts;default:0" json:"-"`    // 转存失败退避计数
+	AnalysisAttempts int       `gorm:"column:analysis_attempts;default:0" json:"-"` // 拆解失败退避计数
+
 	IsTracked       bool      `gorm:"default:false;index" json:"isTracked"`
 	ListFetchedAt   time.Time `gorm:"index" json:"listFetchedAt"`
 	DetailFetchedAt time.Time `gorm:"index" json:"detailFetchedAt"`

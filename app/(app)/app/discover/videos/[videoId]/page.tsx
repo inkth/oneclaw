@@ -4,6 +4,7 @@ import { REGION_CODES, type Region } from "../../_components/regions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Clapperboard } from "lucide-react";
 import { VideoDetailClient, type VideoDetail } from "../video-detail-client";
+import { type VideoAnalysisData } from "../../../video-analysis-result";
 
 export const metadata = { title: "视频详情 · 发现猫" };
 
@@ -32,6 +33,8 @@ type DTO = {
   products:
     | { productId: string; name: string; cover: string; avgPriceCents: number; commissionRate: number; rating: number }[]
     | null;
+  videoUrl: string;
+  analysis: VideoAnalysisData | null;
 };
 
 export default async function VideoDetailPage({
@@ -94,6 +97,8 @@ export default async function VideoDetailPage({
       commissionRate: p.commissionRate,
       rating: p.rating,
     })),
+    videoUrl: dto.videoUrl ?? "",
+    analysis: dto.analysis ?? null,
   };
 
   const me = await getMe();

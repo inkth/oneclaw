@@ -211,6 +211,8 @@ type VideoDetailDTO struct {
 	SaleCnt      int                `json:"saleCnt"`
 	SaleGmvCents int                `json:"saleGmvCents"`
 	Products     []EntityProductDTO `json:"products"`
+	VideoURL     string             `json:"videoUrl"` // COS 永久 mp4;空=未转存,前端回落 TikTok 外链
+	Analysis     model.JSONB        `json:"analysis"` // AI 拆解结果 videoAnalysisOut;空=未拆解(marshal 成 null)
 }
 
 // VideoDetailFull 视频详情:读 DB 优先 + 按 detail_fetched_at 条件刷新(同 InfluencerDetailFull 四档)。

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { toast } from "sonner";
-import { Play, Eye } from "lucide-react";
+import { Play, Eye, X } from "lucide-react";
 import { fmt } from "./discover/_components/format";
 
 /**
@@ -22,6 +23,8 @@ export type SampleVid = {
   coverUrl: string | null;
   desc: string;
   views: number;
+  /** COS 永久 mp4;非空=站内可直接播放(点击弹层播放,不跳转)。 */
+  videoUrl?: string;
 };
 
 type Placeholder = { id: string; title: string; angle: string; thumb: string };
@@ -36,15 +39,18 @@ const PLACEHOLDERS: Placeholder[] = [
 
 export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
   const hasReal = videos.length > 0;
+  const anyPlayable = videos.some((v) => v.videoUrl);
   return (
     <div>
       <div className="mb-3 flex items-end justify-between">
         <div>
           <h2 className="text-sm font-semibold text-ink">爆款短视频示例</h2>
           <p className="mt-0.5 text-xs text-zinc-500">
-            {hasReal
-              ? "TikTok 上正在爆的带货短视频 · 点开拆解脚本玩法"
-              : "一句话派活，AI 就能产出这样的带货短视频"}
+            {!hasReal
+              ? "一句话派活，AI 就能产出这样的带货短视频"
+              : anyPlayable
+                ? "TikTok 上正在爆的带货短视频 · 站内直接播放 · 点开看 AI 拆解"
+                : "TikTok 上正在爆的带货短视频 · 点开拆解脚本玩法"}
           </p>
         </div>
         <span className="shrink-0 text-xs text-zinc-400">
@@ -61,14 +67,14 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
   );
 }
 
-/** 真·EchoTik 带货视频：封面 + 播放键 + 播放量 + 文案，点开进站内详情（再外链 TikTok）。 */
+/** 真·EchoTik 带货视频：封面 + 播放键 + 播放量 + 文案。
+ *  已转存 COS(videoUrl)→ 点击弹层站内直接播放(不跳转);否则点开进站内详情(再外链 TikTok)。 */
 function RealCard({ v }: { v: SampleVid }) {
-  return (
-    <Link
-      href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
-      title={v.desc || undefined}
-      className="dk-card lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40"
-    >
+  const [playing, setPlaying] = useState(false);
+  const playable = !!v.videoUrl;
+
+  const inner = (
+    <>
       {v.coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -93,12 +99,73 @@ function RealCard({ v }: { v: SampleVid }) {
         </span>
       )}
 
+      {playable && (
+        <span className="absolute right-2 top-2 rounded-full bg-fuchsia-500/90 px-2 py-0.5 text-2xs font-medium text-white backdrop-blur-sm">
+          站内可播
+        </span>
+      )}
+
       {v.desc && (
         <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-2 pt-6 text-xs font-medium leading-snug text-white">
           {v.desc}
         </span>
       )}
-    </Link>
+    </>
+  );
+
+  const cardClass = "dk-card lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40";
+
+  if (!playable) {
+    return (
+      <Link href={`/app/discover/videos/${v.videoId}?region=${v.region}`} title={v.desc || undefined} className={cardClass}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      <button type="button" onClick={() => setPlaying(true)} title={v.desc || undefined} className={cardClass}>
+        {inner}
+      </button>
+      {playing && <PlayerModal v={v} onClose={() => setPlaying(false)} />}
+    </>
+  );
+}
+
+/** 站内播放弹层:直接播放已转存 COS 的 mp4,并给「看完整拆解 →」入口进详情页。 */
+function PlayerModal({ v, onClose }: { v: SampleVid; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="relative w-full max-w-[360px]" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="关闭"
+          className="absolute -right-2 -top-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-md hover:bg-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video
+          src={v.videoUrl}
+          poster={v.coverUrl || undefined}
+          controls
+          autoPlay
+          playsInline
+          className="aspect-[9/16] w-full rounded-xl bg-zinc-900 object-contain shadow-2xl"
+        />
+        <Link
+          href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
+          className="mt-3 flex items-center justify-center gap-1 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-ink shadow-sm hover:bg-white"
+        >
+          看完整拆解 →
+        </Link>
+      </div>
+    </div>
   );
 }
 

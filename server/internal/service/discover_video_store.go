@@ -232,5 +232,7 @@ func videoDTOFromModel(dv *model.DiscoverVideo) *VideoDetailDTO {
 		SaleCnt:      dv.SaleCnt,
 		SaleGmvCents: dv.SaleGmvCents,
 		Products:     parseEntityProducts(dv.Products),
+		VideoURL:     dv.VideoURL,
+		Analysis:     dv.Analysis,
 	}
 }

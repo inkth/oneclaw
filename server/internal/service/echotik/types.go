@@ -220,6 +220,9 @@ type RanklistParams struct {
 	PageNum    int
 	PageSize   int
 	Keyword    string // 非空=走关键词搜索(/echotik/search/items)而非榜单
+	// CreatedByAI 仅视频榜有效:"true"=只看 AI 生成视频、"false"=只看真人视频、""=不限。
+	// 上游 /echotik/video/ranklist 原生支持 created_by_ai 参数(店铺/达人榜忽略此字段)。
+	CreatedByAI string
 }
 
 // Category 一级类目行。

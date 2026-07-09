@@ -540,7 +540,7 @@ function TaskBubble({
         ) : isTryOn ? (
           <TryOnResult task={t} />
         ) : isVideoAnalysis ? (
-          <VideoAnalysisResult task={t} />
+          <VideoAnalysisResult data={t.metadata} />
         ) : (
           <>
             <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">

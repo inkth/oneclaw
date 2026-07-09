@@ -9,8 +9,6 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
-import { type StreamTask } from "./task-stream";
-
 type AnalysisLine = { t?: string; original?: string; zh?: string };
 type AnalysisStructure = {
   hook?: string;
@@ -19,12 +17,23 @@ type AnalysisStructure = {
   cta?: string;
 };
 
+/** 视频拆解结果数据(后端 videoAnalysisOut / runVideoAnalysis 写入的结构)。 */
+export type VideoAnalysisData = {
+  lang?: string;
+  title?: string;
+  summary?: string;
+  lines?: AnalysisLine[];
+  structure?: AnalysisStructure;
+  reusablePoints?: string[];
+  adaptations?: string[];
+};
+
 /**
  * 视频解析结果:逐句脚本(原文/中文双列、带时间码)+ 带货结构拆解 + 可复用要点 + 改编建议。
- * 数据来自 VIDEO_ANALYSIS 任务的 metadata(后端 runVideoAnalysis 写入)。
+ * 数据来自 VIDEO_ANALYSIS 任务的 metadata 或选品视频详情的 analysis(后端结构一致)。
  */
-export function VideoAnalysisResult({ task }: { task: StreamTask }) {
-  const m = task.metadata ?? {};
+export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null }) {
+  const m = data ?? {};
   const lines = (m.lines ?? []) as AnalysisLine[];
   const structure = (m.structure ?? {}) as AnalysisStructure;
   const reusablePoints = (m.reusablePoints ?? []) as string[];

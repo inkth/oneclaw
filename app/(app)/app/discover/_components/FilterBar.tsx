@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { Globe, ChevronDown, ChevronUp, Search, X, Sparkles } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
 import { REGIONS, type Region } from "./regions";
 import { useDiscoverFilterMemory } from "./filter-memory";
@@ -24,6 +24,8 @@ export function FilterBar({
   categoryId = null,
   categories = [],
   keyword = "",
+  ai = false,
+  showAiFilter = false,
   searchPlaceholder = "输入关键词搜索…",
 }: {
   basePath: string;
@@ -36,6 +38,10 @@ export function FilterBar({
   categories?: CategoryOption[];
   /** 当前关键词(URL ?q=);非空=搜索态。 */
   keyword?: string;
+  /** 当前是否只看 AI 视频(URL ?ai=1)。仅 showAiFilter 榜生效。 */
+  ai?: boolean;
+  /** 是否展示「AI 视频」筛选行(仅视频榜开启)。 */
+  showAiFilter?: boolean;
   searchPlaceholder?: string;
 }) {
   const router = useRouter();
@@ -53,6 +59,7 @@ export function FilterBar({
     field?: number;
     category_id?: string | null;
     q?: string | null;
+    ai?: boolean;
   }) {
     const p = new URLSearchParams();
     p.set("region", patch.region ?? region);
@@ -62,6 +69,8 @@ export function FilterBar({
     if (cat) p.set("category_id", cat);
     const q = patch.q === undefined ? keyword : patch.q;
     if (q && q.trim()) p.set("q", q.trim());
+    const aiOn = patch.ai === undefined ? ai : patch.ai;
+    if (aiOn) p.set("ai", "1");
     startTransition(() => router.push(`${basePath}?${p.toString()}`));
   }
 
@@ -77,6 +86,18 @@ export function FilterBar({
         // 提交搜索:丢弃类目(接口不支持组合),回到第 1 页。清空:退出搜索态。
         onSubmit={(kw) => navigate({ q: kw || null, category_id: null })}
       />
+
+      {/* AI 视频筛选:仅视频榜开启;搜索态下隐藏(搜索接口不支持 created_by_ai)。 */}
+      {showAiFilter && !searching && (
+        <PillRow label={<><Sparkles className="h-3.5 w-3.5" />视频类型</>}>
+          <Pill active={!ai} onClick={() => navigate({ ai: false })}>
+            全部
+          </Pill>
+          <Pill active={ai} onClick={() => navigate({ ai: true })}>
+            AI 视频
+          </Pill>
+        </PillRow>
+      )}
 
       <PillRow label={<><Globe className="h-3.5 w-3.5" />国家/地区</>}>
         {REGIONS.map((r) => (

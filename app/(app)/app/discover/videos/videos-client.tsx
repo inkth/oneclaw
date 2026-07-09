@@ -36,6 +36,7 @@ export function VideosClient({
   categoryId,
   categories,
   keyword = "",
+  ai = false,
   state,
   videos,
   page,
@@ -47,6 +48,7 @@ export function VideosClient({
   categoryId: string | null;
   categories: CategoryOption[];
   keyword?: string;
+  ai?: boolean;
   state: DiscoverState;
   videos: Video[];
   page: number;
@@ -73,6 +75,8 @@ export function VideosClient({
         categoryId={categoryId}
         categories={categories}
         keyword={keyword}
+        ai={ai}
+        showAiFilter
         searchPlaceholder="搜索视频文案 / 话题…"
       />
 
@@ -81,7 +85,9 @@ export function VideosClient({
           hint={
             searching
               ? `没找到与「${keyword}」相关的视频。换个关键词,或切换国家 / 地区再搜。`
-              : undefined
+              : ai
+                ? "该地区 / 类目下暂无 AI 生成的带货视频,换个国家或类目再看看。"
+                : undefined
           }
         />
       ) : (

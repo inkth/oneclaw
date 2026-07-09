@@ -68,6 +68,7 @@ type VideoDTO struct {
 	TotalSharesCnt       int     `json:"totalSharesCnt"`
 	TotalVideoSaleCnt    int     `json:"totalVideoSaleCnt"`
 	TotalVideoSaleGmvAmt float64 `json:"totalVideoSaleGmvAmt"`
+	VideoURL             string  `json:"videoUrl,omitempty"` // COS 永久 mp4(仅已转存的热门视频有);空=无,前端退回封面/跳详情
 }
 
 // SellerRanklist 店铺榜(缓存优先);带关键词时走搜索(不缓存)。
@@ -141,6 +142,9 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 	}
 	if p.Keyword != "" {
 		return s.searchVideos(ctx, p)
+	}
+	if p.CreatedByAI != "" {
+		return s.fetchVideoRanklistAI(ctx, p)
 	}
 	if res, ok := s.lookupVideoRanklist(ctx, p); ok {
 		if res.FetchedAt != nil {

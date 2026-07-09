@@ -50,6 +50,10 @@ func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldPar
 					"page_size":   strconv.Itoa(pageSize),
 					"page_num":    strconv.Itoa(startPage + i),
 				}
+				// AI 视频筛选(仅视频榜设置;其余榜此字段恒空,上游亦忽略)。
+				if p.CreatedByAI != "" {
+					params["created_by_ai"] = p.CreatedByAI
+				}
 				var env Envelope[[]T]
 				if err := c.call(gctx, endpoint, params, &env); err != nil {
 					return err
