@@ -56,7 +56,7 @@ export function AccountMenu({
         <Link
           href="/app/settings"
           title="本周期积分余额"
-          className={`hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`hidden sm:inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
             low
               ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
               : "border-black/10 bg-white text-zinc-600 hover:border-brand-300 hover:text-brand-700"
@@ -71,7 +71,7 @@ export function AccountMenu({
       {!isTeam && (
         <Link
           href={upgradeHref}
-          className="pop-cta hidden sm:inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white transition-colors"
+          className="pop-cta hidden sm:inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white transition-colors"
         >
           <Sparkles className="h-3.5 w-3.5" />
           升级会员
@@ -85,7 +85,7 @@ export function AccountMenu({
         trigger={({ open }) => (
           <span
             title={display}
-            className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-violet-500 text-xs font-semibold text-white transition-shadow ${
+            className={`flex h-8 w-8 items-center justify-center rounded-full bg-[#6e56ff] text-xs font-semibold text-white transition-shadow ${
               open ? "ring-2 ring-brand-200" : ""
             }`}
           >
@@ -97,7 +97,7 @@ export function AccountMenu({
           <div className="text-sm">
             {/* 身份 */}
             <div className="flex items-center gap-2.5 px-3.5 py-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-violet-500 text-sm font-semibold text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6e56ff] text-sm font-semibold text-white">
                 {initial}
               </span>
               <div className="min-w-0">

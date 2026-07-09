@@ -305,7 +305,7 @@ export function VideoDetailDrawer({
                     target="_blank"
                     rel="noopener noreferrer"
                     download={`${video.title}.mp4`}
-                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-2xs font-medium text-emerald-700 hover:bg-emerald-100"
+                    className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-3 py-1.5 text-2xs font-medium text-emerald-700 hover:bg-emerald-100"
                   >
                     <Download className="h-3 w-3" />
                     下载
@@ -315,14 +315,14 @@ export function VideoDetailDrawer({
                   <>
                     <button
                       onClick={copyPrompt}
-                      className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1.5 text-2xs font-medium text-zinc-700 hover:bg-zinc-200"
+                      className="inline-flex items-center gap-1 rounded-xl bg-zinc-100 px-3 py-1.5 text-2xs font-medium text-zinc-700 hover:bg-zinc-200"
                     >
                       <Copy className="h-3 w-3" />
                       复制 prompt
                     </button>
                     <button
                       onClick={reuseInCreate}
-                      className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1.5 text-2xs font-medium text-brand-700 hover:bg-brand-100"
+                      className="inline-flex items-center gap-1 rounded-xl bg-brand-50 px-3 py-1.5 text-2xs font-medium text-brand-700 hover:bg-brand-100"
                     >
                       <Sparkles className="h-3 w-3" />
                       复用到创作工坊
@@ -333,7 +333,7 @@ export function VideoDetailDrawer({
                   <button
                     onClick={rerender}
                     disabled={busy}
-                    className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-3 py-1.5 text-2xs font-medium text-fuchsia-700 hover:bg-fuchsia-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-xl bg-fuchsia-50 px-3 py-1.5 text-2xs font-medium text-fuchsia-700 hover:bg-fuchsia-100 disabled:opacity-50"
                     title="沿用同一脚本换一版重新出片(消耗一次出片积分,不动原片)"
                   >
                     <RefreshCw className="h-3 w-3" />
@@ -344,7 +344,7 @@ export function VideoDetailDrawer({
                   <button
                     onClick={refresh}
                     disabled={busy}
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-2xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-xl bg-amber-50 px-3 py-1.5 text-2xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
                   >
                     {busy ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -357,7 +357,7 @@ export function VideoDetailDrawer({
                 <button
                   onClick={del}
                   disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1.5 text-2xs font-medium text-rose-600 hover:bg-rose-100 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-1.5 text-2xs font-medium text-rose-600 hover:bg-rose-100 disabled:opacity-50"
                 >
                   <Trash2 className="h-3 w-3" />
                   删除

@@ -381,7 +381,7 @@ export function MaterialsClient({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelected(new Set())}
-              className="rounded-full px-3 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+              className="rounded-xl px-3 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
             >
               清空
             </button>
@@ -390,7 +390,7 @@ export function MaterialsClient({
                 onClick={() => submitProducts([Array.from(selected)], true)}
                 disabled={batchBusy}
                 title="选中的都是同一个商品的不同角度,合并成 1 个商品"
-                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-60"
               >
                 合并为 1 个商品
               </button>
@@ -399,7 +399,7 @@ export function MaterialsClient({
               onClick={() => submitProducts(Array.from(selected).map((id) => [id]), false)}
               disabled={batchBusy}
               title="每张图各做成一个商品"
-              className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
             >
               {batchBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {batchBusy ? "提交中…" : selected.size >= 2 ? "各做 1 个商品" : "做成商品"}

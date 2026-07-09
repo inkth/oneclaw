@@ -223,7 +223,7 @@ export function CheckoutModal({
             <button
               onClick={createOrder}
               disabled={creating}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
               生成二维码
@@ -266,7 +266,7 @@ export function CheckoutModal({
                 <div className="text-base font-semibold">二维码已过期</div>
                 <button
                   onClick={() => setOrder(null)}
-                  className="rounded-full bg-zinc-900 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-800"
+                  className="rounded-xl bg-zinc-900 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-800"
                 >
                   重新下单
                 </button>
@@ -303,7 +303,7 @@ export function CheckoutModal({
                         <button
                           onClick={mockConfirm}
                           disabled={confirming}
-                          className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-600 px-3 py-1 text-2xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                          className="mt-2 inline-flex items-center gap-1 rounded-xl bg-amber-600 px-3 py-1 text-2xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
                         >
                           {confirming && <Loader2 className="h-3 w-3 animate-spin" />}
                           模拟支付成功

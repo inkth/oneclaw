@@ -354,7 +354,7 @@ export function AssetPickerModal({
         <div className="mt-4 flex items-center justify-end border-t border-zinc-100 pt-3">
           <button
             onClick={onClose}
-            className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-black"
+            className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-black"
           >
             完成
           </button>

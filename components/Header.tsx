@@ -46,7 +46,7 @@ export function Header() {
             </a>
             <a
               href="/app"
-              className="bg-vibrant pop group relative inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-white shadow-sm"
+              className="bg-vibrant pop group relative inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium text-white shadow-sm"
             >
               开始体验
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -82,7 +82,7 @@ export function Header() {
               <a href="/login" className="flex-1 text-center rounded-full border border-zinc-300 py-2 text-sm font-medium">
                 登录
               </a>
-              <a href="/app" className="bg-vibrant flex-1 text-center rounded-full py-2 text-sm font-medium text-white">
+              <a href="/app" className="bg-vibrant flex-1 text-center rounded-xl py-2 text-sm font-medium text-white">
                 开始体验
               </a>
             </div>

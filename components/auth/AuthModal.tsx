@@ -64,7 +64,7 @@ export function AuthModal({
         </button>
 
         {/* 左：品牌面板（桌面端） */}
-        <div className="hidden flex-col justify-between bg-gradient-to-br from-violet-700 via-violet-600 to-fuchsia-600 p-8 text-white md:flex">
+        <div className="hidden flex-col justify-between bg-[#6e56ff] p-8 text-white md:flex">
           <div>
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
@@ -102,7 +102,7 @@ export function AuthModal({
         </div>
 
         {/* 移动端降级：渐变顶部条 */}
-        <div className="flex items-center gap-2.5 bg-gradient-to-r from-violet-700 via-violet-600 to-fuchsia-600 px-5 py-3.5 text-white md:hidden">
+        <div className="flex items-center gap-2.5 bg-[#6e56ff] px-5 py-3.5 text-white md:hidden">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15">
             <BrandMark className="h-4 w-4" strokeWidth={1.9} />
           </span>

@@ -271,7 +271,7 @@ export function ProductDetail({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => router.push(`/app?agent=DIRECTOR&productId=${productId}`)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100"
             >
               <Clapperboard className="h-3.5 w-3.5" />
               为它做视频
@@ -419,7 +419,7 @@ export function ProductDetail({
               <p className="mt-2 text-sm text-zinc-600">这个商品还没有 Listing</p>
               <button
                 onClick={goListingChat}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 生成 Listing

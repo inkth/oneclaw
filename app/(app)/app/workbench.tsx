@@ -288,7 +288,7 @@ export function Workbench({
             <button
               key={p.label}
               onClick={() => pickPreset(p.prompt)}
-              className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
+              className="rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
             >
               {p.label}
             </button>

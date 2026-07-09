@@ -240,7 +240,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
                   <button
                     onClick={generateImages}
                     disabled={submitting}
-                    className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
+                    className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {submitting ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />

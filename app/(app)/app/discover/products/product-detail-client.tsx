@@ -221,7 +221,7 @@ export function ProductDetailClient({
         ? "brand"
         : "warning";
   const scoreColor =
-    scoreTone === "success" ? "#16a34a" : scoreTone === "brand" ? "#7c3aed" : "#d97706";
+    scoreTone === "success" ? "#16a34a" : scoreTone === "brand" ? "#6e56ff" : "#d97706";
 
   const hasDiscount =
     !!p.discount && p.discount !== "0" && p.discount !== "null";

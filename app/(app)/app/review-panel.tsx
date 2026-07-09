@@ -135,7 +135,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
                 `/app?agent=DIRECTOR&prompt=${encodeURIComponent(relayVideoPrompt(result))}`,
               )
             }
-            className="press inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-black sm:self-auto"
+            className="press inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-black sm:self-auto"
           >
             <Clapperboard className="h-3.5 w-3.5" />
             再做一条视频

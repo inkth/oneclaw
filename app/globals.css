@@ -9,36 +9,38 @@
   --ink-action: #1c1d1f; /* 近黑主操作色 */
   --hairline: rgba(0, 0, 0, 0.07); /* 卡片发丝边 */
 
-  /* 品牌 = 电紫 Violet。全站唯一真源：改这 11 个值即整站换肤。 */
-  --brand-50: #f5f3ff;
-  --brand-100: #ede9fe;
-  --brand-200: #ddd6fe;
-  --brand-300: #c4b5fd;
-  --brand-400: #a78bfa;
-  --brand-500: #8b5cf6;
-  --brand-600: #7c3aed; /* 主色 */
-  --brand-700: #6d28d9;
-  --brand-800: #5b21b6;
-  --brand-900: #4c1d95;
-  --brand-950: #2e1065;
+  /* 品牌 = 电紫 #6E56FF（Design Language 唯一强调色，Linear/Perplexity 系的安静紫）。
+     全站唯一真源：改这 11 个值即整站换肤。95% 黑白灰 + 5% 此色，仅此一种强调色。 */
+  --brand-50: #f2f0ff;
+  --brand-100: #e7e3ff;
+  --brand-200: #d3cbff;
+  --brand-300: #b4a8ff;
+  --brand-400: #9382ff;
+  --brand-500: #7c67ff;
+  --brand-600: #6e56ff; /* 主色 = Primary */
+  --brand-700: #5b43e6;
+  --brand-800: #4a37bd;
+  --brand-900: #3c2f96;
+  --brand-950: #251d5c;
 
   /* 兼容别名：旧的 --brand / --accent 引用点继续可用 */
   --brand: var(--brand-600);
   --brand-dark: var(--brand-800);
   --accent: var(--brand-600);
 
-  /* 高级活力层：电紫 → 品红珠宝调实体面（国际高端，去糖果粉；仅成交/CTA/奖牌/PRO 白名单使用） */
-  --gradient-vibrant: linear-gradient(135deg, #6d28d9 0%, #7c3aed 48%, #a21caf 100%);
-  --gradient-vibrant-soft: linear-gradient(135deg, #7c3aed 0%, #9333ea 52%, #c026d3 100%);
+  /* Design Language：单一强调色，去渐变。旧「活力渐变面」保留变量名以兼容引用，
+     但收敛为纯品牌实底 —— 成交/CTA/奖牌/PRO 一律安静的电紫单色（不再电紫→品红）。 */
+  --gradient-vibrant: #6e56ff;
+  --gradient-vibrant-soft: #7c67ff;
 
   /* 电紫「点睛」通道：独立命名，故不被 .app-skin 的 --brand-* 近黑级联改写，
      全站(含 /app 工作台近黑皮肤)恒为电紫。仅用于点睛位 ——
      主 CTA / 选中态 / 当前路径 / 数据 hover / 焦点环，不铺面。 */
-  --accent-pop: #7c3aed; /* = 真源 brand-600 电紫 */
-  --accent-pop-strong: #6d28d9; /* hover 加深 */
-  --accent-pop-soft: #ede9fe; /* 选中态淡底 = brand-100 */
-  --accent-pop-ink: #6d28d9; /* 淡底上的文字 */
-  --focus-pop: rgba(124, 58, 237, 0.45); /* 焦点环 */
+  --accent-pop: #6e56ff; /* = 真源 brand-600 电紫 */
+  --accent-pop-strong: #5b43e6; /* hover 加深 */
+  --accent-pop-soft: #e7e3ff; /* 选中态淡底 = brand-100 */
+  --accent-pop-ink: #5b43e6; /* 淡底上的文字 */
+  --focus-pop: rgba(110, 86, 255, 0.4); /* 焦点环 */
 
   /* 专业中文字体真源：思源黑体 Noto Sans SC（SIL OFL 开源、零授权风险，
      经 @fontsource 自托管 + unicode-range 分片按需加载）。
@@ -77,16 +79,17 @@
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
 
-  /* 分层柔阴影：低透明、多层，Stripe 质感。覆盖 Tailwind 默认 shadow-*，现有 shadow-sm/lg/xl 自动升级 */
+  /* Design Language §5：极弱或无阴影，靠留白与层级表达结构。
+     阴影只作「离地一层」的最小提示，不做发光。多层 → 收敛为单层极淡。 */
   --shadow-xs: 0 1px 2px rgba(16, 14, 30, 0.04);
-  --shadow-sm: 0 1px 2px rgba(16, 14, 30, 0.05), 0 1px 1px rgba(16, 14, 30, 0.03);
-  --shadow-md: 0 4px 12px -2px rgba(16, 14, 30, 0.06), 0 2px 6px -2px rgba(16, 14, 30, 0.05);
-  --shadow-lg: 0 12px 32px -8px rgba(16, 14, 30, 0.1), 0 4px 12px -4px rgba(16, 14, 30, 0.06);
-  --shadow-xl: 0 24px 56px -12px rgba(16, 14, 30, 0.14), 0 8px 20px -8px rgba(16, 14, 30, 0.08);
-  /* 品牌辉光投影：可点击/重点卡 hover */
-  --shadow-brand: 0 8px 28px -6px rgba(124, 58, 237, 0.22), 0 2px 8px -2px rgba(124, 58, 237, 0.14);
-  /* 高级辉光：电紫 → 品红的克制光晕，给渐变成交按钮 hover */
-  --shadow-vibrant: 0 12px 36px -8px rgba(124, 58, 237, 0.34), 0 4px 14px -4px rgba(162, 28, 175, 0.2);
+  --shadow-sm: 0 1px 2px rgba(16, 14, 30, 0.05);
+  --shadow-md: 0 1px 2px rgba(16, 14, 30, 0.05), 0 4px 10px -4px rgba(16, 14, 30, 0.05);
+  --shadow-lg: 0 6px 20px -8px rgba(16, 14, 30, 0.08), 0 2px 6px -4px rgba(16, 14, 30, 0.05);
+  --shadow-xl: 0 12px 32px -12px rgba(16, 14, 30, 0.1), 0 4px 12px -8px rgba(16, 14, 30, 0.06);
+  /* 品牌「投影」：可点击/重点卡 hover —— 去发光，仅极淡单层带一点品牌色温 */
+  --shadow-brand: 0 6px 18px -8px rgba(110, 86, 255, 0.16);
+  /* 兼容旧引用：同样收敛为安静单层，不再是电紫→品红光晕 */
+  --shadow-vibrant: 0 6px 18px -8px rgba(110, 86, 255, 0.18);
 }
 
 /* 照搬 Designkit：把 /app 外壳子树内的「电紫 brand 色阶」整体改写为中性近黑，
@@ -108,13 +111,11 @@
   --brand: #1c1d1f;
   --brand-dark: #000000;
   --accent: #1c1d1f;
-  /* 渐变/辉光也去电紫，收敛为中性 */
-  --gradient-vibrant: linear-gradient(135deg, #1c1d1f 0%, #2b2b30 100%);
-  --gradient-vibrant-soft: linear-gradient(135deg, #2b2b30 0%, #46464d 100%);
-  --shadow-brand: 0 8px 28px -6px rgba(16, 14, 30, 0.16),
-    0 2px 8px -2px rgba(16, 14, 30, 0.1);
-  --shadow-vibrant: 0 10px 32px -6px rgba(16, 14, 30, 0.18),
-    0 4px 12px -4px rgba(16, 14, 30, 0.1);
+  /* 渐变/辉光也去电紫，收敛为中性实底 + 极弱阴影（Design Language §5） */
+  --gradient-vibrant: #1c1d1f;
+  --gradient-vibrant-soft: #2b2b30;
+  --shadow-brand: 0 6px 18px -8px rgba(16, 14, 30, 0.12);
+  --shadow-vibrant: 0 6px 18px -8px rgba(16, 14, 30, 0.12);
 }
 
 html,
@@ -204,31 +205,28 @@ body {
   animation: fadeUp 0.5s ease-out forwards;
 }
 
-/* 品牌强调字：电紫 → 品红珠宝渐变，仅用于关键词 */
+/* Design Language §3/§4：强调字用单一品牌实色（去渐变），仅用于极少数关键词 */
 .gradient-text {
-  background: linear-gradient(90deg, #7c3aed, #c026d3);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent-pop);
 }
 
-/* 活力渐变实体面：成交按钮 / CTA / 奖牌 / PRO 卡。配 .pop 微交互更嗨 */
+/* 兼容旧「活力渐变面」类名：成交按钮 / CTA / 奖牌 / PRO 卡 —— 收敛为品牌实底单色。
+   注意用 background 简写（值现为纯色，background-image 不接受纯色会失效）。 */
 .bg-vibrant {
-  background-image: var(--gradient-vibrant);
+  background: var(--gradient-vibrant);
 }
 .bg-vibrant-soft {
-  background-image: var(--gradient-vibrant-soft);
+  background: var(--gradient-vibrant-soft);
 }
 
-/* 微交互：成交/兴奋按钮 hover 轻放大 + 活力辉光 */
+/* Design Language §7/§14：微交互只做安静上浮，不放大、不加饱和、不发光。
+   hover 抬 1px + 极弱阴影；active 轻缩 0.98。全部 ease-out。 */
 .pop {
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease,
-    filter 0.18s ease;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 .pop:hover {
-  transform: translateY(-1px) scale(1.02);
-  box-shadow: var(--shadow-vibrant);
-  filter: saturate(1.06);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 .pop:active {
   transform: translateY(0) scale(0.98);
@@ -245,25 +243,30 @@ body {
   background: var(--accent-pop-strong);
 }
 
-/* 照搬 Designkit：顶部氛围光改为极淡中性彩虹（不再全站紫光顶） */
+/* 点睛工具类：绑定 --accent-pop 通道（不被 .app-skin 近黑级联改写），
+   用于「当前路径 / 选中态」等需恒为电紫的点缀位。 */
+.text-accent-pop {
+  color: var(--accent-pop);
+}
+.bg-accent-pop-soft {
+  background: var(--accent-pop-soft);
+}
+
+/* Design Language §11/§15：页面背景保持安静。顶部氛围光收敛为单一品牌色、极淡漫射，
+   不再中性彩虹。宁可留白，也不铺色。 */
 .gradient-bg {
   background: radial-gradient(
-      ellipse 60% 50% at 50% -10%,
-      rgba(120, 140, 255, 0.05),
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 40% 40% at 80% 0%,
-      rgba(255, 170, 210, 0.04),
-      transparent 70%
-    );
+    ellipse 60% 45% at 50% -12%,
+    rgba(110, 86, 255, 0.04),
+    transparent 70%
+  );
 }
 
 /* ---------- 照搬 Designkit 的核心表面原语 ---------- */
-/* 卡片：纯白 + 16px 圆角 + 发丝边 + 极弱阴影（实测无重阴影） */
+/* 卡片：纯白 + 20px 圆角（Design Language §6 Card=20）+ 发丝边 + 极弱阴影 */
 .dk-card {
   background: var(--surface);
-  border-radius: 16px;
+  border-radius: 20px;
   border: 1px solid var(--hairline);
   box-shadow: 0 1px 2px rgba(16, 14, 30, 0.03);
 }
@@ -271,37 +274,19 @@ body {
 .dk-rail-item {
   background: rgba(0, 0, 0, 0.05);
 }
-/* composer / hero 背后氛围光：极淡彩虹漫射（替代 aura-violet 紫光） */
+/* Design Language §11/§15：composer / hero 背后氛围光收敛为单一品牌色、极淡一层。
+   hero 近乎纯白，主角是输入框，不铺彩虹。 */
 .dk-aura {
   background: radial-gradient(
-      ellipse 50% 60% at 30% 40%,
-      rgba(150, 180, 255, 0.16),
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 45% 55% at 72% 55%,
-      rgba(255, 180, 220, 0.14),
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 40% 50% at 55% 30%,
-      rgba(190, 245, 210, 0.12),
-      transparent 70%
-    );
-  filter: blur(36px);
+    ellipse 55% 60% at 50% 42%,
+    rgba(110, 86, 255, 0.07),
+    transparent 70%
+  );
+  filter: blur(40px);
 }
-/* 彩虹发丝边环：激活态 pill / 高亮卡（替代单色电紫渐变边） */
+/* 激活态 pill / 高亮卡：去彩虹，收敛为单一品牌色发丝边（§4 只一种强调色） */
 .dk-ring {
-  border: 1px solid transparent;
-  background: linear-gradient(var(--surface), var(--surface)) padding-box,
-    linear-gradient(
-        100deg,
-        #ffb4d2,
-        #c4b5ff 35%,
-        #9ad8ff 65%,
-        #b6f3c8
-      )
-      border-box;
+  border: 1px solid var(--brand-200);
 }
 
 /* 玻璃面：磨砂 + 提饱和 */
@@ -321,14 +306,14 @@ body {
     #ffffff;
 }
 
-/* 柔紫极光：放在 hero / 重点卡背后（absolute, aria-hidden） */
+/* 单色品牌极光：放在 hero / 重点卡背后（absolute, aria-hidden）。§15 收敛为极淡一层。 */
 .aura-violet {
   background: radial-gradient(
     ellipse at center,
-    rgba(124, 58, 237, 0.18),
+    rgba(110, 86, 255, 0.06),
     transparent 70%
   );
-  filter: blur(40px);
+  filter: blur(44px);
 }
 
 /* 精致卡缘：1px 描边 + 顶部内高光 */
@@ -337,13 +322,14 @@ body {
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
 }
 
-/* 微交互：hover 上浮 + 柔阴影 */
+/* 微交互（§13/§14）：hover 上浮 2px + 极弱阴影，全部 ease-out */
 .lift {
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out,
+    border-color 0.15s ease-out;
 }
 .lift:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 .lift:active {
   transform: translateY(0);
@@ -401,11 +387,11 @@ body {
   background-repeat: no-repeat;
   animation: shimmer 1.6s ease-in-out infinite;
 }
-/* 媒体占位：紫→品红极柔渐变 + 流光，无字无 emoji */
+/* 媒体占位：中性浅灰 + 流光，无字无 emoji（§15 去彩色，安静） */
 .skeleton-media {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--brand-100), #fae8ff 60%, var(--brand-50));
+  background: linear-gradient(135deg, #f1f2f5, #e9eaee 60%, #f4f5f7);
 }
 .skeleton-media::after {
   content: "";
@@ -425,10 +411,10 @@ body {
 @keyframes glowPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+    box-shadow: 0 0 0 0 rgba(110, 86, 255, 0);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.18);
+    box-shadow: 0 0 0 4px rgba(110, 86, 255, 0.16);
   }
 }
 .glow-pulse {
@@ -447,16 +433,12 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* ---------- 渐变描边：violet → fuchsia 发丝边（推荐 / 高亮 / PRO 卡） ---------- */
+/* ---------- 单色品牌发丝边（推荐 / 高亮 / PRO 卡）：§4 去彩虹渐变，只一种强调色 ---------- */
 .gradient-border {
-  border: 1px solid transparent;
-  background: linear-gradient(#fff, #fff) padding-box,
-    linear-gradient(135deg, var(--brand-500), #d946ef) border-box;
+  border: 1px solid var(--brand-300);
 }
 .gradient-border-soft {
-  border: 1px solid transparent;
-  background: linear-gradient(#fff, #fff) padding-box,
-    linear-gradient(135deg, var(--brand-300), #f0abfc) border-box;
+  border: 1px solid var(--brand-200);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -105,7 +105,7 @@ export function SettingsClient({
             {plan !== "TEAM" && (
               <button
                 onClick={() => setCheckout("TEAM")}
-                className="press rounded-full border border-black/10 bg-white px-4 py-1.5 text-xs font-semibold text-zinc-700 hover:border-brand-300 hover:text-brand-700"
+                className="press rounded-xl border border-black/10 bg-white px-4 py-1.5 text-xs font-semibold text-zinc-700 hover:border-brand-300 hover:text-brand-700"
               >
                 升级团队版
               </button>
@@ -113,7 +113,7 @@ export function SettingsClient({
             {plan === "FREE" && (
               <button
                 onClick={() => setCheckout("PRO")}
-                className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white hover:bg-black"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 升级专业版 ¥199/月
@@ -122,7 +122,7 @@ export function SettingsClient({
             {plan === "PRO" && (
               <button
                 onClick={() => setCheckout("PRO")}
-                className="press inline-flex items-center gap-1.5 rounded-full bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white hover:bg-black"
               >
                 <BadgeCheck className="h-3.5 w-3.5" />
                 续费专业版

@@ -29,8 +29,8 @@ export type TrendSeries = {
 
 // 默认:每日增量销量(面积,左轴)+ GMV(折线,右轴)—— 选品/店铺通用。
 const DEFAULT_SERIES: TrendSeries[] = [
-  { key: "saleCnt", label: "当日销量", kind: "area", axis: "left", color: "#7c3aed" },
-  { key: "gmv", label: "当日 GMV", kind: "line", axis: "right", color: "#d946ef", money: true },
+  { key: "saleCnt", label: "当日销量", kind: "area", axis: "left", color: "#6e56ff" },
+  { key: "gmv", label: "当日 GMV", kind: "line", axis: "right", color: "#64748b", money: true },
 ];
 
 /** 双轴趋势图。series 可配:面积/折线 × 左/右轴 × 金额格式。 */

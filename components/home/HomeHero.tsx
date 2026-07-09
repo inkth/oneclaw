@@ -161,7 +161,7 @@ export function HomeHero() {
 
               <a
                 href="/app"
-                className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm"
               >
                 <Send className="h-4 w-4" />
                 派给 Agent

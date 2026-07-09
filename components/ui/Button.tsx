@@ -22,15 +22,16 @@ const VARIANTS: Record<Variant, string> = {
   subtle: "bg-black/[0.04] text-ink hover:bg-black/[0.07] press",
 };
 
-// 照搬 Designkit：按钮全部胶囊圆角（rounded-full）。
+// Design Language §6/§7：按钮圆角 12（rounded-xl），不用胶囊。lg=44px 主 CTA 高度。
 const SIZES: Record<Size, string> = {
-  sm: "h-8 px-3.5 text-xs gap-1.5 rounded-full",
-  md: "h-10 px-4 text-sm gap-2 rounded-full",
-  lg: "h-12 px-6 text-base gap-2 rounded-full",
+  sm: "h-8 px-3.5 text-xs gap-1.5 rounded-xl",
+  md: "h-10 px-5 text-sm gap-2 rounded-xl",
+  lg: "h-11 px-5 text-[15px] gap-2 rounded-xl",
 };
 
+// §7：字重 600、无描边、无渐变；active scale .98 由各 variant 的 .press 提供。
 const base =
-  "inline-flex items-center justify-center font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40";
+  "inline-flex items-center justify-center font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40";
 
 type CommonProps = {
   variant?: Variant;
