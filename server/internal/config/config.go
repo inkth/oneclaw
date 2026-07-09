@@ -258,7 +258,7 @@ func Load() *Config {
 			ReviewProxy:    getEnv("OPENROUTER_REVIEW_PROXY", ""),
 			VideoModel:     getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
 			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
-			Referer:        getEnv("OPENROUTER_REFERER", "https://test.oneclaw.club"),
+			Referer:        getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
 		},
 		Fal: FalConfig{
 			APIKey:     getEnv("FALAI_API_KEY", ""),
