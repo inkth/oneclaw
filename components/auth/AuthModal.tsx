@@ -68,7 +68,7 @@ export function AuthModal({
           <div>
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-                <BrandMark className="h-5 w-5" strokeWidth={1.8} />
+                <BrandMark className="h-5 w-5" />
               </span>
               <span className="font-display text-lg font-semibold tracking-[0.06em]">
                 发现猫
@@ -104,7 +104,7 @@ export function AuthModal({
         {/* 移动端降级：渐变顶部条 */}
         <div className="flex items-center gap-2.5 bg-[#6e56ff] px-5 py-3.5 text-white md:hidden">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15">
-            <BrandMark className="h-4 w-4" strokeWidth={1.9} />
+            <BrandMark className="h-4 w-4" />
           </span>
           <div>
             <span className="text-sm font-semibold">发现猫</span>
