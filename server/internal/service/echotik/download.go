@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// VideoDownloadInfo 是 /realtime/video/downloadurl 的返回体。
+// VideoDownloadInfo 是 /realtime/video/download-url 的返回体。
 // 返回的下载/播放地址有时效(不适合长期缓存),调用方须立即下载转存到自有存储。
 type VideoDownloadInfo struct {
 	VideoID                string `json:"video_id"`
@@ -41,7 +41,7 @@ func (c *Client) GetVideoDownloadURL(ctx context.Context, videoID, region string
 			}
 		}
 		var env Envelope[VideoDownloadInfo]
-		if err := c.call(ctx, "/realtime/video/downloadurl", map[string]string{"url": videoID, "region": region}, &env); err != nil {
+		if err := c.call(ctx, "/realtime/video/download-url", map[string]string{"url": videoID, "region": region}, &env); err != nil {
 			lastErr = err
 			continue
 		}
