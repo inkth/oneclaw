@@ -54,8 +54,9 @@ export function Pagination({
           aria-current={p === page ? "page" : undefined}
           className={cn(
             "inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-medium tabular-nums transition-colors",
+            // 当前页近黑实底：与 Pill 的选中态同源，品牌紫只留给成交 CTA 与焦点环。
             p === page
-              ? "bg-[var(--accent-pop)] text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
+              ? "bg-[var(--dk-btn-black)] text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
               : "border border-[var(--dk-stroke-border)] text-zinc-600 hover:bg-[var(--dk-action-regular)]",
           )}
         >
