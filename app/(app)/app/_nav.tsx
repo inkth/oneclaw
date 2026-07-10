@@ -194,7 +194,8 @@ export function BoardHeaderNav() {
 }
 
 // 照搬 Designkit 图标导航轨：每项为 图标方块 + 下方小字，纵向堆叠。
-// 激活项图标后有浅灰圆角底（.dk-rail-item），文字/图标转近黑。
+// Design Language §17：激活态是「一条紫色竖条」，不是整块紫背景——图标后只给浅灰圆角底
+// （.dk-rail-item），文字/图标转近黑，品牌色只落在左缘那条竖条上。
 function RailItem({
   href,
   label,
@@ -209,22 +210,30 @@ function RailItem({
   return (
     <Link
       href={href}
-      className="group flex w-full flex-col items-center gap-1 py-1 text-center"
+      aria-current={active ? "page" : undefined}
+      className="group relative flex w-full flex-col items-center gap-1 py-1 text-center"
     >
+      {active && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-1.5 h-8 w-0.5 rounded-full"
+          style={{ background: "var(--accent-pop)" }}
+        />
+      )}
       <span
         className={
           "flex h-11 w-11 items-center justify-center rounded-2xl transition-colors " +
           (active
-            ? "bg-accent-pop-soft text-accent-pop"
+            ? "dk-rail-item text-ink"
             : "text-zinc-500 group-hover:bg-black/[0.04] group-hover:text-ink")
         }
       >
-        <Icon className="h-[22px] w-[22px]" />
+        <Icon className="h-5 w-5" />
       </span>
       <span
         className={
           "text-[11px] leading-none transition-colors " +
-          (active ? "text-accent-pop font-medium" : "text-zinc-500 group-hover:text-ink")
+          (active ? "font-medium text-ink" : "text-zinc-500 group-hover:text-ink")
         }
       >
         {label}

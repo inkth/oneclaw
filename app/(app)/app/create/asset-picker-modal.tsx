@@ -136,7 +136,7 @@ export function AssetPickerModal({
         {/* 头部 */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-sm">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/[0.04] text-zinc-600">
               <ImagePlus className="h-4 w-4" />
             </span>
             <div>

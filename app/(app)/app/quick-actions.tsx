@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
 import type { ComposerKind, ListingMode } from "./agent-composer";
 
 export type QuickAction = {
@@ -263,7 +264,7 @@ export function QuickActionCards({
               }
               onPick(a);
             }}
-            className={`dk-card lift relative flex min-h-[5.25rem] items-center justify-between gap-3 p-4 text-left ${
+            className={`dk-card lift group relative flex min-h-[5.25rem] items-center justify-between gap-3 p-4 text-left ${
               soon ? "opacity-70" : ""
             } ${active ? "ring-2 ring-brand-400" : ""}`}
           >
@@ -280,9 +281,11 @@ export function QuickActionCards({
             </div>
             <span
               aria-hidden
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-900 text-white shadow-sm"
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${
+                AGENT_IDENTITY[(a.agent ?? activeAgent) as AgentKey].tile
+              }`}
             >
-              <a.icon className="h-5 w-5" />
+              <a.icon className="h-5 w-5 text-white" />
             </span>
           </button>
         );

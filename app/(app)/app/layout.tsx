@@ -34,10 +34,11 @@ export default async function AppLayout({
   return (
     <AuthModalProvider>
     <div className="app-skin min-h-screen flex bg-background">
-      {/* 照搬 Designkit：80px 图标导航轨，透明贴画布色，纵向 图标+小字 */}
-      <aside className="hidden md:flex sticky top-0 h-screen w-20 shrink-0 flex-col items-center self-start overflow-y-auto border-r border-black/5 bg-transparent py-4">
+      {/* 照搬 Designkit：图标导航轨，透明贴画布色，纵向 图标+小字。
+          Design Language §17 宽 64px / §16 Logo 缩小，不抢戏。 */}
+      <aside className="hidden md:flex sticky top-0 h-screen w-16 shrink-0 flex-col items-center self-start overflow-y-auto border-r border-black/5 bg-transparent py-4">
         <Link href="/" aria-label="发现猫 首页" className="block">
-          <BrandTile className="h-10 w-10 rounded-2xl" />
+          <BrandTile className="h-9 w-9 rounded-xl" />
         </Link>
 
         <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />
