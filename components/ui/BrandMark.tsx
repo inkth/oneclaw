@@ -21,6 +21,12 @@ const CAT_EYES =
   "M14.1 39.4a5.7 5.7 0 1 0 11.4 0a5.7 5.7 0 1 0 -11.4 0Z" +
   "M38.5 39.4a5.7 5.7 0 1 0 11.4 0a5.7 5.7 0 1 0 -11.4 0Z";
 
+/** 完整标记路径(viewBox 0 0 64 64,须配 fill-rule="evenodd")。
+ *  给不能用 React 组件的地方复用：app/apple-icon.tsx、app/opengraph-image.tsx
+ *  的 ImageResponse 走 Satori,只能吃 <img> 里的 SVG 字符串。
+ *  从这里取,标记才不会和 favicon / OG 图各画各的。 */
+export const CAT_MARK_PATH = CAT_HEAD + CAT_EYES;
+
 type BrandMarkProps = {
   className?: string;
 };
