@@ -265,12 +265,14 @@ func ExtractJSON(text string) string {
 	if json.Valid([]byte(s)) {
 		return s
 	}
-	// 退而求其次:取最外层 {} 或 []
-	if a, b := strings.Index(s, "{"), strings.LastIndex(s, "}"); a >= 0 && b > a {
-		return s[a : b+1]
-	}
-	if a, b := strings.Index(s, "["), strings.LastIndex(s, "]"); a >= 0 && b > a {
-		return s[a : b+1]
+	// 退而求其次:从首个 { 或 [ 起,用 Decoder 解出第一个完整 JSON 值,忽略尾部
+	// 多余字符(模型偶尔在合法 JSON 后多吐一个 } 或追加散文,会导致整体 Unmarshal 失败)。
+	if i := strings.IndexAny(s, "{["); i >= 0 {
+		dec := json.NewDecoder(strings.NewReader(s[i:]))
+		var raw json.RawMessage
+		if err := dec.Decode(&raw); err == nil {
+			return string(raw)
+		}
 	}
 	return s
 }
