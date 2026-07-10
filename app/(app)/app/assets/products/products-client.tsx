@@ -170,8 +170,9 @@ export function ProductsClient({
           key={f.key}
           onClick={() => setFilter(f.key)}
           className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            // 选中态近黑实底，与 Pill 一致（品牌紫只留给成交 CTA 与焦点环）
             filter === f.key
-              ? "bg-[var(--accent-pop)] text-white"
+              ? "bg-[var(--dk-btn-black)] text-white"
               : "text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
           }`}
         >
