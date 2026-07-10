@@ -15,9 +15,11 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
+import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { apiBrowser } from "@/lib/api-browser";
+import type { Tone } from "@/lib/ui/tokens";
 
 export type Agency = {
   id: string;
@@ -66,10 +68,11 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
 }
 
-const WITHDRAWAL_META: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "审核中", className: "bg-amber-50 text-amber-700" },
-  PAID: { label: "已打款", className: "bg-emerald-50 text-emerald-700" },
-  REJECTED: { label: "已驳回", className: "bg-rose-50 text-rose-700" },
+// 提现状态 → 语义 tone,直接复用全站 STATUS_TONES(经 Badge 渲染),不再自带颜色 className。
+const WITHDRAWAL_META: Record<string, { label: string; tone: Tone }> = {
+  PENDING: { label: "审核中", tone: "warning" },
+  PAID: { label: "已打款", tone: "success" },
+  REJECTED: { label: "已驳回", tone: "danger" },
 };
 
 export function AdminClient({
@@ -162,10 +165,9 @@ export function AdminClient({
       <PageHeader
         title="管理后台"
         badge={
-          <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-2xs font-medium text-brand-700">
-            <ShieldCheck className="h-3.5 w-3.5" />
+          <Badge tone="brand" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
             仅管理员
-          </span>
+          </Badge>
         }
         description="开通代理商、调整佣金比例、审核提现申请。"
       />
@@ -185,8 +187,8 @@ export function AdminClient({
 
       {/* 开通代理 */}
       <Card>
-        <div className="text-sm font-medium text-ink">开通代理商</div>
-        <p className="mt-1 text-xs text-zinc-500">按手机号开通。该手机号需已注册(登录过一次)。</p>
+        <div className="text-sm font-medium text-[var(--dk-content-primary)]">开通代理商</div>
+        <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">按手机号开通。该手机号需已注册(登录过一次)。</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
             type="tel"
@@ -195,9 +197,9 @@ export function AdminClient({
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
             placeholder="手机号"
-            className="rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 sm:w-44"
+            className="rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 sm:w-44"
           />
-          <div className="flex items-center gap-2 rounded-lg border border-zinc-200/80 px-3 py-2 focus-within:ring-2 focus-within:ring-brand-200">
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 focus-within:ring-2 focus-within:ring-brand-200">
             <input
               type="number"
               min={0}
@@ -208,12 +210,12 @@ export function AdminClient({
               placeholder="佣金比例"
               className="w-20 bg-transparent text-sm outline-none"
             />
-            <span className="text-sm text-zinc-500">%</span>
+            <span className="text-sm text-[var(--dk-content-secondary)]">%</span>
           </div>
           <button
             onClick={createAgency}
             disabled={creating}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-700 disabled:opacity-60"
+            className="press inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-60"
           >
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             开通
@@ -223,7 +225,7 @@ export function AdminClient({
 
       {/* 代理列表 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-ink">代理商</div>
+        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">代理商</div>
         {agencies.length === 0 ? (
           <EmptyState icon={ShieldCheck} title="还没有代理商" description="用上方表单按手机号开通第一个代理商。" />
         ) : (
@@ -250,7 +252,7 @@ export function AdminClient({
 
       {/* 提现审核 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-ink">提现申请</div>
+        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">提现申请</div>
         {withdrawals.length === 0 ? (
           <EmptyState icon={Wallet} title="暂无提现申请" description="代理商发起提现后会出现在这里等待审核。" />
         ) : (
@@ -292,10 +294,10 @@ function AgencyRow({
   return (
     <Tr className={disabled ? "opacity-60" : undefined}>
       <Td className="font-mono">{row.phone || "—"}</Td>
-      <Td className="font-mono text-zinc-500">{agency.code}</Td>
+      <Td className="font-mono text-[var(--dk-content-secondary)]">{agency.code}</Td>
       <Td align="right">{row.customerCount}</Td>
       <Td align="right">{fmtYuan(row.totalCommissionCents)}</Td>
-      <Td align="right" className="font-medium text-ink">{fmtYuan(row.balanceCents)}</Td>
+      <Td align="right" className="font-medium text-[var(--dk-content-primary)]">{fmtYuan(row.balanceCents)}</Td>
       <Td align="center">
         <div className="inline-flex items-center gap-1">
           <input
@@ -304,16 +306,16 @@ function AgencyRow({
             max={100}
             value={percent}
             onChange={(e) => setPercent(e.target.value)}
-            className="w-16 rounded-md border border-zinc-200 px-2 py-1 text-right text-sm outline-none focus:ring-2 focus:ring-brand-200"
+            className="nums w-16 rounded-lg border border-[var(--dk-stroke-border)] px-2 py-1 text-right text-sm outline-none focus:ring-2 focus:ring-brand-200"
           />
-          <span className="text-xs text-zinc-400">%</span>
+          <span className="text-xs text-[var(--dk-content-tertiary)]">%</span>
           {changed && (
             <button
               onClick={() => {
                 const bp = Math.round(Number(percent) * 100);
                 if (bp > 0 && bp <= 10000) onUpdate(agency.id, { commissionBp: bp });
               }}
-              className="rounded-md bg-brand-600 px-2 py-1 text-2xs font-medium text-white hover:bg-brand-700"
+              className="press rounded-lg bg-[var(--dk-btn-black)] px-2 py-1 text-2xs font-medium text-white hover:bg-[var(--dk-btn-black-hover)]"
             >
               保存
             </button>
@@ -321,12 +323,13 @@ function AgencyRow({
         </div>
       </Td>
       <Td align="center">
+        {/* 启用/停用是带语义色的操作态,非纯装饰 hover:保留 emerald(启用引导)与中性 action-regular(停用) */}
         <button
           onClick={() => onUpdate(agency.id, { status: disabled ? "ACTIVE" : "DISABLED" })}
-          className={`rounded-full px-3 py-1 text-2xs font-medium transition-colors ${
+          className={`rounded-lg px-3 py-1 text-2xs font-medium transition-colors ${
             disabled
               ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-              : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              : "bg-[var(--dk-surface-2)] text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)]"
           }`}
         >
           {disabled ? "启用" : "停用"}
@@ -345,14 +348,14 @@ function WithdrawalRow({
 }) {
   const { withdrawal: w } = row;
   const [note, setNote] = useState("");
-  const meta = WITHDRAWAL_META[w.status] ?? { label: w.status, className: "bg-zinc-100 text-zinc-600" };
+  const meta = WITHDRAWAL_META[w.status] ?? { label: w.status, tone: "neutral" as Tone };
   const pending = w.status === "PENDING";
 
   return (
     <Tr>
       <Td className="font-mono">{row.phone || "—"}</Td>
-      <Td className="text-zinc-500">{fmtDate(w.createdAt)}</Td>
-      <Td align="right" className="font-medium text-ink">{fmtYuan(w.amountCents)}</Td>
+      <Td className="text-[var(--dk-content-secondary)]">{fmtDate(w.createdAt)}</Td>
+      <Td align="right" className="font-medium text-[var(--dk-content-primary)]">{fmtYuan(w.amountCents)}</Td>
       <Td className="max-w-[200px]">
         {pending ? (
           <input
@@ -360,16 +363,14 @@ function WithdrawalRow({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="打款凭证 / 驳回原因"
-            className="w-full rounded-md border border-zinc-200 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-200"
+            className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-200"
           />
         ) : (
-          <span className="truncate text-zinc-500" title={w.note}>{w.note || "—"}</span>
+          <span className="truncate text-[var(--dk-content-secondary)]" title={w.note}>{w.note || "—"}</span>
         )}
       </Td>
       <Td>
-        <span className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-medium ${meta.className}`}>
-          {meta.label}
-        </span>
+        <Badge tone={meta.tone}>{meta.label}</Badge>
       </Td>
       <Td align="center">
         {pending ? (
@@ -377,20 +378,20 @@ function WithdrawalRow({
             <button
               onClick={() => onReview(w.id, true, note)}
               title="通过并标记已打款"
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-emerald-700"
+              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-2xs font-medium text-white hover:bg-emerald-700"
             >
               <Check className="h-3 w-3" /> 通过
             </button>
             <button
               onClick={() => onReview(w.id, false, note)}
               title="驳回"
-              className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-2xs font-medium text-zinc-600 hover:bg-rose-50 hover:text-rose-600"
+              className="inline-flex items-center gap-1 rounded-lg bg-[var(--dk-surface-2)] px-2.5 py-1 text-2xs font-medium text-[var(--dk-content-secondary)] hover:bg-rose-50 hover:text-rose-600"
             >
               <X className="h-3 w-3" /> 驳回
             </button>
           </div>
         ) : (
-          <span className="text-2xs text-zinc-400">已处理</span>
+          <span className="text-2xs text-[var(--dk-content-tertiary)]">已处理</span>
         )}
       </Td>
     </Tr>

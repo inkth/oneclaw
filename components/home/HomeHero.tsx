@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Video,
 } from "lucide-react";
+import { DkAura } from "@/components/ui/GradientBackground";
 
 /* 首屏即产品：复刻工作台 composer 的「一句话派活」交互。
    占位文字打字机轮换三条真实指令，对应的 Agent pill 同步点亮，
@@ -91,9 +92,7 @@ export function HomeHero() {
   const showDemo = value === "" && !focused;
 
   return (
-    <section className="grain relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28">
-      <div className="absolute inset-0 gradient-bg" aria-hidden />
-
+    <section className="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <div className="dk-ring mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-sm">
@@ -113,13 +112,10 @@ export function HomeHero() {
         </div>
 
         {/* 真实 composer：访客可直接输入，空闲时打字机演示真实指令 */}
-        <div className="relative mx-auto mt-12 max-w-3xl">
-          <div
-            aria-hidden
-            className="dk-aura pointer-events-none absolute -inset-x-16 -top-10 -bottom-6 -z-10"
-          />
+        <div className="relative isolate mx-auto mt-12 max-w-3xl">
+          <DkAura className="absolute left-1/2 top-[70px] z-0 w-[70%] -translate-x-1/2 -translate-y-1/2" />
 
-          <div className="dk-card overflow-hidden text-left shadow-lg transition-shadow focus-within:shadow-xl">
+          <div className="dk-composer relative z-10 overflow-hidden text-left">
             <div className="relative">
               <textarea
                 value={value}

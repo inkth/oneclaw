@@ -84,13 +84,22 @@ export function AgentPills({
           <button
             key={a.kind}
             onClick={() => onChange(a.kind)}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+            className={`group inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors ${
               isActive
                 ? "dk-ring text-ink"
                 : "border border-black/10 bg-white text-zinc-600 hover:border-black/20 hover:text-ink"
             }`}
           >
-            <a.icon className={`h-4 w-4 ${isActive ? "" : "text-zinc-400"}`} />
+            {/* 彩色 app-icon 块:色相承载 Agent 身份(Design Language §4 的具名例外)。
+                未选中时降饱和,让当前 Agent 的颜色跳出来。 */}
+            <span
+              aria-hidden
+              className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br transition-[filter] ${a.tile} ${
+                isActive ? "" : "saturate-50 group-hover:saturate-100"
+              }`}
+            >
+              <a.icon className="h-3.5 w-3.5 text-white" />
+            </span>
             {a.label}
           </button>
         );
@@ -382,7 +391,7 @@ export function AgentComposer({
   return (
     <>
     <div
-      className="dk-card overflow-hidden transition-colors focus-within:border-brand-400"
+      className="dk-composer overflow-hidden"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -604,7 +613,7 @@ export function AgentComposer({
             <button
               onClick={submit}
               disabled={submitting || !canSend}
-              className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
+              className="press inline-flex h-11 items-center gap-1.5 rounded-full bg-[#1c1d1f] px-5 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-black disabled:pointer-events-none disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
             >
               {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

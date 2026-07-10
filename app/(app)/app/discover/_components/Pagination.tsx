@@ -54,9 +54,10 @@ export function Pagination({
           aria-current={p === page ? "page" : undefined}
           className={cn(
             "inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-medium tabular-nums transition-colors",
+            // 当前页近黑实底：与 Pill 的选中态同源，品牌紫只留给成交 CTA 与焦点环。
             p === page
-              ? "bg-[var(--accent-pop)] text-white shadow-sm"
-              : "border border-zinc-200/80 text-zinc-600 hover:border-violet-200 hover:bg-violet-50/60",
+              ? "bg-[var(--dk-btn-black)] text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
+              : "border border-[var(--dk-stroke-border)] text-zinc-600 hover:bg-[var(--dk-action-regular)]",
           )}
         >
           {p}
@@ -83,8 +84,8 @@ function Arrow({
       disabled={disabled}
       aria-label={dir === "prev" ? "上一页" : "下一页"}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 text-zinc-500 transition-colors",
-        disabled ? "cursor-not-allowed opacity-40" : "hover:border-violet-200 hover:bg-violet-50/60",
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dk-stroke-border)] text-zinc-500 transition-colors",
+        disabled ? "cursor-not-allowed opacity-40" : "hover:bg-[var(--dk-action-regular)]",
       )}
     >
       <Icon className="h-4 w-4" />

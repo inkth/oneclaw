@@ -227,7 +227,7 @@ export function VideoDetailDrawer({
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <aside className="absolute right-0 top-0 h-full w-full max-w-xl bg-white shadow-xl overflow-y-auto">
+      <aside className="absolute right-0 top-0 h-full w-full max-w-xl dk-overlay overflow-y-auto">
         <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-100 px-5 py-3.5 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-xs text-zinc-400 font-mono truncate">{videoId}</div>
@@ -237,7 +237,7 @@ export function VideoDetailDrawer({
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100"
+            className="rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)]"
           >
             <X className="h-4 w-4" />
           </button>

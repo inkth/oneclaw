@@ -34,10 +34,18 @@ export default async function AppLayout({
   return (
     <AuthModalProvider>
     <div className="app-skin min-h-screen flex bg-background">
-      {/* 照搬 Designkit：80px 图标导航轨，透明贴画布色，纵向 图标+小字 */}
-      <aside className="hidden md:flex sticky top-0 h-screen w-20 shrink-0 flex-col items-center self-start overflow-y-auto border-r border-black/5 bg-transparent py-4">
-        <Link href="/" aria-label="发现猫 首页" className="block">
-          <BrandTile className="h-10 w-10 rounded-2xl" />
+      {/* 照搬 Designkit 导航轨：宽 80px，底色 --dk-rail 比画布深一档 —— 靠色阶划界，
+          所以没有右边框。Logo 槽 64×64，图标 28px。 */}
+      <aside
+        className="hidden md:flex sticky top-0 h-screen w-20 shrink-0 flex-col items-center self-start gap-2 overflow-y-auto px-2 pb-2"
+        style={{ background: "var(--dk-rail)" }}
+      >
+        <Link
+          href="/"
+          aria-label="发现猫 首页"
+          className="flex h-16 w-16 shrink-0 items-center justify-center"
+        >
+          <BrandTile className="h-7 w-7 rounded-lg" />
         </Link>
 
         <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />
@@ -57,11 +65,8 @@ export default async function AppLayout({
           isAdmin={isAdmin}
         />
         <main className="relative flex-1 p-4 sm:p-8">
-          {/* 活力氛围:全工作台顶部极淡 violet/fuchsia 柔光,统一去「纯白感」 */}
-          <div
-            aria-hidden
-            className="gradient-bg pointer-events-none absolute inset-x-0 top-0 h-72 opacity-70"
-          />
+          {/* Designkit 的画布是平的：唯一的色彩来自输入框背后的极光（DkAura），
+              页面本身不铺任何顶部柔光。 */}
           <div className="relative">
             {/* 桌面端二级 Tab 已融进顶栏 AppHeader；这里只在移动端兜底显示 Tab 行 */}
             <div className="md:hidden">

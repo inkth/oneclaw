@@ -27,7 +27,7 @@ export function DashboardStats({
             desc: "本周期派活、成片、出图与成本,登录后一眼看清自己的生意。",
           })
         }
-        className="dk-card lift flex w-full items-center justify-between gap-3 p-5 text-left"
+        className="dk-card dk-lift flex w-full items-center justify-between gap-3 p-5 text-left"
       >
         <div>
           <div className="text-sm font-semibold text-ink">登录查看经营概况</div>
@@ -35,7 +35,7 @@ export function DashboardStats({
             派活次数、成片数、出图数与生成成本,都会汇总在这里。
           </div>
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--dk-surface-2)] text-zinc-400">
           <LockKeyhole className="h-4 w-4" />
         </span>
       </button>

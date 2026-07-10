@@ -76,7 +76,7 @@ export function SellerDetailClient({
     <div className="space-y-6">
       <Link
         href="/app/discover/sellers"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800"
+        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
       >
         <ArrowLeft className="h-4 w-4" /> 返回店铺榜
       </Link>
@@ -211,7 +211,7 @@ export function SellerDetailClient({
                   {p.name || "—"}
                 </div>
                 <div className="mt-0.5 flex items-center justify-between text-2xs text-zinc-400 tabular-nums">
-                  <span className="font-medium text-zinc-700">${p.avgPrice.toFixed(2)}</span>
+                  <span className="font-medium text-zinc-900">${p.avgPrice.toFixed(2)}</span>
                   {p.rating > 0 && (
                     <span className="inline-flex items-center gap-0.5 text-amber-600">
                       <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />

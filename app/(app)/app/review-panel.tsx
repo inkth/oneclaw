@@ -19,7 +19,7 @@ import { CopyButton } from "./copy-button";
 
 const QUADRANT_BG: Record<Tone, string> = {
   brand: "border-brand-100 bg-brand-50/40",
-  neutral: "border-zinc-200/80 bg-zinc-50/60",
+  neutral: "border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)]",
   success: "border-emerald-100 bg-emerald-50/40",
   warning: "border-amber-100 bg-amber-50/40",
   danger: "border-rose-100 bg-rose-50/40",
@@ -98,13 +98,13 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
             const meta = QUADRANT_META[q];
             const items = quadrants[q];
             return (
-              <div key={q} className={cn("rounded-xl border p-4", QUADRANT_BG[meta.tone as Tone])}>
+              <div key={q} className={cn("rounded-lg border p-4", QUADRANT_BG[meta.tone as Tone])}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge tone={meta.tone as Tone}>{meta.name}</Badge>
                     <span className="text-2xs text-zinc-400">{meta.cond}</span>
                   </div>
-                  <span className="text-sm font-semibold tabular-nums text-zinc-800">{counts[q]}</span>
+                  <span className="text-sm font-semibold tabular-nums text-zinc-900">{counts[q]}</span>
                 </div>
                 <p className="mt-1.5 text-2xs leading-relaxed text-zinc-500">{meta.strategy}</p>
                 {items.length > 0 && (
@@ -123,7 +123,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
         </div>
 
         {/* 复盘 → 行动接力:把赢家方向直接接到「做视频」,闭环不断点 */}
-        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-brand-100 bg-brand-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-2 rounded-lg border border-brand-100 bg-brand-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-2xs leading-relaxed text-zinc-600">
             {hasWinners
               ? "把这次复盘的赢家方向接力成下一条视频 —— 指令已按明星/潜力素材预填,可再改。"
@@ -135,7 +135,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
                 `/app?agent=DIRECTOR&prompt=${encodeURIComponent(relayVideoPrompt(result))}`,
               )
             }
-            className="press inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-black sm:self-auto"
+            className="press inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg bg-[var(--dk-btn-black)] px-4 py-1.5 text-xs font-semibold text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)] sm:self-auto"
           >
             <Clapperboard className="h-3.5 w-3.5" />
             再做一条视频
@@ -161,7 +161,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
           <tbody>
             {actions.map((a, i) => (
               <Tr key={`${a.videoId}-${i}`}>
-                <Td className="max-w-[200px] truncate font-medium text-zinc-800">{a.title}</Td>
+                <Td className="max-w-[200px] truncate font-medium text-zinc-900">{a.title}</Td>
                 <Td className="text-zinc-600">{a.problem}</Td>
                 <Td className="text-zinc-600">{a.action}</Td>
                 <Td align="center">
@@ -185,7 +185,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
             </div>
             <CopyButton text={result.analysis} />
           </div>
-          <pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-4 text-xs leading-relaxed text-zinc-700">
+          <pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] p-4 text-xs leading-relaxed text-zinc-600">
             {result.analysis}
           </pre>
         </Card>
@@ -200,7 +200,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
             </div>
             <CopyButton text={result.geminiPrompt} />
           </div>
-          <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-3 text-2xs leading-relaxed text-zinc-600">
+          <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] p-3 text-2xs leading-relaxed text-zinc-600">
             {result.geminiPrompt}
           </pre>
         </Card>
@@ -223,9 +223,9 @@ function StatCard({
   tone?: Tone;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200/80 bg-white p-5">
+    <div className="rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface)] p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
       <div className="flex items-center justify-between">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--dk-surface-2)] text-[var(--dk-content-secondary)]">
           <Icon className="h-4 w-4" />
         </div>
         {tone && <span className={cn("h-2 w-2 rounded-full", tone === "success" ? "bg-emerald-500" : tone === "danger" ? "bg-rose-500" : "bg-zinc-300")} />}

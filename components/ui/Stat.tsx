@@ -29,33 +29,36 @@ export function Stat({
   const inner = (
     <>
       <div className="flex items-center justify-between">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 group-hover:bg-violet-50 group-hover:text-violet-600 transition-colors">
+        {/* 图标底用次级面 surface-2；hover 态统一走 action-regular，不用 brand-50 浅紫 */}
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--dk-surface-2)] text-[var(--dk-content-secondary)] transition-colors group-hover:bg-[var(--dk-action-regular)] group-hover:text-[var(--dk-content-primary)]">
           <Icon className="h-4 w-4" />
         </div>
         {spark && spark.length > 1 ? (
           <Sparkline data={spark} />
         ) : href ? (
-          <ArrowUpRight className="h-4 w-4 text-zinc-300 group-hover:text-violet-500 transition-colors" />
+          <ArrowUpRight className="h-4 w-4 text-[var(--dk-content-tertiary)] transition-colors group-hover:text-[var(--dk-content-primary)]" />
         ) : null}
       </div>
       <div
         className={cn(
-          "flex items-baseline gap-2 tabular-nums font-semibold text-zinc-900",
+          "flex items-baseline gap-2 tabular-nums font-semibold text-[var(--dk-content-primary)]",
           lg ? "mt-5 text-4xl" : "mt-5 text-2xl"
         )}
       >
         {value}
         {trend != null && <Delta value={trend} className="text-xs" />}
       </div>
-      <div className="mt-0.5 text-xs text-zinc-500">{label}</div>
-      {hint && <div className="mt-1 text-2xs text-zinc-400">{hint}</div>}
+      <div className="mt-0.5 text-xs text-[var(--dk-content-secondary)]">{label}</div>
+      {hint && <div className="mt-1 text-2xs text-[var(--dk-content-tertiary)]">{hint}</div>}
     </>
   );
 
+  // 卡片规格与 dk-card 对齐：8px 圆角 + 发丝边 + 极弱阴影；hover 只做 dk-lift 的整卡缩放，
+  // 不再换成 violet 描边（品牌色不进 hover 态装饰，只用于真正的强调场景）。
   const cls =
-    "group rounded-xl border border-zinc-200/80 bg-white shadow-xs p-6";
+    "group rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface)] shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] p-6";
   return href ? (
-    <Link href={href} className={cn(cls, "lift hover:border-violet-200")}>
+    <Link href={href} className={cn(cls, "dk-lift")}>
       {inner}
     </Link>
   ) : (

@@ -36,12 +36,12 @@ export function TryOnResult({ task }: { task: StreamTask }) {
     <div className="space-y-3 text-sm">
       <div className="flex items-end gap-2">
         <Thumb url={meta.modelUrl} label="模特" icon={UserRound} />
-        <span className="pb-7 text-zinc-300">＋</span>
+        <span className="pb-7 text-zinc-400">＋</span>
         <Thumb url={meta.garmentUrl} label="服饰" icon={Shirt} />
-        <span className="pb-7 text-zinc-300">→</span>
+        <span className="pb-7 text-zinc-400">→</span>
         {/* 结果位 */}
         <div className="flex flex-col items-center gap-1">
-          <div className="relative h-44 w-32 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
+          <div className="relative h-44 w-32 overflow-hidden rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)]">
             {result ? (
               <Image src={result} alt="上身效果图" fill sizes="128px" unoptimized className="object-cover" />
             ) : meta.imagesStatus === "FAILED" ? (
@@ -65,13 +65,13 @@ export function TryOnResult({ task }: { task: StreamTask }) {
             href={result}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-ink"
           >
             查看原图
           </a>
           <Link
             href="/app/assets/materials"
-            className="inline-flex items-center gap-1 text-2xs text-zinc-400 transition-colors hover:text-brand-600"
+            className="inline-flex items-center gap-1 text-2xs text-zinc-400 transition-colors hover:text-ink"
           >
             已存入素材库 · 做视频时可直接选用
           </Link>
@@ -97,11 +97,11 @@ function Thumb({
 }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative h-44 w-32 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
+      <div className="relative h-44 w-32 overflow-hidden rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)]">
         {url ? (
           <Image src={url} alt={label} fill sizes="128px" unoptimized className="object-cover" />
         ) : (
-          <div className="flex h-full items-center justify-center text-zinc-300">
+          <div className="flex h-full items-center justify-center text-zinc-400">
             <Icon className="h-5 w-5" />
           </div>
         )}

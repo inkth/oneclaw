@@ -69,7 +69,7 @@ export function Chain() {
                     {s.no}
                   </span>
                 </div>
-                <div className="dk-card lift mt-4 flex flex-1 flex-col p-5">
+                <div className="dk-card dk-lift mt-4 flex flex-1 flex-col p-5">
                   <div className="flex items-center gap-2">
                     <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${s.tone}`}>
                       <s.icon className="h-4 w-4" />
@@ -88,7 +88,7 @@ export function Chain() {
         </div>
 
         {/* 数字证明带 */}
-        <div className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-black/[0.07] bg-black/[0.06] lg:grid-cols-4">
+        <div className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-black/[0.07] bg-black/[0.06] lg:grid-cols-4">
           {PROOFS.map((p) => (
             <div key={p.label} className="bg-white px-6 py-5 text-center">
               <div className="font-display text-lg font-semibold text-ink nums">{p.value}</div>
@@ -109,7 +109,7 @@ function ProductVisual() {
     { name: "宠物智能饮水机", roi: 88, w: "w-[88%]" },
   ];
   return (
-    <div className="space-y-2.5 rounded-xl border border-black/[0.05] bg-zinc-50/60 p-3">
+    <div className="space-y-2.5 rounded-lg border border-black/[0.05] bg-zinc-50/60 p-3">
       {rows.map((r) => (
         <div key={r.name}>
           <div className="flex items-center justify-between text-2xs">
@@ -150,7 +150,7 @@ function VideoVisual() {
 
 function ReviewVisual() {
   return (
-    <div className="rounded-xl border border-black/[0.05] bg-zinc-50/60 p-3">
+    <div className="rounded-lg border border-black/[0.05] bg-zinc-50/60 p-3">
       <div className="grid grid-cols-2 gap-1">
         {[
           ["bg-emerald-100", "bg-emerald-500", "加预算"],

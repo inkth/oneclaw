@@ -29,12 +29,13 @@ export type SampleVid = {
 
 type Placeholder = { id: string; title: string; angle: string; thumb: string };
 
+// 去渐变:每张占位卡挑原渐变里更深的那个色阶当纯底,保留 5 张卡各自的色彩区分度。
 const PLACEHOLDERS: Placeholder[] = [
-  { id: "s1", title: "便携榨汁杯", angle: "开箱种草", thumb: "from-fuchsia-400 to-pink-500" },
-  { id: "s2", title: "宠物自动喂食器", angle: "痛点解决", thumb: "from-violet-400 to-purple-500" },
-  { id: "s3", title: "美妆蛋三件套", angle: "前后对比", thumb: "from-amber-400 to-orange-500" },
-  { id: "s4", title: "颈部按摩仪", angle: "卖点速览", thumb: "from-sky-400 to-blue-500" },
-  { id: "s5", title: "桌面收纳盒", angle: "场景演示", thumb: "from-emerald-400 to-teal-500" },
+  { id: "s1", title: "便携榨汁杯", angle: "开箱种草", thumb: "bg-pink-500" },
+  { id: "s2", title: "宠物自动喂食器", angle: "痛点解决", thumb: "bg-purple-500" },
+  { id: "s3", title: "美妆蛋三件套", angle: "前后对比", thumb: "bg-orange-500" },
+  { id: "s4", title: "颈部按摩仪", angle: "卖点速览", thumb: "bg-blue-500" },
+  { id: "s5", title: "桌面收纳盒", angle: "场景演示", thumb: "bg-teal-500" },
 ];
 
 export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
@@ -84,11 +85,11 @@ function RealCard({ v }: { v: SampleVid }) {
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
         />
       ) : (
-        <span aria-hidden className="absolute inset-0 bg-gradient-to-br from-zinc-300 to-zinc-400" />
+        <span aria-hidden className="absolute inset-0 bg-zinc-400" />
       )}
       <span aria-hidden className="absolute inset-0 bg-black/10" />
 
-      <span className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-md transition-transform group-hover:scale-110">
+      <span className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-transform group-hover:scale-110">
         <Play className="h-5 w-5 translate-x-px fill-current" />
       </span>
 
@@ -113,7 +114,7 @@ function RealCard({ v }: { v: SampleVid }) {
     </>
   );
 
-  const cardClass = "dk-card lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40";
+  const cardClass = "dk-card dk-lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40";
 
   if (!playable) {
     return (
@@ -145,7 +146,7 @@ function PlayerModal({ v, onClose }: { v: SampleVid; onClose: () => void }) {
           type="button"
           onClick={onClose}
           aria-label="关闭"
-          className="absolute -right-2 -top-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-md hover:bg-white"
+          className="absolute -right-2 -top-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-white"
         >
           <X className="h-4 w-4" />
         </button>
@@ -156,11 +157,11 @@ function PlayerModal({ v, onClose }: { v: SampleVid; onClose: () => void }) {
           controls
           autoPlay
           playsInline
-          className="aspect-[9/16] w-full rounded-xl bg-zinc-900 object-contain shadow-2xl"
+          className="aspect-[9/16] w-full rounded-2xl bg-zinc-900 object-contain shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
         />
         <Link
           href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
-          className="mt-3 flex items-center justify-center gap-1 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-ink shadow-sm hover:bg-white"
+          className="mt-3 flex items-center justify-center gap-1 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-ink shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-white"
         >
           看完整拆解 →
         </Link>
@@ -175,15 +176,15 @@ function PlaceholderCard({ s }: { s: Placeholder }) {
     <button
       onClick={() => toast("样片即将上线，敬请期待")}
       title={`${s.title} · ${s.angle}`}
-      className="dk-card lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40"
+      className="dk-card dk-lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40"
     >
       <span
         aria-hidden
-        className={`absolute inset-0 bg-gradient-to-br ${s.thumb} transition-transform duration-500 ease-out group-hover:scale-[1.04]`}
+        className={`absolute inset-0 ${s.thumb} transition-transform duration-500 ease-out group-hover:scale-[1.04]`}
       />
       <span aria-hidden className="absolute inset-0 bg-black/10" />
 
-      <span className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-md transition-transform group-hover:scale-110">
+      <span className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-transform group-hover:scale-110">
         <Play className="h-5 w-5 translate-x-px fill-current" />
       </span>
 

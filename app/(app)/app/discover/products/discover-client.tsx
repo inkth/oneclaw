@@ -265,19 +265,21 @@ export function DiscoverClient({
                       <ButtonLink
                         href="/app/discover/favorites"
                         size="sm"
-                        className="rounded-full px-2.5 bg-emerald-50 text-emerald-700 ring-0 hover:bg-emerald-100"
+                        className="rounded-lg px-2.5 bg-emerald-50 text-emerald-700 ring-0 hover:bg-emerald-100"
                         title="已收藏,点击去收藏页查看"
                       >
                         <BookmarkCheck className="h-3 w-3" />
                         已收藏
                       </ButtonLink>
                     ) : (
+                      // 行内动作用次级按钮:一屏 20 行,每行一个品牌色实底会让电紫从
+                      // 「强调」退化成「底噪」。品牌色只留给页面级的成交动作。
                       <Button
-                        variant="brand"
+                        variant="secondary"
                         size="sm"
                         onClick={() => importProduct(p)}
                         disabled={importing.has(p.productId)}
-                        className="rounded-full px-2.5"
+                        className="rounded-lg px-2.5"
                         title="收藏到我的收藏夹"
                       >
                         {importing.has(p.productId) ? (

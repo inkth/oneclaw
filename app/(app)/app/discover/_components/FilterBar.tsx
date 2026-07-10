@@ -76,7 +76,7 @@ export function FilterBar({
 
   return (
     <div
-      className={`rounded-xl border border-zinc-200/80 bg-white px-5 py-4 divide-y divide-zinc-100 transition-opacity ${
+      className={`dk-card px-5 py-4 divide-y divide-[var(--dk-stroke-divider)] transition-opacity ${
         pending ? "opacity-60" : ""
       }`}
     >
@@ -146,7 +146,7 @@ function SearchRow({
       }}
       className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
     >
-      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-zinc-800 w-[84px] whitespace-nowrap">
+      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-zinc-900 w-[84px] whitespace-nowrap">
         <Search className="h-3.5 w-3.5" />
         搜索
       </span>
@@ -157,7 +157,7 @@ function SearchRow({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={placeholder}
-            className="w-full rounded-full border border-zinc-200 bg-zinc-50/60 py-1.5 pl-4 pr-9 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none transition-colors focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] py-1.5 pl-4 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition-colors focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-100"
           />
           {value && (
             <button
@@ -175,7 +175,7 @@ function SearchRow({
         </div>
         <button
           type="submit"
-          className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-brand-500 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[var(--dk-btn-black)] px-3.5 py-1.5 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)]"
         >
           <Search className="h-3.5 w-3.5" />
           搜索
@@ -188,7 +188,7 @@ function SearchRow({
 function PillRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-      <span className="inline-flex shrink-0 items-center gap-1 pt-1.5 text-sm font-semibold text-zinc-800 w-[84px] whitespace-nowrap">
+      <span className="inline-flex shrink-0 items-center gap-1 pt-1.5 text-sm font-semibold text-zinc-900 w-[84px] whitespace-nowrap">
         {label}
       </span>
       <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">{children}</div>
@@ -213,7 +213,7 @@ function CategoryRow({
 
   return (
     <div className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-      <span className="shrink-0 pt-1.5 text-sm font-semibold text-zinc-800 w-[84px] whitespace-nowrap">
+      <span className="shrink-0 pt-1.5 text-sm font-semibold text-zinc-900 w-[84px] whitespace-nowrap">
         商品分类
       </span>
       <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">
@@ -229,7 +229,7 @@ function CategoryRow({
       {overflow && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded-xl bg-brand-50 px-3 py-1 text-sm font-medium text-brand-600 hover:bg-brand-100"
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-lg bg-[var(--dk-btn-tertiary)] px-3 py-1 text-sm font-medium text-brand-600 hover:bg-[var(--dk-btn-tertiary-hover)]"
         >
           {expanded ? "收起" : "展开"}
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

@@ -100,11 +100,13 @@ export function TrendChart({
             />
           )}
           <Tooltip
+            // Tooltip 是 Recharts 渲染的浮层 DOM(非图表 SVG 描边),边框/圆角/阴影按 Designkit 卡片规格对齐;
+            // 图内数据描边色(CartesianGrid/tick/series）不动。
             contentStyle={{
-              borderRadius: 12,
-              border: "1px solid #e4e4e7",
+              borderRadius: 8,
+              border: "1px solid var(--dk-stroke-border)",
               fontSize: 12,
-              boxShadow: "0 8px 24px -8px rgba(16,14,30,0.12)",
+              boxShadow: "0 1px 2px 0 rgba(0,0,0,0.04)",
             }}
             labelFormatter={(l) => `日期 ${l as string}`}
             formatter={((value: number, name: string) => {

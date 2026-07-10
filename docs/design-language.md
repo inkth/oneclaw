@@ -1,8 +1,17 @@
 # 发现猫 · Design Language（设计语言）
 
-> 版本：v1 · 2026-07-09
-> 定位：重建整套设计语言，而非在现有页面上微调。目标是**国际一线 AI SaaS 的视觉水准**。
-> 参照系：**Linear（秩序）× Apple（克制）× Stripe（高级）× Vercel（干净）× Perplexity/Arc（AI 气质）**。
+> 版本：v2 · 2026-07-10
+> 定位：重建整套设计语言，而非在现有页面上微调。
+> 参照系：**Designkit（designkit.com/workspace）**——不是「像 Linear 那样」的印象，而是逐条实测其生产 CSS 后照抄。
+>
+> **v2 相对 v1 的纠正**（v1 凭印象写的数值，站上并不存在）：
+> - §6 Card 圆角 20 → **8**
+> - §17 导航轨 64px + 紫色竖条 → **80px，无竖条**，激活靠底色 + 实心图标 + 字重
+> - §5 「一律去渐变」→ 新增 **§5.1 输入框光晕**这一唯一例外
+> - §7 按钮字重 600 → **550**，主操作近黑而非品牌色
+> - §21 token 草案 → 全部换成实测真值
+>
+> 凡本文与代码冲突，以 `app/globals.css` 的 `:root` 为准。
 
 ---
 
@@ -83,48 +92,81 @@
 
 全站**只有一种强调色**。禁止紫+蓝+绿+橙同时出现当装饰。
 
-```
-Primary（品牌紫）  #6E56FF
-背景               #FAFAFB
-主文字             #111111
-次文字 Secondary   #666666
-Border             #ECECEC
-```
+色值见 §21（实测真源）。速查：画布 `#f6f7fa` / 主文字 `#1c1d1f` / 次文字 `#616366` / 三级文字 `#939599` / 边框 `#e5e6e8` / 品牌紫 `#6E56FF`。
 
 - 彩色**只做语义点缀**（涨/跌、成功/失败/警告），不做氛围装饰。
-- 与现有代码衔接：`lib/ui/tokens.ts` 已是「全站唯一色板真源」。本方向要求把 `STATUS_TONES` 里的彩色继续**收敛为语义专用**，Agent 身份等场景逐步统一到「灰底 + 品牌紫点缀」，减少多色并置。
-- 现有电紫品牌色（brand-*）与 `#6E56FF` 同族，作为唯一强调色保留。
+- 中性色一律走 `--dk-*` token，**不要内联 `text-zinc-500` 这类 Tailwind 灰阶**——那会绕过换肤真源。
+- 品牌电紫是**唯一强调色**，且只落在「成交」级动作与焦点环。注意：**主操作按钮是近黑，不是紫**（§7）。
+- 两个例外见 §4.1（Agent 身份色图标块）与 §5.1（输入框光晕）。
+
+### 4.1 唯一的多色例外：Agent 入口图标块
+
+> 增补于 2026-07-10。参照系：Designkit 首页的 app-icon 入口卡。
+
+**Agent 胶囊**与**快捷场景卡**的图标块，允许使用彩色渐变底（`AGENT_IDENTITY[*].tile`）。
+
+判据是**色相必须承载 Agent 身份**，而不是撑场面：
+
+- ✅ 允许：五个 Agent 胶囊各用自己的身份色（顾问橙 / 选品靛 / 视频品红 / Listing 蓝 / 复盘绿）——颜色即身份，用户靠颜色认路。
+- ✅ 允许：快捷场景卡的图标块取**所属 Agent** 的身份色。同一 Agent 下的四张卡**同色**。
+- ❌ 禁止：给同一 Agent 的多个预设涂不同颜色。那时色相不携带信息，退化为纯装饰，仍受 §4 主条约束。
+- ❌ 禁止：把这套渐变外溢到按钮、徽章、卡片底、页面氛围。§7「按钮无渐变」不受本例外豁免。
+
+实现注意：`tile` 必须写**显式色相**（`violet` / `sky` / …），不能用 `brand-*`——`.app-skin` 会把 `--brand-*` 级联改写为近黑，`/app` 工作台内该图标块会整块变黑。
+
+除本条外，§4 主条（95% 黑白灰 + 5% 品牌紫，仅一种强调色）在全站继续生效。
 
 ---
 
 ## 5. 阴影：极弱或无
 
 - 删掉传统 `0 4px 20px rgba(...)` 之类的厚投影。
-- 需要时只用 `0 1px 2px`；能不用就不用。
-- 结构靠 **Layer（层）与留白** 表达，而非阴影（Linear 基本无 Shadow）。
+- 平面元素（卡片 / 按钮 / 输入）只用 `0 1px 2px rgba(0,0,0,.04)`；能不用就不用。
+- 结构靠 **Layer（层）与留白** 表达，而非阴影。
+- **禁止「发光」**：不要用品牌色做投影（原 `--shadow-brand` / `--shadow-vibrant` 已从所有调用点移除）。阴影是黑的，不是紫的。
+- **例外：浮层可以离地。** 弹窗 / 抽屉 / 下拉面板允许 `shadow-xl` —— 它们需要跟页面明确分层，Designkit 的 float-panel 同样带阴影 + `backdrop-filter`。这不是「厚投影」，是 z 轴语义。
+
+### 5.1 唯一的渐变例外：输入框光晕
+
+> 页面画布必须是平的。**全站唯一允许的彩色渐变，是主输入框背后的那片极光。**
+
+Designkit 的招牌观感来自一个反直觉的构造：光晕不在输入框*周围*，而在输入框*底下*——
+
+- 12 个花瓣形 blob 横向铺开，锚在输入框上沿（`top: 70px`），宽度只有框体的 **70%**；
+- 每个 blob 内叠四层色（桃 `#ffb49c` / 薄荷 `#d4f697` / 蓝 `#a8f2ff` / 丁香 `#e5c2ff`），以 32s 为周期错相淡入淡出；
+- `mix-blend-mode: screen` + `blur(34px)` 把花瓣化开成一片缓慢流动的极光；
+- 关键：输入框本身是 **`opacity: .8` + `backdrop-filter: blur(40px)`** 的磨砂面，光是**透过**它的。
+
+去掉最后一条，光晕就退化成「框外一圈彩色」——那是廉价感的来源。实现见 `components/ui/GradientBackground.tsx` 与 `.dk-composer`。
+
+另注：极光不能用负 `z-index` 压到输入框之下——那会让它沉到 `.app-skin` 的背景色之下而整片消失。用 `isolate` 建层叠上下文，光 `z-0`、框 `z-10`。
+
+除此之外：**页面级氛围光、卡片角落柔光、彩虹描边一律禁止**。原 `.gradient-bg` / `.aura-violet` / `.surface-sheen` 已删除。
 
 ---
 
 ## 6. 圆角：三档，不滥用大圆角
 
+实测自 Designkit 生产 CSS：
+
 | 元素 | 圆角 |
 | --- | --- |
-| 按钮 | **12** |
-| Input | **16** |
-| Card | **20** |
-| Modal | **24** |
+| 按钮 / Card / 小控件 | **8** |
+| 导航项 / 图标块 | **12** |
+| Input（主输入框）/ Modal | **20** |
 
-不要全站一个大圆角（20/24/32 到处用）。高级产品在圆角上很克制。
+关键纠正：**Card 是 8，不是 20**。20 只留给主输入框和弹窗。
+「卡片用大圆角」是廉价 SaaS 的通病——Designkit 的卡片圆角小到几乎不显眼，高级感来自留白与色阶，不来自圆角。
 
 ---
 
 ## 7. 按钮
 
-- 高度 **44px**，左右 padding **20**，字号 **15**，字重 **600**。
-- **无描边、无渐变。**
-- Hover：背景加深 **+4%**。
-- Active（点击）：`scale(0.98)`。
-- 就够了，不做更多。
+- 高度 **44px**（lg），左右 padding **20**，字号 **15**，字重 **550**。
+- 圆角 **8**。**无描边、无渐变。**
+- 主操作是**近黑** `#1c1d1f`（hover `#26272a`），**不是品牌色**。品牌电紫只留给「成交」级动作。
+- Hover：背景加深一档。Active：`scale(0.98)`。
+- 禁用态：**浅灰底 + 灰字**（`--dk-btn-tertiary` / `--dk-content-tertiary`），不是把近黑压到 50% 透明——后者读起来仍像「可点」。
 
 ---
 
@@ -224,10 +266,14 @@ Shadow   None
 
 ## 17. 导航（左侧栏）
 
-- 宽 **64px**（不是 80）。
-- Icon **20px**。
-- Hover：灰。
-- Active：**一条紫色竖条**，不是整块紫背景。
+> 本节 2026-07-10 按 Designkit 实测值重写。此前写的「64px + 紫色竖条」是凭印象写的，站上并不存在。
+
+- 轨宽 **80px**，左右各 8px padding。底色 `--dk-rail: #edeff5`，比画布深一档——**靠色阶划界，所以没有右边框**。
+- 条目 **64×64**，纵向堆叠：图标 **22px** + 下方 **11px** 文字标签，gap 6px。
+- Logo 槽同为 64×64，图标 28px。
+- Hover 与 Active **共用同一个底色** `--dk-action-regular`（`rgba(0,31,92,.06)`）+ 12px 圆角。所以指过去就是激活态的预览。
+- Active 的区分只靠两件事：**图标转实心** + **字重 600**。**没有竖条，没有品牌色。**
+- 底部工具区用一条 **40px 宽的短分隔线**与主导航隔开。
 
 ---
 
@@ -272,45 +318,50 @@ Consistency（一致性）
 
 ---
 
-## 21. Design Tokens 草案（落地锚点）
+## 21. Design Tokens（实测真源）
 
-后续落到 `lib/ui/tokens.ts` / Tailwind 主题时的目标值，先在此对齐：
+> 下列色值**全部实测自 designkit.com/workspace 的生产 CSS**（`--content-system-*` / `--background-*` / `--stroke-*` 家族），不是凭观感取色。
+> 真源在 `app/globals.css` 的 `:root`，改那一段即整站换肤。各页面不要再内联十六进制色。
 
-```ts
-// 颜色
-color: {
-  primary:   "#6E56FF",  // 唯一强调色
-  bg:        "#FAFAFB",
-  text:      "#111111",
-  secondary: "#666666",
-  border:    "#ECECEC",
-  cardBg:    "#FFFFFF",
-}
+```css
+/* 面：画布 → 导航轨 → 卡片。三层，没有第四层。 */
+--dk-canvas:    #f6f7fa;   /* 页面画布 */
+--dk-rail:      #edeff5;   /* 导航轨，比画布深一档 */
+--dk-surface:   #ffffff;   /* 卡片 */
+--dk-surface-2: #f3f5f7;   /* 图标底 / tag / 输入内衬 */
+--dk-surface-3: #eaedf2;   /* 滑轨 / 滚动条槽 */
 
-// 间距（8pt Grid，只取这些值）
-space: [8, 16, 24, 32, 40, 48, 64, 80]
-sectionGap: { hero: 120, input: 80, section: 100, pageX: 80 }
+/* 字：三档，没有第四档 */
+--dk-content-primary:   #1c1d1f;
+--dk-content-secondary: #616366;
+--dk-content-tertiary:  #939599;
+--dk-title:             #222326;  /* Hero 标题，比正文略浅 */
 
-// 圆角
-radius: { button: 12, input: 16, card: 20, modal: 24, media: 12 }
+/* 交互底：带蓝味的黑，压在冷灰画布上不发脏。全站 hover/selected 只用这两个值。 */
+--dk-action-regular: rgba(0, 31, 92, 0.06);
+--dk-action-hover:   rgba(0, 31, 92, 0.10);
 
-// 字体
-type: {
-  hero:     { size: 64, weight: 700 },
-  subtitle: { size: 20, weight: 400 },
-  section:  { size: 28, weight: 600 },
-  cardTitle:{ size: 18, weight: 600 },
-  body:     { size: 15, weight: 400 },
-  data:     "tabular-nums",
-}
+/* 线：分隔线 < 边框 < 描边 */
+--dk-stroke-divider: rgba(52, 54, 56, 0.04);
+--dk-stroke-overlay: rgba(52, 54, 56, 0.06);
+--dk-stroke-border:  #e5e6e8;
 
-// 动效（全部 ease-out）
-motion: { hover: 120, button: 150, sidebar: 220, modal: "spring", range: "120–200ms" }
+/* 按钮：主操作近黑，次级浅灰。主 CTA 不是品牌色。 */
+--dk-btn-black:          #1c1d1f;
+--dk-btn-black-hover:    #26272a;
+--dk-btn-tertiary:       #f3f5f7;
+--dk-btn-tertiary-hover: #e4e8ee;
+```
 
-// 组件
-button: { height: 44, padX: 20, size: 15, weight: 600, hover: "+4% bg", active: "scale(0.98)" }
-input:  { height: 72, border: 1, focus: "primary border", left: "icon", right: "send" }
-nav:    { width: 64, icon: 20, active: "purple bar" }
-icon:   { lib: "lucide", style: "outline", stroke: 1.75 }
-shadow: { default: "none | 0 1px 2px" }
+品牌电紫 `--accent-pop: #6E56FF` 独立于上表，**不参与换肤**，只落在「成交」级动作与焦点环上。
+
+```
+radius:  { card/button: 8, navItem/iconTile: 12, input/modal: 20 }
+type:    { hero: 32/400/110%, section: 28/600, cardTitle: 18/600, body: 15/400, label: 11/400, data: tabular-nums }
+button:  { height: 44, padX: 20, size: 15, weight: 550, radius: 8, primary: "#1c1d1f" }
+nav:     { railWidth: 80, item: 64, icon: 22, label: 11, active: "底色 + 实心图标 + 600 字重" }
+card:    { radius: 8, hover: "scale(1.03) .3s ease-in-out", shadow: "0 1px 2px rgba(0,0,0,.04)" }
+aura:    { blobs: 12, cycle: "32s", blur: "clamp(20px,3.6vw,34px)", blend: "screen", 见 §5.1 }
+icon:    { lib: "lucide", style: "outline（导航激活项填充 14%）", stroke: 1.75 }
+shadow:  { default: "none | 0 1px 2px rgba(0,0,0,.04)" }
 ```

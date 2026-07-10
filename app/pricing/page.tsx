@@ -117,18 +117,19 @@ const faqs = [
 const toneClass: Record<string, { ring: string; icon: string; cta: string }> = {
   zinc: {
     ring: "ring-1 ring-zinc-200/80",
-    icon: "bg-zinc-900",
-    cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
+    icon: "bg-[var(--dk-btn-black)]",
+    cta: "bg-[var(--dk-btn-black)] hover:bg-[var(--dk-btn-black-hover)] text-white",
   },
   brand: {
-    ring: "gradient-border shadow-xl",
+    // Design Language §5：阴影最多一层极淡，去掉 shadow-xl 发光
+    ring: "gradient-border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]",
     icon: "bg-vibrant",
-    cta: "bg-vibrant pop text-white hover:shadow-[var(--shadow-vibrant)]",
+    cta: "bg-vibrant press text-white hover:brightness-110",
   },
   fuchsia: {
     ring: "ring-1 ring-zinc-200/80",
-    icon: "bg-zinc-900",
-    cta: "bg-zinc-900 hover:bg-zinc-800 text-white",
+    icon: "bg-[var(--dk-btn-black)]",
+    cta: "bg-[var(--dk-btn-black)] hover:bg-[var(--dk-btn-black-hover)] text-white",
   },
 };
 
@@ -138,7 +139,6 @@ export default function PricingPage() {
       <Header />
       <main className="flex-1">
         <section className="relative pt-16 pb-12 sm:pt-24">
-          <div className="absolute inset-0 gradient-bg" aria-hidden />
           <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-200/60 bg-white/60 px-3 py-1 text-xs font-medium text-brand-700 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" />
@@ -163,16 +163,10 @@ export default function PricingPage() {
                 return (
                   <div
                     key={t.name}
-                    className={`relative rounded-2xl bg-white p-6 sm:p-8 ${c.ring} ${
+                    className={`relative rounded-lg bg-white p-6 sm:p-8 ${c.ring} ${
                       t.highlight ? "md:-translate-y-2" : ""
                     } transition-transform`}
                   >
-                    {t.highlight && (
-                      <div
-                        aria-hidden
-                        className="pointer-events-none absolute -inset-4 -z-10 aura-violet"
-                      />
-                    )}
                     {t.highlight && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
                         <Zap className="h-3 w-3" />
@@ -180,7 +174,7 @@ export default function PricingPage() {
                       </div>
                     )}
 
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.icon} text-white`}>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${c.icon} text-white`}>
                       <Icon className="h-5 w-5" />
                     </div>
 
@@ -201,7 +195,7 @@ export default function PricingPage() {
                     <PricingCTA
                       plan={t.name}
                       label={t.cta}
-                      className={`mt-6 inline-flex w-full items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${c.cta}`}
+                      className={`mt-6 inline-flex w-full items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${c.cta}`}
                     />
 
                     <div className="mt-6 border-t border-zinc-100 pt-5">
@@ -269,7 +263,7 @@ export default function PricingPage() {
               {faqs.map((f) => (
                 <details
                   key={f.q}
-                  className="group rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 [&_summary::-webkit-details-marker]:hidden"
+                  className="group rounded-lg border border-zinc-200/80 bg-white px-5 py-4 [&_summary::-webkit-details-marker]:hidden"
                 >
                   <summary className="flex cursor-pointer items-center justify-between text-sm font-medium">
                     {f.q}

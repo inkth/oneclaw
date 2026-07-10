@@ -1,13 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  /* 照搬 Designkit：冷白灰画布 + 近黑正文（实测 #F6F7FA / #252525） */
-  --background: #f6f7fa;
-  --foreground: #252525;
-  --surface: #ffffff; /* 卡片纯白 */
-  --ink: #222326; /* 标题色 */
-  --ink-action: #1c1d1f; /* 近黑主操作色 */
-  --hairline: rgba(0, 0, 0, 0.07); /* 卡片发丝边 */
+  /* ───────── Designkit 真源 token ─────────
+     值全部实测自 designkit.com/workspace 的生产 CSS（--content-system-* /
+     --background-* / --stroke-* 家族），不是凭观感取色。改这一段即整站换肤。 */
+
+  /* 面：画布 → 导航轨 → 卡片。三层，不再有第四层。 */
+  --dk-canvas: #f6f7fa; /* 页面画布 */
+  --dk-rail: #edeff5; /* 导航轨（比画布深一档，靠色阶而非边框划界） */
+  --dk-surface: #ffffff; /* 卡片 */
+  --dk-surface-2: #f3f5f7; /* 次级块：图标底、tag、输入内衬 */
+  --dk-surface-3: #eaedf2; /* 三级块：滑轨、滚动条槽 */
+
+  /* 字：三档，没有第四档 */
+  --dk-content-primary: #1c1d1f;
+  --dk-content-secondary: #616366;
+  --dk-content-tertiary: #939599;
+  --dk-title: #222326; /* Hero 标题专用，比正文略浅 */
+
+  /* 交互底：Designkit 用带蓝味的黑（rgba(0,31,92,…)）而非纯黑，
+     压在冷灰画布上不会发脏。全站 hover / selected 只用这两个值。 */
+  --dk-action-regular: rgba(0, 31, 92, 0.06);
+  --dk-action-hover: rgba(0, 31, 92, 0.1);
+
+  /* 线：分隔线比边框更淡，边框比描边更淡 */
+  --dk-stroke-divider: rgba(52, 54, 56, 0.04);
+  --dk-stroke-overlay: rgba(52, 54, 56, 0.06);
+  --dk-stroke-border: #e5e6e8;
+
+  /* 按钮：主操作近黑，次级浅灰。Designkit 的主 CTA 不是品牌色。 */
+  --dk-btn-black: #1c1d1f;
+  --dk-btn-black-hover: #26272a;
+  --dk-btn-tertiary: #f3f5f7;
+  --dk-btn-tertiary-hover: #e4e8ee;
+
+  /* ───────── 语义别名（旧引用点继续可用，值指向上面的真源） ───────── */
+  --background: var(--dk-canvas);
+  --foreground: var(--dk-content-primary);
+  --surface: var(--dk-surface);
+  --ink: var(--dk-title);
+  --ink-action: var(--dk-btn-black);
+  --hairline: var(--dk-stroke-overlay);
 
   /* 品牌 = 电紫 #6E56FF（Design Language 唯一强调色，Linear/Perplexity 系的安静紫）。
      全站唯一真源：改这 11 个值即整站换肤。95% 黑白灰 + 5% 此色，仅此一种强调色。 */
@@ -163,6 +196,19 @@ body {
   font-weight: 700;
   text-wrap: balance;
 }
+/* 工作台 Hero 标题：照抄 Designkit —— Poppins 32px，字重 400 而非 700。
+   高级感来自「大字号 + 常规字重 + 110% 行高」，不是来自压字距的粗体。 */
+.text-hero {
+  font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
+    -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  font-size: 2rem;
+  line-height: 110%;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--dk-title);
+  text-wrap: balance;
+}
+
 /* 应用内页头标题：稳健不流体（== 现 text-2xl），Poppins */
 .text-title {
   font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
@@ -252,73 +298,184 @@ body {
   background: var(--accent-pop-soft);
 }
 
-/* Design Language §11/§15：页面背景保持安静。顶部氛围光收敛为单一品牌色、极淡漫射，
-   不再中性彩虹。宁可留白，也不铺色。 */
-.gradient-bg {
-  background: radial-gradient(
-    ellipse 60% 45% at 50% -12%,
-    rgba(110, 86, 255, 0.04),
-    transparent 70%
-  );
-}
+/* Designkit 的页面画布是平的——唯一的色彩来自输入框背后的极光（.dk-aura）。
+   页面级氛围光（原 .gradient-bg / .aura-violet）已全部移除：一处铺色，就到处要铺色。 */
 
 /* ---------- 照搬 Designkit 的核心表面原语 ---------- */
-/* 卡片：纯白 + 20px 圆角（Design Language §6 Card=20）+ 发丝边 + 极弱阴影 */
+/* 卡片：纯白 + 8px 圆角 + 发丝边。Designkit 的卡片圆角是 8，不是 20 ——
+   20 只用在弹窗/大面板（--radius-20）。 */
 .dk-card {
   background: var(--surface);
-  border-radius: 20px;
-  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  border: 1px solid var(--dk-stroke-overlay);
   box-shadow: 0 1px 2px rgba(16, 14, 30, 0.03);
 }
-/* 图标导航轨激活项：图标后浅灰圆角底 */
+/* 导航轨条目：hover / selected 共用同一个淡蓝灰底 + 12px 圆角。
+   Designkit 没有「左缘竖条」，激活靠 填充图标 + 600 字重 + 底色 三者叠加。 */
 .dk-rail-item {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--dk-action-regular);
+  border-radius: 12px;
 }
-/* Design Language §11/§15：composer / hero 背后氛围光收敛为单一品牌色、极淡一层。
-   hero 近乎纯白，主角是输入框，不铺彩虹。 */
-.dk-aura {
-  background: radial-gradient(
-    ellipse 55% 60% at 50% 42%,
-    rgba(110, 86, 255, 0.07),
-    transparent 70%
-  );
-  filter: blur(40px);
-}
-/* 激活态 pill / 高亮卡：去彩虹，收敛为单一品牌色发丝边（§4 只一种强调色） */
+/* 激活态 pill / 高亮卡：发丝边 */
 .dk-ring {
-  border: 1px solid var(--brand-200);
+  border: 1px solid var(--dk-stroke-border);
 }
 
-/* 玻璃面：磨砂 + 提饱和 */
-.glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+/* 主输入框：20px 圆角（取自 Designkit 的表单骨架屏 --radius-20）。
+   关键是 opacity + backdrop-blur —— 框体本身是半透明磨砂，背后的极光要透过它，
+   聚焦时提到 .9 让底色收一点、文字更实。不加这两条，光晕就只是「框外一圈彩色」。 */
+.dk-composer {
+  background: var(--surface);
+  border-radius: 20px;
+  border: 1px solid var(--dk-stroke-overlay);
+  opacity: 0.8;
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  transition: opacity 0.2s ease, border-color 0.15s ease;
+}
+.dk-composer:focus-within {
+  opacity: 0.9;
 }
 
-/* 近白微渐变卡面（顶部微光） */
-.surface-sheen {
-  background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.9),
-      rgba(250, 250, 252, 0.6)
-    ),
-    #ffffff;
+/* 浮层面板（弹窗 / 抽屉 / 下拉）：这是全站唯一允许「离地」的表面。
+   §5 的极弱阴影是给平面元素的；浮层压到 1px 阴影会贴在遮罩上，丢掉 z 轴语义。
+   Designkit 的 float-panel 同样是 阴影 + backdrop-filter。 */
+.dk-overlay {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-stroke-overlay);
+  box-shadow: 0 12px 32px -12px rgba(16, 14, 30, 0.18),
+    0 4px 12px -8px rgba(16, 14, 30, 0.12);
 }
 
-/* 单色品牌极光：放在 hero / 重点卡背后（absolute, aria-hidden）。§15 收敛为极淡一层。 */
-.aura-violet {
-  background: radial-gradient(
-    ellipse at center,
-    rgba(110, 86, 255, 0.06),
-    transparent 70%
+/* 可点击卡片：Designkit 的 hover 是整卡放大 1.03（transform .3s ease-in-out），
+   不上浮、不加阴影、不换描边色。 */
+.dk-lift {
+  transition: transform 0.3s ease-in-out;
+}
+.dk-lift:hover {
+  transform: scale(1.03);
+}
+
+/* ---------- Designkit 输入框光晕（1:1 复刻）----------
+   12 个花瓣形 blob 横向铺开，每个 blob 内叠 4 层色（桃/薄荷/蓝/丁香），
+   各色以 32s 为周期错相淡入淡出，blob 之间再错相 → 一片缓慢流动的极光。
+   mix-blend-mode:screen 让重叠处提亮而非变浑；blur 把花瓣边缘彻底化开。 */
+.dk-aura {
+  position: relative;
+  display: flex;
+  width: 100%;
+  aspect-ratio: 704 / 340;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.dk-aura-group {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  filter: blur(clamp(20px, 3.6vw, 34px));
+  mix-blend-mode: screen;
+}
+.dk-aura-blob {
+  position: absolute;
+  display: block;
+  isolation: isolate;
+  overflow: hidden;
+  --blob-phase: 0s;
+  clip-path: polygon(
+    50% 0,
+    72% 8%,
+    88% 20%,
+    97% 36%,
+    100% 50%,
+    97% 64%,
+    88% 80%,
+    72% 92%,
+    50% 100%,
+    28% 92%,
+    12% 80%,
+    3% 64%,
+    0 50%,
+    3% 36%,
+    12% 20%,
+    28% 8%
   );
-  filter: blur(44px);
+}
+.dk-aura-tone {
+  position: absolute;
+  display: block;
+  inset: 0;
+  opacity: 0;
+  will-change: opacity;
+  animation: dkToneCycle 32s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+.dk-aura-peach {
+  animation-delay: var(--blob-phase);
+  background: radial-gradient(
+    ellipse 62% 76% at 50% 50%,
+    #ffb49c 0,
+    rgba(255, 180, 156, 0.66) 30%,
+    rgba(255, 180, 156, 0) 72%
+  );
+}
+.dk-aura-mint {
+  animation-delay: calc(var(--blob-phase) - 4s);
+  background: radial-gradient(
+    ellipse 62% 76% at 50% 50%,
+    #d4f697 0,
+    rgba(212, 246, 151, 0.6) 30%,
+    rgba(212, 246, 151, 0) 72%
+  );
+}
+.dk-aura-blue {
+  animation-delay: calc(var(--blob-phase) - 8s);
+  background: radial-gradient(
+    ellipse 62% 76% at 50% 50%,
+    #a8f2ff 0,
+    rgba(168, 242, 255, 0.62) 30%,
+    rgba(168, 242, 255, 0) 70%
+  );
+}
+.dk-aura-lilac {
+  animation-delay: calc(var(--blob-phase) - 12s);
+  background: radial-gradient(
+    ellipse 62% 76% at 50% 50%,
+    rgba(229, 194, 255, 0.98) 0,
+    rgba(229, 194, 255, 0.58) 30%,
+    rgba(229, 194, 255, 0) 70%
+  );
+}
+@keyframes dkToneCycle {
+  0%,
+  18% {
+    opacity: 1;
+  }
+  24% {
+    opacity: 0.72;
+  }
+  30%,
+  68% {
+    opacity: 0;
+  }
+  74% {
+    opacity: 0.72;
+  }
+  80%,
+  to {
+    opacity: 1;
+  }
+}
+
+/* 玻璃面：顶栏 / 浮层。Designkit 的浮层是「高斯模糊 + 高不透明度」，不提饱和度。 */
+.glass {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
 }
 
 /* 精致卡缘：1px 描边 + 顶部内高光 */
 .ring-edge {
-  border: 1px solid rgba(228, 228, 231, 0.8);
+  border: 1px solid var(--dk-stroke-border);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
 }
 
@@ -443,6 +600,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .lift,
+  .dk-lift,
   .press,
   .pop,
   .animate-fade-up,
@@ -455,7 +613,13 @@ body {
   .skeleton-media::after {
     animation: none !important;
   }
+  /* 光晕停在第一帧：四层色全显，叠成一片静止的柔光，而不是消失。 */
+  .dk-aura-tone {
+    animation: none !important;
+    opacity: 1;
+  }
   .lift:hover,
+  .dk-lift:hover,
   .pop:hover {
     transform: none;
   }

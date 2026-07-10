@@ -224,7 +224,7 @@ function isVideoSettingsCustomized(v: VideoSettings): boolean {
   );
 }
 
-/** 设置面板里的单选小按钮:选中 brand 浅底描边,未选灰描边。 */
+/** 设置面板里的单选小按钮:选中态与未选态统一走 action-regular 底色,靠深浅区分。 */
 function OptionButton({
   active,
   onClick,
@@ -242,8 +242,8 @@ function OptionButton({
       onClick={onClick}
       className={`inline-flex items-center overflow-hidden rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
         active
-          ? "border-brand-500 bg-brand-50/60 font-medium text-brand-700"
-          : "border-zinc-200/80 text-zinc-600 hover:border-zinc-300"
+          ? "border-[var(--dk-stroke-border)] bg-[var(--dk-action-regular)] font-medium text-zinc-900"
+          : "border-[var(--dk-stroke-border)] text-zinc-600 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
       } ${className}`}
     >
       {children}

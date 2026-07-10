@@ -44,7 +44,7 @@ const typeMeta: Record<MaterialType, { cn: string; icon: React.ComponentType<{ c
   AUDIO: { cn: "音频", icon: Music, tone: "bg-emerald-50 text-emerald-700" },
   LOGO: { cn: "Logo", icon: ImageIcon, tone: "bg-amber-50 text-amber-700" },
   WATERMARK: { cn: "水印", icon: ImageIcon, tone: "bg-fuchsia-50 text-fuchsia-700" },
-  FONT: { cn: "字体", icon: Tag, tone: "bg-zinc-100 text-zinc-700" },
+  FONT: { cn: "字体", icon: Tag, tone: "bg-zinc-100 text-zinc-600" },
 };
 
 const filters: Array<{ key: "ALL" | MaterialType; label: string }> = [
@@ -204,8 +204,8 @@ export function MaterialsClient({
             onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               selectMode
-                ? "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-                : "bg-brand-600 text-white shadow-sm hover:bg-brand-700"
+                ? "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
+                : "bg-brand-600 text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700"
             }`}
             title="多选商品图,批量生成商品卡 + Listing"
           >
@@ -219,8 +219,8 @@ export function MaterialsClient({
                 onClick={() => setFilter(f.key)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   filter === f.key
-                    ? "bg-white text-zinc-900 shadow-sm"
-                    : "text-zinc-600 hover:bg-brand-50 hover:text-brand-700"
+                    ? "bg-white text-zinc-900 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
+                    : "text-zinc-600 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
                 }`}
               >
                 {f.label}
@@ -248,10 +248,10 @@ export function MaterialsClient({
           if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
         }}
         onClick={() => fileRef.current?.click()}
-        className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
+        className={`rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
           dragOver
             ? "border-brand-300 bg-brand-50/40"
-            : "border-zinc-300 bg-white hover:border-zinc-400"
+            : "border-[var(--dk-stroke-border)] bg-white hover:border-zinc-400"
         }`}
       >
         <Upload className="mx-auto h-6 w-6 text-zinc-400" />
@@ -275,7 +275,7 @@ export function MaterialsClient({
       </div>
 
       {uploading.length > 0 && (
-        <div className="rounded-xl bg-brand-50/60 border border-brand-100 p-3 space-y-1">
+        <div className="rounded-lg bg-brand-50/60 border border-brand-100 p-3 space-y-1">
           {uploading.map((name) => (
             <div key={name} className="flex items-center gap-2 text-xs text-brand-900">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -305,15 +305,15 @@ export function MaterialsClient({
               <div
                 key={m.id}
                 onClick={picking ? () => toggleSelect(m.id) : undefined}
-                className={`group relative rounded-xl border bg-white overflow-hidden transition ${
+                className={`group dk-lift relative rounded-lg border bg-white overflow-hidden transition ${
                   picking ? "cursor-pointer" : ""
                 } ${
                   isSel
                     ? "border-brand-500 ring-2 ring-brand-500/40"
-                    : "border-zinc-200/80"
+                    : "border-[var(--dk-stroke-border)]"
                 } ${selectMode && !selectable ? "opacity-40" : ""}`}
               >
-                <div className="aspect-square bg-zinc-50 flex items-center justify-center relative">
+                <div className="aspect-square bg-[var(--dk-surface-2)] flex items-center justify-center relative">
                   {picking && (
                     <span
                       className={`absolute right-2 top-2 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${
@@ -350,7 +350,7 @@ export function MaterialsClient({
                     <button
                       onClick={() => submitProducts([[m.id]], false)}
                       disabled={batchBusy}
-                      className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-brand-600/95 px-2 py-1 text-2xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
+                      className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-brand-600/95 px-2 py-1 text-2xs font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700 disabled:opacity-60"
                       title="用这张商品图建一张商品(看图写 Listing + 出主图),产出到「资产 · 我的商品」"
                     >
                       <Wand2 className="h-2.5 w-2.5" />
@@ -374,14 +374,14 @@ export function MaterialsClient({
       )}
 
       {selectMode && selected.size > 0 && (
-        <div className="sticky bottom-4 z-20 mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-full border border-zinc-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur">
+        <div className="sticky bottom-4 z-20 mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-full border border-[var(--dk-stroke-border)] bg-white/95 px-4 py-2.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] backdrop-blur">
           <div className="text-xs text-zinc-600">
             已选 <span className="font-semibold text-zinc-900">{selected.size}</span> 张
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelected(new Set())}
-              className="rounded-xl px-3 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-primary)]"
             >
               清空
             </button>
@@ -390,7 +390,7 @@ export function MaterialsClient({
                 onClick={() => submitProducts([Array.from(selected)], true)}
                 disabled={batchBusy}
                 title="选中的都是同一个商品的不同角度,合并成 1 个商品"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-medium text-brand-700 hover:bg-[var(--dk-action-regular)] disabled:opacity-60"
               >
                 合并为 1 个商品
               </button>
@@ -399,7 +399,7 @@ export function MaterialsClient({
               onClick={() => submitProducts(Array.from(selected).map((id) => [id]), false)}
               disabled={batchBusy}
               title="每张图各做成一个商品"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700 disabled:opacity-60"
             >
               {batchBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {batchBusy ? "提交中…" : selected.size >= 2 ? "各做 1 个商品" : "做成商品"}

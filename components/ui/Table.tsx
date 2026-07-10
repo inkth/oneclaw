@@ -13,7 +13,13 @@ export function TableWrap({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("overflow-x-auto rounded-xl border border-zinc-200/80 bg-white", className)}>
+    // 表格容器当卡片看：8px 圆角 + 发丝边（--dk-stroke-overlay）+ 极弱阴影，与 dk-card 同规格
+    <div
+      className={cn(
+        "overflow-x-auto rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface)] shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]",
+        className
+      )}
+    >
       <table className="w-full text-sm" style={{ minWidth }}>
         {children}
       </table>
@@ -23,7 +29,8 @@ export function TableWrap({
 
 export function THead({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="border-b border-zinc-100 bg-zinc-50/60 text-xs text-zinc-500">
+    // 表头底色用 surface-2（次级块），分界线用 divider（比行内分隔线更淡一档不必要，统一用 divider 即可）
+    <thead className="border-b border-[var(--dk-stroke-divider)] bg-[var(--dk-surface-2)] text-xs text-[var(--dk-content-secondary)]">
       {children}
     </thead>
   );
@@ -41,7 +48,7 @@ export function Th({
   return (
     <th
       className={cn(
-        "px-4 py-3 font-medium",
+        "px-4 py-3 font-[550]",
         align === "right" && "text-right",
         align === "center" && "text-center",
         align === "left" && "text-left",
@@ -59,8 +66,12 @@ export function Tr({
   ...props
 }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
+    // 数据密集区保留行分隔线（divider 级),hover 底色统一用 action-regular（而非 zinc 灰）
     <tr
-      className={cn("border-b border-zinc-50 transition-colors last:border-0 hover:bg-zinc-50/60", className)}
+      className={cn(
+        "border-b border-[var(--dk-stroke-divider)] transition-colors last:border-0 hover:bg-[var(--dk-action-regular)]",
+        className
+      )}
       {...props}
     >
       {children}

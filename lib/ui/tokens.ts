@@ -31,15 +31,20 @@ export const STATUS_TONES = {
 export type Tone = keyof typeof STATUS_TONES;
 
 /** Agent 身份：链路导向的产出物胶囊 + 任务列表小 chip 标识，不大面积渐变。
- *  图标统一用 lucide 线性图标(不用 emoji),与全站 Stripe/Linear 风格一致。 */
+ *  图标统一用 lucide 线性图标(不用 emoji),与全站 Stripe/Linear 风格一致。
+ *
+ *  tile = Agent「入口图标块」的彩色渐变底(照搬 Designkit 的 app-icon 观感)。
+ *  这是 Design Language §4 唯一的多色例外：色相在此**承载 Agent 身份**，不是装饰。
+ *  注意色值必须写显式色相(violet/sky/…)而非 brand-*——`.app-skin` 会把 --brand-* 级联
+ *  改写为近黑，用 brand-* 的话工作台内这块图标会整块变黑。 */
 export const AGENT_IDENTITY = {
-  ADVISOR: { label: "跨境顾问", icon: Compass as LucideIcon, tone: "warning" as Tone, dot: "bg-amber-500" },
-  ANALYST: { label: "选品分析", icon: TrendingUp as LucideIcon, tone: "brand" as Tone, dot: "bg-brand-500" },
-  DIRECTOR: { label: "短视频创作", icon: Clapperboard as LucideIcon, tone: "violet" as Tone, dot: "bg-violet-500" },
-  LISTING: { label: "Listing 内容", icon: LayoutList as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },
-  REVIEW: { label: "投放复盘", icon: BarChart3 as LucideIcon, tone: "success" as Tone, dot: "bg-emerald-500" },
-  TRYON: { label: "虚拟试穿", icon: Shirt as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500" },
-  VIDEO_ANALYSIS: { label: "视频解析", icon: ScanText as LucideIcon, tone: "fuchsia" as Tone, dot: "bg-fuchsia-500" },
+  ADVISOR: { label: "跨境顾问", icon: Compass as LucideIcon, tone: "warning" as Tone, dot: "bg-amber-500", tile: "from-amber-400 to-orange-500" },
+  ANALYST: { label: "选品分析", icon: TrendingUp as LucideIcon, tone: "brand" as Tone, dot: "bg-brand-500", tile: "from-violet-500 to-indigo-600" },
+  DIRECTOR: { label: "短视频创作", icon: Clapperboard as LucideIcon, tone: "violet" as Tone, dot: "bg-violet-500", tile: "from-fuchsia-500 to-pink-500" },
+  LISTING: { label: "Listing 内容", icon: LayoutList as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500", tile: "from-sky-400 to-blue-500" },
+  REVIEW: { label: "投放复盘", icon: BarChart3 as LucideIcon, tone: "success" as Tone, dot: "bg-emerald-500", tile: "from-emerald-400 to-teal-500" },
+  TRYON: { label: "虚拟试穿", icon: Shirt as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500", tile: "from-cyan-400 to-sky-500" },
+  VIDEO_ANALYSIS: { label: "视频解析", icon: ScanText as LucideIcon, tone: "fuchsia" as Tone, dot: "bg-fuchsia-500", tile: "from-rose-400 to-red-500" },
 } as const;
 
 export type AgentKey = keyof typeof AGENT_IDENTITY;

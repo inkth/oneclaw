@@ -64,7 +64,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
   return (
     <div className="mt-3 space-y-4">
       {summary && (
-        <p className="text-sm leading-relaxed text-zinc-700">{summary}</p>
+        <p className="text-sm leading-relaxed text-zinc-600">{summary}</p>
       )}
 
       {/* 逐句脚本:时间码 + 原文 + 中文翻译 */}
@@ -77,7 +77,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
             </h4>
             <button
               onClick={copyScript}
-              className="press inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:border-fuchsia-300 hover:text-fuchsia-700"
+              className="press inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:border-fuchsia-300 hover:text-fuchsia-700"
             >
               <Copy className="h-3 w-3" />
               复制脚本
@@ -87,7 +87,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
             {lines.map((l, i) => (
               <li
                 key={i}
-                className="rounded-xl border border-black/5 bg-zinc-50/60 px-3 py-2"
+                className="rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] px-3 py-2"
               >
                 {l.t && (
                   <span className="text-2xs font-medium tabular-nums text-zinc-400">
@@ -95,7 +95,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
                   </span>
                 )}
                 {l.original && (
-                  <p className="text-sm leading-relaxed text-zinc-800">{l.original}</p>
+                  <p className="text-sm leading-relaxed text-zinc-900">{l.original}</p>
                 )}
                 {l.zh && (
                   <p className="mt-0.5 text-sm leading-relaxed text-fuchsia-700">{l.zh}</p>
@@ -105,7 +105,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
           </ol>
         </section>
       ) : (
-        <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700">
           未检测到口播台词(可能是纯音乐/无人声),以下基于画面与节奏的拆解。
         </p>
       )}
@@ -123,12 +123,12 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
               .map((it) => (
                 <div
                   key={it.key}
-                  className="rounded-xl border border-black/5 bg-white px-3 py-2"
+                  className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2"
                 >
                   <span className="text-2xs font-semibold text-fuchsia-600">
                     {it.label}
                   </span>
-                  <p className="mt-0.5 text-xs leading-relaxed text-zinc-700">
+                  <p className="mt-0.5 text-xs leading-relaxed text-zinc-600">
                     {it.value}
                   </p>
                 </div>
@@ -146,7 +146,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
           </h4>
           <ul className="space-y-1">
             {reusablePoints.map((p, i) => (
-              <li key={i} className="flex gap-2 text-xs leading-relaxed text-zinc-700">
+              <li key={i} className="flex gap-2 text-xs leading-relaxed text-zinc-600">
                 <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-fuchsia-400" />
                 <span>{p}</span>
               </li>
@@ -164,7 +164,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
           </h4>
           <ul className="space-y-1">
             {adaptations.map((a, i) => (
-              <li key={i} className="flex gap-2 text-xs leading-relaxed text-zinc-700">
+              <li key={i} className="flex gap-2 text-xs leading-relaxed text-zinc-600">
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-fuchsia-400" />
                 <span>{a}</span>
               </li>

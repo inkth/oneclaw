@@ -193,8 +193,9 @@ export function BoardHeaderNav() {
   );
 }
 
-// 照搬 Designkit 图标导航轨：每项为 图标方块 + 下方小字，纵向堆叠。
-// 激活项图标后有浅灰圆角底（.dk-rail-item），文字/图标转近黑。
+// 照搬 Designkit 图标导航轨：每项 64×64，22px 图标 + 下方 11px 小字，gap 6px。
+// 激活态没有竖条、没有品牌色——只是「淡蓝灰圆角底 + 字重 600」，图标本身转实心。
+// hover 与 selected 共用同一个底色（--dk-action-regular），所以指过去就是激活的预览。
 function RailItem({
   href,
   label,
@@ -209,22 +210,25 @@ function RailItem({
   return (
     <Link
       href={href}
-      className="group flex w-full flex-col items-center gap-1 py-1 text-center"
+      aria-current={active ? "page" : undefined}
+      className={
+        "flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl " +
+        "transition-colors hover:bg-[var(--dk-action-regular)] " +
+        (active ? "dk-rail-item" : "")
+      }
+      style={{ color: "var(--dk-content-primary)" }}
     >
-      <span
+      {/* 激活项用实心图标：lucide 无 fill 变体，故以 currentColor 填充描边内区，
+          视觉等价于 Designkit 的 icon-HomeV2 → icon-HomeV2Fill 切换。
+          Board.icon 的类型只收 className，填充只能走工具类不能走 style。 */}
+      <Icon
         className={
-          "flex h-11 w-11 items-center justify-center rounded-2xl transition-colors " +
-          (active
-            ? "bg-accent-pop-soft text-accent-pop"
-            : "text-zinc-500 group-hover:bg-black/[0.04] group-hover:text-ink")
+          "h-[22px] w-[22px] " + (active ? "fill-current [fill-opacity:0.14]" : "")
         }
-      >
-        <Icon className="h-[22px] w-[22px]" />
-      </span>
+      />
       <span
         className={
-          "text-[11px] leading-none transition-colors " +
-          (active ? "text-accent-pop font-medium" : "text-zinc-500 group-hover:text-ink")
+          "text-[11px] leading-[110%] " + (active ? "font-semibold" : "font-normal")
         }
       >
         {label}
@@ -244,7 +248,7 @@ export function SidebarNav({
   const active = activeBoard(pathname);
 
   return (
-    <nav className="mt-6 flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto px-1">
+    <nav className="flex w-full flex-1 flex-col items-center gap-0.5 overflow-y-auto">
       {BOARDS.map((board) => (
         <RailItem
           key={board.key}
@@ -255,8 +259,14 @@ export function SidebarNav({
         />
       ))}
 
-      {/* 代理商 / 管理入口:按身份显示,不进 BOARDS(避免动 activeBoard 板块归属)。 */}
-      <div className="mt-auto flex w-full flex-col items-center gap-1 pt-2">
+      {/* 代理商 / 管理入口:按身份显示,不进 BOARDS(避免动 activeBoard 板块归属)。
+          Designkit 用一条 40px 宽的短分隔线把底部工具区与主导航分开。 */}
+      <div className="mt-auto flex w-full flex-col items-center gap-0.5 pt-1.5">
+        <span
+          aria-hidden
+          className="mb-1.5 h-px w-10"
+          style={{ background: "var(--dk-stroke-overlay)" }}
+        />
         {isAgency && (
           <RailItem
             href={agencyItem.href}
