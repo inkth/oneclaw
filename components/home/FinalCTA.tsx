@@ -13,17 +13,8 @@ export function FinalCTA() {
   return (
     <section className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-zinc-950 px-6 py-16 text-center sm:px-12 sm:py-20">
-          {/* 舱内氛围光 */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-brand-600/30 blur-[110px]"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-32 right-[10%] h-64 w-64 rounded-full bg-fuchsia-500/20 blur-[100px]"
-          />
-
+        {/* Designkit 画布是平的：去掉原来的氛围光晕 blur 团，深色舱体本身足够聚焦视线 */}
+        <div className="relative overflow-hidden rounded-2xl bg-zinc-950 px-6 py-16 text-center sm:px-12 sm:py-20">
           <div className="relative">
             <h2 className="text-display-sm text-white">
               第一单出海生意，今天就跑起来
@@ -36,14 +27,14 @@ export function FinalCTA() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <a
                 href="/app"
-                className="pop group inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-zinc-900 shadow-md"
+                className="pop group inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-sm font-semibold text-zinc-900 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
               >
                 免费开始体验
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </a>
               <a
                 href="/pricing"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/5"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/5"
               >
                 查看定价
               </a>

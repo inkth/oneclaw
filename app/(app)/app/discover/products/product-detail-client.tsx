@@ -230,7 +230,7 @@ export function ProductDetailClient({
     <div className="space-y-6">
       <Link
         href="/app/discover/products"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800"
+        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
       >
         <ArrowLeft className="h-4 w-4" /> 返回爆品榜
       </Link>
@@ -345,11 +345,10 @@ export function ProductDetailClient({
       {/* 选品诊断评分 */}
       {score && (
         <Card className="relative overflow-hidden">
-          <div className="aura-violet pointer-events-none absolute -right-10 -top-10 h-40 w-40" />
           <div className="grid gap-6 sm:grid-cols-[auto_1fr]">
             <div className="flex items-center gap-4">
               <div
-                className="flex h-20 w-20 flex-col items-center justify-center rounded-2xl text-white shadow-sm"
+                className="flex h-20 w-20 flex-col items-center justify-center rounded-xl text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
                 style={{ background: scoreColor }}
               >
                 <span className="text-3xl font-bold tabular-nums leading-none">{score.score}</span>
@@ -372,7 +371,7 @@ export function ProductDetailClient({
               <p className="text-sm leading-relaxed text-zinc-600">{score.verdict}</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {score.signals.map((s) => (
-                  <div key={s.key} className="rounded-lg border border-zinc-200/70 bg-white p-3">
+                  <div key={s.key} className="rounded-lg border border-[var(--dk-stroke-border)] bg-white p-3">
                     <div className="text-xs text-zinc-500">{s.label}</div>
                     <div className="mt-1">
                       <Badge tone={asTone(s.tone)}>{s.value}</Badge>
@@ -393,7 +392,7 @@ export function ProductDetailClient({
           <span className="text-sm font-medium text-zinc-900">搜同款 · 比价拿真实货价</span>
         </div>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          评分里的成本/利润是按品类估算的。去货源平台搜「<span className="font-medium text-zinc-700">{sourcingKeyword(p.name)}</span>
+          评分里的成本/利润是按品类估算的。去货源平台搜「<span className="font-medium text-zinc-900">{sourcingKeyword(p.name)}</span>
           」找同款,拿到真实进货价后在收藏夹回填,毛利率就准了。
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -404,7 +403,7 @@ export function ProductDetailClient({
               target="_blank"
               rel="noopener noreferrer"
               title={l.note}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-[var(--dk-action-regular)]"
             >
               {l.label}
               <ExternalLink className="h-3 w-3 opacity-50" />
@@ -456,7 +455,7 @@ export function ProductDetailClient({
             <span className="text-sm font-medium text-zinc-900">Top 带货达人</span>
             <span className="text-xs text-zinc-400">按单品 GMV 排序</span>
           </div>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-[var(--dk-stroke-divider)]">
             {p.influencers.map((inf) => (
               <div key={inf.userId} className="flex items-center gap-3 py-2.5">
                 <Img src={inf.avatar} seed={inf.nickName} className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
@@ -491,7 +490,7 @@ export function ProductDetailClient({
               const playable = v.playAddr?.startsWith("http");
               const inner = (
                 <>
-                  <div className="relative aspect-[9/16] overflow-hidden rounded-t-xl bg-zinc-100">
+                  <div className="relative aspect-[9/16] overflow-hidden rounded-t-lg bg-zinc-100">
                     <Img
                       src={v.cover}
                       seed={v.videoId}
@@ -530,13 +529,13 @@ export function ProductDetailClient({
                         {v.desc}
                       </p>
                     ) : (
-                      <p className="min-h-8 text-xs leading-4 text-zinc-300">无文案</p>
+                      <p className="min-h-8 text-xs leading-4 text-zinc-400">无文案</p>
                     )}
                   </div>
                 </>
               );
               const shell =
-                "group block overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200/70 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-zinc-300";
+                "group block overflow-hidden rounded-lg border border-[var(--dk-stroke-overlay)] bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition dk-lift";
               return playable ? (
                 <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className={shell}>
                   {inner}

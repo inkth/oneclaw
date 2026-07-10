@@ -143,7 +143,7 @@ export function VideosClient({
         return (
           <div
             key={v.id}
-            className="group overflow-hidden rounded-xl border border-zinc-200/80 bg-white flex flex-col"
+            className="dk-card group overflow-hidden flex flex-col"
           >
             <div className={`relative aspect-[9/14]`}>
               {v.thumbnailUrl ? (
@@ -156,7 +156,8 @@ export function VideosClient({
               ) : (
                 <MediaPlaceholder seed={v.id} icon={Video} rounded="rounded-none" className="absolute inset-0" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/60" />
+              {/* 去渐变(硬规则):封面遮罩改纯色半透明黑,只为给上下叠字/徽章提对比度 */}
+              <div className="absolute inset-0 bg-black/25" />
 
               {/* 视频播放 / 处理状态 */}
               {v.videoUrl ? (
@@ -205,7 +206,7 @@ export function VideosClient({
               </div>
             </div>
 
-            <div className="px-3 py-2.5 flex items-center justify-between text-2xs text-zinc-500 border-t border-zinc-100">
+            <div className="px-3 py-2.5 flex items-center justify-between text-2xs text-zinc-500 border-t border-[var(--dk-stroke-divider)]">
               <button
                 onClick={() => setDrawerVideoId(v.id)}
                 className="truncate text-left hover:text-brand-600 transition-colors"
@@ -214,7 +215,7 @@ export function VideosClient({
                 {v.productTitle ?? "未关联选品"} · 详情 ›
               </button>
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="rounded-full bg-zinc-100 px-1.5 py-0.5">
+                <span className="rounded-full bg-[var(--dk-surface-2)] px-1.5 py-0.5">
                   {style.label}
                 </span>
                 {v.videoUrl && (
@@ -233,7 +234,7 @@ export function VideosClient({
                   <button
                     onClick={() => retryVideo(v.id)}
                     disabled={retryingId === v.id}
-                    className="inline-flex items-center gap-0.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-brand-700 hover:bg-brand-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-0.5 rounded-full bg-[var(--dk-btn-tertiary)] px-1.5 py-0.5 text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)] disabled:opacity-50"
                     title="沿用原参数重新提交生成"
                   >
                     <RefreshCw
@@ -246,7 +247,7 @@ export function VideosClient({
                   <button
                     onClick={() => refresh(v.id)}
                     disabled={refreshingId === v.id}
-                    className="inline-flex items-center gap-0.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-brand-700 hover:bg-brand-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-0.5 rounded-full bg-[var(--dk-btn-tertiary)] px-1.5 py-0.5 text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)] disabled:opacity-50"
                     title="检查 fal 状态"
                   >
                     <RefreshCw
@@ -267,11 +268,11 @@ export function VideosClient({
             </div>
 
             {v.script && (
-              <details className="border-t border-zinc-100">
-                <summary className="cursor-pointer px-3 py-2 text-2xs text-zinc-500 hover:bg-zinc-50">
+              <details className="border-t border-[var(--dk-stroke-divider)]">
+                <summary className="cursor-pointer px-3 py-2 text-2xs text-zinc-500 hover:bg-[var(--dk-action-regular)]">
                   查看脚本
                 </summary>
-                <pre className="px-3 py-2 text-2xs text-zinc-700 whitespace-pre-wrap font-mono leading-relaxed bg-zinc-50/60">
+                <pre className="px-3 py-2 text-2xs text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed bg-[var(--dk-surface-2)]">
                   {v.script}
                 </pre>
               </details>

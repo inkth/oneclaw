@@ -76,7 +76,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 rounded-2xl border border-zinc-200/80 bg-white p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mt-12 rounded-lg border border-zinc-200/80 bg-white p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="text-sm font-semibold">订阅出海周报</div>
             <div className="mt-0.5 text-xs text-zinc-500">

@@ -140,7 +140,7 @@ export function HotPicks({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <RankMedal rank={i + 1} className="h-5 w-5 shrink-0 text-2xs" />
-                  <span className="rounded bg-zinc-100 px-1 py-px text-2xs font-medium text-zinc-500">
+                  <span className="rounded bg-[var(--dk-surface-2)] px-1 py-px text-2xs font-medium text-zinc-500">
                     {p.region}
                   </span>
                 </div>
@@ -167,7 +167,7 @@ export function HotPicks({
                 <button
                   onClick={() => importProduct(p)}
                   disabled={importing.has(p.productId)}
-                  className="inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-900 disabled:opacity-50"
                 >
                   {importing.has(p.productId) ? (
                     <Loader2 className="h-3 w-3 animate-spin" />

@@ -18,10 +18,12 @@ export function Pill({
     <button
       onClick={onClick}
       className={cn(
-        "press rounded-full px-3.5 py-1 text-sm font-medium transition-colors",
+        // Pill 本身就是「胶囊」这一档的例外，圆角保留 rounded-full；
+        // 未选中 hover 底色统一用 --dk-action-regular，不用 black/5。
+        "press rounded-full px-3.5 py-1 text-sm font-[550] transition-colors",
         active
           ? "bg-[var(--accent-pop)] text-white"
-          : "text-zinc-600 hover:bg-black/5 hover:text-ink",
+          : "text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)] hover:text-ink",
         className
       )}
     >

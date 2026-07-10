@@ -130,13 +130,15 @@ export function AssetPickerModal({
       onClick={onClose}
     >
       <div
-        className="dk-card flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden p-5"
+        // 弹窗/抽屉圆角走 16~20(硬规则),dk-card 的 8px 圆角是给常规卡片用的,
+        // 这里不能借 dk-card(全局类不在 tailwind layer 里,工具类圆角覆盖不掉它),改为手写等价视觉。
+        className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dk-overlay p-5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/[0.04] text-zinc-600">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--dk-surface-2)] text-zinc-600">
               <ImagePlus className="h-4 w-4" />
             </span>
             <div>
@@ -152,7 +154,7 @@ export function AssetPickerModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+            className="rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-600"
             aria-label="关闭"
           >
             <X className="h-4 w-4" />
@@ -161,7 +163,7 @@ export function AssetPickerModal({
 
         {/* 已选托盘 */}
         {selectedCount > 0 && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-xl bg-zinc-50 p-2">
+          <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-lg bg-[var(--dk-surface-2)] p-2">
             <span className="px-1 text-2xs font-medium text-zinc-500">已选 {selectedCount} 项</span>
             {selectedProduct && (
               <SelectedChip
@@ -205,12 +207,12 @@ export function AssetPickerModal({
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:opacity-50"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-dashed border-[var(--dk-stroke-border)] px-3 py-2 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:opacity-50"
                 >
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                   从本地上传
                 </button>
-                <div className="flex flex-1 items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-2">
+                <div className="flex flex-1 items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-2">
                   <Search className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                   <input
                     value={search}
@@ -249,7 +251,7 @@ export function AssetPickerModal({
                         onClick={() => onMaterialChange(sel ? null : m.id)}
                         title={m.originalName}
                         className={`relative aspect-square overflow-hidden rounded-md border ${
-                          sel ? "border-brand-500 ring-2 ring-brand-200" : "border-zinc-200/80"
+                          sel ? "border-brand-500 ring-2 ring-brand-200" : "border-[var(--dk-stroke-border)]"
                         }`}
                       >
                         <Image src={m.url} alt={m.originalName} fill sizes="96px" unoptimized className="object-cover" />
@@ -281,15 +283,15 @@ export function AssetPickerModal({
                         key={p.id}
                         onClick={() => onProductChange(sel ? null : p.id)}
                         className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${
-                          sel ? "bg-brand-50 ring-1 ring-brand-200" : "hover:bg-zinc-50"
+                          sel ? "bg-[var(--dk-action-regular)] ring-1 ring-[var(--dk-stroke-border)]" : "hover:bg-[var(--dk-action-regular)]"
                         }`}
                       >
                         {p.coverUrl ? (
-                          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-zinc-200/80">
+                          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[var(--dk-stroke-border)]">
                             <Image src={p.coverUrl} alt="" fill sizes="36px" unoptimized className="object-cover" />
                           </span>
                         ) : (
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-base">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--dk-surface-2)] text-base">
                             {p.emoji ?? "📦"}
                           </span>
                         )}
@@ -324,8 +326,8 @@ export function AssetPickerModal({
                         key={m.id}
                         onClick={() => onPersonaChange(sel ? null : m.id)}
                         title={m.style ?? undefined}
-                        className={`relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border bg-zinc-100 ${
-                          sel ? "border-brand-500 ring-2 ring-brand-200" : "border-zinc-200/80"
+                        className={`relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border bg-[var(--dk-surface-2)] ${
+                          sel ? "border-brand-500 ring-2 ring-brand-200" : "border-[var(--dk-stroke-border)]"
                         }`}
                       >
                         {m.avatarUrl ? (
@@ -351,10 +353,10 @@ export function AssetPickerModal({
         </div>
 
         {/* 底部 */}
-        <div className="mt-4 flex items-center justify-end border-t border-zinc-100 pt-3">
+        <div className="mt-4 flex items-center justify-end border-t border-[var(--dk-stroke-border)] pt-3">
           <button
             onClick={onClose}
-            className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-black"
+            className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-5 py-2 text-xs font-semibold text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-[var(--dk-btn-black-hover)]"
           >
             完成
           </button>
@@ -387,7 +389,7 @@ function SelectedChip({
       <span className="max-w-32 truncate">{label}</span>
       <button
         onClick={onRemove}
-        className="rounded-full p-0.5 text-brand-400 hover:bg-brand-100 hover:text-brand-700"
+        className="rounded-full p-0.5 text-brand-400 hover:bg-[var(--dk-action-regular)] hover:text-brand-700"
         aria-label="移除"
       >
         <X className="h-3 w-3" />
@@ -412,8 +414,8 @@ function TabButton({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
         active
-          ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200"
-          : "border border-black/10 bg-white text-zinc-600 hover:border-black/20"
+          ? "bg-[var(--dk-action-regular)] text-zinc-900 ring-1 ring-[var(--dk-stroke-border)]"
+          : "border border-[var(--dk-stroke-border)] bg-white text-zinc-600 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
       }`}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -434,7 +436,7 @@ function EmptyLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="block rounded-lg border border-dashed border-zinc-300 py-8 text-center text-xs text-zinc-500 transition-colors hover:border-brand-300 hover:text-brand-600"
+      className="block rounded-lg border border-dashed border-[var(--dk-stroke-border)] py-8 text-center text-xs text-zinc-500 transition-colors hover:border-brand-300 hover:text-brand-600"
     >
       {label}
     </Link>

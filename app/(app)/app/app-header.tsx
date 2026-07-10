@@ -54,7 +54,7 @@ export function AppHeader({
         ) : (
           <button
             onClick={() => open()}
-            className="press inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3.5 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-brand-300 hover:text-brand-700"
+            className="press inline-flex items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3.5 py-1.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-[var(--dk-action-regular)]"
           >
             <User className="h-4 w-4" /> 登录
           </button>

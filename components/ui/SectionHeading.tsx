@@ -24,7 +24,8 @@ export function SectionHeading({
       )}
     >
       {eyebrow && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1 text-2xs font-medium text-zinc-600">
+        // eyebrow 不是 Tab/Pill，胶囊形没有豁免，收到 8px
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface)] px-3 py-1 text-2xs font-[550] text-[var(--dk-content-secondary)]">
           {eyebrow}
         </span>
       )}
@@ -32,7 +33,7 @@ export function SectionHeading({
       {description && (
         <p
           className={cn(
-            "max-w-2xl text-base leading-relaxed text-zinc-500 text-cjk-relaxed",
+            "max-w-2xl text-base leading-relaxed text-[var(--dk-content-secondary)] text-cjk-relaxed",
             align === "center" && "mx-auto"
           )}
         >

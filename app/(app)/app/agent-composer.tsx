@@ -391,7 +391,7 @@ export function AgentComposer({
   return (
     <>
     <div
-      className="dk-card overflow-hidden transition-colors focus-within:border-brand-400"
+      className="dk-composer overflow-hidden"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();

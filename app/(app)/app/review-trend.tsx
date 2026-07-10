@@ -98,7 +98,7 @@ export function ReviewTrend({ tasks }: { tasks: StreamTask[] }) {
           return (
             <span key={q} className="inline-flex items-center gap-1.5 text-2xs">
               <Badge tone={meta.tone as Tone}>{meta.name}</Badge>
-              <span className="tabular-nums font-medium text-zinc-700">{lastCounts[q] ?? 0}</span>
+              <span className="tabular-nums font-medium text-zinc-600">{lastCounts[q] ?? 0}</span>
               {d !== 0 && (
                 <span className={cn("tabular-nums font-medium", migrationTone(q, d))}>
                   {d > 0 ? `↑${d}` : `↓${Math.abs(d)}`}

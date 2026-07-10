@@ -36,7 +36,7 @@ export function RecentVideos({ videos }: { videos: RecentVideo[] }) {
               key={v.id}
               href="/app/videos"
               title={v.title}
-              className="dk-card lift relative aspect-[9/16] w-24 shrink-0 overflow-hidden sm:w-28"
+              className="dk-card dk-lift relative aspect-[9/16] w-24 shrink-0 overflow-hidden sm:w-28"
             >
               {v.thumbnailUrl ? (
                 <Image
@@ -48,7 +48,7 @@ export function RecentVideos({ videos }: { videos: RecentVideo[] }) {
                   className="object-cover"
                 />
               ) : (
-                <span className="absolute inset-0 flex items-center justify-center bg-zinc-100">
+                <span className="absolute inset-0 flex items-center justify-center bg-[var(--dk-surface-2)]">
                   <Clapperboard className="h-5 w-5 text-zinc-300" />
                 </span>
               )}
@@ -63,7 +63,8 @@ export function RecentVideos({ videos }: { videos: RecentVideo[] }) {
                   失败
                 </span>
               )}
-              <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/60 to-transparent px-1.5 pb-1 pt-4 text-2xs text-white">
+              {/* 去渐变(硬规则):底部字幕条改纯色半透明黑,不做渐隐 */}
+              <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1.5 py-1 text-2xs text-white">
                 {v.title}
               </span>
             </Link>

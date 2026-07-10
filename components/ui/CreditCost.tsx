@@ -16,7 +16,7 @@ export function CreditCost({
     <span
       title={`本次约消耗 ${credits} 积分`}
       className={cn(
-        "inline-flex items-center gap-1 text-2xs font-medium tabular-nums text-zinc-400",
+        "inline-flex items-center gap-1 text-2xs font-[550] tabular-nums text-[var(--dk-content-tertiary)]",
         className
       )}
     >

@@ -264,9 +264,9 @@ export function QuickActionCards({
               }
               onPick(a);
             }}
-            className={`dk-card lift group relative flex min-h-[5.25rem] items-center justify-between gap-3 p-4 text-left ${
+            className={`dk-card dk-lift group relative flex min-h-[5.25rem] items-center justify-between gap-3 p-4 text-left ${
               soon ? "opacity-70" : ""
-            } ${active ? "ring-2 ring-brand-400" : ""}`}
+            } ${active ? "dk-ring" : ""}`}
           >
             {soon && (
               <span className="absolute -top-2 right-2">

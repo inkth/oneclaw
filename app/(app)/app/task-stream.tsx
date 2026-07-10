@@ -152,7 +152,7 @@ export function TaskStream({
 function UserBubble({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-[#1c1d1f] px-4 py-2.5 text-sm leading-relaxed text-white shadow-sm">
+      <div className="max-w-[85%] rounded-lg rounded-br-md bg-[var(--dk-btn-black)] px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
         {children}
       </div>
     </div>
@@ -174,7 +174,7 @@ function AgentBubble({
     <div className="flex justify-start">
       <div className="dk-card max-w-[92%] min-w-0 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
+          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--dk-surface-2)] text-zinc-600">
             <Icon className="h-3 w-3" />
           </span>
           <span className="text-xs font-semibold text-ink">{identity?.label ?? agent}</span>
@@ -204,7 +204,7 @@ function ProductChips({ products }: { products: NonNullable<NonNullable<StreamTa
           </>
         );
         const cls =
-          "inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-700";
+          "inline-flex items-center gap-1.5 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1 text-xs text-zinc-600";
         return p.externalId ? (
           <Link
             key={p.id}
@@ -249,8 +249,8 @@ function PersonaPicker({
         onClick={() => onChange(null)}
         className={`${chipBase} ${
           value === null
-            ? "border-brand-400 bg-brand-50/60 text-brand-700"
-            : "border-black/10 bg-white text-zinc-600 hover:border-zinc-300"
+            ? "border-brand-400 bg-[var(--dk-action-regular)] text-brand-700"
+            : "border-[var(--dk-stroke-border)] bg-white text-zinc-600 hover:border-zinc-300"
         }`}
       >
         不用人设
@@ -262,8 +262,8 @@ function PersonaPicker({
           title={m.style ?? undefined}
           className={`${chipBase} ${
             value === m.id
-              ? "border-brand-400 bg-brand-50/60 text-brand-700"
-              : "border-black/10 bg-white text-zinc-600 hover:border-zinc-300"
+              ? "border-brand-400 bg-[var(--dk-action-regular)] text-brand-700"
+              : "border-[var(--dk-stroke-border)] bg-white text-zinc-600 hover:border-zinc-300"
           }`}
         >
           {m.avatarUrl ? (
@@ -524,7 +524,7 @@ function TaskBubble({
               <button
                 onClick={retryTask}
                 disabled={retrying}
-                className="press inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
+                className="press inline-flex items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
               >
                 {retrying ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -543,7 +543,7 @@ function TaskBubble({
           <VideoAnalysisResult data={t.metadata} />
         ) : (
           <>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">
+            <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-900">
               {shown || "(无输出)"}
             </div>
             {long && (
@@ -572,7 +572,7 @@ function TaskBubble({
                         value={market}
                         onChange={(e) => changeMarket(e.target.value as Region)}
                         disabled={confirming || rewriting}
-                        className="h-6 shrink-0 rounded-full border border-black/10 bg-white pl-2 pr-1 text-2xs font-medium text-zinc-700 outline-none transition-colors hover:border-zinc-300 focus:border-brand-400"
+                        className="h-6 shrink-0 rounded-full border border-[var(--dk-stroke-border)] bg-white pl-2 pr-1 text-2xs font-medium text-zinc-600 outline-none transition-colors hover:border-zinc-300 focus:border-brand-400"
                       >
                         {REGIONS.map((r) => (
                           <option key={r.code} value={r.code}>
@@ -601,12 +601,12 @@ function TaskBubble({
                     }}
                     disabled={rewriting || redrafting || confirming}
                     placeholder="不满意?说一句怎么改,留空=直接换一版"
-                    className="h-7 min-w-0 flex-1 rounded-full border border-black/10 bg-white px-3 text-2xs text-zinc-700 outline-none transition-colors placeholder:text-zinc-400 hover:border-zinc-300 focus:border-brand-400 disabled:opacity-50"
+                    className="h-7 min-w-0 flex-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 text-2xs text-zinc-600 outline-none transition-colors placeholder:text-zinc-400 hover:border-zinc-300 focus:border-brand-400 disabled:opacity-50"
                   />
                   <button
                     onClick={rewrite}
                     disabled={rewriting || redrafting || confirming}
-                    className="press inline-flex shrink-0 items-center gap-1 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 disabled:pointer-events-none"
+                    className="press inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {rewriting ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -620,7 +620,7 @@ function TaskBubble({
                   <button
                     onClick={confirmVideo}
                     disabled={confirming || redrafting || rewriting}
-                    className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
+                    className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-1.5 text-xs font-semibold text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {confirming ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -643,7 +643,7 @@ function TaskBubble({
             {review && (
               <button
                 onClick={() => setDashOpen((v) => !v)}
-                className="mt-2 inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
+                className="mt-2 inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
               >
                 {dashOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                 {dashOpen ? "收起仪表盘" : "展开复盘仪表盘"}
@@ -706,7 +706,7 @@ function VideoResultCard({
     return (
       <Link
         href="/app/videos"
-        className="mt-3 inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+        className="mt-3 inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
       >
         <Clapperboard className="h-3 w-3" />
         去短视频墙查看成片 <ArrowRight className="h-3 w-3" />
@@ -722,7 +722,7 @@ function VideoResultCard({
     <Link
       href="/app/videos"
       title={video?.title || "查看成片"}
-      className="dk-card lift group relative mt-3 block aspect-[9/16] w-28 overflow-hidden sm:w-32"
+      className="dk-card dk-lift group relative mt-3 block aspect-[9/16] w-28 overflow-hidden sm:w-32"
     >
       {video?.thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -732,7 +732,7 @@ function VideoResultCard({
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
-        <span className="absolute inset-0 flex items-center justify-center bg-zinc-100">
+        <span className="absolute inset-0 flex items-center justify-center bg-[var(--dk-surface-2)]">
           <Clapperboard className="h-5 w-5 text-zinc-300" />
         </span>
       )}
@@ -747,7 +747,7 @@ function VideoResultCard({
           生成失败
         </span>
       ) : (
-        <span className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-md transition-transform group-hover:scale-110">
+        <span className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
           <Play className="h-4 w-4 translate-x-px fill-current" />
         </span>
       )}

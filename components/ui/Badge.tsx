@@ -21,7 +21,9 @@ export function Badge({
     <span
       title={title}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium",
+        // Designkit 圆角只有 8/12/16/20 几档，胶囊形只留给 Tab/Pill 本身，
+        // 状态标签统一收到 8px（rounded-lg），不再用 rounded-full。
+        "inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-2xs font-[550]",
         outline ? "border" : "border border-transparent",
         STATUS_TONES[tone],
         className

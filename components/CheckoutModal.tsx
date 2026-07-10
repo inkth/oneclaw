@@ -139,12 +139,12 @@ export function CheckoutModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden"
+        className="relative w-full max-w-md rounded-2xl dk-overlay overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900"
+          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
         >
           <X className="h-4 w-4" />
         </button>
@@ -164,7 +164,7 @@ export function CheckoutModal({
                 <button
                   key={p.months}
                   onClick={() => setPeriod(p.months)}
-                  className={`rounded-xl border px-3 py-3 text-center transition-all ${
+                  className={`rounded-lg border px-3 py-3 text-center transition-all ${
                     period === p.months
                       ? "border-brand-500 bg-brand-50/60 ring-2 ring-brand-200"
                       : "border-zinc-200/80 hover:border-zinc-300"
@@ -180,7 +180,7 @@ export function CheckoutModal({
               ))}
             </div>
 
-            <div className="flex items-baseline justify-between rounded-xl bg-zinc-50/80 px-4 py-3">
+            <div className="flex items-baseline justify-between rounded-lg bg-zinc-50/80 px-4 py-3">
               <div className="text-xs text-zinc-500">应付金额</div>
               <div>
                 <span className="text-2xl font-bold tabular-nums">
@@ -200,7 +200,7 @@ export function CheckoutModal({
                     <button
                       key={pv}
                       onClick={() => setProvider(pv)}
-                      className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
+                      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
                         active
                           ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
                           : "border-zinc-200/80 hover:border-zinc-300"
@@ -223,7 +223,7 @@ export function CheckoutModal({
             <button
               onClick={createOrder}
               disabled={creating}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-60 transition-colors"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
               生成二维码
@@ -266,14 +266,14 @@ export function CheckoutModal({
                 <div className="text-base font-semibold">二维码已过期</div>
                 <button
                   onClick={() => setOrder(null)}
-                  className="rounded-xl bg-zinc-900 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-800"
+                  className="rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--dk-btn-black-hover)]"
                 >
                   重新下单
                 </button>
               </div>
             ) : (
               <>
-                <div className="flex justify-center rounded-xl bg-white border border-zinc-100 p-5">
+                <div className="flex justify-center rounded-lg bg-white border border-zinc-100 p-5">
                   <QRCodeSVG
                     value={order.qrCodeUrl}
                     size={200}
@@ -291,7 +291,7 @@ export function CheckoutModal({
                 </div>
 
                 {isMock && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <div className="flex items-start gap-2 text-xs text-amber-800">
                       <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                       <div>
@@ -303,7 +303,7 @@ export function CheckoutModal({
                         <button
                           onClick={mockConfirm}
                           disabled={confirming}
-                          className="mt-2 inline-flex items-center gap-1 rounded-xl bg-amber-600 px-3 py-1 text-2xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                          className="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1 text-2xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
                         >
                           {confirming && <Loader2 className="h-3 w-3 animate-spin" />}
                           模拟支付成功

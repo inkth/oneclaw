@@ -50,8 +50,8 @@ export function Team() {
 
         <div className="mx-auto mt-12 grid max-w-6xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {MEMBERS.map((m) => (
-            <div key={m.name} className="dk-card lift flex flex-col p-6">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-black/[0.04] text-accent-pop">
+            <div key={m.name} className="dk-card dk-lift flex flex-col p-6">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-black/[0.04] text-accent-pop">
                 <m.icon className="h-5 w-5" />
               </div>
               <h3 className="font-display mt-4 text-base font-semibold text-ink">{m.name}</h3>

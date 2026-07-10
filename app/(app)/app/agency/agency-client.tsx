@@ -19,6 +19,7 @@ import { Stat } from "@/components/ui/Stat";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { apiBrowser } from "@/lib/api-browser";
+import type { Tone } from "@/lib/ui/tokens";
 
 export type AgencySummary = {
   code: string;
@@ -71,10 +72,11 @@ const SOURCE_LABEL: Record<string, string> = {
   OVERFLOW_BILL: "超额账单",
 };
 
-const WITHDRAWAL_META: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "审核中", className: "bg-amber-50 text-amber-700" },
-  PAID: { label: "已打款", className: "bg-emerald-50 text-emerald-700" },
-  REJECTED: { label: "已驳回", className: "bg-rose-50 text-rose-700" },
+// 提现状态 → 语义 tone,直接复用全站 STATUS_TONES(经 Badge 渲染),不再自带颜色 className。
+const WITHDRAWAL_META: Record<string, { label: string; tone: Tone }> = {
+  PENDING: { label: "审核中", tone: "warning" },
+  PAID: { label: "已打款", tone: "success" },
+  REJECTED: { label: "已驳回", tone: "danger" },
 };
 
 export function AgencyClient({
@@ -158,9 +160,9 @@ export function AgencyClient({
         title="推广中心"
         badge={
           disabled ? (
-            <Badge className="bg-rose-50 text-rose-700">已停用</Badge>
+            <Badge tone="danger">已停用</Badge>
           ) : (
-            <Badge icon={<BadgeCheck className="h-3.5 w-3.5" />} className="bg-emerald-50 text-emerald-700">
+            <Badge tone="success" icon={<BadgeCheck className="h-3.5 w-3.5" />}>
               代理商
             </Badge>
           )
@@ -172,21 +174,21 @@ export function AgencyClient({
       <Card>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <div className="flex items-center gap-2 text-xs text-[var(--dk-content-secondary)]">
               <Megaphone className="h-3.5 w-3.5" />
               我的专属邀请链接
             </div>
-            <div className="mt-1.5 truncate font-mono text-sm text-ink" title={inviteLink}>
+            <div className="mt-1.5 truncate font-mono text-sm text-[var(--dk-content-primary)]" title={inviteLink}>
               {inviteLink}
             </div>
-            <div className="mt-1 text-2xs text-zinc-400">
-              邀请码 <span className="font-mono font-medium text-zinc-600">{summary.code}</span>
+            <div className="mt-1 text-2xs text-[var(--dk-content-tertiary)]">
+              邀请码 <span className="font-mono font-medium text-[var(--dk-content-secondary)]">{summary.code}</span>
               ·新用户经此注册永久绑定你,并获赠新人积分
             </div>
           </div>
           <button
             onClick={copyLink}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-700"
+            className="press inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)]"
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {copied ? "已复制" : "复制链接"}
@@ -209,13 +211,13 @@ export function AgencyClient({
 
       {/* 提现申请 */}
       <Card>
-        <div className="text-sm font-medium text-ink">申请提现</div>
-        <p className="mt-1 text-xs text-zinc-500">
+        <div className="text-sm font-medium text-[var(--dk-content-primary)]">申请提现</div>
+        <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">
           可提现余额 {fmtYuan(summary.balanceCents)}。提交后由管理员线下打款并标记结算。
         </p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 rounded-lg border border-zinc-200/80 px-3 py-2 focus-within:ring-2 focus-within:ring-brand-200">
-            <span className="text-sm text-zinc-500">¥</span>
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 focus-within:ring-2 focus-within:ring-brand-200">
+            <span className="text-sm text-[var(--dk-content-secondary)]">¥</span>
             <input
               type="number"
               min={0}
@@ -223,7 +225,7 @@ export function AgencyClient({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="提现金额"
-              className="w-32 bg-transparent text-sm outline-none placeholder-zinc-300"
+              className="w-32 bg-transparent text-sm outline-none placeholder:text-[var(--dk-content-tertiary)]"
               disabled={disabled}
             />
           </div>
@@ -232,13 +234,13 @@ export function AgencyClient({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="收款方式(如 微信 / 支付宝 / 银行卡)"
-            className="flex-1 rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
+            className="flex-1 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
             disabled={disabled}
           />
           <button
             onClick={submitWithdrawal}
             disabled={submitting || disabled || summary.balanceCents <= 0}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-700 disabled:opacity-60"
+            className="press inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-60"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             提交申请
@@ -248,7 +250,7 @@ export function AgencyClient({
 
       {/* 客户列表 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-ink">客户列表</div>
+        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">客户列表</div>
         {customers.length === 0 ? (
           <EmptyState icon={Users} title="还没有客户" description="把邀请链接分享出去,客户注册后会出现在这里。" />
         ) : (
@@ -265,9 +267,9 @@ export function AgencyClient({
               {customers.map((c, i) => (
                 <Tr key={i}>
                   <Td className="font-mono">{c.phone}</Td>
-                  <Td className="text-zinc-500">{fmtDate(c.boundAt)}</Td>
+                  <Td className="text-[var(--dk-content-secondary)]">{fmtDate(c.boundAt)}</Td>
                   <Td align="right">{fmtYuan(c.paidCents)}</Td>
-                  <Td align="right" className="font-medium text-ink">{fmtYuan(c.commissionCents)}</Td>
+                  <Td align="right" className="font-medium text-[var(--dk-content-primary)]">{fmtYuan(c.commissionCents)}</Td>
                 </Tr>
               ))}
             </tbody>
@@ -277,7 +279,7 @@ export function AgencyClient({
 
       {/* 佣金流水 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-ink">佣金流水</div>
+        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">佣金流水</div>
         {commissions.length === 0 ? (
           <EmptyState icon={Coins} title="暂无佣金" description="客户完成付费后,佣金会实时入账。" />
         ) : (
@@ -294,11 +296,11 @@ export function AgencyClient({
             <tbody>
               {commissions.map((r) => (
                 <Tr key={r.id}>
-                  <Td className="text-zinc-500">{fmtDate(r.createdAt)}</Td>
+                  <Td className="text-[var(--dk-content-secondary)]">{fmtDate(r.createdAt)}</Td>
                   <Td>{SOURCE_LABEL[r.sourceType] ?? r.sourceType}</Td>
                   <Td align="right">{fmtYuan(r.baseAmountCents)}</Td>
-                  <Td align="right" className="text-zinc-500">{r.commissionBp / 100}%</Td>
-                  <Td align="right" className="font-medium text-ink">{fmtYuan(r.amountCents)}</Td>
+                  <Td align="right" className="text-[var(--dk-content-secondary)]">{r.commissionBp / 100}%</Td>
+                  <Td align="right" className="font-medium text-[var(--dk-content-primary)]">{fmtYuan(r.amountCents)}</Td>
                 </Tr>
               ))}
             </tbody>
@@ -308,7 +310,7 @@ export function AgencyClient({
 
       {/* 提现记录 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-ink">提现记录</div>
+        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">提现记录</div>
         {withdrawals.length === 0 ? (
           <EmptyState icon={Wallet} title="暂无提现" description="佣金累积后可发起提现申请。" />
         ) : (
@@ -323,17 +325,15 @@ export function AgencyClient({
             </THead>
             <tbody>
               {withdrawals.map((w) => {
-                const meta = WITHDRAWAL_META[w.status] ?? { label: w.status, className: "bg-zinc-100 text-zinc-600" };
+                const meta = WITHDRAWAL_META[w.status] ?? { label: w.status, tone: "neutral" as Tone };
                 return (
                   <Tr key={w.id}>
-                    <Td className="text-zinc-500">{fmtDate(w.createdAt)}</Td>
-                    <Td align="right" className="font-medium text-ink">{fmtYuan(w.amountCents)}</Td>
+                    <Td className="text-[var(--dk-content-secondary)]">{fmtDate(w.createdAt)}</Td>
+                    <Td align="right" className="font-medium text-[var(--dk-content-primary)]">{fmtYuan(w.amountCents)}</Td>
                     <Td>
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-medium ${meta.className}`}>
-                        {meta.label}
-                      </span>
+                      <Badge tone={meta.tone}>{meta.label}</Badge>
                     </Td>
-                    <Td className="max-w-[220px] truncate text-zinc-500" title={w.note}>{w.note || "—"}</Td>
+                    <Td className="max-w-[220px] truncate text-[var(--dk-content-secondary)]" title={w.note}>{w.note || "—"}</Td>
                   </Tr>
                 );
               })}

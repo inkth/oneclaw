@@ -69,7 +69,7 @@ export default async function InfluencerDetailPage({
   if (!dto) {
     return (
       <div className="space-y-4">
-        <Link href="/app/discover/influencers" className="text-sm text-zinc-500 hover:text-zinc-800">
+        <Link href="/app/discover/influencers" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← 返回达人榜
         </Link>
         <EmptyState
