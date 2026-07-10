@@ -56,7 +56,7 @@ function EntityGrid({ items, rounded }: { items: FavoriteItem[]; rounded?: boole
         <Link
           key={`${it.kind}-${it.externalId}`}
           href={it.href}
-          className="group flex items-center gap-3 rounded-lg border border-zinc-200/70 bg-white p-2.5 transition-colors hover:border-brand-200 hover:bg-brand-50/40"
+          className="group dk-card dk-lift flex items-center gap-3 p-2.5"
         >
           <Img
             src={it.cover}
@@ -117,7 +117,7 @@ export function FavoritesClient({
         description="把看中的商品、店铺、达人、视频收在一处。商品收藏可推进阶段、回填成本、直接做视频。"
       />
 
-      <div className="flex items-center gap-1 border-b border-zinc-200">
+      <div className="flex items-center gap-1 border-b border-[var(--dk-stroke-divider)]">
         {tabs.map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -127,8 +127,8 @@ export function FavoritesClient({
               onClick={() => setTab(t.key)}
               className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? "border-brand-600 text-brand-700"
-                  : "border-transparent text-zinc-500 hover:text-zinc-800"
+                  ? "border-brand-600 text-zinc-900"
+                  : "border-transparent text-zinc-500 hover:text-zinc-900"
               }`}
             >
               <Icon className="h-4 w-4" />

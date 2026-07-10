@@ -54,7 +54,7 @@ const PRESETS: Array<{
 const genderMeta: Record<Gender, { cn: string; cls: string }> = {
   FEMALE: { cn: "女", cls: "bg-rose-50 text-rose-700" },
   MALE: { cn: "男", cls: "bg-sky-50 text-sky-700" },
-  NEUTRAL: { cn: "通用", cls: "bg-zinc-100 text-zinc-700" },
+  NEUTRAL: { cn: "通用", cls: "bg-zinc-100 text-zinc-600" },
 };
 
 export function ModelsClient({
@@ -149,7 +149,7 @@ export function ModelsClient({
       />
 
       {models.length === 0 && (
-        <div className="rounded-xl border border-brand-200 bg-brand-50/40 p-6">
+        <div className="rounded-lg border border-brand-200 bg-brand-50/40 p-6">
           <div className="flex items-center gap-1.5 text-xs font-medium text-brand-700 mb-3">
             <Sparkles className="h-3.5 w-3.5" />
             一键添加预设人设
@@ -159,7 +159,7 @@ export function ModelsClient({
               <button
                 key={p.name}
                 onClick={() => createFromPreset(p)}
-                className="group rounded-xl ring-edge bg-white p-3 lift hover:border-brand-200 text-left"
+                className="group dk-lift rounded-lg ring-edge bg-white p-3 hover:border-brand-200 text-left"
               >
                 <MediaPlaceholder seed={p.name} icon={UserSquare2} rounded="rounded-lg" className="aspect-square" />
                 <div className="mt-2 text-sm font-medium">{p.name}</div>
@@ -177,7 +177,7 @@ export function ModelsClient({
           {models.map((m) => {
             const g = genderMeta[m.gender];
             return (
-              <div key={m.id} className="group rounded-xl ring-edge bg-white overflow-hidden shadow-xs">
+              <div key={m.id} className="group rounded-lg ring-edge bg-white overflow-hidden shadow-xs">
                 <div className="aspect-[3/4] relative overflow-hidden">
                   {m.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -240,7 +240,7 @@ export function ModelsClient({
         </div>
       )}
 
-      <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-4 text-xs text-zinc-600 leading-relaxed">
+      <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-zinc-50/60 p-4 text-xs text-zinc-600 leading-relaxed">
         当前模特是「人设档案」，给短视频创作 Agent 写脚本时作为风格输入。
       </div>
 
@@ -309,12 +309,12 @@ function CreateModelModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl ring-edge bg-white shadow-xl"
+        className="relative w-full max-w-md rounded-2xl dk-overlay"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100"
+          className="absolute right-3 top-3 rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -322,19 +322,19 @@ function CreateModelModal({
           <h2 className="text-subtitle">创建模特</h2>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 mb-1.5">名称</label>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">名称</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：户外探险家"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
+              className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 mb-1.5">性别</label>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">性别</label>
             <div className="grid grid-cols-3 gap-2">
               {(["FEMALE", "MALE", "NEUTRAL"] as Gender[]).map((g) => (
                 <button
@@ -343,7 +343,7 @@ function CreateModelModal({
                   className={`rounded-lg border px-3 py-2 text-sm transition-all ${
                     gender === g
                       ? "border-brand-300 bg-brand-50/40 ring-2 ring-brand-200"
-                      : "border-zinc-200/80 hover:border-zinc-300"
+                      : "border-[var(--dk-stroke-border)] hover:border-zinc-300"
                   }`}
                 >
                   {genderMeta[g].cn}
@@ -353,26 +353,26 @@ function CreateModelModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 mb-1.5">风格（可选）</label>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">风格（可选）</label>
             <input
               type="text"
               value={style}
               onChange={(e) => setStyle(e.target.value)}
               maxLength={80}
               placeholder="例：阳光 / 商务 / 治愈"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
+              className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 mb-1.5">描述（可选）</label>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">描述（可选）</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={800}
               rows={3}
               placeholder="人设、年龄段、典型场景、口播语气…"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300 resize-none"
+              className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300 resize-none"
             />
           </div>
 

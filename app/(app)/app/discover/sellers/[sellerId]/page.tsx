@@ -56,7 +56,7 @@ export default async function SellerDetailPage({
   if (!dto) {
     return (
       <div className="space-y-4">
-        <Link href="/app/discover/sellers" className="text-sm text-zinc-500 hover:text-zinc-800">
+        <Link href="/app/discover/sellers" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← 返回店铺榜
         </Link>
         <EmptyState

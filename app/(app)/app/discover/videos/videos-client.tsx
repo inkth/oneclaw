@@ -107,7 +107,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
   return (
     <Link
       href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white transition-all hover:border-brand-200 hover:shadow-sm"
+      className="dk-card dk-lift group flex flex-col overflow-hidden"
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-100">
         {v.coverUrl ? (
@@ -122,7 +122,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
           </div>
         )}
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
             <Play className="h-3 w-3 fill-zinc-900" />
             查看详情
           </span>
@@ -150,7 +150,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
 
       <div className="flex flex-1 flex-col gap-2 p-3">
         <p
-          className="line-clamp-2 min-h-[2.4em] text-xs leading-snug text-zinc-800"
+          className="line-clamp-2 min-h-[2.4em] text-xs leading-snug text-zinc-900"
           title={v.descZh ? `${v.descZh}\n${v.desc}` : v.desc}
         >
           {v.descZh || v.desc || "(无描述)"}
@@ -169,7 +169,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between rounded-lg bg-zinc-50 px-2 py-1.5">
+        <div className="mt-auto flex items-center justify-between rounded-lg bg-[var(--dk-surface-2)] px-2 py-1.5">
           <div>
             <div className="text-2xs uppercase tracking-wider text-zinc-400">带货销量</div>
             <div className="text-xs font-semibold tabular-nums text-zinc-900">{fmt(v.totalVideoSaleCnt)}</div>

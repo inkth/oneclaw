@@ -57,11 +57,10 @@ export default async function DashboardPage({
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <div className="pt-4 text-center sm:pt-8">
-        <h1 className="font-display text-display-sm text-ink">
-          一句话，出一条带货内容
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-500">
+      {/* Designkit 的 Hero：标题距顶 120px，与输入框之间留 24px，别的什么都没有。 */}
+      <div className="pt-16 text-center sm:pt-[120px]">
+        <h1 className="text-hero">一句话，出一条带货内容</h1>
+        <p className="mx-auto mt-6 max-w-xl text-sm text-[var(--dk-content-secondary)]">
           {!workspace
             ? "不知道从哪开始？先问跨境顾问。选品分析、做视频、写 Listing、投放复盘，写一句指令就能开干。登录后产出会存进你的资产库。"
             : "不知道从哪开始？先问跨境顾问。选品、做视频、Listing、复盘都在这一框，对话和结果都在「会话」里，短视频成片归「资产 · 作品」。"}

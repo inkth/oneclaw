@@ -24,12 +24,9 @@ export function MediaPlaceholder({
   rounded?: string;
 }) {
   const hue = seed ? hashHue(seed) : null;
-  const style =
-    hue == null
-      ? undefined
-      : {
-          background: `linear-gradient(135deg, hsl(${hue} 45% 92%), #faf5ff 55%, hsl(${hue} 40% 95%))`,
-        };
+  // Designkit 去渐变：稳定色相收成单一纯色块（而不是三色渐变），
+  // 与卡片/按钮的「不用渐变」是同一条规则，只是这里色相仍按 seed 哈希稳定取值。
+  const style = hue == null ? undefined : { background: `hsl(${hue} 40% 93%)` };
   return (
     <div
       aria-hidden

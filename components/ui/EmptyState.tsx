@@ -23,11 +23,12 @@ export function EmptyState({
       )}
     >
       {Icon && (
-        <Icon className="mx-auto mb-4 h-12 w-12 text-zinc-300" strokeWidth={1.5} />
+        // 线框图标最淡，收到三档文字色里最浅的 tertiary
+        <Icon className="mx-auto mb-4 h-12 w-12 text-[var(--dk-content-tertiary)]" strokeWidth={1.5} />
       )}
       <div className="text-subtitle">{title}</div>
       {description && (
-        <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-zinc-500">{description}</p>
+        <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-[var(--dk-content-secondary)]">{description}</p>
       )}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
     </div>

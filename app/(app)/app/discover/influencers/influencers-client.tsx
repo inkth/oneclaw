@@ -128,7 +128,7 @@ export function InfluencersClient({
                       {i.ecScore.toFixed(1)}
                     </span>
                   ) : (
-                    <span className="text-zinc-300">—</span>
+                    <span className="text-zinc-400">—</span>
                   )}
                 </Td>
                 <Td align="right">{fmt(i.totalFollowersCnt)}</Td>

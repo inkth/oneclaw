@@ -98,7 +98,8 @@ export function Popover({
               visibility: pos ? "visible" : "hidden",
             }}
             className={cn(
-              "z-50 rounded-xl border border-zinc-200/80 bg-white p-3 shadow-lg",
+              // 弹层归「弹窗/大面板」档,圆角 16px;阴影仍走全局统一的极弱阴影,不因为悬浮就加重
+              "z-50 rounded-2xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface)] p-3 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]",
               panelClassName,
             )}
           >
@@ -127,10 +128,11 @@ export function ToolbarButton({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
+        // 激活/展开态底色统一用 action-regular（不用 brand-50 浅紫描边),与导航轨 hover 同一套语言
+        "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-[550] transition-colors",
         active || open
-          ? "border-brand-200 bg-brand-50 text-brand-700"
-          : "border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50",
+          ? "border-[var(--dk-stroke-border)] bg-[var(--dk-action-regular)] text-[var(--dk-content-primary)]"
+          : "border-[var(--dk-stroke-border)] bg-[var(--dk-surface)] text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-primary)]",
       )}
     >
       <Icon className="h-3.5 w-3.5" />

@@ -20,9 +20,9 @@ export default function DiscoverLoading() {
       </div>
 
       {/* 列表骨架 */}
-      <div className="rounded-xl border border-zinc-200 overflow-hidden">
+      <div className="rounded-lg border border-[var(--dk-stroke-overlay)] overflow-hidden">
         <div className={"h-10 " + bar + " rounded-none"} />
-        <div className="divide-y divide-zinc-100">
+        <div className="divide-y divide-[var(--dk-stroke-divider)]">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3">
               <div className={bar + " h-12 w-12 shrink-0 rounded-lg"} />

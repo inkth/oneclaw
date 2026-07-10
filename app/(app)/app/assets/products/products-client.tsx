@@ -57,7 +57,7 @@ function Thumb({ src, seed }: { src?: string; seed: string }) {
         alt=""
         loading="lazy"
         onError={() => setFailed(true)}
-        className="h-9 w-9 shrink-0 rounded-lg object-cover bg-zinc-100"
+        className="h-9 w-9 shrink-0 rounded-lg object-cover bg-[var(--dk-surface-2)]"
       />
     );
   }
@@ -68,7 +68,7 @@ const statusMap: Record<Status, { label: string; cls: string }> = {
   CANDIDATE: { label: "候选", cls: "bg-sky-50 text-sky-700" },
   EVALUATING: { label: "评估中", cls: "bg-amber-50 text-amber-700" },
   RECOMMENDED: { label: "推荐", cls: "bg-emerald-50 text-emerald-700" },
-  ARCHIVED: { label: "已归档", cls: "bg-zinc-100 text-zinc-500" },
+  ARCHIVED: { label: "已归档", cls: "bg-[var(--dk-surface-2)] text-zinc-500" },
 };
 
 // 成本来源角标:估算(系统按品类/市场)↔ 真实(用户回填)↔ 比价(货源,预留)。
@@ -164,19 +164,19 @@ export function ProductsClient({
   }, [hasActive, workspaceId]);
 
   const filterBar = (
-    <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
+    <div className="flex items-center gap-1.5 bg-[var(--dk-surface-2)] rounded-full p-0.5 self-start">
       {filters.map((f) => (
         <button
           key={f.key}
           onClick={() => setFilter(f.key)}
           className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
             filter === f.key
-              ? "bg-brand-600 text-white shadow-sm"
-              : "text-zinc-600 hover:text-brand-700"
+              ? "bg-[var(--accent-pop)] text-white"
+              : "text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
           }`}
         >
           {f.label}
-          <span className={`ml-1 text-2xs ${filter === f.key ? "text-brand-200" : "text-zinc-400"}`}>
+          <span className={`ml-1 text-2xs ${filter === f.key ? "text-white/70" : "text-zinc-400"}`}>
             {f.key === "ALL"
               ? scoped.length
               : scoped.filter((p) => p.status === f.key).length}
@@ -354,7 +354,7 @@ export function ProductsClient({
                                   }
                                 }}
                                 onBlur={() => commitCost(p)}
-                                className="w-14 rounded border border-brand-300 bg-white px-1 py-0.5 text-2xs font-mono text-zinc-800 outline-none focus:border-brand-500"
+                                className="w-14 rounded border border-brand-300 bg-white px-1 py-0.5 text-2xs font-mono text-zinc-900 outline-none focus:border-brand-500"
                               />
                               <button
                                 type="button"
@@ -370,7 +370,7 @@ export function ProductsClient({
                             <button
                               onClick={() => startEditCost(p)}
                               disabled={busyId === p.id}
-                              className="inline-flex items-center gap-0.5 rounded px-0.5 text-zinc-600 underline decoration-dotted underline-offset-2 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+                              className="inline-flex items-center gap-0.5 rounded px-0.5 text-zinc-600 underline decoration-dotted underline-offset-2 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900 disabled:opacity-50"
                               title="点击回填你的真实进货价,毛利率会据此重算"
                             >
                               ${(p.costCents / 100).toFixed(2)}
@@ -388,7 +388,7 @@ export function ProductsClient({
                   </Td>
                   <Td className="text-zinc-600">
                     {p.shop ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-1.5 py-0.5 text-2xs">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-[var(--dk-surface-2)] px-1.5 py-0.5 text-2xs">
                         {p.shop.name}
                       </span>
                     ) : (
@@ -430,7 +430,7 @@ export function ProductsClient({
                       {p.status !== "ARCHIVED" && (
                         <Link
                           href={`/app/products/${p.id}`}
-                          className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-medium text-brand-700 hover:bg-brand-100"
+                          className="inline-flex items-center gap-1 rounded-full bg-[var(--dk-btn-tertiary)] px-2.5 py-1 text-2xs font-medium text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)]"
                           title="进入商品详情:做 Listing / 补主图 / 为它做视频"
                         >
                           打开详情
@@ -441,7 +441,7 @@ export function ProductsClient({
                         align="end"
                         trigger={({ open }) => (
                           <span
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 ${open ? "bg-zinc-100 text-zinc-700" : ""}`}
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-primary)] ${open ? "bg-[var(--dk-action-regular)] text-[var(--dk-content-primary)]" : ""}`}
                             title="更多操作"
                           >
                             {busyId === p.id ? (
@@ -462,7 +462,7 @@ export function ProductsClient({
                                   close();
                                 }}
                                 disabled={busyId === p.id}
-                                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-600 hover:bg-[var(--dk-action-regular)] disabled:opacity-50"
                               >
                                 <RotateCcw className="h-3.5 w-3.5" />
                                 恢复
@@ -474,7 +474,7 @@ export function ProductsClient({
                                   close();
                                 }}
                                 disabled={busyId === p.id}
-                                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-zinc-600 hover:bg-[var(--dk-action-regular)] disabled:opacity-50"
                               >
                                 <Archive className="h-3.5 w-3.5" />
                                 归档

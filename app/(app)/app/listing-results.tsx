@@ -21,7 +21,7 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
   return (
     <button
       onClick={() => copy(text, label)}
-      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-black/10 bg-white px-2 py-0.5 text-2xs font-medium text-zinc-500 transition-colors hover:border-black/20 hover:text-ink"
+      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-2 py-0.5 text-2xs font-medium text-zinc-500 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-ink"
       title={`复制${label}`}
     >
       <Copy className="h-2.5 w-2.5" />
@@ -118,7 +118,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
     <div className="space-y-2.5 text-sm">
       {/* 标题 */}
       {meta.title && (
-        <div className="rounded-xl border border-black/10 bg-zinc-50/60 px-3 py-2.5">
+        <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] px-3 py-2.5">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="text-2xs font-medium text-zinc-400">Listing 标题</div>
@@ -131,14 +131,14 @@ export function ListingResults({ task }: { task: StreamTask }) {
 
       {/* 五点卖点 */}
       {points.length > 0 && (
-        <div className="rounded-xl border border-black/10 bg-white px-3 py-2.5">
+        <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="text-2xs font-medium text-zinc-400">五点卖点</div>
             <CopyBtn text={points.join("\n")} label="五点卖点" />
           </div>
           <ol className="mt-1.5 space-y-1">
             {points.map((p, i) => (
-              <li key={i} className="flex gap-2 leading-relaxed text-zinc-800">
+              <li key={i} className="flex gap-2 leading-relaxed text-zinc-900">
                 <span className="shrink-0 font-mono text-2xs leading-5 text-zinc-400">{i + 1}.</span>
                 {p}
               </li>
@@ -149,7 +149,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
 
       {/* A+ 图文结构 */}
       {sections.length > 0 && (
-        <div className="rounded-xl border border-black/10 bg-white px-3 py-2.5">
+        <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="text-2xs font-medium text-zinc-400">A+ 图文结构</div>
             <CopyBtn
@@ -159,9 +159,9 @@ export function ListingResults({ task }: { task: StreamTask }) {
           </div>
           <div className="mt-1.5 space-y-2">
             {sections.map((s, i) => (
-              <div key={i} className="rounded-lg bg-zinc-50/80 px-2.5 py-2">
+              <div key={i} className="rounded-lg bg-[var(--dk-surface-2)] px-2.5 py-2">
                 <div className="text-xs font-semibold text-ink">{s.heading}</div>
-                <div className="mt-0.5 leading-relaxed text-zinc-700">{s.body}</div>
+                <div className="mt-0.5 leading-relaxed text-zinc-600">{s.body}</div>
                 {s.imagePrompt && (
                   <div className="mt-1 text-2xs leading-relaxed text-zinc-400">配图:{s.imagePrompt}</div>
                 )}
@@ -173,7 +173,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
 
       {/* 主图:已出图展示网格;否则按 imagesStatus 走确认生成流程 */}
       {(prompts.length > 0 || images.length > 0) && (
-        <div className="rounded-xl border border-black/10 bg-white px-3 py-2.5">
+        <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2.5">
           <div className="text-2xs font-medium text-zinc-400">Listing 主图</div>
           {images.length > 0 ? (
             <>
@@ -187,7 +187,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
                         <img
                           src={url}
                           alt={`Listing 主图 ${i + 1}`}
-                          className="aspect-square w-full rounded-lg border border-black/10 object-cover transition-opacity hover:opacity-90"
+                          className="aspect-square w-full rounded-lg border border-[var(--dk-stroke-border)] object-cover transition-opacity hover:opacity-90"
                         />
                       </a>
                       {meta.productId && (
@@ -197,7 +197,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
                           className={`inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 text-2xs font-medium transition-colors disabled:pointer-events-none ${
                             applied
                               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-black/10 bg-white text-zinc-500 hover:border-brand-300 hover:text-brand-700"
+                              : "border-[var(--dk-stroke-border)] bg-white text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-ink"
                           }`}
                         >
                           {applyingUrl === url ? (
@@ -240,7 +240,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
                   <button
                     onClick={generateImages}
                     disabled={submitting}
-                    className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-black disabled:opacity-50 disabled:pointer-events-none"
+                    className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-1.5 text-xs font-semibold text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-[var(--dk-btn-black-hover)] disabled:pointer-events-none disabled:bg-[var(--dk-btn-tertiary)] disabled:text-[var(--dk-content-tertiary)] disabled:shadow-none"
                   >
                     {submitting ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -271,7 +271,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
 
       {/* 标签 */}
       {tags.length > 0 && (
-        <div className="rounded-xl border border-black/10 bg-white px-3 py-2.5">
+        <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-1 text-2xs font-medium text-zinc-400">
               <Hash className="h-2.5 w-2.5" />
@@ -283,7 +283,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
             {tags.map((t, i) => (
               <span
                 key={i}
-                className="rounded-full bg-zinc-100 px-2 py-0.5 text-2xs text-zinc-600"
+                className="rounded-full bg-[var(--dk-surface-2)] px-2 py-0.5 text-2xs text-zinc-600"
               >
                 {t}
               </span>

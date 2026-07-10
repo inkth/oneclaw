@@ -247,7 +247,7 @@ export function ProductDetail({
                     setEditingTitle(false);
                   }
                 }}
-                className="rounded border border-brand-300 px-1.5 py-0.5 text-lg outline-none focus:border-brand-500"
+                className="rounded-lg border border-brand-300 px-1.5 py-0.5 text-lg outline-none focus:border-brand-500"
               />
             ) : (
               <button
@@ -261,7 +261,7 @@ export function ProductDetail({
                 {p.title}
               </button>
             )}
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-2xs font-medium text-zinc-600">
+            <span className="rounded-full bg-[var(--dk-surface-2)] px-2 py-0.5 text-2xs font-medium text-zinc-600">
               {statusLabel[p.status] ?? p.status}
             </span>
           </span>
@@ -271,7 +271,7 @@ export function ProductDetail({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => router.push(`/app?agent=DIRECTOR&productId=${productId}`)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-tertiary)] px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)]"
             >
               <Clapperboard className="h-3.5 w-3.5" />
               为它做视频
@@ -283,14 +283,14 @@ export function ProductDetail({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 左:主图画廊 + 基础信息 */}
         <div className="space-y-4">
-          <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
+          <div className="dk-card p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-zinc-900">商品图</h3>
               <div className="flex items-center gap-2">
                 {gallery.length > 0 && (
                   <a
                     href={`${API_BASE}/api/v1/workspaces/${workspaceId}/products/${productId}/images.zip`}
-                    className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-2xs font-medium text-zinc-700 hover:bg-zinc-200"
+                    className="inline-flex items-center gap-1 rounded-full bg-[var(--dk-surface-2)] px-2.5 py-1 text-2xs font-medium text-zinc-600 hover:bg-[var(--dk-action-regular)]"
                     title="把这些商品图打包成 zip 下载"
                   >
                     <Download className="h-3 w-3" />
@@ -315,7 +315,7 @@ export function ProductDetail({
               </div>
             </div>
             {gallery.length === 0 ? (
-              <div className="flex h-32 items-center justify-center rounded-lg bg-zinc-50 text-xs text-zinc-400">
+              <div className="flex h-32 items-center justify-center rounded-lg bg-[var(--dk-surface-2)] text-xs text-zinc-400">
                 还没有主图
               </div>
             ) : (
@@ -349,7 +349,7 @@ export function ProductDetail({
             )}
           </div>
 
-          <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
+          <div className="dk-card p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-zinc-900">基础信息</h3>
               {!editingInfo ? (
@@ -377,7 +377,7 @@ export function ProductDetail({
                     min="0"
                     value={priceDraft}
                     onChange={(e) => setPriceDraft(e.target.value)}
-                    className="w-24 rounded border border-zinc-300 px-2 py-1 text-right font-mono outline-none focus:border-brand-500"
+                    className="w-24 rounded-lg border border-[var(--dk-stroke-border)] px-2 py-1 text-right font-mono outline-none focus:border-brand-500"
                   />
                 </label>
                 <label className="flex items-center justify-between gap-2">
@@ -388,7 +388,7 @@ export function ProductDetail({
                     min="0"
                     value={costDraft}
                     onChange={(e) => setCostDraft(e.target.value)}
-                    className="w-24 rounded border border-zinc-300 px-2 py-1 text-right font-mono outline-none focus:border-brand-500"
+                    className="w-24 rounded-lg border border-[var(--dk-stroke-border)] px-2 py-1 text-right font-mono outline-none focus:border-brand-500"
                   />
                 </label>
               </div>
@@ -414,12 +414,12 @@ export function ProductDetail({
         {/* 右:Listing 内容 */}
         <div className="space-y-4 lg:col-span-2">
           {!listing ? (
-            <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center">
+            <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center">
               <Sparkles className="mx-auto h-6 w-6 text-zinc-300" />
               <p className="mt-2 text-sm text-zinc-600">这个商品还没有 Listing</p>
               <button
                 onClick={goListingChat}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 生成 Listing
@@ -427,7 +427,7 @@ export function ProductDetail({
             </div>
           ) : (
             <>
-              <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
+              <div className="dk-card p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-zinc-900">Listing 文案</h3>
                   <button
@@ -448,7 +448,7 @@ export function ProductDetail({
                         <Copy className="h-3 w-3" />
                       </button>
                     </div>
-                    <p className="text-sm text-zinc-800">{listing.title}</p>
+                    <p className="text-sm text-zinc-900">{listing.title}</p>
                   </div>
 
                   <div>
@@ -461,7 +461,7 @@ export function ProductDetail({
                         <Copy className="h-3 w-3" />
                       </button>
                     </div>
-                    <ol className="list-decimal space-y-1 pl-4 text-xs text-zinc-700">
+                    <ol className="list-decimal space-y-1 pl-4 text-xs text-zinc-600">
                       {(listing.sellingPoints ?? []).map((s, i) => (
                         <li key={i}>{s}</li>
                       ))}
@@ -483,7 +483,7 @@ export function ProductDetail({
               </div>
 
               {listing.aplusSections && listing.aplusSections.length > 0 && (
-                <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
+                <div className="dk-card p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-zinc-900">A+ 图文结构</h3>
                     <button
@@ -497,8 +497,8 @@ export function ProductDetail({
                   </div>
                   <div className="space-y-3">
                     {listing.aplusSections.map((sec, i) => (
-                      <div key={i} className="rounded-lg bg-zinc-50 p-3">
-                        <div className="text-xs font-medium text-zinc-800">{sec.heading}</div>
+                      <div key={i} className="rounded-lg bg-[var(--dk-surface-2)] p-3">
+                        <div className="text-xs font-medium text-zinc-900">{sec.heading}</div>
                         <p className="mt-1 text-xs text-zinc-600">{sec.body}</p>
                         {sec.imagePrompt && (
                           <p className="mt-1 text-2xs text-zinc-400">↳ 配图 prompt:{sec.imagePrompt}</p>
@@ -512,12 +512,12 @@ export function ProductDetail({
           )}
 
           {videos.length > 0 && (
-            <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
+            <div className="dk-card p-4">
               <h3 className="mb-3 text-sm font-semibold text-zinc-900">成片</h3>
               <div className="space-y-2">
                 {videos.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between gap-2 rounded-lg bg-zinc-50 p-2 text-xs">
-                    <span className="truncate text-zinc-700">{v.title || "短视频"}</span>
+                  <div key={v.id} className="flex items-center justify-between gap-2 rounded-lg bg-[var(--dk-surface-2)] p-2 text-xs">
+                    <span className="truncate text-zinc-600">{v.title || "短视频"}</span>
                     {v.videoUrl && (
                       <a
                         href={v.videoUrl}

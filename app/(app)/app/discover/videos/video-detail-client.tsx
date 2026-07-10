@@ -89,7 +89,7 @@ export function VideoDetailClient({
     <div className="space-y-6">
       <Link
         href="/app/discover/videos"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800"
+        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
       >
         <ArrowLeft className="h-4 w-4" /> 返回视频榜
       </Link>
@@ -139,18 +139,18 @@ export function VideoDetailClient({
             controls
             playsInline
             preload="metadata"
-            className="aspect-[9/16] w-full rounded-xl bg-zinc-900 object-contain"
+            className="aspect-[9/16] w-full rounded-lg bg-zinc-900 object-contain"
           />
         ) : (
           <a
             href={tiktokUrl || undefined}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-zinc-100"
+            className="group relative block aspect-[9/16] overflow-hidden rounded-lg bg-zinc-100"
           >
             <Img src={v.cover} seed={v.desc || v.videoId} className="h-full w-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity group-hover:opacity-100">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
                 <Play className="h-3 w-3 fill-zinc-900" /> 在 TikTok 查看
               </span>
             </div>
@@ -267,7 +267,7 @@ export function VideoDetailClient({
                 </div>
                 <div className="mt-1.5 line-clamp-2 text-xs text-zinc-600 group-hover:text-brand-600">{p.name || "—"}</div>
                 <div className="mt-0.5 flex items-center justify-between text-2xs text-zinc-400 tabular-nums">
-                  <span className="font-medium text-zinc-700">${p.avgPrice.toFixed(2)}</span>
+                  <span className="font-medium text-zinc-600">${p.avgPrice.toFixed(2)}</span>
                   {p.rating > 0 && (
                     <span className="inline-flex items-center gap-0.5 text-amber-600">
                       <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />

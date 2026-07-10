@@ -96,7 +96,7 @@ export default async function ProductDetailPage({
   if (!dto) {
     return (
       <div className="space-y-4">
-        <Link href="/app/discover/products" className="text-sm text-zinc-500 hover:text-zinc-800">
+        <Link href="/app/discover/products" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← 返回爆品榜
         </Link>
         <EmptyState

@@ -96,7 +96,7 @@ export function InfluencerDetailClient({
     <div className="space-y-6">
       <Link
         href="/app/discover/influencers"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800"
+        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
       >
         <ArrowLeft className="h-4 w-4" /> 返回达人榜
       </Link>

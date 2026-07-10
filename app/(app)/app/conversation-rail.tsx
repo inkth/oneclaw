@@ -126,14 +126,14 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   }
 
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-56 shrink-0 flex-col self-start border-r border-black/5 bg-transparent">
+    <aside className="hidden md:flex sticky top-0 h-screen w-56 shrink-0 flex-col self-start border-r border-[var(--dk-stroke-border)] bg-transparent">
       <div className="flex items-center justify-between px-3 py-4">
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
           <MessagesSquare className="h-4 w-4 text-brand-500" /> 对话
         </span>
         <Link
           href="/app/agents/new"
-          className="press inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+          className="press inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
         >
           <Plus className="h-3 w-3" /> 新对话
         </Link>
@@ -171,19 +171,19 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
                           if (e.key === "Enter") saveEdit(c.id);
                           if (e.key === "Escape") setEditingId(null);
                         }}
-                        className="min-w-0 flex-1 rounded-md border border-brand-300 bg-white px-1.5 py-1 text-xs text-ink outline-none focus:border-brand-400"
+                        className="min-w-0 flex-1 rounded-lg border border-brand-300 bg-white px-1.5 py-1 text-xs text-ink outline-none focus:border-brand-400"
                       />
                       <button
                         onClick={() => saveEdit(c.id)}
                         disabled={isBusy}
-                        className="press rounded p-1 text-brand-600 hover:bg-brand-50"
+                        className="press rounded p-1 text-brand-600 hover:bg-[var(--dk-action-regular)]"
                         aria-label="保存"
                       >
                         <Check className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => setEditingId(null)}
-                        className="press rounded p-1 text-zinc-400 hover:bg-black/[0.04]"
+                        className="press rounded p-1 text-zinc-400 hover:bg-[var(--dk-action-regular)]"
                         aria-label="取消"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -197,8 +197,8 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
                 <li key={c.id} className="group/item relative">
                   <Link
                     href={`/app/agents/${c.id}`}
-                    className={`block rounded-lg px-2 py-2 pr-12 transition-colors ${
-                      isActive ? "bg-brand-50" : "hover:bg-black/[0.04]"
+                    className={`block rounded-xl px-2 py-2 pr-12 transition-colors ${
+                      isActive ? "bg-[var(--dk-action-regular)]" : "hover:bg-[var(--dk-action-regular)]"
                     } ${isBusy ? "opacity-50" : ""}`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -207,7 +207,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
                       />
                       <span
                         className={`truncate text-xs font-medium ${
-                          isActive ? "text-brand-700" : "text-zinc-700 group-hover/item:text-ink"
+                          isActive ? "text-brand-700" : "text-zinc-900 group-hover/item:text-ink"
                         }`}
                       >
                         {c.title}
@@ -222,14 +222,14 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
                   <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100">
                     <button
                       onClick={() => startEdit(c)}
-                      className="press rounded p-1 text-zinc-400 hover:bg-white hover:text-zinc-600"
+                      className="press rounded p-1 text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-zinc-600"
                       aria-label="重命名"
                     >
                       <Pencil className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => remove(c)}
-                      className="press rounded p-1 text-zinc-400 hover:bg-white hover:text-red-500"
+                      className="press rounded p-1 text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-red-500"
                       aria-label="删除"
                     >
                       <Trash2 className="h-3 w-3" />

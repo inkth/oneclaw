@@ -84,7 +84,7 @@ export default function ServicesPage() {
           const liveCount = c.services.filter((s) => s.status !== "soon").length;
           return (
             <Card key={c.key} padded={false} className="overflow-hidden">
-              <header className="flex items-center gap-3 border-b border-zinc-100 bg-zinc-50/50 px-5 py-3.5">
+              <header className="flex items-center gap-3 border-b border-[var(--dk-stroke-divider)] bg-[var(--dk-surface-2)] px-5 py-3.5">
                 <span
                   className={
                     "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 " + ACCENT[c.accent]
@@ -93,15 +93,15 @@ export default function ServicesPage() {
                   <CatIcon className="h-4.5 w-4.5" />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-[15px] font-semibold leading-tight text-ink">{c.label}</h2>
-                  <p className="mt-0.5 truncate text-xs text-zinc-400">{c.desc}</p>
+                  <h2 className="text-[15px] font-semibold leading-tight text-[var(--dk-content-primary)]">{c.label}</h2>
+                  <p className="mt-0.5 truncate text-xs text-[var(--dk-content-tertiary)]">{c.desc}</p>
                 </div>
-                <span className="ml-auto shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-2xs text-zinc-500">
+                <span className="ml-auto shrink-0 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-2.5 py-0.5 text-2xs text-[var(--dk-content-secondary)]">
                   {liveCount}/{c.services.length} 可对接
                 </span>
               </header>
 
-              <div className="divide-y divide-zinc-100">
+              <div className="divide-y divide-[var(--dk-stroke-divider)]">
                 {c.services.map((svc) => (
                   <ServiceRow key={svc.label} service={svc} onContact={setContact} />
                 ))}
@@ -112,8 +112,8 @@ export default function ServicesPage() {
       </div>
 
       <div className="space-y-3 pt-1">
-        <div className="flex flex-col items-center gap-1 rounded-2xl border border-dashed border-zinc-200 px-5 py-6 text-center">
-          <p className="text-sm text-zinc-500">没找到需要的服务，或想加快某个对接？</p>
+        <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-[var(--dk-stroke-border)] px-5 py-6 text-center">
+          <p className="text-sm text-[var(--dk-content-secondary)]">没找到需要的服务，或想加快某个对接？</p>
           <button
             onClick={() => setContact({ title: "其他服务需求" })}
             className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
@@ -122,7 +122,7 @@ export default function ServicesPage() {
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
-        <p className="px-4 text-center text-2xs leading-relaxed text-zinc-300">
+        <p className="px-4 text-center text-2xs leading-relaxed text-[var(--dk-content-tertiary)]">
           标注「合作方」的服务由第三方渠道提供，发现猫仅做筛选与对接引导、不对其资质与结果作担保或背书；
           合作条款、收费与交付以你与合作方另行约定为准。
         </p>
@@ -148,11 +148,11 @@ function ServiceRow({
   const hasPartners = Boolean(partners && partners.length > 0);
 
   return (
-    <div className="flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-brand-50/20 sm:flex-row sm:items-start">
+    <div className="flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-[var(--dk-action-regular)] sm:flex-row sm:items-start">
       <div
         className={
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " +
-          (actionable ? "bg-brand-50 text-brand-500" : "bg-zinc-100 text-zinc-400")
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl " +
+          (actionable ? "bg-brand-50 text-brand-500" : "bg-[var(--dk-surface-2)] text-[var(--dk-content-tertiary)]")
         }
       >
         <Icon className="h-4.5 w-4.5" />
@@ -160,7 +160,7 @@ function ServiceRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-medium text-zinc-900">{label}</span>
+          <span className="font-medium text-[var(--dk-content-primary)]">{label}</span>
           <Badge tone={meta.tone} outline={false}>
             {meta.label}
           </Badge>
@@ -169,15 +169,15 @@ function ServiceRow({
               合作方
             </Badge>
           )}
-          <span className="text-2xs text-zinc-400">适用 · {regionText(service)}</span>
+          <span className="text-2xs text-[var(--dk-content-tertiary)]">适用 · {regionText(service)}</span>
         </div>
 
-        <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{desc}</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-[var(--dk-content-secondary)]">{desc}</p>
 
         {tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {tags.map((t) => (
-              <span key={t} className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-2xs text-zinc-500">
+              <span key={t} className="rounded-lg bg-[var(--dk-surface-2)] px-1.5 py-0.5 text-2xs text-[var(--dk-content-secondary)]">
                 {t}
               </span>
             ))}
@@ -185,16 +185,16 @@ function ServiceRow({
         )}
 
         {hasPartners && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs text-zinc-400">
-            <Handshake className="h-3 w-3 shrink-0 text-zinc-400" />
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs text-[var(--dk-content-tertiary)]">
+            <Handshake className="h-3 w-3 shrink-0 text-[var(--dk-content-tertiary)]" />
             <span>渠道</span>
             {partners!.map((p) => (
-              <span key={p.name} className="text-zinc-500" title={p.note}>
+              <span key={p.name} className="text-[var(--dk-content-secondary)]" title={p.note}>
                 {p.name}
               </span>
             ))}
-            <span className="text-zinc-300">·</span>
-            <span className="text-zinc-400">非平台背书</span>
+            <span className="text-[var(--dk-content-tertiary)]">·</span>
+            <span className="text-[var(--dk-content-tertiary)]">非平台背书</span>
           </div>
         )}
       </div>
@@ -233,20 +233,20 @@ function ContactRow({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 px-3 py-2">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-      <span className="w-8 shrink-0 text-2xs text-zinc-400">{label}</span>
+    <div className="flex items-center gap-2 rounded-lg bg-[var(--dk-surface-2)] px-3 py-2">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-[var(--dk-content-tertiary)]" />
+      <span className="w-8 shrink-0 text-2xs text-[var(--dk-content-tertiary)]">{label}</span>
       {href ? (
-        <a href={href} className="flex-1 truncate text-xs font-medium text-zinc-900 hover:text-brand-600">
+        <a href={href} className="flex-1 truncate text-xs font-medium text-[var(--dk-content-primary)] hover:text-brand-600">
           {value}
         </a>
       ) : (
-        <span className="flex-1 truncate text-xs font-medium text-zinc-900">{value}</span>
+        <span className="flex-1 truncate text-xs font-medium text-[var(--dk-content-primary)]">{value}</span>
       )}
       <button
         onClick={copy}
         aria-label={`复制${label}`}
-        className="shrink-0 rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+        className="shrink-0 rounded p-1 text-[var(--dk-content-tertiary)] transition-colors hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-secondary)]"
       >
         {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
@@ -258,12 +258,12 @@ function ContactRow({
 function PartnerBlock({ partner }: { partner: Partner }) {
   const hasContact = Boolean(partner.phone || partner.wechat || partner.email);
   return (
-    <div className="rounded-xl border border-zinc-200/80 bg-white p-4">
+    <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white p-4">
       <div className="flex items-center gap-2">
         <Handshake className="h-3.5 w-3.5 shrink-0 text-brand-500" />
-        <span className="text-sm font-semibold text-zinc-900">{partner.name}</span>
+        <span className="text-sm font-semibold text-[var(--dk-content-primary)]">{partner.name}</span>
       </div>
-      {partner.note && <p className="mt-0.5 text-2xs text-zinc-400">{partner.note}</p>}
+      {partner.note && <p className="mt-0.5 text-2xs text-[var(--dk-content-tertiary)]">{partner.note}</p>}
       {hasContact ? (
         <div className="mt-3 space-y-1.5">
           {partner.phone && (
@@ -280,7 +280,7 @@ function PartnerBlock({ partner }: { partner: Partner }) {
           )}
         </div>
       ) : (
-        <p className="mt-2 text-2xs text-zinc-400">联系方式整理中，可先用页脚方式联系我们。</p>
+        <p className="mt-2 text-2xs text-[var(--dk-content-tertiary)]">联系方式整理中，可先用页脚方式联系我们。</p>
       )}
     </div>
   );
@@ -306,29 +306,29 @@ function ContactModal({ target, onClose }: { target: ContactTarget | null; onClo
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="relative w-full max-w-sm overflow-hidden rounded-2xl dk-overlay"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5">
+        <header className="flex items-center justify-between border-b border-[var(--dk-stroke-divider)] px-5 py-3.5">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
               <Headset className="h-3.5 w-3.5" />
             </div>
-            <h2 className="text-sm font-bold text-zinc-900">预约咨询</h2>
+            <h2 className="text-sm font-bold text-[var(--dk-content-primary)]">预约咨询</h2>
           </div>
-          <button onClick={onClose} className="rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100">
+          <button onClick={onClose} className="rounded-full p-1.5 text-[var(--dk-content-tertiary)] hover:bg-[var(--dk-action-regular)]">
             <X className="h-4 w-4" />
           </button>
         </header>
 
         <div className="space-y-4 p-6">
-          <p className="text-sm leading-relaxed text-zinc-600">
-            你正在咨询：<span className="font-medium text-zinc-900">{target.title}</span>。
+          <p className="text-sm leading-relaxed text-[var(--dk-content-secondary)]">
+            你正在咨询：<span className="font-medium text-[var(--dk-content-primary)]">{target.title}</span>。
           </p>
 
           {hasPartners ? (
             <>
-              <p className="text-2xs leading-relaxed text-zinc-400">
+              <p className="text-2xs leading-relaxed text-[var(--dk-content-tertiary)]">
                 以下为该服务合作方的联系方式，可直接联系对接 · 发现猫非平台背书。
               </p>
               <div className="space-y-3">
@@ -338,11 +338,11 @@ function ContactModal({ target, onClose }: { target: ContactTarget | null; onClo
               </div>
             </>
           ) : (
-            <div className="space-y-2 rounded-xl border border-zinc-100 bg-zinc-50/60 p-4">
-              <p className="text-sm leading-relaxed text-zinc-600">
+            <div className="space-y-2 rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] p-4">
+              <p className="text-sm leading-relaxed text-[var(--dk-content-secondary)]">
                 这项暂未接入合作方。留下需求，我们帮你筛选对接：
               </p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-[var(--dk-content-secondary)]">
                 邮件{" "}
                 <a href={`mailto:${CONTACT.email}`} className="font-medium text-brand-600 hover:text-brand-700">
                   {CONTACT.email}

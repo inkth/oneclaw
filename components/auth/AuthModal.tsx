@@ -52,22 +52,22 @@ export function AuthModal({
       onClick={onClose}
     >
       <div
-        className="relative grid w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl md:grid-cols-[5fr_6fr]"
+        className="relative grid w-full max-w-3xl overflow-hidden rounded-2xl dk-overlay md:grid-cols-[5fr_6fr]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
           aria-label="关闭"
-          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100"
+          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)]"
         >
           <X className="h-4 w-4" />
         </button>
 
-        {/* 左：品牌面板（桌面端） */}
-        <div className="hidden flex-col justify-between bg-[#6e56ff] p-8 text-white md:flex">
+        {/* 左：品牌面板（桌面端）。用 --accent-pop 而非硬编码色值,与全站电紫点睛通道同源 */}
+        <div className="hidden flex-col justify-between bg-[var(--accent-pop)] p-8 text-white md:flex">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
                 <BrandMark className="h-5 w-5" strokeWidth={1.8} />
               </span>
               <span className="font-display text-lg font-semibold tracking-[0.06em]">
@@ -101,8 +101,8 @@ export function AuthModal({
           </p>
         </div>
 
-        {/* 移动端降级：渐变顶部条 */}
-        <div className="flex items-center gap-2.5 bg-[#6e56ff] px-5 py-3.5 text-white md:hidden">
+        {/* 移动端降级：品牌色顶部条（非渐变，画布保持平） */}
+        <div className="flex items-center gap-2.5 bg-[var(--accent-pop)] px-5 py-3.5 text-white md:hidden">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15">
             <BrandMark className="h-4 w-4" strokeWidth={1.9} />
           </span>

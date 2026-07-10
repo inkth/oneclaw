@@ -59,7 +59,7 @@ const platformMeta: Record<Platform, { cn: string; available: boolean }> = {
 const statusMeta: Record<Status, { cn: string; cls: string }> = {
   CONNECTED: { cn: "已连接", cls: "bg-emerald-50 text-emerald-700" },
   PENDING: { cn: "待对接", cls: "bg-amber-50 text-amber-700" },
-  DISCONNECTED: { cn: "已断开", cls: "bg-zinc-100 text-zinc-500" },
+  DISCONNECTED: { cn: "已断开", cls: "bg-[var(--dk-surface-2)] text-zinc-500" },
   ERROR: { cn: "异常", cls: "bg-rose-50 text-rose-700" },
 };
 
@@ -133,10 +133,10 @@ export function ShopsClient({
           <StatCard label="访客" value={totals.visitors.toLocaleString()} icon={Users} tone="emerald" />
         </div>
       ) : (
-        <div className="flex items-start gap-2.5 rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3.5 text-xs text-zinc-600">
+        <div className="flex items-start gap-2.5 rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface-2)] p-3.5 text-xs text-zinc-600">
           <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
           <span className="leading-relaxed">
-            营收 / 订单 / 转化看板将在店铺 <span className="font-medium text-zinc-700">OAuth 自动同步</span> 上线后开放(开发中)。当前可登记店铺、关联选品,Agent 的报告会自动归属到对应店铺。
+            营收 / 订单 / 转化看板将在店铺 <span className="font-medium text-zinc-900">OAuth 自动同步</span> 上线后开放(开发中)。当前可登记店铺、关联选品,Agent 的报告会自动归属到对应店铺。
           </span>
         </div>
       )}
@@ -165,7 +165,7 @@ export function ShopsClient({
                   <Tr key={s.id}>
                     <Td>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500">
+                        <div className="h-9 w-9 rounded-lg bg-[var(--dk-surface-2)] flex items-center justify-center text-zinc-500">
                           <Store className="h-4 w-4" />
                         </div>
                         <div>
@@ -248,7 +248,7 @@ function StatCard({
 }) {
   const t = toneMap[tone];
   return (
-    <div className="rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-[var(--dk-stroke-overlay)] bg-white p-4 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-2">
         <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${t.bg} ${t.fg}`}>
           <Icon className="h-3.5 w-3.5" />
@@ -326,12 +326,12 @@ function AddShopModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-xl bg-white shadow-sm"
+        className="relative w-full max-w-md rounded-2xl dk-overlay"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100"
+          className="absolute right-3 top-3 rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -340,7 +340,7 @@ function AddShopModal({
           <h2 className="text-subtitle">添加店铺</h2>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 mb-2">平台</label>
+            <label className="block text-xs font-medium text-zinc-600 mb-2">平台</label>
             <div className="grid grid-cols-2 gap-2">
               {(Object.keys(platformMeta) as Platform[])
                 .filter((p) => platformMeta[p].available)
@@ -353,8 +353,8 @@ function AddShopModal({
                       onClick={() => setPlatform(p)}
                       className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
                         active
-                          ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
-                          : "border-zinc-200/80 hover:border-zinc-300"
+                          ? "border-[var(--dk-stroke-border)] bg-[var(--dk-action-regular)] ring-2 ring-[var(--dk-stroke-border)]"
+                          : "border-[var(--dk-stroke-border)] hover:bg-[var(--dk-action-regular)]"
                       }`}
                     >
                       <span className="text-left">{m.cn}</span>
@@ -368,19 +368,19 @@ function AddShopModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 mb-1.5">店铺名称</label>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">店铺名称</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：发现猫 US 旗舰店"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
+              className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 mb-1.5">
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
               国家 / 地区（可选）
             </label>
             <input
@@ -389,11 +389,11 @@ function AddShopModal({
               onChange={(e) => setCountry(e.target.value.toUpperCase())}
               maxLength={4}
               placeholder="US / GB / SG / JP …"
-              className="w-full rounded-lg border border-zinc-200/80 px-3 py-2 text-sm outline-none font-mono focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
+              className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none font-mono focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
-          <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/60 p-3 text-2xs text-zinc-600 leading-relaxed">
+          <div className="rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface-2)] p-3 text-2xs text-zinc-600 leading-relaxed">
             真实平台对接（OAuth + 拉取订单 / 商品）正在开发中。
             当前先以「待对接」状态保存，发现猫 会把后续生成的 Agent 报告关联到对应店铺。
           </div>

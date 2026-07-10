@@ -24,7 +24,7 @@ export function EmptyState({ hint }: { hint?: string }) {
 export function Thumb({
   src,
   name,
-  className = "h-10 w-10 rounded-md",
+  className = "h-10 w-10 rounded-lg",
   rounded,
 }: {
   src: string | null;
@@ -43,14 +43,14 @@ export function Thumb({
         src={src}
         alt=""
         onError={() => setFailedSrc(src)}
-        className={`${shape} flex-shrink-0 bg-zinc-100 object-cover`}
+        className={`${shape} flex-shrink-0 bg-[var(--dk-surface-2)] object-cover`}
         loading="lazy"
       />
     );
   }
   return (
     <div
-      className={`${shape} flex flex-shrink-0 items-center justify-center text-sm font-semibold text-white shadow-sm`}
+      className={`${shape} flex flex-shrink-0 items-center justify-center text-sm font-semibold text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]`}
       style={{ background: stringToGradient(name) }}
     >
       {initial(name)}

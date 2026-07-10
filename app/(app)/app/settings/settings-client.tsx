@@ -66,24 +66,24 @@ export function SettingsClient({
 
       {/* 账号 */}
       <section className="dk-card p-5">
-        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <User className="h-4 w-4 text-zinc-400" /> 账号
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--dk-content-primary)]">
+          <User className="h-4 w-4 text-[var(--dk-content-tertiary)]" /> 账号
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <div className="text-2xs text-zinc-400">昵称</div>
-            <div className="mt-0.5 text-sm font-medium text-ink">{user.name || "未设置"}</div>
+            <div className="text-2xs text-[var(--dk-content-tertiary)]">昵称</div>
+            <div className="mt-0.5 text-sm font-medium text-[var(--dk-content-primary)]">{user.name || "未设置"}</div>
           </div>
           <div>
-            <div className="text-2xs text-zinc-400">手机号</div>
-            <div className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-medium text-ink">
-              <Phone className="h-3.5 w-3.5 text-zinc-400" />
+            <div className="text-2xs text-[var(--dk-content-tertiary)]">手机号</div>
+            <div className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--dk-content-primary)]">
+              <Phone className="h-3.5 w-3.5 text-[var(--dk-content-tertiary)]" />
               {user.phone || "—"}
             </div>
           </div>
           <div>
-            <div className="text-2xs text-zinc-400">工作台</div>
-            <div className="mt-0.5 text-sm font-medium text-ink">{workspace.name}</div>
+            <div className="text-2xs text-[var(--dk-content-tertiary)]">工作台</div>
+            <div className="mt-0.5 text-sm font-medium text-[var(--dk-content-primary)]">{workspace.name}</div>
           </div>
         </div>
       </section>
@@ -91,11 +91,11 @@ export function SettingsClient({
       {/* 订阅方案 */}
       <section className="dk-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <CreditCard className="h-4 w-4 text-zinc-400" /> 订阅方案
+          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--dk-content-primary)]">
+            <CreditCard className="h-4 w-4 text-[var(--dk-content-tertiary)]" /> 订阅方案
             <Badge tone={planMeta.tone}>{planMeta.label}</Badge>
             {usage?.planExpiresAt && (
-              <span className="inline-flex items-center gap-1 text-2xs text-zinc-400">
+              <span className="inline-flex items-center gap-1 text-2xs text-[var(--dk-content-tertiary)]">
                 <CalendarClock className="h-3 w-3" />
                 {new Date(usage.planExpiresAt).toLocaleDateString("zh-CN")} 到期
               </span>
@@ -105,7 +105,7 @@ export function SettingsClient({
             {plan !== "TEAM" && (
               <button
                 onClick={() => setCheckout("TEAM")}
-                className="press rounded-xl border border-black/10 bg-white px-4 py-1.5 text-xs font-semibold text-zinc-700 hover:border-brand-300 hover:text-brand-700"
+                className="press rounded-lg border border-[var(--dk-stroke-border)] bg-white px-4 py-1.5 text-xs font-semibold text-[var(--dk-content-primary)] hover:bg-[var(--dk-btn-tertiary)]"
               >
                 升级团队版
               </button>
@@ -113,7 +113,7 @@ export function SettingsClient({
             {plan === "FREE" && (
               <button
                 onClick={() => setCheckout("PRO")}
-                className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[var(--dk-btn-black-hover)]"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 升级专业版 ¥199/月
@@ -122,7 +122,7 @@ export function SettingsClient({
             {plan === "PRO" && (
               <button
                 onClick={() => setCheckout("PRO")}
-                className="press inline-flex items-center gap-1.5 rounded-xl bg-[#1c1d1f] px-4 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[var(--dk-btn-black-hover)]"
               >
                 <BadgeCheck className="h-3.5 w-3.5" />
                 续费专业版
@@ -135,24 +135,24 @@ export function SettingsClient({
       {/* 本周期积分 */}
       <section className="dk-card p-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <Coins className="h-4 w-4 text-zinc-400" /> 本周期积分
+          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--dk-content-primary)]">
+            <Coins className="h-4 w-4 text-[var(--dk-content-tertiary)]" /> 本周期积分
           </div>
           {usage && usage.costCents > 0 && (
-            <div className="text-2xs text-zinc-400">
+            <div className="text-2xs text-[var(--dk-content-tertiary)]">
               本周期生成成本约 ¥{(usage.costCents / 100).toFixed(2)}
             </div>
           )}
         </div>
         {usage && (
-          <div className="mt-1 text-2xs text-zinc-400">
+          <div className="mt-1 text-2xs text-[var(--dk-content-tertiary)]">
             计费周期 {fmtMD(usage.periodStart)} 至 {fmtMD(usage.periodEnd)},到期自动重置额度
           </div>
         )}
         {usage ? (
           <CreditBalance usage={usage} />
         ) : (
-          <div className="mt-4 text-sm text-zinc-400">积分数据暂不可用,稍后刷新重试。</div>
+          <div className="mt-4 text-sm text-[var(--dk-content-tertiary)]">积分数据暂不可用,稍后刷新重试。</div>
         )}
       </section>
 
@@ -179,14 +179,14 @@ function CreditBalance({ usage }: { usage: Usage }) {
     <div className="mt-4">
       <div className="flex items-end justify-between">
         <div>
-          <span className="text-2xl font-bold tabular-nums text-ink">{used}</span>
-          <span className="text-sm text-zinc-400"> / {unlimited ? "∞" : limit} 积分</span>
+          <span className="nums text-2xl font-bold text-[var(--dk-content-primary)]">{used}</span>
+          <span className="text-sm text-[var(--dk-content-tertiary)]"> / {unlimited ? "∞" : limit} 积分</span>
         </div>
-        <div className="text-2xs text-zinc-400">
+        <div className="text-2xs text-[var(--dk-content-tertiary)]">
           {unlimited ? "团队版不限积分" : `本周期剩余 ${remaining} 积分`}
         </div>
       </div>
-      <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-zinc-200/70">
+      <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[var(--dk-surface-3)]">
         <div
           className={`h-full rounded-full transition-all ${
             unlimited ? "w-1/12 bg-emerald-400" : danger ? "bg-rose-500" : "bg-brand-500"
@@ -199,17 +199,17 @@ function CreditBalance({ usage }: { usage: Usage }) {
           积分告急,升级方案可继续。
         </div>
       )}
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-zinc-500">
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-[var(--dk-content-secondary)]">
         <span className="inline-flex items-center gap-1.5">
-          <Zap className="h-3 w-3 text-zinc-400" />选品 {b.agentTasks} 次
+          <Zap className="h-3 w-3 text-[var(--dk-content-tertiary)]" />选品 {b.agentTasks} 次
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Clapperboard className="h-3 w-3 text-zinc-400" />出片 {b.videos} 条
+          <Clapperboard className="h-3 w-3 text-[var(--dk-content-tertiary)]" />出片 {b.videos} 条
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <ImageIcon className="h-3 w-3 text-zinc-400" />出图 {b.images} 张
+          <ImageIcon className="h-3 w-3 text-[var(--dk-content-tertiary)]" />出图 {b.images} 张
         </span>
-        <span className="text-zinc-300">
+        <span className="text-[var(--dk-content-tertiary)]">
           (选品 {usage.creditCosts.agentTask} · 出片 {usage.creditCosts.video} · 出图{" "}
           {usage.creditCosts.image} 积分)
         </span>

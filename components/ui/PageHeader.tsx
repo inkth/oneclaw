@@ -22,7 +22,7 @@ export function PageHeader({
           {badge}
         </div>
         {description && (
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-zinc-500">{description}</p>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[var(--dk-content-secondary)]">{description}</p>
         )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

@@ -55,7 +55,7 @@ export default async function VideoDetailPage({
   if (!dto) {
     return (
       <div className="space-y-4">
-        <Link href="/app/discover/videos" className="text-sm text-zinc-500 hover:text-zinc-800">
+        <Link href="/app/discover/videos" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← 返回视频榜
         </Link>
         <EmptyState

@@ -16,6 +16,7 @@ import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
 import { ReviewTrend } from "./review-trend";
 import { industryPresets } from "@/components/OnboardingCard";
+import { DkAura } from "@/components/ui/GradientBackground";
 
 const POLL_MS = 5000;
 
@@ -261,12 +262,14 @@ export function Workbench({
     <div className="space-y-6">
       {pills}
 
-      <div className="relative">
-        <div
-          aria-hidden
-          className="dk-aura pointer-events-none absolute -inset-x-8 -top-6 bottom-0 -z-10"
-        />
-        {composer}
+      {/* Designkit 的招牌观感：极光不在输入框「周围」，而在输入框「底下」——
+          光晕锚在框体上沿(top 70px)、宽度只有框的 70%，再被半透明 + backdrop-blur
+          的输入框滤过一层。所以颜色是透出来的，不是围出来的。 */}
+      {/* isolate：给极光和输入框建一个自己的层叠上下文。不能用负 z-index 把极光压下去——
+          那会让它沉到 .app-skin 的背景色之下，整片光就消失了。 */}
+      <div className="relative isolate">
+        <DkAura className="absolute left-1/2 top-[70px] z-0 w-[70%] -translate-x-1/2 -translate-y-1/2" />
+        <div className="relative z-10">{composer}</div>
       </div>
 
       {showQuickActions && (
