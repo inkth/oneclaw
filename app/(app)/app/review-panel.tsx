@@ -223,7 +223,7 @@ function StatCard({
   tone?: Tone;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface)] p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+    <div className="dk-card p-5">
       <div className="flex items-center justify-between">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--dk-surface-2)] text-[var(--dk-content-secondary)]">
           <Icon className="h-4 w-4" />

@@ -403,7 +403,7 @@ export function ProductDetailClient({
               target="_blank"
               rel="noopener noreferrer"
               title={l.note}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-[var(--dk-action-regular)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-[var(--dk-action-regular)]"
             >
               {l.label}
               <ExternalLink className="h-3 w-3 opacity-50" />
@@ -534,8 +534,7 @@ export function ProductDetailClient({
                   </div>
                 </>
               );
-              const shell =
-                "group block overflow-hidden rounded-lg border border-[var(--dk-stroke-overlay)] bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition dk-lift";
+              const shell = "group block overflow-hidden dk-card dk-lift";
               return playable ? (
                 <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className={shell}>
                   {inner}

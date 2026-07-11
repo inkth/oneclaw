@@ -84,7 +84,7 @@ function Arrow({
       disabled={disabled}
       aria-label={dir === "prev" ? "上一页" : "下一页"}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dk-stroke-border)] text-zinc-500 transition-colors",
+        "inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--dk-stroke-border)] text-zinc-500 transition-colors",
         disabled ? "cursor-not-allowed opacity-40" : "hover:bg-[var(--dk-action-regular)]",
       )}
     >

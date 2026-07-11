@@ -305,7 +305,7 @@ export function MaterialsClient({
               <div
                 key={m.id}
                 onClick={picking ? () => toggleSelect(m.id) : undefined}
-                className={`group dk-lift relative rounded-lg border bg-white overflow-hidden transition ${
+                className={`group dk-lift relative rounded-2xl border bg-white overflow-hidden transition ${
                   picking ? "cursor-pointer" : ""
                 } ${
                   isSel

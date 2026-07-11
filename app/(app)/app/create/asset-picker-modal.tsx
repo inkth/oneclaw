@@ -130,7 +130,7 @@ export function AssetPickerModal({
       onClick={onClose}
     >
       <div
-        // 弹窗/抽屉圆角走 16~20(硬规则),dk-card 的 8px 圆角是给常规卡片用的,
+        // 弹窗/抽屉圆角走 16~24(硬规则),dk-card 的 16px 是给常规卡片用的,
         // 这里不能借 dk-card(全局类不在 tailwind layer 里,工具类圆角覆盖不掉它),改为手写等价视觉。
         className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dk-overlay p-5"
         onClick={(e) => e.stopPropagation()}

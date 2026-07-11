@@ -105,7 +105,7 @@ export function SettingsClient({
             {plan !== "TEAM" && (
               <button
                 onClick={() => setCheckout("TEAM")}
-                className="press rounded-lg border border-[var(--dk-stroke-border)] bg-white px-4 py-1.5 text-xs font-semibold text-[var(--dk-content-primary)] hover:bg-[var(--dk-btn-tertiary)]"
+                className="press rounded-full border border-[var(--dk-stroke-border)] bg-white px-4 py-1.5 text-xs font-semibold text-[var(--dk-content-primary)] hover:bg-[var(--dk-btn-tertiary)]"
               >
                 升级团队版
               </button>

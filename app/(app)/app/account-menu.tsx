@@ -56,7 +56,7 @@ export function AccountMenu({
         <Link
           href="/app/settings"
           title="本周期积分余额"
-          className={`hidden sm:inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
             low
               ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
               : "border-[var(--dk-stroke-border)] bg-white text-zinc-600 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"

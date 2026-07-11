@@ -529,7 +529,7 @@ export function AgentComposer({
                   videoRef.current?.click();
                 }}
                 disabled={uploadingVideo}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink disabled:opacity-50"
                 title="上传要解析的带货视频"
               >
                 {uploadingVideo ? (
@@ -557,7 +557,7 @@ export function AgentComposer({
               />
               <button
                 onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
                 title="上传 GMVMax 投放报表触发复盘"
               >
                 <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -575,7 +575,7 @@ export function AgentComposer({
                   if (gateGuest()) return;
                   setTryOnPickerOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
               >
                 <Plus className="h-3.5 w-3.5" />
                 选择模特与服饰

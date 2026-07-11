@@ -194,7 +194,8 @@ export function BoardHeaderNav() {
 }
 
 // 照搬 Designkit 图标导航轨：每项 64×64，22px 图标 + 下方 11px 小字，gap 6px。
-// 激活态没有竖条、没有品牌色——只是「淡蓝灰圆角底 + 字重 600」，图标本身转实心。
+// 激活态没有竖条、没有品牌色、不加粗（实测选中项字重仍是 400）——
+// 只靠「淡蓝灰圆角底 + 实心图标」两个信号。
 // hover 与 selected 共用同一个底色（--dk-action-regular），所以指过去就是激活的预览。
 function RailItem({
   href,
@@ -226,13 +227,7 @@ function RailItem({
           "h-[22px] w-[22px] " + (active ? "fill-current [fill-opacity:0.14]" : "")
         }
       />
-      <span
-        className={
-          "text-[11px] leading-[110%] " + (active ? "font-semibold" : "font-normal")
-        }
-      >
-        {label}
-      </span>
+      <span className="text-[11px] leading-[110%] font-normal">{label}</span>
     </Link>
   );
 }
