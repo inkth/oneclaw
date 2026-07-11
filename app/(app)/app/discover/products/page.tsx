@@ -3,7 +3,7 @@ import { fetchCategories } from "../_components/categories";
 import { REGION_CODES, type Region } from "../_components/regions";
 import { DiscoverClient } from "./discover-client";
 
-export const metadata = { title: "发现 · TikTok 爆品 · 发现猫" };
+export const metadata = { title: "选品 · 爆品榜 · 发现猫" };
 
 type DecoratedProduct = {
   productId: string;
@@ -33,7 +33,7 @@ export default async function DiscoverProductsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  // 游客可逛公共爆品榜;登录后走带个性化浮层的工作台端点。
+  // 游客可逛公共爆品榜；登录后走带个性化浮层的工作台端点。
   const me = await getMe();
   const workspace = me?.workspace ?? null;
 
@@ -46,7 +46,7 @@ export default async function DiscoverProductsPage({
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
   const q = (sp.q ?? "").trim();
-  // 搜索:走 EchoTik 关键词搜索(只认 region,单次 ≤30、无分页);否则正常榜单+分页。
+  // 搜索：走 EchoTik 关键词搜索（只认 region,单次 ≤30、无分页）;否则正常榜单+分页。
   const query = q
     ? `region=${region}&product_rank_field=${field}&page_size=30&keyword=${encodeURIComponent(q)}`
     : `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16&page_num=${page}`;

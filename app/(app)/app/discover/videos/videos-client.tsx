@@ -84,9 +84,9 @@ export function VideosClient({
         <EmptyState
           hint={
             searching
-              ? `没找到与「${keyword}」相关的视频。换个关键词,或切换国家 / 地区再搜。`
+              ? `没找到与「${keyword}」相关的视频。换个关键词，或切换国家 / 地区再搜。`
               : ai
-                ? "该地区 / 类目下暂无 AI 生成的带货视频,换个国家或类目再看看。"
+                ? "该地区 / 类目下暂无 AI 生成的带货视频，换个国家或类目再看看。"
                 : undefined
           }
         />
@@ -160,7 +160,7 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
           <span className="truncate" title={v.nickName}>{v.nickName}</span>
         </div>
 
-        {/* 带货榜行上游不回填播放/互动数(0=缺失),全 0 时整行不渲染,避免看着像坏数据。 */}
+        {/* 带货榜行上游不回填播放/互动数（0=缺失），全 0 时整行不渲染，避免看着像坏数据。 */}
         {(v.totalDiggCnt > 0 || v.totalCommentsCnt > 0 || v.totalSharesCnt > 0) && (
           <div className="grid grid-cols-3 gap-1 text-2xs text-zinc-500">
             <Metric icon={<Heart className="h-2.5 w-2.5" />} value={fmt(v.totalDiggCnt)} />

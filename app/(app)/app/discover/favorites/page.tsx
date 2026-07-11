@@ -52,7 +52,7 @@ export default async function FavoritesPage() {
     );
   }
 
-  // 商品收藏走选品 products 表;店铺/达人/视频走 discover/favorites。
+  // 商品收藏走选品 products 表；店铺/达人/视频走 discover/favorites。
   const [products, items] = await Promise.all([
     apiServer<{ products: GoProduct[] }>(`/workspaces/${workspace.id}/products`)
       .then((r) => r.products ?? [])

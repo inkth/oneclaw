@@ -1,14 +1,19 @@
 # 发现猫 · Design Language（设计语言）
 
-> 版本：v2 · 2026-07-10
+> 版本：v3 · 2026-07-11
 > 定位：重建整套设计语言，而非在现有页面上微调。
-> 参照系：**Designkit（designkit.com/workspace）**——不是「像 Linear 那样」的印象，而是逐条实测其生产 CSS 后照抄。
+> 参照系：**Designkit（designkit.com/workspace）**——不是「像 Linear 那样」的印象，而是在真实浏览器里逐元素实测渲染值后照抄。
+>
+> **v3 相对 v2 的纠正**（v2 部分数值取自其 CSS token 而非页面真实渲染，二者不一致）：
+> - §6 Card 圆角 8 → **16，无边框无阴影**（workspace 页白卡实测只有 16/24 两档，分层靠色差不靠描边）
+> - §7 按钮圆角 8 → **全胶囊**（Send / Agent teams 实测 border-radius 100px），字重 550 → **600**
+> - §14 卡片 hover scale(1.03) → **离地阴影**（0 0 2px + 0 6px 24px，无 transform）
+> - §17 导航激活字重 600 → **400**（实测选中项不加粗，只靠底色 + 实心图标）
 >
 > **v2 相对 v1 的纠正**（v1 凭印象写的数值，站上并不存在）：
-> - §6 Card 圆角 20 → **8**
-> - §17 导航轨 64px + 紫色竖条 → **80px，无竖条**，激活靠底色 + 实心图标 + 字重
+> - §17 导航轨 64px + 紫色竖条 → **80px，无竖条**
 > - §5 「一律去渐变」→ 新增 **§5.1 输入框光晕**这一唯一例外
-> - §7 按钮字重 600 → **550**，主操作近黑而非品牌色
+> - §7 主操作近黑而非品牌色
 > - §21 token 草案 → 全部换成实测真值
 >
 > 凡本文与代码冲突，以 `app/globals.css` 的 `:root` 为准。
@@ -145,25 +150,27 @@ Designkit 的招牌观感来自一个反直觉的构造：光晕不在输入框*
 
 ---
 
-## 6. 圆角：三档，不滥用大圆角
+## 6. 圆角：四档阶梯，同类东西永远长一样
 
-实测自 Designkit 生产 CSS：
+实测自 Designkit workspace 页的真实渲染（不是它的 CSS token——token 里的 --radius-8 并没有用在卡片上）：
 
 | 元素 | 圆角 |
 | --- | --- |
-| 按钮 / Card / 小控件 | **8** |
+| 小控件（输入框、chip 内嵌块） | **8** |
 | 导航项 / 图标块 | **12** |
-| Input（主输入框）/ Modal | **20** |
+| Card | **16，无边框无阴影** |
+| 主输入框（composer）/ Modal | **24** |
+| 按钮 | **全胶囊（rounded-full）** |
 
-关键纠正：**Card 是 8，不是 20**。20 只留给主输入框和弹窗。
-「卡片用大圆角」是廉价 SaaS 的通病——Designkit 的卡片圆角小到几乎不显眼，高级感来自留白与色阶，不来自圆角。
+关键纠正：**Card 是 16 且无边框**——分层靠纯白卡面压在冷灰画布上的色差，不靠描边。
+「发丝边 + 微影」是数据后台的配方；Designkit 的高级感来自色阶分层与留白，边框一多整页就碎。
 
 ---
 
 ## 7. 按钮
 
-- 高度 **44px**（lg），左右 padding **20**，字号 **15**，字重 **550**。
-- 圆角 **8**。**无描边、无渐变。**
+- 高度 **44px**（lg），左右 padding **24**，字号 **15**，字重 **600**。
+- 圆角**全胶囊**（Send / Agent teams 实测 border-radius 100px）。**无渐变。**
 - 主操作是**近黑** `#1c1d1f`（hover `#26272a`），**不是品牌色**。品牌电紫只留给「成交」级动作。
 - Hover：背景加深一档。Active：`scale(0.98)`。
 - 禁用态：**浅灰底 + 灰字**（`--dk-btn-tertiary` / `--dk-content-tertiary`），不是把近黑压到 50% 透明——后者读起来仍像「可点」。
@@ -272,7 +279,7 @@ Shadow   None
 - 条目 **64×64**，纵向堆叠：图标 **22px** + 下方 **11px** 文字标签，gap 6px。
 - Logo 槽同为 64×64，图标 28px。
 - Hover 与 Active **共用同一个底色** `--dk-action-regular`（`rgba(0,31,92,.06)`）+ 12px 圆角。所以指过去就是激活态的预览。
-- Active 的区分只靠两件事：**图标转实心** + **字重 600**。**没有竖条，没有品牌色。**
+- Active 的区分只靠两件事：**图标转实心** + **底色**。**不加粗（实测字重仍是 400），没有竖条，没有品牌色。**
 - 底部工具区用一条 **40px 宽的短分隔线**与主导航隔开。
 
 ---
@@ -308,7 +315,7 @@ Consistency（一致性）
 | 配色 | 95% 黑白灰 + 5% 品牌紫，仅一种强调色（`#6E56FF`） |
 | 布局 | 超大留白、12 栅格、8pt Grid，减少容器与边框 |
 | 字体 | Typography 驱动层级，大标题 / 小说明，数据用等宽数字 |
-| 圆角 | 12 / 16 / 20（Modal 24），不滥用大圆角 |
+| 圆角 | 8 小控件 / 12 导航项 / 16 卡片 / 24 composer 与 Modal / 按钮胶囊 |
 | 图标 | Lucide Outline，Stroke 1.75，全站统一 |
 | 动效 | 微交互为主 120–200ms，Spring 过渡，几乎无炫技 |
 | 阴影 | 极弱或无，靠留白与层级表达结构 |
@@ -356,11 +363,11 @@ Consistency（一致性）
 品牌电紫 `--accent-pop: #6E56FF` 独立于上表，**不参与换肤**，只落在「成交」级动作与焦点环上。
 
 ```
-radius:  { card/button: 8, navItem/iconTile: 12, input/modal: 20 }
-type:    { hero: 32/400/110%, section: 28/600, cardTitle: 18/600, body: 15/400, label: 11/400, data: tabular-nums }
-button:  { height: 44, padX: 20, size: 15, weight: 550, radius: 8, primary: "#1c1d1f" }
-nav:     { railWidth: 80, item: 64, icon: 22, label: 11, active: "底色 + 实心图标 + 600 字重" }
-card:    { radius: 8, hover: "scale(1.03) .3s ease-in-out", shadow: "0 1px 2px rgba(0,0,0,.04)" }
+radius:  { control: 8, navItem/iconTile: 12, card: 16, composer/modal: 24, button: "full(胶囊)" }
+type:    { hero: "clamp(26px→32px)/400/110%", section: 28/600, cardTitle: 18/600, body: 15/400, label: 11/400, data: tabular-nums }
+button:  { height: 44, padX: 24, size: 15, weight: 600, radius: "full", primary: "#1c1d1f" }
+nav:     { railWidth: 80, item: 64, icon: 22, label: 11, active: "底色 + 实心图标（字重不变 400）" }
+card:    { radius: 16, border: "none", shadow: "none", hover: "0 0 2px rgba(0,0,0,.08), 0 6px 24px rgba(0,0,0,.06)" }
 aura:    { blobs: 12, cycle: "32s", blur: "clamp(20px,3.6vw,34px)", blend: "screen", 见 §5.1 }
 icon:    { lib: "lucide", style: "outline（导航激活项填充 14%）", stroke: 1.75 }
 shadow:  { default: "none | 0 1px 2px rgba(0,0,0,.04)" }

@@ -9,7 +9,7 @@ import { Star, Loader2 } from "lucide-react";
 
 export type FavSnapshot = { name: string; cover: string; subtitle: string; metric: string };
 
-/** 店铺/达人/视频收藏星标按钮(游客点击弹登录)。商品收藏已并入选品 products 表(收藏页商品 tab)。 */
+/** 店铺/达人/视频收藏星标按钮（游客点击弹登录）。商品收藏已并入选品 products 表（收藏页商品 tab）。 */
 export function FavoriteButton({
   kind,
   externalId,
@@ -36,7 +36,7 @@ export function FavoriteButton({
     if (isGuest) {
       openAuthModal({
         title: "登录后即可收藏",
-        desc: "收藏店铺、达人、视频需要账号。详情随便看,登录后一键收藏。",
+        desc: "收藏店铺、达人、视频需要账号。详情随便看，登录后一键收藏。",
       });
       return;
     }
@@ -51,7 +51,7 @@ export function FavoriteButton({
       if (next) toast.success("已收藏");
     } catch {
       setStarred(!next);
-      toast.error("操作失败");
+      toast.error("操作失败，稍后再试");
     } finally {
       setBusy(false);
     }

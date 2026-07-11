@@ -98,7 +98,7 @@ export function Popover({
               visibility: pos ? "visible" : "hidden",
             }}
             className={cn(
-              // 弹层归「弹窗/大面板」档,圆角 16px;阴影仍走全局统一的极弱阴影,不因为悬浮就加重
+              // 弹层归「弹窗/大面板」档，圆角 16px;阴影仍走全局统一的极弱阴影，不因为悬浮就加重
               "z-50 rounded-2xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface)] p-3 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]",
               panelClassName,
             )}

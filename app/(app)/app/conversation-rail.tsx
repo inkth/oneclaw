@@ -8,8 +8,8 @@ import { Plus, MessagesSquare, Pencil, Trash2, Check, X } from "lucide-react";
 import { authFetch } from "@/lib/api-browser";
 import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
 
-// 会话列表面板只在「会话」板块出现(/app/agents 及其子路由)。
-// 其它板块(工作台/选品/资产/服务)返回 null,侧栏布局不变。
+// 会话列表面板只在「会话」板块出现（/app/agents 及其子路由）。
+// 其它板块（工作台/选品/资产/服务）返回 null,侧栏布局不变。
 const VISIBLE_PREFIX = "/app/agents";
 
 export type Conversation = {
@@ -40,7 +40,7 @@ function activeCid(pathname: string): string | null {
   return m[1];
 }
 
-/** 左侧会话列表:每条会话一项,点击进入该会话;hover 可重命名/删除。
+/** 左侧会话列表：每条会话一项，点击进入该会话;hover 可重命名/删除。
  *  数据走 /conversations,样式复用 AGENT_IDENTITY,与会话流口径一致。 */
 export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   const pathname = usePathname();
@@ -54,7 +54,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   const [draft, setDraft] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // 进入/切换会话页时刷新列表,新建会话路由后也随之更新(pathname 变化触发)。
+  // 进入/切换会话页时刷新列表，新建会话路由后也随之更新（pathname 变化触发）。
   useEffect(() => {
     if (!visible || !workspaceId) return;
     let alive = true;
@@ -95,10 +95,10 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
         body: JSON.stringify({ title }),
       });
       const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.ok) throw new Error(json?.error?.message || "重命名失败");
+      if (!res.ok || !json?.ok) throw new Error(json?.error?.message || "重命名失败，稍后再试");
       setConvs((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "重命名失败");
+      toast.error(e instanceof Error ? e.message : "重命名失败，稍后再试");
     } finally {
       setBusyId(null);
       setEditingId(null);
@@ -106,7 +106,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   }
 
   async function remove(c: Conversation) {
-    if (!window.confirm(`删除会话「${c.title}」?该会话的对话记录会一并清除(已生成的视频/选品不受影响)。`))
+    if (!window.confirm(`删除会话「${c.title}」?该会话的对话记录会一并清除（已生成的视频/选品不受影响）。`))
       return;
     setBusyId(c.id);
     try {
@@ -114,12 +114,12 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
         method: "DELETE",
       });
       const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.ok) throw new Error(json?.error?.message || "删除失败");
+      if (!res.ok || !json?.ok) throw new Error(json?.error?.message || "删除失败，稍后再试");
       setConvs((prev) => prev.filter((x) => x.id !== c.id));
-      // 删的是当前会话则退回落地(自动转最近一条或新对话)。
+      // 删的是当前会话则退回落地（自动转最近一条或新对话）。
       if (current === c.id) router.push("/app/agents");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "删除失败");
+      toast.error(e instanceof Error ? e.message : "删除失败，稍后再试");
     } finally {
       setBusyId(null);
     }
@@ -129,13 +129,13 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
     <aside className="hidden md:flex sticky top-0 h-screen w-56 shrink-0 flex-col self-start border-r border-[var(--dk-stroke-border)] bg-transparent">
       <div className="flex items-center justify-between px-3 py-4">
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
-          <MessagesSquare className="h-4 w-4 text-brand-500" /> 对话
+          <MessagesSquare className="h-4 w-4 text-brand-500" /> 会话
         </span>
         <Link
           href="/app/agents/new"
           className="press inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
         >
-          <Plus className="h-3 w-3" /> 新对话
+          <Plus className="h-3 w-3" /> 新会话
         </Link>
       </div>
 
@@ -148,7 +148,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
           <p className="px-2 py-6 text-xs text-zinc-400">加载中…</p>
         ) : convs.length === 0 ? (
           <p className="px-2 py-6 text-xs leading-relaxed text-zinc-400">
-            还没有会话。点「新对话」派个活,这里就会出现。
+            还没有会话。点「新会话」派个活，这里就会出现。
           </p>
         ) : (
           <ul className="space-y-0.5">
@@ -218,7 +218,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
                     </div>
                   </Link>
 
-                  {/* hover 操作:重命名 / 删除,绝对定位不挤压标题 */}
+                  {/* hover 操作：重命名 / 删除，绝对定位不挤压标题 */}
                   <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100">
                     <button
                       onClick={() => startEdit(c)}

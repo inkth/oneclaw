@@ -30,7 +30,7 @@ type ModelAsset = {
   avatarUrl: string | null;
   usageCount: number;
   isFavorite: boolean;
-  /** 全局预置人设:所有工作台可见,只读(不可收藏/删除)。 */
+  /** 全局预置人设：所有工作台可见，只读（不可收藏/删除）。 */
   isPreset?: boolean;
   createdAt: string;
 };
@@ -99,7 +99,7 @@ export function ModelsClient({
       toast.success(`已加入：${p.name}`);
       router.refresh();
     } else {
-      toast.error(json?.error?.message ?? "创建失败");
+      toast.error(json?.error?.message ?? "创建失败，稍后再试");
     }
   }
 
@@ -159,7 +159,7 @@ export function ModelsClient({
               <button
                 key={p.name}
                 onClick={() => createFromPreset(p)}
-                className="group dk-lift rounded-lg ring-edge bg-white p-3 hover:border-brand-200 text-left"
+                className="group dk-card dk-lift p-3 text-left"
               >
                 <MediaPlaceholder seed={p.name} icon={UserSquare2} rounded="rounded-lg" className="aspect-square" />
                 <div className="mt-2 text-sm font-medium">{p.name}</div>
@@ -177,7 +177,7 @@ export function ModelsClient({
           {models.map((m) => {
             const g = genderMeta[m.gender];
             return (
-              <div key={m.id} className="group rounded-lg ring-edge bg-white overflow-hidden shadow-xs">
+              <div key={m.id} className="group dk-card overflow-hidden">
                 <div className="aspect-[3/4] relative overflow-hidden">
                   {m.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -297,7 +297,7 @@ function CreateModelModal({
     const json = await res.json();
     setSubmitting(false);
     if (!res.ok || !json.ok) {
-      setError(json?.error?.message ?? "创建失败");
+      setError(json?.error?.message ?? "创建失败，稍后再试");
       return;
     }
     onCreated(json.data.model);

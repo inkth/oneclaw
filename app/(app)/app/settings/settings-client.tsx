@@ -105,7 +105,7 @@ export function SettingsClient({
             {plan !== "TEAM" && (
               <button
                 onClick={() => setCheckout("TEAM")}
-                className="press rounded-lg border border-[var(--dk-stroke-border)] bg-white px-4 py-1.5 text-xs font-semibold text-[var(--dk-content-primary)] hover:bg-[var(--dk-btn-tertiary)]"
+                className="press rounded-full border border-[var(--dk-stroke-border)] bg-white px-4 py-1.5 text-xs font-semibold text-[var(--dk-content-primary)] hover:bg-[var(--dk-btn-tertiary)]"
               >
                 升级团队版
               </button>
@@ -152,7 +152,7 @@ export function SettingsClient({
         {usage ? (
           <CreditBalance usage={usage} />
         ) : (
-          <div className="mt-4 text-sm text-[var(--dk-content-tertiary)]">积分数据暂不可用,稍后刷新重试。</div>
+          <div className="mt-4 text-sm text-[var(--dk-content-tertiary)]">积分数据暂不可用，稍后刷新重试。</div>
         )}
       </section>
 
@@ -196,7 +196,7 @@ function CreditBalance({ usage }: { usage: Usage }) {
       </div>
       {danger && (
         <div className="mt-2 text-2xs font-medium text-rose-500">
-          积分告急,升级方案可继续。
+          积分告急，升级方案可继续。
         </div>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-[var(--dk-content-secondary)]">

@@ -131,7 +131,7 @@ export function VideoDetailDrawer({
       })
       .catch((e) => {
         if (!alive) return;
-        setError(e instanceof Error ? e.message : "网络错误");
+        setError(e instanceof Error ? e.message : "网络错误，请检查网络后重试");
         setLoading(false);
       });
     return () => {
@@ -179,7 +179,7 @@ export function VideoDetailDrawer({
       onClose();
       router.refresh();
     } else {
-      toast.error("删除失败");
+      toast.error("删除失败，稍后再试");
     }
   }
 
@@ -216,11 +216,11 @@ export function VideoDetailDrawer({
     const j = await r.json().catch(() => null);
     setBusy(false);
     if (r.ok && j?.ok) {
-      toast.success("已提交新版本,约 1-2 分钟出片");
+      toast.success("已提交新版本，约 1-2 分钟出片");
       onRerendered?.();
       onClose();
     } else {
-      toast.error(j?.error?.message || j?.message || "重出失败,稍后再试");
+      toast.error(j?.error?.message || j?.message || "重出失败，稍后再试");
     }
   }
 
@@ -334,7 +334,7 @@ export function VideoDetailDrawer({
                     onClick={rerender}
                     disabled={busy}
                     className="inline-flex items-center gap-1 rounded-xl bg-fuchsia-50 px-3 py-1.5 text-2xs font-medium text-fuchsia-700 hover:bg-fuchsia-100 disabled:opacity-50"
-                    title="沿用同一脚本换一版重新出片(消耗一次出片积分,不动原片)"
+                    title="沿用同一脚本换一版重新出片（消耗一次出片积分，不动原片）"
                   >
                     <RefreshCw className="h-3 w-3" />
                     换一版重出
@@ -612,4 +612,4 @@ function KV({ label, value, mono }: { label: string; value: string; mono?: boole
   );
 }
 
-// 注:成片的 播放/点赞/GMV 等发布数据无 TikTok 回流来源,已不在详情里展示。
+// 注：成片的 播放/点赞/GMV 等发布数据无 TikTok 回流来源，已不在详情里展示。

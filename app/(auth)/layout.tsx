@@ -9,7 +9,7 @@ export default function AuthLayout({
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
       <header className="relative px-6 py-5">
-        <Link href="/" aria-label="发现猫 首页">
+        <Link href="/" aria-label="发现猫首页">
           <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
         </Link>
       </header>

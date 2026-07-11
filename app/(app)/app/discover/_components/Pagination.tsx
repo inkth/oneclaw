@@ -6,9 +6,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * 选品各榜底部分页。页码动态展开到「下一可达页」,封顶 maxPage(默认 10)。
- * 改 URL ?page= 触发 SSR 重取;不足两页时不渲染。
- * 不依赖总条数(榜单拿不到总数),只靠当前页是否还有下一页推断。
+ * 选品各榜底部分页。页码动态展开到「下一可达页」，封顶 maxPage(默认 10)。
+ * 改 URL ?page= 触发 SSR 重取；不足两页时不渲染。
+ * 不依赖总条数（榜单拿不到总数），只靠当前页是否还有下一页推断。
  */
 export function Pagination({
   page,
@@ -23,7 +23,7 @@ export function Pagination({
   const sp = useSearchParams();
   const [pending, start] = useTransition();
 
-  // 已知可达的最大页:还有下一页就多露一格,封顶 maxPage。
+  // 已知可达的最大页：还有下一页就多露一格，封顶 maxPage。
   const maxShown = Math.min(hasNext ? page + 1 : page, maxPage);
   if (maxShown <= 1) return null;
 
@@ -84,7 +84,7 @@ function Arrow({
       disabled={disabled}
       aria-label={dir === "prev" ? "上一页" : "下一页"}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dk-stroke-border)] text-zinc-500 transition-colors",
+        "inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--dk-stroke-border)] text-zinc-500 transition-colors",
         disabled ? "cursor-not-allowed opacity-40" : "hover:bg-[var(--dk-action-regular)]",
       )}
     >

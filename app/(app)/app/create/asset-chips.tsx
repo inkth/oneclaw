@@ -9,7 +9,7 @@ import { AssetPickerModal } from "./asset-picker-modal";
 
 /**
  * 做视频「设置」里可调的三项:
- * region 目标市场(决定口播母语,默认美国 US,总是一个明确市场——不做「自动跟随商品」)、
+ * region 目标市场（决定口播母语，默认美国 US,总是一个明确市场——不做「自动跟随商品」）、
  * duration=null 时由 AI 自选时长、aspect 默认竖屏 9:16。
  * 市场→语言权威映射在 Go region_lang.go。
  */
@@ -25,15 +25,15 @@ export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
   aspect: "9:16",
 };
 
-// 时长候选:夹在 Seedance 2.0 支持的 4-15s 内,留「自动」让 AI 按脚本配速。
+// 时长候选：夹在 Seedance 2.0 支持的 4-15s 内，留「自动」让 AI 按脚本配速。
 const DURATION_OPTIONS = [8, 12, 15];
-// 画幅候选:竖屏优先(TikTok 主场景),保留横屏/方形。
+// 画幅候选：竖屏优先（TikTok 主场景），保留横屏/方形。
 const ASPECT_OPTIONS = ["9:16", "16:9", "1:1"];
 
 /**
- * 创作 composer 的工具链:资产选择收成单个「+ 添加」按钮,点开弹出 4 tab 弹窗
- * (上传资产 / AI 生成 / 商品 / 模特)在里面挑;选中值由 Workbench 持有,派活成功即清空。
- * 「设置」(短视频出片市场/时长/比例)仍是独立 chip。游客点击交给 gate 弹登录。
+ * 创作 composer 的工具链：资产选择收成单个「+ 添加」按钮，点开弹出 4 tab 弹窗
+ * (上传资产 / AI 生成 / 商品 / 模特)在里面挑；选中值由 Workbench 持有，派活成功即清空。
+ * 「设置」（短视频出片市场/时长/比例）仍是独立 chip。游客点击交给 gate 弹登录。
  */
 export function AssetChips({
   workspaceId,
@@ -56,10 +56,10 @@ export function AssetChips({
   onPersonaChange: (id: string | null) => void;
   materialId: string | null;
   onMaterialChange: (id: string | null) => void;
-  /** 出片设置:目标市场(定口播语言)/ 时长 / 比例,仅短视频(DIRECTOR)用。 */
+  /** 出片设置：目标市场（定口播语言）/ 时长 / 比例，仅短视频（DIRECTOR）用。 */
   videoSettings: VideoSettings;
   onVideoSettingsChange: (next: VideoSettings) => void;
-  /** 游客拦截:返回 true 表示已弹登录,选择器不展开。 */
+  /** 游客拦截：返回 true 表示已弹登录，选择器不展开。 */
   gate: () => boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -70,7 +70,7 @@ export function AssetChips({
 
   return (
     <>
-      {/* 资产:合并为单个「+ 添加」,点开弹窗选 商品 / 模特 / 上传 / AI 生成 */}
+      {/* 资产：合并为单个「+ 添加」，点开弹窗选 商品 / 模特 / 上传 / AI 生成 */}
       {showAssets && (
         <button
           type="button"
@@ -89,7 +89,7 @@ export function AssetChips({
         </button>
       )}
 
-      {/* 出片设置:目标市场(定口播语言)/ 时长 / 比例 —— 仅短视频,不设就全交给 AI/后端 */}
+      {/* 出片设置：目标市场（定口播语言）/ 时长 / 比例 —— 仅短视频，不设就全交给 AI/后端 */}
       {activeAgent === "DIRECTOR" && (
         <Popover
           align="start"
@@ -105,7 +105,7 @@ export function AssetChips({
         >
           {() => (
             <div className="space-y-3">
-              {/* 目标市场:决定口播母语(权威映射在后端 region_lang.go) */}
+              {/* 目标市场：决定口播母语（权威映射在后端 region_lang.go） */}
               <div>
                 <div className="mb-1.5 flex items-center gap-1 text-2xs font-medium uppercase tracking-wider text-zinc-500">
                   <Globe className="h-3 w-3" />
@@ -174,7 +174,7 @@ export function AssetChips({
         </Popover>
       )}
 
-      {/* 已选清除:一个 chip 一键全清,避免误带上一次的资产 */}
+      {/* 已选清除：一个 chip 一键全清，避免误带上一次的资产 */}
       {(productId || personaId || materialId) && (
         <button
           onClick={() => {
@@ -207,15 +207,15 @@ export function AssetChips({
   );
 }
 
-// 工具栏「设置」chip 的标签:直接显示当前三项配置(默认值也照常显示,不用泛泛的「设置」)。
-// 例:默认「美国 · 自动 · 9:16」;选过则「日本 · 15s · 1:1」。
+// 工具栏「设置」chip 的标签：直接显示当前三项配置（默认值也照常显示，不用泛泛的「设置」）。
+// 例：默认「美国 · 自动 · 9:16」;选过则「日本 · 15s · 1:1」。
 function settingsSummary(v: VideoSettings): string {
   const market = REGIONS.find((r) => r.code === v.region)?.cn ?? v.region;
   const dur = v.duration ? `${v.duration}s` : "自动";
   return `${market} · ${dur} · ${v.aspect}`;
 }
 
-// 是否已偏离默认(美国/自动/9:16):用于给 chip 加高亮,提示「已自定义」。
+// 是否已偏离默认（美国/自动/9:16）:用于给 chip 加高亮，提示「已自定义」。
 function isVideoSettingsCustomized(v: VideoSettings): boolean {
   return (
     v.region !== DEFAULT_VIDEO_SETTINGS.region ||
@@ -224,7 +224,7 @@ function isVideoSettingsCustomized(v: VideoSettings): boolean {
   );
 }
 
-/** 设置面板里的单选小按钮:选中态与未选态统一走 action-regular 底色,靠深浅区分。 */
+/** 设置面板里的单选小按钮：选中态与未选态统一走 action-regular 底色，靠深浅区分。 */
 function OptionButton({
   active,
   onClick,

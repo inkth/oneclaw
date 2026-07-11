@@ -36,15 +36,15 @@ const pct = (n: number) => (n * 100).toFixed(1) + "%";
 const num = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 /**
- * 复盘 → 做视频接力指令:优先用明星素材(高消耗高 ROI),其次潜力素材(低消耗高 ROI、待放量),
- * 把赢家创意的方向写进 DIRECTOR 指令,让下一条视频延续已被验证的钩子/卖点。
+ * 复盘 → 做视频接力指令：优先用明星素材（高消耗高 ROI），其次潜力素材（低消耗高 ROI、待放量）,
+ * 把赢家创意的方向写进 DIRECTOR 指令，让下一条视频延续已被验证的钩子/卖点。
  */
 function relayVideoPrompt(r: ReviewResult): string {
   const winners = r.quadrants.winner ?? [];
   const potentials = r.quadrants.potential ?? [];
   const ref = winners.length ? winners : potentials;
   if (ref.length === 0) {
-    return "参考上次投流复盘的赢家创意特征,再做一条高转化的带货短视频。";
+    return "参考上次投流复盘的赢家创意特征，再做一条高转化的带货短视频。";
   }
   const titles = ref
     .slice(0, 2)
@@ -53,7 +53,7 @@ function relayVideoPrompt(r: ReviewResult): string {
     .join("、");
   const label = winners.length ? "明星素材" : "潜力素材";
   const why = winners.length ? "高消耗高 ROI、已被验证" : "低消耗高 ROI、值得放量";
-  return `参考上次投流复盘:${label}「${titles}」表现最好(${why})。再做一条同方向的带货短视频,延续它们的开场钩子和卖点角度。`;
+  return `参考上次投流复盘：${label}「${titles}」表现最好（${why}）。再做一条同方向的带货短视频，延续它们的开场钩子和卖点角度。`;
 }
 
 /**
@@ -122,12 +122,12 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
           })}
         </div>
 
-        {/* 复盘 → 行动接力:把赢家方向直接接到「做视频」,闭环不断点 */}
+        {/* 复盘 → 行动接力：把赢家方向直接接到「做视频」，闭环不断点 */}
         <div className="mt-4 flex flex-col gap-2 rounded-lg border border-brand-100 bg-brand-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-2xs leading-relaxed text-zinc-600">
             {hasWinners
-              ? "把这次复盘的赢家方向接力成下一条视频 —— 指令已按明星/潜力素材预填,可再改。"
-              : "样本里还没跑出明星素材,先按复盘结论再做一条试试方向。"}
+              ? "把这次复盘的赢家方向接力成下一条视频 —— 指令已按明星/潜力素材预填，可再改。"
+              : "样本里还没跑出明星素材，先按复盘结论再做一条试试方向。"}
           </p>
           <button
             onClick={() =>
@@ -152,7 +152,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
         <TableWrap minWidth={760}>
           <THead>
             <Tr>
-              <Th>Video / Title</Th>
+              <Th>视频标题</Th>
               <Th>当前问题</Th>
               <Th>建议操作</Th>
               <Th align="center">优先级</Th>
@@ -181,7 +181,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
               <Badge tone="violet" icon={<Sparkles className="h-3 w-3" />}>
                 AI 深挖分析
               </Badge>
-              <span className="text-xs text-zinc-500">由 Gemini 基于本次基线与重点素材生成</span>
+              <span className="text-xs text-zinc-500">由 AI 基于本次基线与重点素材生成</span>
             </div>
             <CopyButton text={result.analysis} />
           </div>
@@ -194,7 +194,7 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge tone="violet" icon={<Sparkles className="h-3 w-3" />}>
-                Gemini 创意深挖
+                AI 创意深挖
               </Badge>
               <span className="text-xs text-zinc-500">AI 深挖未运行，复制提示词可手动深挖</span>
             </div>
@@ -223,7 +223,7 @@ function StatCard({
   tone?: Tone;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface)] p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+    <div className="dk-card p-5">
       <div className="flex items-center justify-between">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--dk-surface-2)] text-[var(--dk-content-secondary)]">
           <Icon className="h-4 w-4" />

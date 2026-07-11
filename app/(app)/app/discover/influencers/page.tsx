@@ -16,13 +16,13 @@ export default async function DiscoverInfluencersPage({
   const sp = await searchParams;
   const region = (REGION_CODES.includes(sp.region as Region) ? sp.region : "US") as Region;
   const rankType = Number(sp.rank_type) || 1;
-  // 默认带货榜(influencer_rank_field=2, total_sale_cnt);1=粉丝榜。
+  // 默认带货榜（influencer_rank_field=2, total_sale_cnt）;1=粉丝榜。
   const field = Number(sp.field) === 1 ? 1 : 2;
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
   const q = (sp.q ?? "").trim();
-  // 类目=按「带货商品类目」过滤(后端映射到 EchoTik product_category_id)。
-  // 搜索:走关键词搜索(只认 region,单次 ≤30、无分页);否则正常榜单+类目+分页。
+  // 类目=按「带货商品类目」过滤（后端映射到 EchoTik product_category_id）。
+  // 搜索：走关键词搜索（只认 region,单次 ≤30、无分页）;否则正常榜单+类目+分页。
   const query = q
     ? `region=${region}&page_size=30&keyword=${encodeURIComponent(q)}`
     : `region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=20&page_num=${page}`;

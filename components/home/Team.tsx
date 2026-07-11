@@ -14,16 +14,16 @@ const MEMBERS = [
   {
     name: "短视频创作",
     icon: Clapperboard,
-    role: "为每个产品挑最对路的叙事角度，差异化素材喂饱算法。",
+    role: "为每个产品挑最对路的叙事角度，单条直出可发布成片。",
     quote: "给榜首产品来一条 TikTok 短视频，叙事角度你帮我定。",
     skills: ["脚本生成", "9:16 成片", "封面直出"],
   },
   {
     name: "Listing 内容",
     icon: LayoutList,
-    role: "标题、五点卖点、A+ 文案到主图 prompt，一次产出可直接上架。",
+    role: "标题、五点卖点、图文详情到商品主图，一次产出可直接上架。",
     quote: "给这款便携榨汁杯写一套英文 Listing，标题带核心关键词。",
-    skills: ["英文标题", "五点卖点", "主图 prompt"],
+    skills: ["英文标题", "五点卖点", "商品主图"],
   },
   {
     name: "投放复盘",
@@ -40,7 +40,7 @@ export function Team() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <div className="text-xs font-semibold uppercase tracking-widest text-brand-600">
-            Meet the team
+            AI 团队
           </div>
           <h2 className="text-display-sm mt-3">四位全职 Agent，7×24 在线</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">

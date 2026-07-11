@@ -1,6 +1,6 @@
-import { BarChart3, Clapperboard, Play, TrendingUp } from "lucide-react";
+import { BarChart3, Clapperboard, FileText, Play, TrendingUp } from "lucide-react";
 
-/* 全链路：三个环节连成一条流水线，上一步产出 = 下一步输入。
+/* 全链路：四个环节连成一条流水线，上一步产出 = 下一步输入。
    每张卡底部放该环节的「真实产物」微缩样张，而非抽象插图。 */
 
 const STEPS = [
@@ -10,7 +10,7 @@ const STEPS = [
     icon: TrendingUp,
     tone: "text-brand-600 bg-brand-50",
     title: "带 ROI 评分的选品清单",
-    desc: "扫描 TikTok Shop 与电商趋势，按你的品类偏好和毛利底线，给出可直接下单的清单。",
+    desc: "基于 TikTok Shop 真实销售数据，按你的品类偏好和毛利底线，筛出值得一试的商品。",
     visual: <ProductVisual />,
   },
   {
@@ -19,24 +19,33 @@ const STEPS = [
     icon: Clapperboard,
     tone: "text-violet-600 bg-violet-50",
     title: "一个产品，选对角度出片",
-    desc: "AI 从开箱、测评、场景、对比四种叙事中挑最适合产品的，直出 9:16 成片与封面。",
+    desc: "AI 按产品挑最合适的叙事角度，直出 9:16 成片与封面。",
     visual: <VideoVisual />,
   },
   {
     no: "03",
+    agent: "Listing 内容",
+    icon: FileText,
+    tone: "text-sky-600 bg-sky-50",
+    title: "文案主图，一次备齐",
+    desc: "英文标题、卖点文案到商品主图一次产出，商品页直接能用。",
+    visual: <ListingVisual />,
+  },
+  {
+    no: "04",
     agent: "投放复盘",
     icon: BarChart3,
     tone: "text-emerald-600 bg-emerald-50",
     title: "报表上传，答案直出",
-    desc: "上传 GMVMax 投流报表，ROI 四象限和加减预算建议直接给你，不用自己拉透视表。",
+    desc: "上传 GMV Max 投流报表，ROI 四象限和加减预算建议直接给你，不用自己拉透视表。",
     visual: <ReviewVisual />,
   },
 ];
 
 const PROOFS = [
-  { value: "30+ 小时 → 10 分钟", label: "每周重复工作" },
+  { value: "4 个环节", label: "选品 · 视频 · Listing · 复盘" },
   { value: "1 个人", label: "跑通完整链路" },
-  { value: "4 种叙事角度", label: "AI 按产品自动匹配" },
+  { value: "AI 选角度", label: "按产品匹配叙事，单条直出" },
   { value: "ROI 四象限", label: "投流报表一键复盘" },
 ];
 
@@ -50,7 +59,7 @@ export function Chain() {
           </div>
           <h2 className="text-display-sm mt-3">一条链路，跑完一单生意</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            别再于十几个工具之间搬运数据。发现猫 把出海的三个关键环节连成一条流水线，
+            别再在十几个工具之间搬运数据。发现猫把出海的四个关键环节连成一条流水线，
             上一步的产出自动成为下一步的输入。
           </p>
         </div>
@@ -59,9 +68,9 @@ export function Chain() {
           {/* 流水线连接光带（仅大屏） */}
           <div
             aria-hidden
-            className="absolute left-[12%] right-[12%] top-4 hidden h-px bg-brand-200 lg:block"
+            className="absolute left-[10%] right-[10%] top-4 hidden h-px bg-brand-200 lg:block"
           />
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <div key={s.no} className="flex flex-col">
                 <div className="relative z-10 flex justify-center">
@@ -144,6 +153,26 @@ function VideoVisual() {
           <span className="relative z-10 pb-1 text-2xs font-medium text-zinc-600">{t}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ListingVisual() {
+  return (
+    <div className="space-y-2 rounded-lg border border-black/[0.05] bg-zinc-50/60 p-3">
+      <div className="flex items-center justify-between text-2xs">
+        <span className="font-medium text-zinc-700">Portable Juicer Cup, USB…</span>
+        <span className="font-semibold text-sky-600">标题</span>
+      </div>
+      <div className="space-y-1">
+        {["w-[92%]", "w-[78%]", "w-[85%]"].map((w) => (
+          <div key={w} className={`h-1 ${w} rounded-full bg-sky-200/80`} />
+        ))}
+      </div>
+      <div className="flex items-center justify-between text-2xs">
+        <span className="text-zinc-500">卖点 × 5 · 主图 × 3</span>
+        <span className="font-medium text-emerald-600">可上架</span>
+      </div>
     </div>
   );
 }

@@ -7,9 +7,9 @@ export default function TermsPage() {
       <p className="!mt-2 text-zinc-400">最后更新：2026 年 6 月 23 日</p>
 
       <p>
-        欢迎使用发现猫。发现猫是由发现猫科技(以下简称「我们」)提供的跨境电商
-        AI 工具，覆盖选品分析、短视频创作、Listing 内容、虚拟试穿与投放复盘。当你注册或使用发现猫
-        （以下简称「服务」），即表示你已阅读、理解并同意本条款。
+        欢迎使用发现猫。发现猫是由发现猫科技（以下简称「我们」）提供的跨境电商
+        AI 工具，覆盖选品分析、短视频创作、Listing 内容与投放复盘。
+        当你注册或使用发现猫（以下简称「服务」），即表示你已阅读、理解并同意本条款。
       </p>
 
       <h2>1. 账户与登录</h2>
@@ -31,7 +31,7 @@ export default function TermsPage() {
         <li>服务采用积分制：选品、出片、出图等动作按对应积分单价扣费，单价以购买页与工作台展示为准。</li>
         <li>各订阅方案按<strong>订阅周期</strong>(自购买日起按月计)发放积分额度并到期重置；免费版 / 专业版为硬上限，团队版超出基线部分按量结算。</li>
         <li>积分与订阅为虚拟商品。<strong>已消耗的积分不予退还</strong>；未消耗部分的退款以购买时公示的退款政策为准。如有疑问请联系
-          <a href="mailto:hello@oneclaw.ai">hello@oneclaw.ai</a>。</li>
+          <a href="mailto:contact@faxianmao.com">contact@faxianmao.com</a>。</li>
       </ul>
 
       <h2>4. 你的内容与合规</h2>
@@ -57,8 +57,8 @@ export default function TermsPage() {
       <h2>7. 免责声明与责任限制</h2>
       <p>
         服务按「现状」与「现有」基础提供。在法律允许的最大范围内，对于因使用或无法使用服务、AI 生成内容的准确性、
-        第三方数据或平台变动所造成的间接、偶然或后果性损失，我们不承担责任。我们的累计责任以你在引发争议事件前
-        三个月内向我们实际支付的费用为限。
+        第三方数据或平台变动所造成的间接、偶然或后果性损失，我们不承担责任。
+        我们的累计责任以你在引发争议事件前三个月内向我们实际支付的费用为限。
       </p>
 
       <h2>8. 变更与终止</h2>
@@ -70,7 +70,7 @@ export default function TermsPage() {
       <h2>9. 适用法律与联系方式</h2>
       <p>
         本条款的解释与争议解决适用中华人民共和国法律。如有任何疑问，请联系
-        <a href="mailto:hello@oneclaw.ai">hello@oneclaw.ai</a>。
+        <a href="mailto:contact@faxianmao.com">contact@faxianmao.com</a>。
       </p>
     </>
   );

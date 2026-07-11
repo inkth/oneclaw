@@ -30,7 +30,7 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
   {
     title: "公司",
     links: [
-      { label: "联系我们", href: "mailto:hello@oneclaw.ai" },
+      { label: "联系我们", href: "mailto:contact@faxianmao.com" },
       { label: "服务条款", href: "/legal/terms" },
       { label: "隐私政策", href: "/legal/privacy" },
     ],
@@ -49,13 +49,13 @@ export function Footer() {
               让每一个出海人都能像团队一样高效。
             </p>
             <div className="mt-6 flex flex-col gap-2 text-sm text-zinc-600">
-              <a href="mailto:hello@oneclaw.ai" className="inline-flex items-center gap-2 hover:text-brand-600">
+              <a href="mailto:contact@faxianmao.com" className="inline-flex items-center gap-2 hover:text-brand-600">
                 <Mail className="h-4 w-4" />
-                hello@oneclaw.ai
+                contact@faxianmao.com
               </a>
               <span className="inline-flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                微信公众号：发现猫 出海
+                微信公众号：发现猫出海
               </span>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-zinc-200/80 pt-6 text-xs text-zinc-500">
-          © 2026 发现猫科技. All rights reserved.
+          © 2026 发现猫科技 · 保留所有权利
         </div>
       </div>
     </footer>

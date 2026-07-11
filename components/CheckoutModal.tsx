@@ -83,7 +83,7 @@ export function CheckoutModal({
       setOrder(data.order);
       setIsMock(data.isMock);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "下单失败");
+      setError(e instanceof Error ? e.message : "下单失败，稍后再试");
     } finally {
       setCreating(false);
     }
@@ -106,7 +106,7 @@ export function CheckoutModal({
         setOrder(o);
         if (o.status === "PAID") {
           clearInterval(t);
-          toast.success("支付成功，已升级方案 🎉");
+          toast.success("支付成功，方案已升级");
           setTimeout(() => router.refresh(), 800);
         }
         if (o.status === "EXPIRED") {
@@ -230,7 +230,7 @@ export function CheckoutModal({
             </button>
 
             <p className="text-center text-2xs text-zinc-400">
-              支付即视为同意《订阅服务协议》，到期后自动降回 FREE。
+              支付即视为同意《服务条款》，到期后自动降回免费版。
             </p>
           </div>
         ) : (

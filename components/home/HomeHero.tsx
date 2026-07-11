@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BarChart3,
   Check,
+  FileText,
   Loader2,
   Send,
   TrendingUp,
@@ -32,6 +33,11 @@ const PROMPTS: DemoPrompt[] = [
     agent: "短视频创作",
     text: "给这款便携榨汁杯生成一支 15 秒带货短视频，叙事角度你帮我挑",
     icon: Video,
+  },
+  {
+    agent: "Listing 内容",
+    text: "给这款便携榨汁杯写一套英文 Listing，标题带核心关键词",
+    icon: FileText,
   },
   {
     agent: "投放复盘",
@@ -97,7 +103,7 @@ export function HomeHero() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="dk-ring mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            TikTok Shop 出海全链路 · Beta 限时免费
+            TikTok Shop 出海全链路 · 榜单数据免费逛
           </div>
 
           <h1 className="text-display">
@@ -105,7 +111,7 @@ export function HomeHero() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base text-zinc-600 text-cjk-relaxed sm:text-lg">
-            选品、做视频、看投放复盘——都交给你的 AI Agent，上一步的结果就是下一步的起点。
+            选品、做视频、写 Listing、看投放复盘——都交给你的 AI Agent，上一步的结果就是下一步的起点。
             <br className="hidden sm:block" />
             哪怕你是第一次做跨境电商。
           </p>
@@ -170,7 +176,7 @@ export function HomeHero() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-              Beta 用户限时免费
+              数据浏览免费 · AI 派活才花积分
             </span>
             <span className="hidden h-3 w-px bg-zinc-200 sm:block" />
             <span>手机号登录即用 · 无需信用卡</span>
@@ -199,7 +205,7 @@ const RUN_STEPS: RunStep[] = [
   {
     agent: "选品分析",
     dot: "bg-brand-500",
-    text: "扫描 10+ 数据源，按毛利底线筛选",
+    text: "扫描 TikTok Shop 榜单，按毛利底线筛选",
     result: "便携榨汁杯 · ROI 94 · 月销 12.4K",
     duration: "28s",
   },
@@ -207,8 +213,15 @@ const RUN_STEPS: RunStep[] = [
     agent: "短视频创作",
     dot: "bg-violet-500",
     text: "挑叙事角度，生成 9:16 带货短视频",
-    result: "开箱 / 测评 / 场景 / 对比中自动选",
+    result: "按产品自动选角度 · 直出成片与封面",
     duration: "3m 12s",
+  },
+  {
+    agent: "Listing 内容",
+    dot: "bg-sky-500",
+    text: "写英文标题、卖点，生成商品主图",
+    result: "标题 + 五点卖点 + 主图，可直接上架",
+    duration: "41s",
   },
   {
     agent: "投放复盘",
@@ -248,7 +261,7 @@ function RunDemo() {
           <span className="font-display text-xs font-semibold text-ink">
             发送之后，Agent 这样接力
           </span>
-          <span className="text-2xs text-zinc-400 nums">链路 #1024 · 实时</span>
+          <span className="text-2xs text-zinc-400 nums">链路演示</span>
         </div>
         <ul>
           {RUN_STEPS.map((s, i) => {

@@ -95,8 +95,8 @@ function asTone(t: string): Tone {
   return (ok as string[]).includes(t) ? (t as Tone) : "neutral";
 }
 
-// 搜同款货源:按品名关键词直达各平台(纯 deep-link,无需 API/凭证)。
-// 完整标题搜不出货源,取前几个词作关键词。1688/CJ 的「按图搜」需签名 API,见后续 P3。
+// 搜同款货源：按品名关键词直达各平台（纯 deep-link,无需 API/凭证）。
+// 完整标题搜不出货源，取前几个词作关键词。1688/CJ 的「按图搜」需签名 API,见后续 P3。
 function sourcingKeyword(name: string): string {
   return name
     .replace(/[|/–—\-_,]+/g, " ") // 分隔符/标点当空格
@@ -119,7 +119,7 @@ function sourcingLinks(name: string): { label: string; href: string; note: strin
   ];
 }
 
-/** 图片(签名 URL),加载失败回退渐变占位。 */
+/** 图片（签名 URL），加载失败回退渐变占位。 */
 function Img({ src, seed, className }: { src: string; seed: string; className: string }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
@@ -155,7 +155,7 @@ export function ProductDetailClient({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可操作",
-      desc: "收藏、AI 分析都需要账号。详情随便看,登录后一键操作。",
+      desc: "收藏、AI 分析都需要账号。详情随便看，登录后一键操作。",
     });
     return true;
   }
@@ -175,7 +175,7 @@ export function ProductDetailClient({
       toast.success(data.alreadyExists ? "已经收藏过了" : "已收藏");
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "加入失败");
+      toast.error(e instanceof Error ? e.message : "收藏失败");
     } finally {
       setBusy("");
     }
@@ -206,7 +206,7 @@ export function ProductDetailClient({
       }
       toast.message("分析仍在进行", { description: "稍后可在工作台查看结果" });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "分析失败");
+      toast.error(e instanceof Error ? e.message : "分析失败，稍后再试");
     } finally {
       setBusy("");
     }
@@ -385,7 +385,7 @@ export function ProductDetailClient({
         </Card>
       )}
 
-      {/* 货源比价 · 搜同款(deep-link,无 API) */}
+      {/* 货源比价 · 搜同款（deep-link,无 API） */}
       <Card>
         <div className="flex items-center gap-2">
           <Search className="h-4 w-4 text-brand-600" />
@@ -393,7 +393,7 @@ export function ProductDetailClient({
         </div>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
           评分里的成本/利润是按品类估算的。去货源平台搜「<span className="font-medium text-zinc-900">{sourcingKeyword(p.name)}</span>
-          」找同款,拿到真实进货价后在收藏夹回填,毛利率就准了。
+          」找同款，拿到真实进货价后在收藏夹回填，毛利率就准了。
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {sourcingLinks(p.name).map((l) => (
@@ -403,7 +403,7 @@ export function ProductDetailClient({
               target="_blank"
               rel="noopener noreferrer"
               title={l.note}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-[var(--dk-action-regular)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-[var(--dk-action-regular)]"
             >
               {l.label}
               <ExternalLink className="h-3 w-3 opacity-50" />
@@ -411,7 +411,7 @@ export function ProductDetailClient({
           ))}
         </div>
         <p className="mt-2 text-2xs text-zinc-400">
-          按图搜同款最准:保存上方商品主图,到平台点相机图标上传(自动按图比价为后续功能)。
+          按图搜同款最准：保存上方商品主图，到平台点相机图标上传（自动按图比价为后续功能）。
         </p>
       </Card>
 
@@ -421,20 +421,20 @@ export function ProductDetailClient({
           icon={TrendingUp}
           label="总销量"
           value={fmt(p.totalSaleCnt)}
-          hint={p.windows ? `近7天 ${fmt(p.windows.sale7dCnt)} · 近30天 ${fmt(p.windows.sale30dCnt)}` : undefined}
+          hint={p.windows ? `近 7 天 ${fmt(p.windows.sale7dCnt)} · 近 30 天 ${fmt(p.windows.sale30dCnt)}` : undefined}
         />
         <Stat
           icon={DollarSign}
           label="总 GMV"
           value={fmtMoney(p.totalSaleGmv)}
-          hint={p.windows ? `近7天 ${fmtMoney(p.windows.gmv7d)} · 近30天 ${fmtMoney(p.windows.gmv30d)}` : undefined}
+          hint={p.windows ? `近 7 天 ${fmtMoney(p.windows.gmv7d)} · 近 30 天 ${fmtMoney(p.windows.gmv30d)}` : undefined}
         />
         <Stat icon={Users} label="带货达人" value={fmt(p.totalIflCnt)} hint="累计合作达人数" />
         <Stat
           icon={Video}
           label="带货视频"
           value={fmt(p.totalVideoCnt)}
-          hint={p.windows ? `近7天 +${fmt(p.windows.video7dCnt)}` : undefined}
+          hint={p.windows ? `近 7 天 +${fmt(p.windows.video7dCnt)}` : undefined}
         />
       </div>
 
@@ -442,7 +442,7 @@ export function ProductDetailClient({
       <Card>
         <div className="mb-2 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-brand-600" />
-          <span className="text-sm font-medium text-zinc-900">销量 / GMV 趋势(近 14 天)</span>
+          <span className="text-sm font-medium text-zinc-900">销量 / GMV 趋势（近 14 天）</span>
         </div>
         <TrendChart data={p.trend} />
       </Card>
@@ -496,7 +496,7 @@ export function ProductDetailClient({
                       seed={v.videoId}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    {/* 顶部:播放量 + 带货徽标 */}
+                    {/* 顶部：播放量 + 带货徽标 */}
                     <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-1 p-2">
                       <span className="inline-flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums backdrop-blur-sm">
                         <Play className="h-2.5 w-2.5 fill-current" />
@@ -534,8 +534,7 @@ export function ProductDetailClient({
                   </div>
                 </>
               );
-              const shell =
-                "group block overflow-hidden rounded-lg border border-[var(--dk-stroke-overlay)] bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition dk-lift";
+              const shell = "group block overflow-hidden dk-card dk-lift";
               return playable ? (
                 <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className={shell}>
                   {inner}

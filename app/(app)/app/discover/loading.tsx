@@ -20,7 +20,7 @@ export default function DiscoverLoading() {
       </div>
 
       {/* 列表骨架 */}
-      <div className="rounded-lg border border-[var(--dk-stroke-overlay)] overflow-hidden">
+      <div className="rounded-2xl bg-white overflow-hidden">
         <div className={"h-10 " + bar + " rounded-none"} />
         <div className="divide-y divide-[var(--dk-stroke-divider)]">
           {Array.from({ length: 10 }).map((_, i) => (

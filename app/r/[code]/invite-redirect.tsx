@@ -13,7 +13,7 @@ export function InviteRedirect({ code }: { code: string }) {
       try {
         localStorage.setItem("oc_invite", c);
       } catch {
-        /* 隐私模式禁写 localStorage 时,靠 query 仍可归因 */
+        /* 隐私模式禁写 localStorage 时，靠 query 仍可归因 */
       }
       router.replace(`/login?invite=${encodeURIComponent(c)}`);
     } else {

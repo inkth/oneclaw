@@ -62,7 +62,7 @@ export default async function SellerDetailPage({
         <EmptyState
           icon={Store}
           title="店铺暂不可用"
-          description="该店铺数据暂时取不到,或数据源不可用。请回到店铺榜重试。"
+          description="该店铺数据暂时取不到，或数据源不可用。请回到店铺榜重试。"
         />
       </div>
     );

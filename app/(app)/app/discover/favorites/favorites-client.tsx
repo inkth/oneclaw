@@ -9,7 +9,7 @@ import { initial, stringToGradient } from "../_components/format";
 import { Bookmark, Package, Store, Users, Clapperboard } from "lucide-react";
 import { ProductsClient, type Product } from "../../assets/products/products-client";
 
-// 非商品收藏(店铺/达人/视频)。商品收藏已并入选品 products 表,走 ProductsClient。
+// 非商品收藏（店铺/达人/视频）。商品收藏已并入选品 products 表，走 ProductsClient。
 export type FavoriteItem = {
   kind: "seller" | "influencer" | "video";
   externalId: string;
@@ -46,7 +46,7 @@ function EntityGrid({ items, rounded }: { items: FavoriteItem[]; rounded?: boole
       <EmptyState
         icon={Bookmark}
         title="这里还没有收藏"
-        description="在店铺 / 达人 / 视频详情页点「收藏」,就会出现在这里。"
+        description="在店铺 / 达人 / 视频详情页点「收藏」，就会出现在这里。"
       />
     );
   }
@@ -78,7 +78,7 @@ function EntityGrid({ items, rounded }: { items: FavoriteItem[]; rounded?: boole
   );
 }
 
-// 收藏总入口:商品收藏走选品 products 全能力(状态/成本/做视频),店铺/达人/视频走轻量卡片。
+// 收藏总入口：商品收藏走选品 products 全能力（状态/成本/做视频），店铺/达人/视频走轻量卡片。
 export function FavoritesClient({
   workspaceId,
   products,
@@ -91,7 +91,7 @@ export function FavoritesClient({
   const [tab, setTab] = useState<TabKey>("product");
 
   const counts: Record<TabKey, number> = {
-    // 自建商品移到「资产 · 我的商品」,收藏页只计 EchoTik 收藏。
+    // 自建商品移到「资产 · 我的商品」，收藏页只计 EchoTik 收藏。
     product: products.filter((p) => p.discoverProductId).length,
     seller: favorites.filter((f) => f.kind === "seller").length,
     influencer: favorites.filter((f) => f.kind === "influencer").length,

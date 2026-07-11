@@ -6,7 +6,7 @@ import { ArrowRight, Languages, Sparkles, Wallet } from "lucide-react";
 const PROMISES = [
   { icon: Languages, text: "全中文界面，一句话派活" },
   { icon: Sparkles, text: "不需要团队，也不需要经验" },
-  { icon: Wallet, text: "Beta 期免费，手机号登录即用" },
+  { icon: Wallet, text: "数据浏览免费，手机号登录即用" },
 ];
 
 export function FinalCTA() {

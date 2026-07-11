@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-// 「创作」已并入工作台(/app)：四个 Agent 同处一框。
-// 旧链接(收藏接力 / 书签)带参重定向过去，保留 agent / prompt / productId。
+// 「创作」已并入工作台（/app）：四个 Agent 同处一框。
+// 旧链接（收藏接力 / 书签）带参重定向过去，保留 agent / prompt / productId。
 export default async function CreatePage({
   searchParams,
 }: {

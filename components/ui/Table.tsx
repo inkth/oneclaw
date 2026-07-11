@@ -13,10 +13,10 @@ export function TableWrap({
   children: React.ReactNode;
 }) {
   return (
-    // 表格容器当卡片看：8px 圆角 + 发丝边（--dk-stroke-overlay）+ 极弱阴影，与 dk-card 同规格
+    // 表格容器当卡片看：16px 圆角、无边框无阴影，与 dk-card 同规格（分层靠卡面色差）
     <div
       className={cn(
-        "overflow-x-auto rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface)] shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]",
+        "overflow-x-auto rounded-2xl bg-[var(--dk-surface)]",
         className
       )}
     >

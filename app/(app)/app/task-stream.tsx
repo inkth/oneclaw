@@ -46,9 +46,9 @@ export type StreamTask = {
   output?: string | null;
   errorMessage?: string | null;
   metadata?: {
-    /** REVIEW 任务:完整复盘结果,流内还原仪表盘。 */
+    /** REVIEW 任务：完整复盘结果，流内还原仪表盘。 */
     review?: ReviewResult;
-    /** ANALYST 任务:写入收藏的商品,externalId 存在时可跳转发现页详情。 */
+    /** ANALYST 任务：写入收藏的商品,externalId 存在时可跳转发现页详情。 */
     products?: {
       id: string;
       title: string;
@@ -58,19 +58,19 @@ export type StreamTask = {
       externalId?: string;
       region?: string;
     }[];
-    /** DIRECTOR 任务:脚本草稿。draft=true 且无 videoId 时等待用户确认出片。 */
+    /** DIRECTOR 任务：脚本草稿。draft=true 且无 videoId 时等待用户确认出片。 */
     draft?: boolean;
     videoId?: string;
     durationSec?: number;
     aspectRatio?: string;
-    /** 目标市场 code 与口播语言(后端按市场母语生成;旧任务无此字段视同美国/英语)。 */
+    /** 目标市场 code 与口播语言（后端按市场母语生成；旧任务无此字段视同美国/英语）。 */
     region?: string;
     voiceLang?: string;
-    /** 确认出片时选择的人设(后端回写);preferredPersonaId 是派活时预选的,作确认默认值。 */
+    /** 确认出片时选择的人设（后端回写）;preferredPersonaId 是派活时预选的，作确认默认值。 */
     personaId?: string;
     personaName?: string;
     preferredPersonaId?: string;
-    /** LISTING 任务:结构化 Listing 内容;imagesStatus 驱动主图确认生成流程(同出片确认)。 */
+    /** LISTING 任务：结构化 Listing 内容;imagesStatus 驱动主图确认生成流程（同出片确认）。 */
     title?: string;
     sellingPoints?: string[];
     aplusSections?: { heading: string; body: string; imagePrompt: string }[];
@@ -81,11 +81,11 @@ export type StreamTask = {
     coverUrl?: string;
     /** 关联选品库商品 ID:出图后可「设为商品主图」回写。 */
     productId?: string;
-    /** TRYON 任务:试穿输入图(模特 / 服饰),结果图落 images;失败时 imagesError 给可操作原因。 */
+    /** TRYON 任务：试穿输入图（模特 / 服饰），结果图落 images;失败时 imagesError 给可操作原因。 */
     modelUrl?: string;
     garmentUrl?: string;
     imagesError?: string;
-    /** VIDEO_ANALYSIS 任务:逐句脚本 + 中文翻译 + 带货结构拆解 + 改编建议(kind="videoAnalysis")。 */
+    /** VIDEO_ANALYSIS 任务：逐句脚本 + 中文翻译 + 带货结构拆解 + 改编建议（kind="videoAnalysis"）。 */
     kind?: string;
     videoUrl?: string;
     lang?: string;
@@ -103,9 +103,9 @@ const ACTIVE_STATUSES = new Set(["QUEUED", "RUNNING"]);
 const OUTPUT_COLLAPSE_LIMIT = 600;
 
 /**
- * 会话流:每次派活 = 右侧用户气泡(指令)+ 左侧 Agent 气泡(状态/结果)。
- * 新任务在最上方紧贴输入框,执行中实时显示进度,完成后结果就地展开;
- * 所有 Agent 统一落任务表,复盘(REVIEW)从 metadata.review 还原仪表盘。
+ * 会话流：每次派活 = 右侧用户气泡（指令）+ 左侧 Agent 气泡（状态/结果）。
+ * 新任务在最上方紧贴输入框，执行中实时显示进度，完成后结果就地展开;
+ * 所有 Agent 统一落任务表，复盘（REVIEW）从 metadata.review 还原仪表盘。
  */
 export function TaskStream({
   items,
@@ -114,14 +114,14 @@ export function TaskStream({
   chronological = false,
 }: {
   items: StreamTask[];
-  /** 仅展示最近 N 条,溢出时显示「查看全部」链接(工作台首页用)。 */
+  /** 仅展示最近 N 条，溢出时显示「查看全部」链接（工作台首页用）。 */
   limit?: number;
   moreHref?: string;
-  /** 正序排列(旧→新,最新一条在底部),用于底部输入框的聊天布局;默认新→旧(倒序)。 */
+  /** 正序排列（旧→新，最新一条在底部），用于底部输入框的聊天布局；默认新→旧（倒序）。 */
   chronological?: boolean;
 }) {
   if (items.length === 0) return null;
-  // items 传入为新→旧(状态顺序)。聊天布局反转为旧→新,最新一条排在最底、紧贴底部输入框。
+  // items 传入为新→旧（状态顺序）。聊天布局反转为旧→新，最新一条排在最底、紧贴底部输入框。
   const visible = chronological
     ? [...items].reverse()
     : limit
@@ -141,7 +141,7 @@ export function TaskStream({
             href={moreHref}
             className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-ink"
           >
-            查看全部 {items.length} 条对话 <ArrowRight className="h-3 w-3" />
+            查看全部 {items.length} 条会话 <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       )}
@@ -190,7 +190,7 @@ function AgentBubble({
   );
 }
 
-/** ANALYST 选品结果:商品 chip 行,有 externalId 时可点击跳发现页详情。 */
+/** ANALYST 选品结果：商品 chip 行，有 externalId 时可点击跳发现页详情。 */
 function ProductChips({ products }: { products: NonNullable<NonNullable<StreamTask["metadata"]>["products"]> }) {
   return (
     <div className="mt-3 flex flex-wrap gap-2">
@@ -224,7 +224,7 @@ function ProductChips({ products }: { products: NonNullable<NonNullable<StreamTa
   );
 }
 
-/** 出片人设选择:默认「不用人设」,可选预置数字人 / 自有模特(头像 chip 横排)。 */
+/** 出片人设选择：默认「不用人设」，可选预置数字人 / 自有模特（头像 chip 横排）。 */
 function PersonaPicker({
   workspaceId,
   value,
@@ -243,7 +243,7 @@ function PersonaPicker({
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
       <span className="inline-flex shrink-0 items-center gap-1 text-2xs text-zinc-400">
-        <UserRound className="h-3 w-3" /> 出镜人设
+        <UserRound className="h-3 w-3" /> 出镜模特
       </span>
       <button
         onClick={() => onChange(null)}
@@ -253,7 +253,7 @@ function PersonaPicker({
             : "border-[var(--dk-stroke-border)] bg-white text-zinc-600 hover:border-zinc-300"
         }`}
       >
-        不用人设
+        不用模特
       </button>
       {options.map((m) => (
         <button
@@ -293,50 +293,50 @@ function TaskBubble({
   newest?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  // 确认卡改目标市场会触发后端重写脚本,完成后用返回的新任务就地覆盖展示(脚本/口播语言一起换)。
+  // 确认卡改目标市场会触发后端重写脚本，完成后用返回的新任务就地覆盖展示（脚本/口播语言一起换）。
   const [localTask, setLocalTask] = useState<StreamTask | null>(null);
   const t = localTask ?? task;
   const review = t.agent === "REVIEW" ? t.metadata?.review : undefined;
-  // 最新一条复盘默认展开仪表盘(刚提交完就要看结果),历史折叠省空间。
+  // 最新一条复盘默认展开仪表盘（刚提交完就要看结果），历史折叠省空间。
   const [dashOpen, setDashOpen] = useState(newest);
   const active = ACTIVE_STATUSES.has(t.status);
   const output = t.output ?? "";
   const long = output.length > OUTPUT_COLLAPSE_LIMIT;
   const shown = !long || expanded ? output : output.slice(0, OUTPUT_COLLAPSE_LIMIT) + "…";
 
-  // LISTING 结果有结构化 metadata 时用卡片组渲染(可逐区复制/确认出主图),不再铺纯文本。
+  // LISTING 结果有结构化 metadata 时用卡片组渲染（可逐区复制/确认出主图），不再铺纯文本。
   const isListing = t.agent === "LISTING" && t.status === "DONE" && !!t.metadata?.title;
 
-  // TRYON 虚拟试穿:DONE 后异步出图,按 imagesStatus 自轮询展示上身图。
+  // TRYON 虚拟试穿：DONE 后异步出图，按 imagesStatus 自轮询展示上身图。
   const isTryOn = t.agent === "TRYON" && t.status === "DONE";
 
-  // VIDEO_ANALYSIS 视频解析:DONE 后用结构化面板渲染脚本/翻译/带货拆解/改编建议。
+  // VIDEO_ANALYSIS 视频解析：DONE 后用结构化面板渲染脚本/翻译/带货拆解/改编建议。
   const isVideoAnalysis = t.agent === "VIDEO_ANALYSIS" && t.status === "DONE";
 
-  // DIRECTOR 脚本草稿:确认后才真正出片。本地 videoId 覆盖 metadata(确认成功立即切换 UI)。
+  // DIRECTOR 脚本草稿：确认后才真正出片。本地 videoId 覆盖 metadata(确认成功立即切换 UI)。
   const isDirector = t.agent === "DIRECTOR";
   const [confirming, setConfirming] = useState(false);
   const [localVideoId, setLocalVideoId] = useState<string | null>(null);
   const [redrafting, setRedrafting] = useState(false);
-  // 重写期间提示用的目标语言(选中市场的母语)
+  // 重写期间提示用的目标语言（选中市场的母语）
   const [pendingLang, setPendingLang] = useState("");
-  // 一句话重写:输入框文本 + 重写中状态(留空=直接换一版)
+  // 一句话重写：输入框文本 + 重写中状态（留空=直接换一版）
   const [rewriteText, setRewriteText] = useState("");
   const [rewriting, setRewriting] = useState(false);
-  // 失败任务一键重试:后端沿用原指令 + metadata 还原的派活选项重跑。
+  // 失败任务一键重试：后端沿用原指令 + metadata 还原的派活选项重跑。
   const [retrying, setRetrying] = useState(false);
-  // 派活时在创作页预选过人设的,确认出片默认沿用(仍可换/取消)
+  // 派活时在创作页预选过人设的，确认出片默认沿用（仍可换/取消）
   const [personaId, setPersonaId] = useState<string | null>(
     task.metadata?.preferredPersonaId ?? null,
   );
   const videoId = localVideoId ?? t.metadata?.videoId ?? null;
   const awaitingConfirm =
     isDirector && t.status === "DONE" && !!t.metadata?.draft && !videoId;
-  // 旧任务(改版前生成)metadata 无 region:后端按 US/英语兜底,展示同口径。
+  // 旧任务（改版前生成）metadata 无 region:后端按 US/英语兜底，展示同口径。
   const market = (t.metadata?.region as Region) ?? "US";
   const voiceLang = t.metadata?.voiceLang ?? REGION_LANG[market] ?? "英语";
 
-  // 改目标市场 → 用新市场母语重写脚本草稿(纯文本调用,不消耗积分)→ 轮询取回新脚本。
+  // 改目标市场 → 用新市场母语重写脚本草稿（纯文本调用，不消耗积分）→ 轮询取回新脚本。
   async function changeMarket(region: Region) {
     if (redrafting || confirming || rewriting || region === market) return;
     const lang = REGION_LANG[region];
@@ -354,7 +354,7 @@ function TaskBubble({
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.message || json?.error?.message || "重写失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "重写失败，稍后再试");
         return;
       }
       for (let i = 0; i < 24; i++) {
@@ -370,15 +370,15 @@ function TaskBubble({
           setLocalTask({ ...task, status: nt.status, output: nt.output, metadata: nt.metadata });
           // 失败时后端回滚 DONE 并保留原 metadata,region 不变即未生效
           if (nt.metadata?.region === region) toast.success(`已切换为${lang}口播脚本`);
-          else toast.error("重写失败,已保留原脚本");
+          else toast.error("重写失败，已保留原脚本");
         } else {
-          toast.error(nt.errorMessage || "重写失败,请重新派活");
+          toast.error(nt.errorMessage || "重写失败，请重新派活");
         }
         return;
       }
       toast.message("脚本仍在重写", { description: "稍后刷新页面查看" });
     } catch {
-      toast.error("网络异常,稍后再试");
+      toast.error("网络异常，稍后再试");
     } finally {
       setRedrafting(false);
     }
@@ -399,19 +399,19 @@ function TaskBubble({
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.message || json?.error?.message || "提交失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "提交失败，稍后再试");
         return;
       }
       setLocalVideoId(json.data.video.id as string);
-      toast.success("已提交视频生成,约 1-2 分钟出片");
+      toast.success("已提交视频生成，约 1-2 分钟出片");
     } catch {
-      toast.error("网络异常,稍后再试");
+      toast.error("网络异常，稍后再试");
     } finally {
       setConfirming(false);
     }
   }
 
-  // 一句话重写:同市场/商品/人设按指令重生成草稿(留空=直接换一版),不烧视频额度。
+  // 一句话重写：同市场/商品/人设按指令重生成草稿（留空=直接换一版），不烧视频额度。
   // 成功与否后端都回 DONE(失败回滚原脚本),故按 output 是否变化判定。
   async function rewrite() {
     if (rewriting || redrafting || confirming) return;
@@ -429,7 +429,7 @@ function TaskBubble({
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.message || json?.error?.message || "重写失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "重写失败，稍后再试");
         return;
       }
       for (let i = 0; i < 24; i++) {
@@ -447,22 +447,22 @@ function TaskBubble({
             setRewriteText("");
             toast.success("已换一版脚本");
           } else {
-            toast.error("重写失败,已保留原脚本");
+            toast.error("重写失败，已保留原脚本");
           }
         } else {
-          toast.error(nt.errorMessage || "重写失败,请重新派活");
+          toast.error(nt.errorMessage || "重写失败，请重新派活");
         }
         return;
       }
       toast.message("脚本仍在重写", { description: "稍后刷新页面查看" });
     } catch {
-      toast.error("网络异常,稍后再试");
+      toast.error("网络异常，稍后再试");
     } finally {
       setRewriting(false);
     }
   }
 
-  // 重试:置回 QUEUED 立即显示「排队中」,随后本地轮询到终态就地更新(同 rewrite 的轮询口径)。
+  // 重试：置回 QUEUED 立即显示「排队中」，随后本地轮询到终态就地更新（同 rewrite 的轮询口径）。
   async function retryTask() {
     if (retrying) return;
     setRetrying(true);
@@ -473,7 +473,7 @@ function TaskBubble({
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.message || json?.error?.message || "重试失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "重试失败，稍后再试");
         return;
       }
       setLocalTask({ ...task, status: "QUEUED", output: null, errorMessage: null, metadata: t.metadata });
@@ -494,12 +494,12 @@ function TaskBubble({
         });
         if (!ACTIVE_STATUSES.has(nt.status)) {
           if (nt.status === "DONE") toast.success("重试成功");
-          else toast.error(nt.errorMessage || "重试仍失败,请稍后再试");
+          else toast.error(nt.errorMessage || "重试仍失败，请稍后再试");
           return;
         }
       }
     } catch {
-      toast.error("网络异常,稍后再试");
+      toast.error("网络异常，稍后再试");
     } finally {
       setRetrying(false);
     }
@@ -512,19 +512,19 @@ function TaskBubble({
         {active ? (
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {t.status === "QUEUED" ? "排队中,马上开始…" : "正在工作,结果会出现在这里…"}
+            {t.status === "QUEUED" ? "排队中，马上开始…" : "正在工作，结果会出现在这里…"}
           </div>
         ) : t.status === "FAILED" ? (
           <div className="space-y-2.5">
             <div className="text-sm leading-relaxed text-rose-600">
-              {t.errorMessage || "执行失败,请稍后重试"}
+              {t.errorMessage || "执行失败，请稍后重试"}
             </div>
-            {/* TRYON 失败缺图源 ID 无法重建,引导回素材选择器重派,故不给一键重试 */}
+            {/* TRYON 失败缺图源 ID 无法重建，引导回素材选择器重派，故不给一键重试 */}
             {t.agent !== "TRYON" && (
               <button
                 onClick={retryTask}
                 disabled={retrying}
-                className="press inline-flex items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
+                className="press inline-flex items-center gap-1.5 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
               >
                 {retrying ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -564,7 +564,7 @@ function TaskBubble({
                   {redrafting ? (
                     <span className="inline-flex items-center gap-1.5 text-2xs text-zinc-500">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      正在用{pendingLang}重写口播脚本,不消耗积分…
+                      正在用{pendingLang}重写口播脚本，不消耗积分…
                     </span>
                   ) : (
                     <>
@@ -581,7 +581,7 @@ function TaskBubble({
                         ))}
                       </select>
                       <span className="shrink-0 text-2xs text-zinc-400">
-                        口播语言:{voiceLang};换市场将用母语重写脚本
+                        口播语言：{voiceLang};换市场将用母语重写脚本
                       </span>
                     </>
                   )}
@@ -591,7 +591,7 @@ function TaskBubble({
                   value={personaId}
                   onChange={setPersonaId}
                 />
-                {/* 一句话重写:留空=换一版,填一句=定向重写;不烧视频额度,可反复调 */}
+                {/* 一句话重写：留空=换一版，填一句=定向重写；不烧视频额度，可反复调 */}
                 <div className="flex items-center gap-1.5">
                   <input
                     value={rewriteText}
@@ -600,13 +600,13 @@ function TaskBubble({
                       if (e.key === "Enter") rewrite();
                     }}
                     disabled={rewriting || redrafting || confirming}
-                    placeholder="不满意?说一句怎么改,留空=直接换一版"
+                    placeholder="不满意？说一句怎么改，留空=直接换一版"
                     className="h-7 min-w-0 flex-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 text-2xs text-zinc-600 outline-none transition-colors placeholder:text-zinc-400 hover:border-zinc-300 focus:border-brand-400 disabled:opacity-50"
                   />
                   <button
                     onClick={rewrite}
                     disabled={rewriting || redrafting || confirming}
-                    className="press inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 disabled:pointer-events-none"
+                    className="press inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1.5 text-2xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {rewriting ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -709,7 +709,7 @@ function VideoResultCard({
         className="mt-3 inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
       >
         <Clapperboard className="h-3 w-3" />
-        去短视频墙查看成片 <ArrowRight className="h-3 w-3" />
+        去「资产 · 作品」查看成片 <ArrowRight className="h-3 w-3" />
       </Link>
     );
   }

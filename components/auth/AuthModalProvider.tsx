@@ -20,11 +20,11 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   const [options, setOptions] = useState<AuthModalOptions | null>(null);
   const open = useCallback((o?: AuthModalOptions) => setOptions(o ?? {}), []);
 
-  // 轮询/取数遇到 401 时唤起本弹窗;已打开则忽略,避免空轮反复触发。
+  // 轮询/取数遇到 401 时唤起本弹窗；已打开则忽略，避免空轮反复触发。
   useEffect(() => {
     setAuthExpiredHandler(() =>
       setOptions((cur) =>
-        cur ?? { title: "登录已过期", desc: "为继续操作请重新登录,任务进度已保存。" },
+        cur ?? { title: "登录已过期", desc: "为继续操作请重新登录，任务进度已保存。" },
       ),
     );
     return () => setAuthExpiredHandler(null);

@@ -12,10 +12,10 @@ export { REGIONS };
 export type CategoryOption = { id: string; name: string };
 export type FieldOption = { v: number; cn: string };
 
-/** 选品各榜共用的筛选栏:关键词搜索 + 地区 + 一级类目。改 URL query 触发 SSR 重取。
- *  榜单类型 / 排序固定走默认值(由页面 query 决定),不在 UI 暴露。
- *  搜索态(keyword 非空):走 EchoTik 关键词搜索,接口只认 region(不支持类目/分页),
- *  故此时隐藏类目行,地区改为「在新地区重搜」。 */
+/** 选品各榜共用的筛选栏：关键词搜索 + 地区 + 一级类目。改 URL query 触发 SSR 重取。
+ *  榜单类型 / 排序固定走默认值（由页面 query 决定），不在 UI 暴露。
+ *  搜索态（keyword 非空）:走 EchoTik 关键词搜索，接口只认 region(不支持类目/分页),
+ *  故此时隐藏类目行，地区改为「在新地区重搜」。 */
 export function FilterBar({
   basePath,
   region,
@@ -32,15 +32,15 @@ export function FilterBar({
   region: Region;
   rankType: number;
   field: number;
-  /** 仍由调用方传入以兼容,但当前不在筛选栏渲染。 */
+  /** 仍由调用方传入以兼容，但当前不在筛选栏渲染。 */
   fields?: FieldOption[];
   categoryId?: string | null;
   categories?: CategoryOption[];
-  /** 当前关键词(URL ?q=);非空=搜索态。 */
+  /** 当前关键词（URL ?q=）;非空=搜索态。 */
   keyword?: string;
-  /** 当前是否只看 AI 视频(URL ?ai=1)。仅 showAiFilter 榜生效。 */
+  /** 当前是否只看 AI 视频（URL ?ai=1）。仅 showAiFilter 榜生效。 */
   ai?: boolean;
-  /** 是否展示「AI 视频」筛选行(仅视频榜开启)。 */
+  /** 是否展示「AI 视频」筛选行（仅视频榜开启）。 */
   showAiFilter?: boolean;
   searchPlaceholder?: string;
 }) {
@@ -48,8 +48,8 @@ export function FilterBar({
   const [pending, startTransition] = useTransition();
   const searching = keyword.trim().length > 0;
 
-  // 在选品内记住地区/类别(localStorage):切榜由 Tab 带参,这里管刷新/裸进入回填。
-  // categories 非空=该榜支持类目(商品/店铺);视频/达人榜无类目,只记地区不擦类目。
+  // 在选品内记住地区/类别（localStorage）:切榜由 Tab 带参，这里管刷新/裸进入回填。
+  // categories 非空=该榜支持类目（商品/店铺）;视频/达人榜无类目，只记地区不擦类目。
   // 搜索态下视作「不跟踪类目」:别让搜索期间被丢弃的类目把记忆里的选择擦成 null。
   useDiscoverFilterMemory(basePath, region, categoryId, categories.length > 0 && !searching);
 
@@ -83,11 +83,11 @@ export function FilterBar({
       <SearchRow
         keyword={keyword}
         placeholder={searchPlaceholder}
-        // 提交搜索:丢弃类目(接口不支持组合),回到第 1 页。清空:退出搜索态。
+        // 提交搜索：丢弃类目（接口不支持组合），回到第 1 页。清空：退出搜索态。
         onSubmit={(kw) => navigate({ q: kw || null, category_id: null })}
       />
 
-      {/* AI 视频筛选:仅视频榜开启;搜索态下隐藏(搜索接口不支持 created_by_ai)。 */}
+      {/* AI 视频筛选：仅视频榜开启；搜索态下隐藏（搜索接口不支持 created_by_ai）。 */}
       {showAiFilter && !searching && (
         <PillRow label={<><Sparkles className="h-3.5 w-3.5" />视频类型</>}>
           <Pill active={!ai} onClick={() => navigate({ ai: false })}>
@@ -104,7 +104,7 @@ export function FilterBar({
           <Pill
             key={r.code}
             active={region === r.code}
-            // 搜索态切地区=在新地区重搜(保留 q);否则正常切榜并清类目。
+            // 搜索态切地区=在新地区重搜（保留 q）;否则正常切榜并清类目。
             onClick={() => navigate({ region: r.code, category_id: searching ? undefined : null })}
           >
             <span className="mr-1">{r.flag}</span>
@@ -124,7 +124,7 @@ export function FilterBar({
   );
 }
 
-// 搜索行:受控输入,Enter / 放大镜按钮提交;有词时显示清除按钮。
+// 搜索行：受控输入,Enter / 放大镜按钮提交；有词时显示清除按钮。
 function SearchRow({
   keyword,
   placeholder,
@@ -135,7 +135,7 @@ function SearchRow({
   onSubmit: (kw: string) => void;
 }) {
   const [value, setValue] = useState(keyword);
-  // URL 变化(切榜/清除/后退)时同步输入框。
+  // URL 变化（切榜/清除/后退）时同步输入框。
   useEffect(() => setValue(keyword), [keyword]);
 
   return (
@@ -196,7 +196,7 @@ function PillRow({ label, children }: { label: React.ReactNode; children: React.
   );
 }
 
-// 类目行:超过 11 个折叠,行尾给「展开/收起」。
+// 类目行：超过 11 个折叠，行尾给「展开/收起」。
 function CategoryRow({
   categories,
   active,

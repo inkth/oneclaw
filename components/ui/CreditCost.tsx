@@ -2,8 +2,8 @@ import { Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * 动作处积分标识:贴在主操作按钮旁,告诉用户这次大概花多少积分。
- * 例:<CreditCost credits={50} />  → 「≈ 50 积分」
+ * 动作处积分标识：贴在主操作按钮旁，告诉用户这次大概花多少积分。
+ * 例：<CreditCost credits={50} />  → 「≈ 50 积分」
  */
 export function CreditCost({
   credits,

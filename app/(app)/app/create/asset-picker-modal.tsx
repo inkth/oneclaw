@@ -24,11 +24,11 @@ type MaterialOption = { id: string; type: string; url: string; originalName: str
 type TabKey = "upload" | "product" | "model";
 
 /**
- * 资产选择弹窗:把原先散在 composer 底栏的 商品 / 出镜人设 / 素材 三个 picker
- * 合并到一个带 tab 的弹窗里(上传资产 / 商品 / 模特)。
- * 选择仍按类型单选(≤1 商品 + ≤1 模特 + ≤1 参考图),写回 Workbench 持有的状态,
+ * 资产选择弹窗：把原先散在 composer 底栏的 商品 / 出镜人设 / 素材 三个 picker
+ * 合并到一个带 tab 的弹窗里（上传资产 / 商品 / 模特）。
+ * 选择仍按类型单选（≤1 商品 + ≤1 模特 + ≤1 参考图），写回 Workbench 持有的状态,
  * 保住后端「商品=注入真实数据 / 人设=第一人称 / 素材=参考图」语义。
- * 模特 tab 仅短视频(DIRECTOR)/ 虚拟试穿(TRYON)出现。
+ * 模特 tab 仅短视频（DIRECTOR）/ 虚拟试穿（TRYON）出现。
  */
 export function AssetPickerModal({
   workspaceId,
@@ -50,11 +50,11 @@ export function AssetPickerModal({
   onPersonaChange: (id: string | null) => void;
   materialId: string | null;
   onMaterialChange: (id: string | null) => void;
-  /** 试穿子模式:显式开启「模特 + 服饰图」语义(此时 activeAgent 仍是 LISTING)。 */
+  /** 试穿子模式：显式开启「模特 + 服饰图」语义（此时 activeAgent 仍是 LISTING）。 */
   tryOn?: boolean;
   onClose: () => void;
 }) {
-  // 虚拟试穿现为 Listing 的「上身图」子模式:由 tryOn 显式驱动(activeAgent 仍是 LISTING)。
+  // 虚拟试穿现为 Listing 的「上身图」子模式：由 tryOn 显式驱动（activeAgent 仍是 LISTING）。
   // 模特 tab:短视频出镜人设 + 虚拟试穿模特都用它。
   const isTryOn = tryOn ?? activeAgent === "TRYON";
   const showModel = activeAgent === "DIRECTOR" || isTryOn;
@@ -63,14 +63,14 @@ export function AssetPickerModal({
     { key: "product", label: "商品", icon: Package },
     ...(showModel ? [{ key: "model" as const, label: "模特", icon: UserRound }] : []),
   ];
-  // 试穿先选模特(主图作服饰可后选);其余 Agent 默认进上传 tab。
+  // 试穿先选模特（主图作服饰可后选）;其余 Agent 默认进上传 tab。
   const [tab, setTab] = useState<TabKey>(isTryOn ? "model" : "upload");
 
   const personas = usePersonas(workspaceId, showModel);
   const [products, setProducts] = useState<ProductOption[] | null>(null);
   const [materials, setMaterials] = useState<MaterialOption[] | null>(null);
 
-  // 商品 + 素材库一次性拉(弹窗按需打开,挂载即拉)。
+  // 商品 + 素材库一次性拉（弹窗按需打开，挂载即拉）。
   useEffect(() => {
     if (!workspaceId) return;
     let alive = true;
@@ -106,10 +106,10 @@ export function AssetPickerModal({
         setMaterials((prev) => [mat, ...(prev ?? [])]);
         onMaterialChange(mat.id);
       } else {
-        toast.error(json?.error?.message ?? "上传失败");
+        toast.error(json?.error?.message ?? "上传失败，稍后再试");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "网络错误");
+      toast.error(e instanceof Error ? e.message : "网络错误，请检查网络后重试");
     } finally {
       setUploading(false);
     }
@@ -130,8 +130,8 @@ export function AssetPickerModal({
       onClick={onClose}
     >
       <div
-        // 弹窗/抽屉圆角走 16~20(硬规则),dk-card 的 8px 圆角是给常规卡片用的,
-        // 这里不能借 dk-card(全局类不在 tailwind layer 里,工具类圆角覆盖不掉它),改为手写等价视觉。
+        // 弹窗/抽屉圆角走 16~24(硬规则),dk-card 的 16px 是给常规卡片用的,
+        // 这里不能借 dk-card(全局类不在 tailwind layer 里，工具类圆角覆盖不掉它),改为手写等价视觉。
         className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dk-overlay p-5"
         onClick={(e) => e.stopPropagation()}
       >
@@ -147,8 +147,8 @@ export function AssetPickerModal({
               </div>
               <div className="text-2xs text-zinc-500">
                 {isTryOn
-                  ? "选一位模特 + 一张服饰图(上传图 / 商品主图),生成上身效果图"
-                  : "选商品、模特,或上传一张参考图"}
+                  ? "选一位模特 + 一张服饰图（上传图 / 商品主图），生成上身效果图"
+                  : "选商品、模特，或上传一张参考图"}
               </div>
             </div>
           </div>
@@ -239,7 +239,7 @@ export function AssetPickerModal({
                 search.trim() ? (
                   <EmptyHint text="没有匹配的素材" />
                 ) : (
-                  <EmptyLink href="/app/assets/materials" label="素材库还是空的,去上传几张 →" />
+                  <EmptyLink href="/app/assets/materials" label="素材库还是空的，去上传几张 →" />
                 )
               ) : (
                 <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
@@ -273,7 +273,7 @@ export function AssetPickerModal({
               {products === null ? (
                 <Loading />
               ) : products.length === 0 ? (
-                <EmptyLink href="/app/discover/favorites" label="收藏里还没有商品,去挑几个 →" />
+                <EmptyLink href="/app/discover/favorites" label="收藏里还没有商品，去挑几个 →" />
               ) : (
                 <div className="space-y-1">
                   {products.map((p) => {
@@ -291,12 +291,12 @@ export function AssetPickerModal({
                             <Image src={p.coverUrl} alt="" fill sizes="36px" unoptimized className="object-cover" />
                           </span>
                         ) : (
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--dk-surface-2)] text-base">
-                            {p.emoji ?? "📦"}
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--dk-surface-2)] text-zinc-400">
+                            {p.emoji ?? <Package className="h-4 w-4" />}
                           </span>
                         )}
                         <span className="flex-1 truncate">{p.title}</span>
-                        <span className="font-mono text-2xs text-zinc-400">R{p.roiScore}</span>
+                        <span className="font-mono text-2xs text-zinc-400">ROI {p.roiScore}</span>
                         {sel && <Check className="h-3.5 w-3.5 shrink-0 text-brand-600" />}
                       </button>
                     );
@@ -304,7 +304,7 @@ export function AssetPickerModal({
                   <p className="px-2 pt-1 text-2xs text-zinc-400">
                     {isTryOn
                       ? "选中商品会用它的主图作为试穿服饰图。"
-                      : "选中商品会把它的真实数据(售价/毛利/ROI/月销)注入产出。"}
+                      : "选中商品会把它的真实数据（售价/毛利/ROI/月销）注入产出。"}
                   </p>
                 </div>
               )}
@@ -316,7 +316,7 @@ export function AssetPickerModal({
               {personas === null ? (
                 <Loading />
               ) : personas.length === 0 ? (
-                <EmptyLink href="/app/assets/models" label="还没有模特,去模特库看看 →" />
+                <EmptyLink href="/app/assets/models" label="还没有模特，去模特库看看 →" />
               ) : (
                 <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
                   {personas.map((m) => {

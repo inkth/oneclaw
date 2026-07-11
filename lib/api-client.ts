@@ -1,5 +1,5 @@
 /**
- * 服务端 → Go 后端的取数封装(仅 Server Component / route handler 用)。
+ * 服务端 → Go 后端的取数封装（仅 Server Component / route handler 用）。
  * 转发浏览器带来的 oc_session Cookie,实现 SSR 鉴权。
  */
 import { cookies } from "next/headers";
@@ -21,7 +21,7 @@ export type Me = {
     plan: string;
   };
   role?: string;
-  // 非 null 即当前用户是代理商(前端据此显示「推广」入口)。
+  // 非 null 即当前用户是代理商（前端据此显示「推广」入口）。
   agency?: { code: string; status: string; commissionBp: number } | null;
 };
 
@@ -50,7 +50,7 @@ export async function apiServer<T>(path: string, init?: RequestInit): Promise<T>
   return json.data as T;
 }
 
-/** 取当前会话(未登录返回 null)。 */
+/** 取当前会话（未登录返回 null）。 */
 export async function getMe(): Promise<Me | null> {
   try {
     return await apiServer<Me>("/me");
