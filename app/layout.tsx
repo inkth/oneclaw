@@ -21,6 +21,15 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
+  // 没有 metadataBase 时 og:image 会回退成 localhost:3000 的绝对 URL,
+  // 分享到微信/X 时对方抓 localhost 必然失败,卡片出不来。生产走真域名,
+  // 本地开发仍回落 localhost。设了 NEXT_PUBLIC_SITE_URL 则以它为准。
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ??
+      (process.env.NODE_ENV === "production"
+        ? "https://faxianmao.com"
+        : "http://localhost:3000"),
+  ),
   title: "发现猫 · 你的 AI 出海团队",
   description:
     "发现猫 用 AI Agent 帮你完成跨境电商从选品分析、短视频创作、Listing 内容到投放复盘的全链路，让 30+ 小时工作 10 分钟搞定。",
