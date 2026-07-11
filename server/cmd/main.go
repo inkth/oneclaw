@@ -98,6 +98,7 @@ func main() {
 		&model.CommissionRecord{},
 		&model.AgencyWithdrawal{},
 		&model.BonusCreditGrant{},
+		&model.AdminAuditLog{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
@@ -119,6 +120,7 @@ func main() {
 	quotaSvc := service.NewQuotaService(db)
 	matSvc := service.NewMaterialService(db, store, falClient, quotaSvc)
 	billingSvc := service.NewBillingService(db, cfg.IsDev(), agencySvc, cfg.Agency.CommissionOnMock)
+	adminSvc := service.NewAdminService(db, billingSvc, quotaSvc, agencySvc)
 	videoSvc := service.NewVideoService(db, llmClient, store, falClient, quotaSvc)
 	if falClient.Configured() {
 		logger.Info("[fal] 已配置(封面图)")
@@ -239,6 +241,7 @@ func main() {
 		Billing:   billingSvc,
 		Quota:     quotaSvc,
 		Agency:    agencySvc,
+		Admin:     adminSvc,
 		// 就绪探针:DB ping(带 2s 超时)。让 /ready 在 DB 不可达时返回 503,
 		// 而非像过去那样空探针恒 200(伪健康)。
 		Ready: []func() error{

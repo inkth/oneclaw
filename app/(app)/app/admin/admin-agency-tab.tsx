@@ -1,18 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import {
-  ShieldCheck,
-  Users,
-  Coins,
-  Wallet,
-  Loader2,
-  Plus,
-  Check,
-  X,
-} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ShieldCheck, Users, Coins, Wallet, Loader2, Plus, Check, X } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
 import { Badge } from "@/components/ui/Badge";
@@ -20,93 +10,43 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { apiBrowser } from "@/lib/api-browser";
 import type { Tone } from "@/lib/ui/tokens";
+import {
+  fmtYuan,
+  fmtDate,
+  WITHDRAWAL_META,
+  type AgencyOverview,
+  type AdminAgencyRow,
+  type AdminWithdrawalRow,
+} from "./admin-shared";
 
-export type Agency = {
-  id: string;
-  userId: string;
-  code: string;
-  commissionBp: number;
-  status: string;
-  note?: string;
-  createdAt: string;
-};
+export function AgencyTab() {
+  const [overview, setOverview] = useState<AgencyOverview | null>(null);
+  const [agencies, setAgencies] = useState<AdminAgencyRow[]>([]);
+  const [withdrawals, setWithdrawals] = useState<AdminWithdrawalRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export type AdminAgencyRow = {
-  agency: Agency;
-  phone: string;
-  customerCount: number;
-  totalCommissionCents: number;
-  balanceCents: number;
-};
-
-export type AdminWithdrawalRow = {
-  withdrawal: {
-    id: string;
-    agencyId: string;
-    amountCents: number;
-    status: string;
-    note?: string;
-    createdAt: string;
-  };
-  phone: string;
-};
-
-export type Overview = {
-  agencyCount: number;
-  activeAgencyCount: number;
-  referredUserCount: number;
-  totalCommissionCents: number;
-  pendingWithdrawalCount: number;
-  pendingWithdrawalCents: number;
-};
-
-function fmtYuan(cents: number) {
-  return `¥${(cents / 100).toFixed(2)}`;
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
-}
-
-// 提现状态 → 语义 tone,直接复用全站 STATUS_TONES(经 Badge 渲染),不再自带颜色 className。
-const WITHDRAWAL_META: Record<string, { label: string; tone: Tone }> = {
-  PENDING: { label: "审核中", tone: "warning" },
-  PAID: { label: "已打款", tone: "success" },
-  REJECTED: { label: "已驳回", tone: "danger" },
-};
-
-export function AdminClient({
-  overview: initialOverview,
-  agencies: initialAgencies,
-  withdrawals: initialWithdrawals,
-}: {
-  overview: Overview;
-  agencies: AdminAgencyRow[];
-  withdrawals: AdminWithdrawalRow[];
-}) {
-  const [overview, setOverview] = useState(initialOverview);
-  const [agencies, setAgencies] = useState(initialAgencies);
-  const [withdrawals, setWithdrawals] = useState(initialWithdrawals);
-
-  // 开通表单
   const [phone, setPhone] = useState("");
   const [percent, setPercent] = useState("20");
   const [creating, setCreating] = useState(false);
 
-  async function refresh() {
-    try {
-      const [o, a, w] = await Promise.all([
-        apiBrowser<{ overview: Overview }>("/admin/overview").then((r) => r.overview),
-        apiBrowser<{ agencies: AdminAgencyRow[] }>("/admin/agencies").then((r) => r.agencies),
-        apiBrowser<{ withdrawals: AdminWithdrawalRow[] }>("/admin/withdrawals").then((r) => r.withdrawals),
-      ]);
-      setOverview(o);
-      setAgencies(a);
-      setWithdrawals(w);
-    } catch {
-      /* 忽略 */
-    }
-  }
+  const refresh = useCallback(() => {
+    return Promise.all([
+      apiBrowser<{ overview: AgencyOverview }>("/admin/overview").then((r) => r.overview),
+      apiBrowser<{ agencies: AdminAgencyRow[] }>("/admin/agencies").then((r) => r.agencies),
+      apiBrowser<{ withdrawals: AdminWithdrawalRow[] }>("/admin/withdrawals").then((r) => r.withdrawals),
+    ])
+      .then(([o, a, w]) => {
+        setOverview(o);
+        setAgencies(a);
+        setWithdrawals(w);
+      })
+      .catch((e) => toast.error(e instanceof Error ? e.message : "加载失败"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   async function createAgency() {
     if (!/^1[3-9]\d{9}$/.test(phone)) {
@@ -120,10 +60,7 @@ export function AdminClient({
     }
     setCreating(true);
     try {
-      await apiBrowser("/admin/agencies", {
-        method: "POST",
-        body: JSON.stringify({ phone, commissionBp: bp }),
-      });
+      await apiBrowser("/admin/agencies", { method: "POST", body: JSON.stringify({ phone, commissionBp: bp }) });
       toast.success("已开通代理商");
       setPhone("");
       await refresh();
@@ -136,10 +73,7 @@ export function AdminClient({
 
   async function updateAgency(id: string, body: { commissionBp?: number; status?: string }) {
     try {
-      await apiBrowser(`/admin/agencies/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
+      await apiBrowser(`/admin/agencies/${id}`, { method: "PATCH", body: JSON.stringify(body) });
       toast.success("已更新");
       await refresh();
     } catch (e) {
@@ -149,10 +83,7 @@ export function AdminClient({
 
   async function review(id: string, approve: boolean, note: string) {
     try {
-      await apiBrowser(`/admin/withdrawals/${id}/review`, {
-        method: "POST",
-        body: JSON.stringify({ approve, note }),
-      });
+      await apiBrowser(`/admin/withdrawals/${id}/review`, { method: "POST", body: JSON.stringify({ approve, note }) });
       toast.success(approve ? "已标记打款" : "已驳回");
       await refresh();
     } catch (e) {
@@ -160,32 +91,30 @@ export function AdminClient({
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--dk-content-tertiary)]" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="管理后台"
-        badge={
-          <Badge tone="brand" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-            仅管理员
-          </Badge>
-        }
-        description="开通代理商、调整佣金比例、审核提现申请。"
-      />
+      {overview && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Stat icon={ShieldCheck} label="代理商" value={`${overview.activeAgencyCount}/${overview.agencyCount}`} hint="启用/总数" />
+          <Stat icon={Users} label="绑定用户" value={overview.referredUserCount} />
+          <Stat icon={Coins} label="累计佣金" value={fmtYuan(overview.totalCommissionCents)} />
+          <Stat
+            icon={Wallet}
+            label="待审提现"
+            value={overview.pendingWithdrawalCount}
+            hint={overview.pendingWithdrawalCents > 0 ? fmtYuan(overview.pendingWithdrawalCents) : undefined}
+          />
+        </div>
+      )}
 
-      {/* 总览 */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat icon={ShieldCheck} label="代理商" value={`${overview.activeAgencyCount}/${overview.agencyCount}`} hint="启用/总数" />
-        <Stat icon={Users} label="绑定用户" value={overview.referredUserCount} />
-        <Stat icon={Coins} label="累计佣金" value={fmtYuan(overview.totalCommissionCents)} />
-        <Stat
-          icon={Wallet}
-          label="待审提现"
-          value={overview.pendingWithdrawalCount}
-          hint={overview.pendingWithdrawalCents > 0 ? fmtYuan(overview.pendingWithdrawalCents) : undefined}
-        />
-      </div>
-
-      {/* 开通代理 */}
       <Card>
         <div className="text-sm font-medium text-[var(--dk-content-primary)]">开通代理商</div>
         <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">按手机号开通。该手机号需已注册(登录过一次)。</p>
@@ -223,7 +152,6 @@ export function AdminClient({
         </div>
       </Card>
 
-      {/* 代理列表 */}
       <section>
         <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">代理商</div>
         {agencies.length === 0 ? (
@@ -250,7 +178,6 @@ export function AdminClient({
         )}
       </section>
 
-      {/* 提现审核 */}
       <section>
         <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">提现申请</div>
         {withdrawals.length === 0 ? (
@@ -323,7 +250,6 @@ function AgencyRow({
         </div>
       </Td>
       <Td align="center">
-        {/* 启用/停用是带语义色的操作态,非纯装饰 hover:保留 emerald(启用引导)与中性 action-regular(停用) */}
         <button
           onClick={() => onUpdate(agency.id, { status: disabled ? "ACTIVE" : "DISABLED" })}
           className={`rounded-lg px-3 py-1 text-2xs font-medium transition-colors ${

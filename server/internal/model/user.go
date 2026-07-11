@@ -15,8 +15,10 @@ type User struct {
 	Name          *string    `json:"name,omitempty"`
 	Image         *string    `json:"image,omitempty"`
 	PhoneVerified *time.Time `json:"phoneVerified,omitempty"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	// BannedAt 非空即被管理员封禁:登录被拒、已签发的会话在 Auth 中间件被拦截。
+	BannedAt  *time.Time `gorm:"column:banned_at;index" json:"bannedAt,omitempty"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
 }
 
 func (u *User) BeforeCreate(*gorm.DB) error {

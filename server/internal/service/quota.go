@@ -208,6 +208,19 @@ func (s *QuotaService) EnsureBudget(ctx context.Context, wsID uuid.UUID, need in
 	return nil
 }
 
+// CurrentCycleEnd 返回工作台当前计费周期终点(下次额度重置时刻)。
+// 管理员手动补积分(BonusCreditGrant)用它作 ExpiresAt,使赠送只抬高本周期上限、周期末自动回落
+// —— 与邀请赠送积分口径一致。
+func (s *QuotaService) CurrentCycleEnd(ctx context.Context, wsID uuid.UUID) (time.Time, error) {
+	var ws model.Workspace
+	if err := s.db.WithContext(ctx).First(&ws, "id = ?", wsID).Error; err != nil {
+		return time.Time{}, apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
+	}
+	plan := s.EffectivePlan(ctx, &ws)
+	_, end := cycleBounds(billingAnchor(plan, &ws), time.Now())
+	return end, nil
+}
+
 // Refund 按来源退回配额(任务/视频终态失败时调用,best-effort)。
 func (s *QuotaService) Refund(ctx context.Context, refID uuid.UUID, kind string) {
 	if err := s.db.WithContext(ctx).

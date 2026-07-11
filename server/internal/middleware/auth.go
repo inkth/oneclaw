@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,12 @@ import (
 // TokenValidator 由 service.AuthService 实现,解耦中间件与 service 包。
 type TokenValidator interface {
 	ValidateToken(token string) (userID uuid.UUID, role string, err error)
+}
+
+// banChecker 可选能力:validator 若实现它,Auth 中间件会拦截已封禁账号的活跃会话
+// (JWT TTL 长达 30d,登录拒绝不足以即时切断滥用者,故在鉴权热路径补一次轻量主键查)。
+type banChecker interface {
+	IsBanned(ctx context.Context, userID uuid.UUID) bool
 }
 
 // Auth 从 Cookie(oc_session)或 Authorization: Bearer 取 token 校验,
@@ -32,6 +39,11 @@ func Auth(v TokenValidator, cookieName string) gin.HandlerFunc {
 		uid, role, err := v.ValidateToken(token)
 		if err != nil {
 			_ = c.Error(apperr.New(apperr.CodeInvalidToken, "无效的令牌"))
+			c.Abort()
+			return
+		}
+		if bc, ok := v.(banChecker); ok && bc.IsBanned(c.Request.Context(), uid) {
+			_ = c.Error(apperr.New(apperr.CodeForbidden, "账号已被封禁"))
 			c.Abort()
 			return
 		}

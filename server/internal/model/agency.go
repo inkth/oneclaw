@@ -29,6 +29,7 @@ const (
 // 赠送积分来源(bonus_credit_grants.source)。
 const (
 	BonusSourceAgencyInvite = "AGENCY_INVITE"
+	BonusSourceAdminGrant   = "ADMIN_GRANT" // 管理员手动补积分(客服补偿)
 )
 
 // DefaultCommissionBP 佣金比例默认值(万分比,2000=20%);config 未设时兜底。

@@ -198,6 +198,94 @@ func newOutTradeNo(now time.Time) string {
 	return fmt.Sprintf("OC%s%s", now.Format("20060102150405"), hex.EncodeToString(b))
 }
 
+// —— 管理侧:全站订单 / 账单运维 ————————————————————————————————————
+//
+// 真实支付渠道未接入前,线上购买被 Checkout 拒单;付费经线下转账完成,由管理员在后台
+// 人工确认收款(AdminConfirmOrder)触发升级 + 计佣。退款同理走线下,后台仅记录状态 + 审计。
+
+// AdminListOrders 全站订单分页(status 空=全部;新单在前)。返回本页 + 总数。
+func (s *BillingService) AdminListOrders(ctx context.Context, status string, limit, offset int) ([]model.PaymentOrder, int64, error) {
+	q := s.db.WithContext(ctx).Model(&model.PaymentOrder{})
+	if status != "" {
+		q = q.Where("status = ?", status)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, apperr.Wrap(apperr.CodeInternal, "统计订单失败", err)
+	}
+	var orders []model.PaymentOrder
+	if err := q.Order("created_at DESC").Limit(limit).Offset(offset).Find(&orders).Error; err != nil {
+		return nil, 0, apperr.Wrap(apperr.CodeInternal, "查询订单失败", err)
+	}
+	return orders, total, nil
+}
+
+// AdminConfirmOrder 人工确认线下收款:按订单 ID 落支付成功 + 升级方案 + 计佣(复用 markPaid,幂等)。
+// 不校验 workspace(管理端全站),不受 dev 限制(真实线下收款在生产也要能确认)。
+func (s *BillingService) AdminConfirmOrder(ctx context.Context, orderID uuid.UUID) (*model.PaymentOrder, error) {
+	var o model.PaymentOrder
+	if err := s.db.WithContext(ctx).First(&o, "id = ?", orderID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.NotFound("订单不存在")
+		}
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询订单失败", err)
+	}
+	if err := s.markPaid(ctx, &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// AdminRefundOrder 标记退款(仅 PAID 单可退):真实退款走线下,后台记录状态 + 备注。
+// 不自动降级方案 / 不冲销佣金(避免自动误伤);如需一并降级由管理员另用 SetPlan 处理。
+func (s *BillingService) AdminRefundOrder(ctx context.Context, orderID uuid.UUID, note string) (*model.PaymentOrder, error) {
+	res := s.db.WithContext(ctx).Model(&model.PaymentOrder{}).
+		Where("id = ? AND status = ?", orderID, model.OrderPaid).
+		Updates(map[string]any{"status": model.OrderRefunded})
+	if res.Error != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "标记退款失败", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return nil, apperr.BadRequest("订单不存在或非已支付状态,无法退款")
+	}
+	var o model.PaymentOrder
+	if err := s.db.WithContext(ctx).First(&o, "id = ?", orderID).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询订单失败", err)
+	}
+	logger.Info("[billing] 订单已标记退款", logger.String("order", orderID.String()), logger.String("note", note))
+	return &o, nil
+}
+
+// AdminListOverflowBills 全站超额账单分页(status 空=全部;PENDING 在前,再按账期倒序)。
+func (s *BillingService) AdminListOverflowBills(ctx context.Context, status string, limit, offset int) ([]model.OverflowBill, int64, error) {
+	q := s.db.WithContext(ctx).Model(&model.OverflowBill{})
+	if status != "" {
+		q = q.Where("status = ?", status)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, apperr.Wrap(apperr.CodeInternal, "统计超额账单失败", err)
+	}
+	var bills []model.OverflowBill
+	if err := q.Order("CASE WHEN status = 'PENDING' THEN 0 ELSE 1 END, period DESC").
+		Limit(limit).Offset(offset).Find(&bills).Error; err != nil {
+		return nil, 0, apperr.Wrap(apperr.CodeInternal, "查询超额账单失败", err)
+	}
+	return bills, total, nil
+}
+
+// AdminSettleOverflow 人工核销超额账单:按账单 ID 查出所属工作台后标记已结算(复用 MarkOverflowPaid,幂等+计佣)。
+func (s *BillingService) AdminSettleOverflow(ctx context.Context, billID uuid.UUID, note string) (*model.OverflowBill, error) {
+	var bill model.OverflowBill
+	if err := s.db.WithContext(ctx).Select("workspace_id").First(&bill, "id = ?", billID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.NotFound("账单不存在")
+		}
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询超额账单失败", err)
+	}
+	return s.MarkOverflowPaid(ctx, bill.WorkspaceID, billID, note)
+}
+
 // —— TEAM 超额周期结算 ————————————————————————————————————————————
 //
 // job 把每个工作台「刚结束的订阅周期」内 billable=true 的用量出账。billable 仅在 TEAM

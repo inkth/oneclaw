@@ -14,12 +14,13 @@ const (
 	UsageImage     = "IMAGE"
 )
 
-// 支付订单状态。
+// 支付订单状态。REFUNDED = 已付款后由管理员标记退款(线下退,后台仅记录状态 + 审计)。
 const (
 	OrderPending   = "PENDING"
 	OrderPaid      = "PAID"
 	OrderExpired   = "EXPIRED"
 	OrderCancelled = "CANCELLED"
+	OrderRefunded  = "REFUNDED"
 )
 
 // TEAM 超额账单状态:出账即 PENDING,代扣成功 / 人工核销后 PAID。

@@ -96,6 +96,10 @@ func (s *AuthService) LoginByCode(ctx context.Context, phone, code, inviteCode s
 	if err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "登录失败", err)
 	}
+	// 封禁用户拒绝签发会话(新注册用户 BannedAt 恒空,只影响已存在的被封账号)。
+	if user.BannedAt != nil {
+		return nil, apperr.Forbidden("账号已被封禁,请联系客服")
+	}
 
 	tok, err := s.GenerateToken(user.ID, s.roleFor(phone))
 	if err != nil {
@@ -145,6 +149,16 @@ func (s *AuthService) ValidateToken(token string) (uuid.UUID, string, error) {
 		return uuid.Nil, "", err
 	}
 	return uid, role, nil
+}
+
+// IsBanned 供 Auth 中间件拦截已封禁账号的活跃会话(单主键查,仅取 banned_at)。
+// 查不到 / 出错时保守放行(不因偶发 DB 抖动误锁正常用户;封禁的权威判定在写操作与登录)。
+func (s *AuthService) IsBanned(ctx context.Context, userID uuid.UUID) bool {
+	var u model.User
+	if err := s.db.WithContext(ctx).Select("banned_at").First(&u, "id = ?", userID).Error; err != nil {
+		return false
+	}
+	return u.BannedAt != nil
 }
 
 // GetUser 取当前登录用户。

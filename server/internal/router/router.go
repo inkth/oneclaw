@@ -26,6 +26,7 @@ type Deps struct {
 	Billing   *service.BillingService
 	Quota     *service.QuotaService
 	Agency    *service.AgencyService
+	Admin     *service.AdminService
 	// Ready 就绪探针(如 DB ping);任一失败 /ready 返回 503。空则 /ready 恒 200。
 	Ready []func() error
 }
@@ -59,7 +60,7 @@ func New(d Deps) *gin.Engine {
 	reviewH := handler.NewReviewHandler(d.Workspace, d.Agent)
 	billH := handler.NewBillingHandler(d.Billing, d.Quota, d.Workspace)
 	agencyH := handler.NewAgencyHandler(d.Agency)
-	adminH := handler.NewAdminHandler(d.Agency)
+	adminH := handler.NewAdminHandler(d.Admin, d.Agency)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready(d.Ready...))
@@ -178,6 +179,28 @@ func New(d Deps) *gin.Engine {
 		adm := priv.Group("/admin")
 		adm.Use(middleware.RequireAdmin())
 		{
+			// 数据看板
+			adm.GET("/dashboard", adminH.Dashboard)
+
+			// 用户管理
+			adm.GET("/users", adminH.ListUsers)
+			adm.GET("/users/:uid", adminH.UserDetail)
+			adm.POST("/users/:uid/ban", adminH.BanUser)
+			adm.POST("/users/:uid/unban", adminH.UnbanUser)
+			adm.POST("/workspaces/:wid/grant-credits", adminH.GrantCredits)
+			adm.POST("/workspaces/:wid/plan", adminH.SetPlan)
+
+			// 订单 / 账单
+			adm.GET("/orders", adminH.ListOrders)
+			adm.POST("/orders/:oid/confirm", adminH.ConfirmOrder)
+			adm.POST("/orders/:oid/refund", adminH.RefundOrder)
+			adm.GET("/overflow-bills", adminH.ListOverflowBills)
+			adm.POST("/overflow-bills/:bid/settle", adminH.SettleOverflowBill)
+
+			// 审计日志
+			adm.GET("/audit-logs", adminH.ListAuditLogs)
+
+			// 代理商
 			adm.GET("/overview", adminH.Overview)
 			adm.GET("/agencies", adminH.ListAgencies)
 			adm.POST("/agencies", adminH.CreateAgency)
