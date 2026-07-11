@@ -28,18 +28,18 @@ export type QuickAction = {
   key: string;
   title: string;
   desc: string;
-  /** 缩略 tile:渐变底 + 白色线性图标(app icon 风格,不用 emoji / 图片资源)。 */
+  /** 缩略 tile:渐变底 + 白色线性图标（app icon 风格，不用 emoji / 图片资源）。 */
   icon: LucideIcon;
   status: "live" | "soon";
   agent?: ComposerKind;
   promptTemplate?: string;
-  /** Listing 卡专用:点选切到指定子模式(上身图卡切 tryon,文案卡回 copy)。 */
+  /** Listing 卡专用：点选切到指定子模式（上身图卡切 tryon,文案卡回 copy）。 */
   listingMode?: ListingMode;
 };
 
 /**
- * 快捷场景卡按 Agent 分组:切换上方胶囊时,这排卡跟着换成当前 Agent 的常用场景。
- * 键覆盖全部 ComposerKind(选品/视频/Listing/试穿/复盘);试穿走 composer 内联选择,无快捷卡。
+ * 快捷场景卡按 Agent 分组：切换上方胶囊时，这排卡跟着换成当前 Agent 的常用场景。
+ * 键覆盖全部 ComposerKind(选品/视频/Listing/试穿/复盘);试穿走 composer 内联选择，无快捷卡。
  */
 const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
   ADVISOR: [
@@ -50,7 +50,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Route,
       status: "live",
       agent: "ADVISOR",
-      promptTemplate: "预算「」元,没有货源,想做美国市场,帮我排一条起步路线",
+      promptTemplate: "预算「」元，没有货源，想做美国市场，帮我排一条起步路线",
     },
     {
       key: "advisor-cost",
@@ -59,7 +59,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Wallet,
       status: "live",
       agent: "ADVISOR",
-      promptTemplate: "做 TikTok Shop 美区,从开店到出第一单大概要准备多少钱?都花在哪些地方?",
+      promptTemplate: "做 TikTok Shop 美区，从开店到出第一单大概要准备多少钱？都花在哪些地方？",
     },
     {
       key: "advisor-term",
@@ -68,7 +68,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: BookOpen,
       status: "live",
       agent: "ADVISOR",
-      promptTemplate: "用大白话解释:全托管、POP 自运营、GMV Max、ROI 分别是什么?新手该走哪条路?",
+      promptTemplate: "用大白话解释：全托管、POP 自运营、GMV Max、ROI 分别是什么？新手该走哪条路？",
     },
     {
       key: "advisor-next",
@@ -77,7 +77,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Compass,
       status: "live",
       agent: "ADVISOR",
-      promptTemplate: "我目前已经「」,下一步该干什么?帮我理一下",
+      promptTemplate: "我目前已经「」，下一步该干什么？帮我理一下",
     },
   ],
   ANALYST: [
@@ -89,7 +89,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       status: "live",
       agent: "ANALYST",
       promptTemplate:
-        "帮我找「」市场本周值得切入的潜力新品:毛利 40%+、竞争度低、月销 1K–5K 且呈上升趋势",
+        "帮我找「」市场本周值得切入的潜力新品：毛利 40%+、竞争度低、月销 1K–5K 且呈上升趋势",
     },
     {
       key: "analyst-competitor",
@@ -98,7 +98,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Target,
       status: "live",
       agent: "ANALYST",
-      promptTemplate: "拆解「」这款商品:核心卖点、定价策略、目标人群与我可切入的差异化机会",
+      promptTemplate: "拆解「」这款商品：核心卖点、定价策略、目标人群与我可切入的差异化机会",
     },
     {
       key: "analyst-trend",
@@ -107,7 +107,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: TrendingUp,
       status: "live",
       agent: "ANALYST",
-      promptTemplate: "分析「」类目近 30 天 TikTok 热度趋势,指出值得切入的细分赛道与代表爆品",
+      promptTemplate: "分析「」类目近 30 天 TikTok 热度趋势，指出值得切入的细分赛道与代表爆品",
     },
     {
       key: "analyst-margin",
@@ -127,7 +127,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Clapperboard,
       status: "live",
       agent: "DIRECTOR",
-      promptTemplate: "为「」生成一条 UGC 风格 TikTok 带货短视频,真人开箱口播感,突出使用前后对比",
+      promptTemplate: "为「」生成一条 UGC 风格 TikTok 带货短视频，真人开箱口播感，突出使用前后对比",
     },
     {
       key: "video-painpoint",
@@ -136,7 +136,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Sparkles,
       status: "live",
       agent: "DIRECTOR",
-      promptTemplate: "为「」生成一条痛点切入的 TikTok 种草短视频:先放大用户痛点,再给出产品解决方案",
+      promptTemplate: "为「」生成一条痛点切入的 TikTok 种草短视频：先放大用户痛点，再给出产品解决方案",
     },
     {
       key: "video-beforeafter",
@@ -145,7 +145,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Video,
       status: "live",
       agent: "DIRECTOR",
-      promptTemplate: "为「」生成使用前后对比的带货短视频脚本,突出效果反差与即时转化引导",
+      promptTemplate: "为「」生成使用前后对比的带货短视频脚本，突出效果反差与即时转化引导",
     },
     {
       key: "video-quicksell",
@@ -154,7 +154,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Clapperboard,
       status: "live",
       agent: "DIRECTOR",
-      promptTemplate: "为「」生成一条 15 秒卖点速览短视频,快节奏罗列核心优势,结尾强 CTA",
+      promptTemplate: "为「」生成一条 15 秒卖点速览短视频，快节奏罗列核心优势，结尾强 CTA",
     },
   ],
   LISTING: [
@@ -167,18 +167,18 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       agent: "LISTING",
       listingMode: "copy",
       promptTemplate:
-        "为「」生成 TikTok Shop Listing:商品标题、五点卖点、主图方案(英文出图 prompt)、推荐标签",
+        "为「」生成 TikTok Shop Listing：商品标题、五点卖点、主图方案（英文出图 prompt）、推荐标签",
     },
     {
       key: "aplus",
-      title: "A+ 内容",
+      title: "图文详情",
       desc: "图文详情页结构化生成",
       icon: LayoutPanelTop,
       status: "live",
       agent: "LISTING",
       listingMode: "copy",
       promptTemplate:
-        "为「」生成 A+ 图文详情:分模块的卖点图文结构(每模块标题 + 文案 + 配图英文 prompt)",
+        "为「」生成图文详情：分模块的卖点图文结构（每模块标题 + 文案 + 配图英文 prompt）",
     },
     {
       key: "listing-title",
@@ -188,10 +188,10 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       status: "live",
       agent: "LISTING",
       listingMode: "copy",
-      promptTemplate: "为「」优化 TikTok Shop 商品标题,覆盖高搜索量关键词并兼顾可读性,给 3 个版本",
+      promptTemplate: "为「」优化 TikTok Shop 商品标题，覆盖高搜索量关键词并兼顾可读性，给 3 个版本",
     },
     {
-      // 上身图:并入 Listing 的 tryon 子模式,点选切到 composer 内联的「选模特 + 服饰图」。
+      // 上身图：并入 Listing 的 tryon 子模式，点选切到 composer 内联的「选模特 + 服饰图」。
       key: "tryon",
       title: "上身图",
       desc: "真人模特上身效果图",
@@ -210,7 +210,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: BarChart3,
       status: "live",
       agent: "REVIEW",
-      promptTemplate: "重点看 ROI 低于 2 的素材,逐条判断该停投还是优化,并说明依据",
+      promptTemplate: "重点看 ROI 低于 2 的素材，逐条判断该停投还是优化，并说明依据",
     },
     {
       key: "review-scaleup",
@@ -219,7 +219,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: TrendingUp,
       status: "live",
       agent: "REVIEW",
-      promptTemplate: "找出表现最好的素材与人群,给出加投预算与放量节奏建议",
+      promptTemplate: "找出表现最好的素材与人群，给出加投预算与放量节奏建议",
     },
     {
       key: "review-funnel",
@@ -228,13 +228,13 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: LineChart,
       status: "live",
       agent: "REVIEW",
-      promptTemplate: "诊断各素材的 CTR / 加购 / 转化漏斗,定位掉量环节并给优化方向",
+      promptTemplate: "诊断各素材的 CTR / 加购 / 转化漏斗，定位掉量环节并给优化方向",
     },
   ],
 };
 
 /**
- * 对标竞品的快捷功能卡行:跟随当前 Agent 切换卡组。
+ * 对标竞品的快捷功能卡行：跟随当前 Agent 切换卡组。
  * 点 live 卡选中对应 Agent 并预填模板;soon 卡提示打磨中。
  */
 export function QuickActionCards({
@@ -252,14 +252,14 @@ export function QuickActionCards({
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {actions.map((a) => {
         const soon = a.status === "soon";
-        // 上身图卡是子模式开关:处于该模式时高亮,提示当前正在做上身图。
+        // 上身图卡是子模式开关：处于该模式时高亮，提示当前正在做上身图。
         const active = a.listingMode === "tryon" && listingMode === "tryon";
         return (
           <button
             key={a.key}
             onClick={() => {
               if (soon) {
-                toast("该功能打磨中,敬请期待");
+                toast("该功能打磨中，敬请期待");
                 return;
               }
               onPick(a);

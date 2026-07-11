@@ -23,13 +23,13 @@ export type SampleVid = {
   coverUrl: string | null;
   desc: string;
   views: number;
-  /** COS 永久 mp4;非空=站内可直接播放(点击弹层播放,不跳转)。 */
+  /** COS 永久 mp4;非空=站内可直接播放（点击弹层播放，不跳转）。 */
   videoUrl?: string;
 };
 
 type Placeholder = { id: string; title: string; angle: string; thumb: string };
 
-// 去渐变:每张占位卡挑原渐变里更深的那个色阶当纯底,保留 5 张卡各自的色彩区分度。
+// 去渐变：每张占位卡挑原渐变里更深的那个色阶当纯底，保留 5 张卡各自的色彩区分度。
 const PLACEHOLDERS: Placeholder[] = [
   { id: "s1", title: "便携榨汁杯", angle: "开箱种草", thumb: "bg-pink-500" },
   { id: "s2", title: "宠物自动喂食器", angle: "痛点解决", thumb: "bg-purple-500" },
@@ -48,7 +48,7 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
           <h2 className="text-sm font-semibold text-ink">爆款短视频示例</h2>
           <p className="mt-0.5 text-xs text-zinc-500">
             {!hasReal
-              ? "一句话派活，AI 就能产出这样的带货短视频"
+              ? "即将上架的选题方向，先占个位"
               : anyPlayable
                 ? "TikTok 上正在爆的带货短视频 · 点开看 AI 拆解 · 部分可站内直接播放"
                 : "TikTok 上正在爆的带货短视频 · 点开看 AI 拆解"}
@@ -69,7 +69,7 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
 }
 
 /** 真·EchoTik 带货视频：封面 + 播放键 + 播放量 + 文案。
- *  点击一律开拆解弹层(左片右拆解,不跳转);已转存 COS(videoUrl)的额外可站内播放。 */
+ *  点击一律开拆解弹层（左片右拆解，不跳转）；已转存 COS（videoUrl）的额外可站内播放。 */
 function RealCard({ v }: { v: SampleVid }) {
   const [open, setOpen] = useState(false);
   const playable = !!v.videoUrl;

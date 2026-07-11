@@ -7,14 +7,14 @@ export default function PrivacyPage() {
       <p className="!mt-2 text-zinc-400">最后更新：2026 年 6 月 23 日</p>
 
       <p>
-        本政策说明发现猫科技(以下简称「我们」)在你使用发现猫时如何收集、使用、存储与共享你的信息。
+        本政策说明发现猫科技（以下简称「我们」）在你使用发现猫时如何收集、使用、存储与共享你的信息。
         我们坚持最小必要原则，仅收集为你提供服务所必需的数据。
       </p>
 
       <h2>1. 我们收集的信息</h2>
       <ul>
-        <li><strong>账户信息</strong>：你的手机号、短信验证码记录(仅存哈希，不存明文)、自动生成的用户与工作台标识。</li>
-        <li><strong>交易信息</strong>：订阅方案、支付订单与积分用量记录(用于计费与对账)。</li>
+        <li><strong>账户信息</strong>：你的手机号、短信验证码记录（仅存哈希，不存明文）、自动生成的用户与工作台标识。</li>
+        <li><strong>交易信息</strong>：订阅方案、支付订单与积分用量记录（用于计费与对账）。</li>
         <li><strong>你创建的内容</strong>：选品候选、生成的视频 / Listing / 试穿图、你上传的商品图、素材与投流报表。</li>
         <li><strong>技术日志</strong>：访问时间、IP、请求标识等必要的安全与排障日志。</li>
       </ul>
@@ -22,19 +22,19 @@ export default function PrivacyPage() {
 
       <h2>2. 我们如何使用信息</h2>
       <ul>
-        <li>提供、维护与改进服务(如生成内容、选品分析、投放复盘)；</li>
+        <li>提供、维护与改进服务（如生成内容、选品分析、投放复盘）；</li>
         <li>计费、额度管理与交易对账；</li>
         <li>账户安全、风控与防滥用；</li>
-        <li>在你同意的前提下，发送产品更新或运营通知(你可随时退订)。</li>
+        <li>在你同意的前提下，发送产品更新或运营通知（你可随时退订）。</li>
       </ul>
 
       <h2>3. 第三方共享与数据出境</h2>
       <p>为实现核心功能，我们会将完成任务所必需的最小数据传输给以下第三方处理者：</p>
       <ul>
         <li><strong>EchoTik</strong>：查询选品榜单与商品 / 达人 / 店铺 / 视频数据；</li>
-        <li><strong>OpenRouter</strong>：生成脚本、视频与复盘分析(传输你的指令与相关商品文本)；</li>
-        <li><strong>fal</strong>：生成主图、封面与虚拟试穿图(传输相关图片与提示词)；</li>
-        <li><strong>腾讯云对象存储(COS)</strong>：存储你上传与生成的素材；</li>
+        <li><strong>OpenRouter</strong>：生成脚本、视频与复盘分析（传输你的指令与相关商品文本）；</li>
+        <li><strong>fal</strong>：生成主图、封面与虚拟试穿图（传输相关图片与提示词）；</li>
+        <li><strong>腾讯云对象存储（COS）</strong>：存储你上传与生成的素材；</li>
         <li><strong>腾讯云短信</strong>：发送登录验证码。</li>
       </ul>
       <p>
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
 
       <h2>4. Cookie 与本地存储</h2>
       <p>
-        我们仅使用一个用于维持登录状态的会话 Cookie(<code>oc_session</code>)，以及少量浏览器本地存储(如发现页筛选偏好)。
+        我们仅使用一个用于维持登录状态的会话 Cookie(<code>oc_session</code>)，以及少量浏览器本地存储（如发现页筛选偏好）。
         我们<strong>不使用第三方广告追踪 Cookie</strong>。
       </p>
 
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
       <h2>6. 你的权利</h2>
       <p>
         你有权访问、更正或删除你的个人信息，并可注销账户。如需行使上述权利，请联系
-        <a href="mailto:hello@oneclaw.ai">hello@oneclaw.ai</a>，我们将在合理期限内处理。
+        <a href="mailto:contact@faxianmao.com">contact@faxianmao.com</a>，我们将在合理期限内处理。
       </p>
 
       <h2>7. 未成年人</h2>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
       <h2>8. 政策变更与联系</h2>
       <p>
         本政策更新时将修订「最后更新」日期并在生效时告知。如对本政策有任何疑问，请联系
-        <a href="mailto:hello@oneclaw.ai">hello@oneclaw.ai</a>。
+        <a href="mailto:contact@faxianmao.com">contact@faxianmao.com</a>。
       </p>
     </>
   );

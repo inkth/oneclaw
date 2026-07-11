@@ -14,7 +14,7 @@ import { Popover } from "@/components/ui/Popover";
 
 type Status = "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 type CostSource = "ESTIMATE" | "MANUAL" | "SOURCED";
-// 自建商品出图进度(后端 Product.imagesStatus);空 = 非自建/无出图。
+// 自建商品出图进度（后端 Product.imagesStatus）;空 = 非自建/无出图。
 type ImagesStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "";
 
 export type Product = {
@@ -34,11 +34,11 @@ export type Product = {
   coverUrl?: string;
   images?: string[];
   imagesStatus?: ImagesStatus;
-  discoverProductId?: string | null; // 非空=EchoTik 收藏;空=用户自建(素材图生成)
+  discoverProductId?: string | null; // 非空=EchoTik 收藏；空=用户自建（素材图生成）
   shop: { id: string; name: string; platform: string } | null;
 };
 
-// 商品范围:all=全部 · self=自建(资产/商品)· discover=EchoTik 收藏(收藏/商品)。
+// 商品范围：all=全部 · self=自建（资产/商品）· discover=EchoTik 收藏（收藏/商品）。
 export type ProductScope = "all" | "self" | "discover";
 
 const imagesStatusMap: Record<"RUNNING" | "FAILED", { label: string; cls: string; spin: boolean }> = {
@@ -46,7 +46,7 @@ const imagesStatusMap: Record<"RUNNING" | "FAILED", { label: string; cls: string
   FAILED: { label: "出图失败", cls: "bg-rose-50 text-rose-600", spin: false },
 };
 
-// 商品缩略图:有封面用真图(失败回退渐变占位),无封面用 seed 占位。
+// 商品缩略图：有封面用真图（失败回退渐变占位），无封面用 seed 占位。
 function Thumb({ src, seed }: { src?: string; seed: string }) {
   const [failed, setFailed] = useState(false);
   if (src && !failed) {
@@ -71,17 +71,17 @@ const statusMap: Record<Status, { label: string; cls: string }> = {
   ARCHIVED: { label: "已归档", cls: "bg-[var(--dk-surface-2)] text-zinc-500" },
 };
 
-// 成本来源角标:估算(系统按品类/市场)↔ 真实(用户回填)↔ 比价(货源,预留)。
+// 成本来源角标：估算（系统按品类/市场）↔ 真实（用户回填）↔ 比价（货源，预留）。
 const costSourceMap: Record<CostSource, { label: string; cls: string; title: string }> = {
   ESTIMATE: {
     label: "估算",
     cls: "bg-amber-50 text-amber-700",
-    title: "系统按品类/目标市场估算的落地成本,点成本可回填你的真实进货价",
+    title: "系统按品类/目标市场估算的落地成本，点成本可回填你的真实进货价",
   },
   MANUAL: {
     label: "真实",
     cls: "bg-emerald-50 text-emerald-700",
-    title: "你回填的真实进货价,毛利率据此重算",
+    title: "你回填的真实进货价，毛利率据此重算",
   },
   SOURCED: {
     label: "比价",
@@ -128,10 +128,10 @@ export function ProductsClient({
   const [error, setError] = useState<string | null>(null);
   const [editCostId, setEditCostId] = useState<string | null>(null);
   const [costDraft, setCostDraft] = useState("");
-  const committedRef = useRef<string | null>(null); // 去重:Enter 后失焦不重复提交
+  const committedRef = useRef<string | null>(null); // 去重：Enter 后失焦不重复提交
 
-  // 按范围切分:self=自建(无 discoverProductId)· discover=EchoTik 收藏 · all=全部。
-  // 列表接口返回全部商品,这里据来源过滤,轮询刷新后过滤口径不变。
+  // 按范围切分：self=自建（无 discoverProductId）· discover=EchoTik 收藏 · all=全部。
+  // 列表接口返回全部商品，这里据来源过滤，轮询刷新后过滤口径不变。
   const scoped = products.filter((p) =>
     scope === "self" ? !p.discoverProductId : scope === "discover" ? !!p.discoverProductId : true,
   );
@@ -144,7 +144,7 @@ export function ProductsClient({
     return { shop: null, ...p } as Product;
   }
 
-  // 本范围内任一商品仍在生成(文案/主图)时轮询商品列表,卡片「生成中 → 成品」自填充。
+  // 本范围内任一商品仍在生成（文案/主图）时轮询商品列表，卡片「生成中 → 成品」自填充。
   const hasActive = scoped.some(
     (p) => p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING",
   );
@@ -170,8 +170,9 @@ export function ProductsClient({
           key={f.key}
           onClick={() => setFilter(f.key)}
           className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            // 选中态近黑实底，与 Pill 一致（品牌紫只留给成交 CTA 与焦点环）
             filter === f.key
-              ? "bg-[var(--accent-pop)] text-white"
+              ? "bg-[var(--dk-btn-black)] text-white"
               : "text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
           }`}
         >
@@ -192,7 +193,7 @@ export function ProductsClient({
     setCostDraft((p.costCents / 100).toFixed(2));
   }
 
-  // 回填真实进货价:后端据此重算毛利并把 costSource 标为 MANUAL,合并回行内。
+  // 回填真实进货价：后端据此重算毛利并把 costSource 标为 MANUAL,合并回行内。
   async function commitCost(p: Product) {
     if (committedRef.current === p.id) return;
     committedRef.current = p.id;
@@ -215,21 +216,21 @@ export function ProductsClient({
       );
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...data.product } : p)));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "更新失败");
+      setError(e instanceof Error ? e.message : "更新失败，稍后再试");
     } finally {
       setBusyId(null);
     }
   }
 
   async function deleteProduct(id: string) {
-    if (!confirm("确定删除？")) return;
+    if (!confirm("删除该商品？删除后不可恢复。")) return;
     setBusyId(id);
     try {
       await apiBrowser(`/workspaces/${workspaceId}/products/${id}`, { method: "DELETE" });
       setProducts((prev) => prev.filter((p) => p.id !== id));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "删除失败");
+      setError(e instanceof Error ? e.message : "删除失败，稍后再试");
     } finally {
       setBusyId(null);
     }
@@ -242,13 +243,13 @@ export function ProductsClient({
       ) : scope === "self" ? (
         <PageHeader
           title="我的商品"
-          description="你在素材库「批量做商品」生成的商品,在这里管理、点进详情继续完善。"
+          description="你在素材库「批量做商品」生成的商品，在这里管理、点进详情继续完善。"
           actions={filterBar}
         />
       ) : (
         <PageHeader
           title="收藏 · 商品"
-          description="你从爆品榜收藏的商品,按推进阶段管理。"
+          description="你从爆品榜收藏的商品，按推进阶段管理。"
           actions={filterBar}
         />
       )}
@@ -291,7 +292,7 @@ export function ProductsClient({
                 <Th align="right">ROI</Th>
                 <Th align="right">毛利率</Th>
                 <Th align="right">月销</Th>
-                <Th align="right">14d</Th>
+                <Th align="right">近 14 天</Th>
                 <Th align="center">状态</Th>
                 <Th align="right">操作</Th>
               </tr>
@@ -325,7 +326,7 @@ export function ProductsClient({
                           {p.imagesStatus === "DONE" && (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-2xs font-medium leading-none text-emerald-700"
-                              title="展示图已生成,点「打开详情」查看/设主图/生成文案"
+                              title="商品图已生成，点「打开详情」查看/设主图/生成文案"
                             >
                               <Sparkles className="h-2.5 w-2.5" />
                               已出图
@@ -358,7 +359,7 @@ export function ProductsClient({
                               />
                               <button
                                 type="button"
-                                onMouseDown={(e) => e.preventDefault()} // 保住输入焦点,避免先触发 blur
+                                onMouseDown={(e) => e.preventDefault()} // 保住输入焦点，避免先触发 blur
                                 onClick={() => commitCost(p)}
                                 title="保存真实进货价"
                                 className="text-brand-600 hover:text-brand-700"
@@ -371,7 +372,7 @@ export function ProductsClient({
                               onClick={() => startEditCost(p)}
                               disabled={busyId === p.id}
                               className="inline-flex items-center gap-0.5 rounded px-0.5 text-zinc-600 underline decoration-dotted underline-offset-2 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900 disabled:opacity-50"
-                              title="点击回填你的真实进货价,毛利率会据此重算"
+                              title="点击回填你的真实进货价，毛利率会据此重算"
                             >
                               ${(p.costCents / 100).toFixed(2)}
                               {busyId === p.id ? (
@@ -403,7 +404,7 @@ export function ProductsClient({
                     <span
                       title={
                         p.costSource === "ESTIMATE"
-                          ? "基于估算成本,回填真实进货价后更准"
+                          ? "基于估算成本，回填真实进货价后更准"
                           : "基于真实进货价"
                       }
                       className={p.costSource === "ESTIMATE" ? "text-zinc-400" : undefined}
@@ -431,7 +432,7 @@ export function ProductsClient({
                         <Link
                           href={`/app/products/${p.id}`}
                           className="inline-flex items-center gap-1 rounded-full bg-[var(--dk-btn-tertiary)] px-2.5 py-1 text-2xs font-medium text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)]"
-                          title="进入商品详情:做 Listing / 补主图 / 为它做视频"
+                          title="进入商品详情：做 Listing / 补主图 / 为它做视频"
                         >
                           打开详情
                           <ArrowRight className="h-2.5 w-2.5" />

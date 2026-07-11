@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-/** 全站统一聚焦环：电紫点睛(violet 不受 app-skin 近黑级联，故工作台内焦点环亦电紫)。 */
+/** 全站统一聚焦环：电紫点睛（violet 不受 app-skin 近黑级联，故工作台内焦点环亦电紫）。 */
 export const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40";
 
@@ -31,11 +31,11 @@ export const STATUS_TONES = {
 export type Tone = keyof typeof STATUS_TONES;
 
 /** Agent 身份：链路导向的产出物胶囊 + 任务列表小 chip 标识，不大面积渐变。
- *  图标统一用 lucide 线性图标(不用 emoji),与全站 Stripe/Linear 风格一致。
+ *  图标统一用 lucide 线性图标（不用 emoji），与全站 Stripe/Linear 风格一致。
  *
- *  tile = Agent「入口图标块」的彩色渐变底(照搬 Designkit 的 app-icon 观感)。
+ *  tile = Agent「入口图标块」的彩色渐变底（照搬 Designkit 的 app-icon 观感）。
  *  这是 Design Language §4 唯一的多色例外：色相在此**承载 Agent 身份**，不是装饰。
- *  注意色值必须写显式色相(violet/sky/…)而非 brand-*——`.app-skin` 会把 --brand-* 级联
+ *  注意色值必须写显式色相（violet/sky/…）而非 brand-*——`.app-skin` 会把 --brand-* 级联
  *  改写为近黑，用 brand-* 的话工作台内这块图标会整块变黑。 */
 export const AGENT_IDENTITY = {
   ADVISOR: { label: "跨境顾问", icon: Compass as LucideIcon, tone: "warning" as Tone, dot: "bg-amber-500", tile: "from-amber-400 to-orange-500" },

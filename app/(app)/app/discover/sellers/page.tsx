@@ -20,7 +20,7 @@ export default async function DiscoverSellersPage({
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
   const q = (sp.q ?? "").trim();
-  // 搜索:走 EchoTik 关键词搜索(只认 region,单次 ≤30、无分页);否则正常榜单+分页。
+  // 搜索：走 EchoTik 关键词搜索（只认 region,单次 ≤30、无分页）;否则正常榜单+分页。
   const query = q
     ? `region=${region}&field=${field}&page_size=30&keyword=${encodeURIComponent(q)}`
     : `region=${region}&rank_type=${rankType}&field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=20&page_num=${page}`;

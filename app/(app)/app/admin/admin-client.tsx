@@ -143,7 +143,7 @@ export function AdminClient({
       toast.success("已更新");
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "更新失败");
+      toast.error(e instanceof Error ? e.message : "更新失败，稍后再试");
     }
   }
 
@@ -156,7 +156,7 @@ export function AdminClient({
       toast.success(approve ? "已标记打款" : "已驳回");
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "操作失败");
+      toast.error(e instanceof Error ? e.message : "操作失败，稍后再试");
     }
   }
 
@@ -188,7 +188,7 @@ export function AdminClient({
       {/* 开通代理 */}
       <Card>
         <div className="text-sm font-medium text-[var(--dk-content-primary)]">开通代理商</div>
-        <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">按手机号开通。该手机号需已注册(登录过一次)。</p>
+        <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">按手机号开通。该手机号需已注册（登录过一次）。</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
             type="tel"
@@ -323,7 +323,7 @@ function AgencyRow({
         </div>
       </Td>
       <Td align="center">
-        {/* 启用/停用是带语义色的操作态,非纯装饰 hover:保留 emerald(启用引导)与中性 action-regular(停用) */}
+        {/* 启用/停用是带语义色的操作态，非纯装饰 hover:保留 emerald(启用引导)与中性 action-regular(停用) */}
         <button
           onClick={() => onUpdate(agency.id, { status: disabled ? "ACTIVE" : "DISABLED" })}
           className={`rounded-lg px-3 py-1 text-2xs font-medium transition-colors ${

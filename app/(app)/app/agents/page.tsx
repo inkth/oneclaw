@@ -7,7 +7,7 @@ import { type Conversation } from "../conversation-rail";
 
 export const metadata = { title: "会话 · 发现猫" };
 
-// 会话板块落地:有历史会话则进最近一条;无则落到新对话(游客直接渲染新对话页)。
+// 会话板块落地：有历史会话则进最近一条；无则落到新对话（游客直接渲染新对话页）。
 export default async function AgentsPage() {
   const me = await getMe();
   const ws = me?.workspace ?? null;

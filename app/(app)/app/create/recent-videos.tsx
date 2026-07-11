@@ -11,8 +11,8 @@ export type RecentVideo = {
 };
 
 /**
- * 创作页底部的最近成片条:横滚 9:16 缩略图,点击进短视频墙。
- * 纯展示不轮询(生成中的状态变化去短视频墙看,那边有自动刷新)。
+ * 创作页底部的最近成片条：横滚 9:16 缩略图，点击进短视频墙。
+ * 纯展示不轮询（生成中的状态变化去短视频墙看，那边有自动刷新）。
  */
 export function RecentVideos({ videos }: { videos: RecentVideo[] }) {
   if (videos.length === 0) return null;
@@ -63,7 +63,7 @@ export function RecentVideos({ videos }: { videos: RecentVideo[] }) {
                   失败
                 </span>
               )}
-              {/* 去渐变(硬规则):底部字幕条改纯色半透明黑,不做渐隐 */}
+              {/* 去渐变（硬规则）:底部字幕条改纯色半透明黑，不做渐隐 */}
               <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1.5 py-1 text-2xs text-white">
                 {v.title}
               </span>

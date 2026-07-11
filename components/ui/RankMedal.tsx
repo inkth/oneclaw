@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { RANK_MEDAL } from "@/lib/ui/tokens";
 
-/** 榜单名次：Top3 金/银/铜实体奖牌，>3 灰底数字。榜单序号一律用它,替换裸 idx+1。 */
+/** 榜单名次：Top3 金/银/铜实体奖牌，>3 灰底数字。榜单序号一律用它，替换裸 idx+1。 */
 export function RankMedal({ rank, className }: { rank: number; className?: string }) {
   const isMedal = rank >= 1 && rank <= 3;
   return (

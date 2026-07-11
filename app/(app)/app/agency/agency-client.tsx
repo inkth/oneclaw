@@ -107,7 +107,7 @@ export function AgencyClient({
       toast.success("邀请链接已复制");
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      toast.error("复制失败,请手动选择");
+      toast.error("复制失败，请手动选择");
     }
   }
 
@@ -120,7 +120,7 @@ export function AgencyClient({
       setSummary(s);
       setWithdrawals(w);
     } catch {
-      /* 忽略刷新失败,下次进入页面自然对齐 */
+      /* 忽略刷新失败，下次进入页面自然对齐 */
     }
   }
 
@@ -141,7 +141,7 @@ export function AgencyClient({
         method: "POST",
         body: JSON.stringify({ amountCents: cents, note }),
       });
-      toast.success("提现申请已提交,待管理员审核");
+      toast.success("提现申请已提交，待管理员审核");
       setAmount("");
       setNote("");
       await refresh();
@@ -167,7 +167,7 @@ export function AgencyClient({
             </Badge>
           )
         }
-        description={`每笔成交按 ${summary.commissionBp / 100}% 计佣,佣金进余额,可随时申请提现。`}
+        description={`每笔成交按 ${summary.commissionBp / 100}% 计佣，佣金进余额，可随时申请提现。`}
       />
 
       {/* 邀请链接 */}
@@ -183,7 +183,7 @@ export function AgencyClient({
             </div>
             <div className="mt-1 text-2xs text-[var(--dk-content-tertiary)]">
               邀请码 <span className="font-mono font-medium text-[var(--dk-content-secondary)]">{summary.code}</span>
-              ·新用户经此注册永久绑定你,并获赠新人积分
+              ·新用户经此注册永久绑定你，并获赠新人积分
             </div>
           </div>
           <button
@@ -233,7 +233,7 @@ export function AgencyClient({
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="收款方式(如 微信 / 支付宝 / 银行卡)"
+            placeholder="收款方式（如 微信 / 支付宝 / 银行卡）"
             className="flex-1 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
             disabled={disabled}
           />
@@ -252,7 +252,7 @@ export function AgencyClient({
       <section>
         <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">客户列表</div>
         {customers.length === 0 ? (
-          <EmptyState icon={Users} title="还没有客户" description="把邀请链接分享出去,客户注册后会出现在这里。" />
+          <EmptyState icon={Users} title="还没有客户" description="把邀请链接分享出去，客户注册后会出现在这里。" />
         ) : (
           <TableWrap minWidth={560}>
             <THead>
@@ -281,7 +281,7 @@ export function AgencyClient({
       <section>
         <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">佣金流水</div>
         {commissions.length === 0 ? (
-          <EmptyState icon={Coins} title="暂无佣金" description="客户完成付费后,佣金会实时入账。" />
+          <EmptyState icon={Coins} title="暂无佣金" description="客户完成付费后，佣金会实时入账。" />
         ) : (
           <TableWrap minWidth={620}>
             <THead>

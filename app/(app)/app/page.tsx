@@ -5,7 +5,7 @@ import { SampleVideos, type SampleVid } from "./sample-videos";
 
 export const metadata = { title: "工作台 · 发现猫" };
 
-// 工作台是统一派活台：跨境顾问(ADVISOR) + 创作类(短视频 DIRECTOR / Listing —— 含「上身图」虚拟试穿子模式) + 选品分析(ANALYST) + 投放复盘(REVIEW)同处一框。
+// 工作台是统一派活台：跨境顾问（ADVISOR） + 创作类（短视频 DIRECTOR / Listing —— 含「上身图」虚拟试穿子模式） + 选品分析（ANALYST） + 投放复盘（REVIEW）同处一框。
 const AGENT_KINDS = new Set(["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
 
 // 「爆款短视频示例」临时取数：EchoTik 带货视频榜（公共端点，游客可见）。
@@ -23,7 +23,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  // 其他页面(如收藏「为它做视频 / 做 Listing」)带 ?agent=…&prompt=…&productId=… 接力进来。
+  // 其他页面（如收藏「为它做视频 / 做 Listing」）带 ?agent=…&prompt=…&productId=… 接力进来。
   const sp = await searchParams;
   const initialAgent = AGENT_KINDS.has(sp.agent ?? "")
     ? (sp.agent as ComposerKind)
@@ -40,7 +40,7 @@ export default async function DashboardPage({
   // 爆款短视频示例：临时用真实 EchoTik 带货视频榜填充（公共端点，游客可见）。
   // 注：这是别人的 TikTok 成片（封面 + 点开进详情），非本平台产出；自制样片就绪后替换。
   const sampleVideos = await apiServer<{ rows: VideoRow[] }>(
-    // field=2=带货榜,与视频榜页/预热键一致(field=1 播放榜的顺序表已不再被 job 刷新)。
+    // field=2=带货榜，与视频榜页/预热键一致（field=1 播放榜的顺序表已不再被 job 刷新）。
     `/discover/video-ranklist?region=US&rank_type=1&field=2&page_size=8`,
   )
     .then((d): SampleVid[] =>

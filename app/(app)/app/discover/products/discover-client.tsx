@@ -58,7 +58,7 @@ type DiscoverProduct = {
   analysis: AnalysisInfo | null;
 };
 
-// 商品榜排序支持 3 项(店铺/达人/视频只有销量/GMV)。
+// 商品榜排序支持 3 项（店铺/达人/视频只有销量/GMV）。
 const PRODUCT_FIELDS: FieldOption[] = [
   { v: 1, cn: "销量" },
   { v: 2, cn: "GMV" },
@@ -104,7 +104,7 @@ export function DiscoverClient({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可操作",
-      desc: "收藏商品需要账号。趋势榜随便逛,登录后一键收藏。",
+      desc: "收藏商品需要账号。榜单随便逛，登录后一键收藏。",
     });
     return true;
   }
@@ -132,7 +132,7 @@ export function DiscoverClient({
       }
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "加入失败");
+      toast.error(e instanceof Error ? e.message : "收藏失败");
     } finally {
       setImporting((prev) => {
         const n = new Set(prev);
@@ -148,10 +148,10 @@ export function DiscoverClient({
         title={
           <span className="inline-flex items-center gap-2">
             <Compass className="h-5 w-5 text-brand-500" />
-            发现 · TikTok 爆品
+            选品 · 爆品榜
           </span>
         }
-        description="TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键派给分析师做深度判断"
+        description="TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键交给选品分析 Agent 深度判断"
       />
 
       <FilterBar
@@ -166,19 +166,19 @@ export function DiscoverClient({
         searchPlaceholder="搜索商品名 / 关键词…"
       />
 
-      {/* Main table — 无数据时不渲染裸表头,改用统一空态 */}
+      {/* Main table — 无数据时不渲染裸表头，改用统一空态 */}
       {products.length === 0 ? (
         searching ? (
           <EmptyState
             icon={PackageSearch}
             title={`没找到与「${keyword}」相关的商品`}
-            description="换个关键词,或切换国家 / 地区再搜。也可以清空搜索回到爆品榜。"
+            description="换个关键词，或切换国家 / 地区再搜。也可以清空搜索回到爆品榜。"
           />
         ) : (
           <EmptyState
             icon={PackageSearch}
             title="该榜单暂无数据"
-            description="这个区域 / 榜单组合下还没有可用数据。试试切换到「热销」榜,或者换个国家 / 地区再看看。"
+            description="这个区域 / 榜单组合下还没有可用数据。试试换个国家 / 地区再看看。"
           />
         )
       ) : (
@@ -266,13 +266,13 @@ export function DiscoverClient({
                         href="/app/discover/favorites"
                         size="sm"
                         className="rounded-lg px-2.5 bg-emerald-50 text-emerald-700 ring-0 hover:bg-emerald-100"
-                        title="已收藏,点击去收藏页查看"
+                        title="已收藏，点击去收藏页查看"
                       >
                         <BookmarkCheck className="h-3 w-3" />
                         已收藏
                       </ButtonLink>
                     ) : (
-                      // 行内动作用次级按钮:一屏 20 行,每行一个品牌色实底会让电紫从
+                      // 行内动作用次级按钮：一屏 20 行，每行一个品牌色实底会让电紫从
                       // 「强调」退化成「底噪」。品牌色只留给页面级的成交动作。
                       <Button
                         variant="secondary"
@@ -280,7 +280,7 @@ export function DiscoverClient({
                         onClick={() => importProduct(p)}
                         disabled={importing.has(p.productId)}
                         className="rounded-lg px-2.5"
-                        title="收藏到我的收藏夹"
+                        title="收藏商品"
                       >
                         {importing.has(p.productId) ? (
                           <Loader2 className="h-3 w-3 animate-spin" />

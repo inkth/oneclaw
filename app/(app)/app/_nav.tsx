@@ -29,12 +29,12 @@ type Board = {
 };
 
 // TikTok 电商全流程的五大板块：工作台 → 会话 → 资产 → 选品 → 服务。
-// 工作台是统一派活台(四个 Agent 同处一框)；会话板块收纳你和 AI 的全部对话历史。
+// 工作台是统一派活台（四个 Agent 同处一框）；会话板块收纳你和 AI 的全部对话历史。
 // 所有现有页面都归进某个板块，子页面收进板块内 Tab，侧边栏永远只有这 5 行 + 设置。
 const BOARDS: Board[] = [
   {
     // 工作台即统一派活台：做视频 / 写 Listing / 选品分析 / 投放复盘 四个 Agent 同处一框，不挂顶部 Tab。
-    // 会话历史挪到「会话」板块(/app/agents)，工作台不再带左侧会话列表。
+    // 会话历史挪到「会话」板块（/app/agents），工作台不再带左侧会话列表。
     key: "workspace",
     label: "工作台",
     icon: LayoutDashboard,
@@ -43,7 +43,7 @@ const BOARDS: Board[] = [
     tabs: [],
   },
   {
-    // 会话板块：左侧窄会话列表(ConversationRail) + 右侧会话内容，汇总你和各 Agent 的全部对话。
+    // 会话板块：左侧窄会话列表（ConversationRail） + 右侧会话内容，汇总你和各 Agent 的全部对话。
     key: "conversations",
     label: "会话",
     icon: MessagesSquare,
@@ -112,8 +112,8 @@ function activeTabHref(board: Board, pathname: string): string | undefined {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 }
 
-/** 选品板块:把当前 region/category_id 带到各 Tab href 上,切榜不丢筛选
- *  (同一地区下 4 个榜共用同一份类目,带 category 恒有效;收藏页忽略未知 query)。
+/** 选品板块：把当前 region/category_id 带到各 Tab href 上，切榜不丢筛选
+ *  (同一地区下 4 个榜共用同一份类目，带 category 恒有效；收藏页忽略未知 query)。
  *  返回 query 后缀,activeHref 也需拼上它——Tabs 按 href 全等判断激活态。 */
 function discoverTabSuffix(sp: ReadonlyURLSearchParams): string {
   const p = new URLSearchParams();
@@ -149,8 +149,8 @@ type DiscoverTabsProps = {
   className?: string;
 };
 
-/** useSearchParams 在静态预渲染页(收藏页无 searchParams,会被静态化)需 Suspense 兜底。
- *  fallback 用不带 query 的裸 Tab——标签/激活态一致,客户端再补上筛选后缀,视觉无差异。 */
+/** useSearchParams 在静态预渲染页（收藏页无 searchParams,会被静态化）需 Suspense 兜底。
+ *  fallback 用不带 query 的裸 Tab——标签/激活态一致，客户端再补上筛选后缀，视觉无差异。 */
 function DiscoverTabsBoundary({ board, pathname, bare, className }: DiscoverTabsProps) {
   return (
     <Suspense
@@ -194,7 +194,8 @@ export function BoardHeaderNav() {
 }
 
 // 照搬 Designkit 图标导航轨：每项 64×64，22px 图标 + 下方 11px 小字，gap 6px。
-// 激活态没有竖条、没有品牌色——只是「淡蓝灰圆角底 + 字重 600」，图标本身转实心。
+// 激活态没有竖条、没有品牌色、不加粗（实测选中项字重仍是 400）——
+// 只靠「淡蓝灰圆角底 + 实心图标」两个信号。
 // hover 与 selected 共用同一个底色（--dk-action-regular），所以指过去就是激活的预览。
 function RailItem({
   href,
@@ -226,13 +227,7 @@ function RailItem({
           "h-[22px] w-[22px] " + (active ? "fill-current [fill-opacity:0.14]" : "")
         }
       />
-      <span
-        className={
-          "text-[11px] leading-[110%] " + (active ? "font-semibold" : "font-normal")
-        }
-      >
-        {label}
-      </span>
+      <span className="text-[11px] leading-[110%] font-normal">{label}</span>
     </Link>
   );
 }
@@ -259,7 +254,7 @@ export function SidebarNav({
         />
       ))}
 
-      {/* 代理商 / 管理入口:按身份显示,不进 BOARDS(避免动 activeBoard 板块归属)。
+      {/* 代理商 / 管理入口：按身份显示，不进 BOARDS(避免动 activeBoard 板块归属)。
           Designkit 用一条 40px 宽的短分隔线把底部工具区与主导航分开。 */}
       <div className="mt-auto flex w-full flex-col items-center gap-0.5 pt-1.5">
         <span

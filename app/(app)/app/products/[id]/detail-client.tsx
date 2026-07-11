@@ -57,7 +57,7 @@ const statusLabel: Record<string, string> = {
   ARCHIVED: "已归档",
 };
 
-// 下载用同源相对路径(生产 nginx 同域);本地分端口时由 NEXT_PUBLIC_API_BASE 指定。
+// 下载用同源相对路径（生产 nginx 同域）;本地分端口时由 NEXT_PUBLIC_API_BASE 指定。
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -65,7 +65,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function copy(text: string, label: string) {
   navigator.clipboard.writeText(text).then(
     () => toast.success(`已复制${label}`),
-    () => toast.error("复制失败"),
+    () => toast.error("复制失败，请手动选择文本"),
   );
 }
 
@@ -93,8 +93,8 @@ export function ProductDetail({
 
   const p = kit.product;
   const listing = kit.listing;
-  const videos = kit.videos ?? []; // 后端无成片时返回 null,这里兜底成空数组,避免 .length 崩页
-  // 画廊 = 生成的展示图 + 当前封面 + Listing 主图 + 用户原图(多角度),去重。
+  const videos = kit.videos ?? []; // 后端无成片时返回 null,这里兜底成空数组，避免 .length 崩页
+  // 画廊 = 生成的展示图 + 当前封面 + Listing 主图 + 用户原图（多角度），去重。
   const gallery = Array.from(
     new Set(
       [...(p.images ?? []), p.coverUrl, ...(listing?.images ?? []), ...(p.sourceImages ?? [])].filter(
@@ -114,7 +114,7 @@ export function ProductDetail({
     }
   }
 
-  // 展示图还在出(刚从批量进来)时轮询,直到 DONE/FAILED。
+  // 展示图还在出（刚从批量进来）时轮询，直到 DONE/FAILED。
   useEffect(() => {
     if (!imagingShots) return;
     const timer = setInterval(() => { void refetchKit(); }, 5000);
@@ -138,7 +138,7 @@ export function ProductDetail({
       setKit((k) => ({ ...k, product: { ...k.product, title: t } }));
       toast.success("已保存标题");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "保存失败");
+      toast.error(e instanceof Error ? e.message : "保存失败，稍后再试");
     }
   }
 
@@ -163,9 +163,9 @@ export function ProductDetail({
         },
       }));
       setEditingInfo(false);
-      toast.success("已保存价格 / 成本,毛利已重算");
+      toast.success("已保存价格 / 成本，毛利已重算");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "保存失败");
+      toast.error(e instanceof Error ? e.message : "保存失败，稍后再试");
     } finally {
       setSavingInfo(false);
     }
@@ -178,16 +178,16 @@ export function ProductDetail({
       setKit((k) => ({ ...k, product: { ...k.product, coverUrl: url } }));
       toast.success("已设为商品主图");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "设置失败");
+      toast.error(e instanceof Error ? e.message : "设置失败，稍后再试");
     } finally {
       setCoverBusy(null);
     }
   }
 
-  // 补出主图:对当前 Listing 任务触发出图(消耗额度),轮询至完成后刷新画廊。
+  // 补出主图：对当前 Listing 任务触发出图（消耗额度），轮询至完成后刷新画廊。
   async function addImages() {
     if (!listing) return;
-    if (!confirm("将为这套 Listing 生成主图(每张约 6 积分,最多 3 张)。继续?")) return;
+    if (!confirm("将为这套 Listing 生成主图（每张约 6 积分，最多 3 张）。继续？")) return;
     setImaging(true);
     try {
       await apiBrowser(`/workspaces/${workspaceId}/agent-tasks/${listing.taskId}/images`, { method: "POST" });
@@ -199,22 +199,22 @@ export function ProductDetail({
         const st = task?.metadata?.imagesStatus;
         if (st === "DONE" || st === "FAILED") {
           await refetchKit();
-          toast[st === "DONE" ? "success" : "error"](st === "DONE" ? "主图已生成" : "主图生成失败,可重试");
+          toast[st === "DONE" ? "success" : "error"](st === "DONE" ? "主图已生成" : "主图生成失败，可重试");
           break;
         }
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "出图失败");
+      toast.error(e instanceof Error ? e.message : "出图失败，稍后再试");
     } finally {
       if (mounted.current) setImaging(false);
     }
   }
 
-  // 生成/重写 Listing 进入会话:带商品上下文跳工作台,在会话里可用语言指挥改哪里、强调什么,
-  // 反复优化(一次性在详情页改不如对话顺手)。生成的 Listing 关联本商品,回详情即见最新。
+  // 生成/重写 Listing 进入会话：带商品上下文跳工作台，在会话里可用语言指挥改哪里、强调什么,
+  // 反复优化（一次性在详情页改不如对话顺手）。生成的 Listing 关联本商品，回详情即见最新。
   function goListingChat() {
     const prompt =
-      "为这个商品生成/优化一套 TikTok Shop Listing(标题/五点卖点/A+/主图)。可以直接说要强调什么、改哪一段。";
+      "为这个商品生成/优化一套 TikTok Shop Listing（标题/五点卖点/图文详情/主图）。可以直接说要强调什么、改哪一段。";
     router.push(`/app?agent=LISTING&productId=${productId}&prompt=${encodeURIComponent(prompt)}`);
   }
 
@@ -266,7 +266,7 @@ export function ProductDetail({
             </span>
           </span>
         }
-        description="单个商品的工作台:组装 Listing、补主图、做视频,推到可上架。"
+        description="单个商品的工作台：组装 Listing、补主图、做视频，推到可上架。"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -281,7 +281,7 @@ export function ProductDetail({
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* 左:主图画廊 + 基础信息 */}
+        {/* 左：主图画廊 + 基础信息 */}
         <div className="space-y-4">
           <div className="dk-card p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -411,7 +411,7 @@ export function ProductDetail({
           </div>
         </div>
 
-        {/* 右:Listing 内容 */}
+        {/* 右：Listing 内容 */}
         <div className="space-y-4 lg:col-span-2">
           {!listing ? (
             <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center">
@@ -432,7 +432,7 @@ export function ProductDetail({
                   <h3 className="text-sm font-semibold text-zinc-900">Listing 文案</h3>
                   <button
                     onClick={goListingChat}
-                    title="去会话里重新生成,可用语言指挥改哪段、强调什么"
+                    title="去会话里重新生成，可用语言指挥改哪段、强调什么"
                     className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
                   >
                     <RefreshCw className="h-3 w-3" />
@@ -485,10 +485,10 @@ export function ProductDetail({
               {listing.aplusSections && listing.aplusSections.length > 0 && (
                 <div className="dk-card p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-zinc-900">A+ 图文结构</h3>
+                    <h3 className="text-sm font-semibold text-zinc-900">图文详情结构</h3>
                     <button
                       onClick={goListingChat}
-                      title="去会话里重新生成,可用语言指挥改哪段、强调什么"
+                      title="去会话里重新生成，可用语言指挥改哪段、强调什么"
                       className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
                     >
                       <RefreshCw className="h-3 w-3" />

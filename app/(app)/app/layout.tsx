@@ -12,7 +12,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 游客可浏览;无会话时 user/workspace 为 null,侧栏显示登录入口。
+  // 游客可浏览；无会话时 user/workspace 为 null,侧栏显示登录入口。
   const me = await getMe();
   const user = me?.user ?? null;
   const workspace = me?.workspace ?? null;
@@ -20,7 +20,7 @@ export default async function AppLayout({
   const isAgency = !!me?.agency && me.agency.status === "ACTIVE";
   const isAdmin = me?.role === "admin";
 
-  // 顶栏要显示积分余额/套餐:登录后取用量;失败则降级(不显示积分,仍可升级)。
+  // 顶栏要显示积分余额/套餐：登录后取用量；失败则降级（不显示积分，仍可升级）。
   let usage: Usage | null = null;
   if (workspace) {
     try {
@@ -42,7 +42,7 @@ export default async function AppLayout({
       >
         <Link
           href="/"
-          aria-label="发现猫 首页"
+          aria-label="发现猫首页"
           className="flex h-16 w-16 shrink-0 items-center justify-center"
         >
           <BrandTile className="h-7 w-7 rounded-lg" />
@@ -51,7 +51,7 @@ export default async function AppLayout({
         <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />
       </aside>
 
-      {/* 会话列表面板:仅「会话」板块(/app/agents*)出现,自身按路由判断,其它板块返回 null */}
+      {/* 会话列表面板：仅「会话」板块（/app/agents*）出现，自身按路由判断，其它板块返回 null */}
       <ConversationRail workspaceId={workspace?.id ?? ""} />
 
       <div className="flex-1 flex flex-col min-w-0">

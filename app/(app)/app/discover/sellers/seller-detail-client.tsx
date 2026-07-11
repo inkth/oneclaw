@@ -163,13 +163,13 @@ export function SellerDetailClient({
           icon={TrendingUp}
           label="总销量"
           value={fmt(s.totalSaleCnt)}
-          hint={s.windows ? `近7天 ${fmt(s.windows.sale7dCnt)} · 近30天 ${fmt(s.windows.sale30dCnt)}` : undefined}
+          hint={s.windows ? `近 7 天 ${fmt(s.windows.sale7dCnt)} · 近 30 天 ${fmt(s.windows.sale30dCnt)}` : undefined}
         />
         <Stat
           icon={DollarSign}
           label="总 GMV"
           value={fmtMoney(s.totalSaleGmv)}
-          hint={s.windows ? `近7天 ${fmtMoney(s.windows.gmv7d)} · 近30天 ${fmtMoney(s.windows.gmv30d)}` : undefined}
+          hint={s.windows ? `近 7 天 ${fmtMoney(s.windows.gmv7d)} · 近 30 天 ${fmtMoney(s.windows.gmv30d)}` : undefined}
         />
         <Stat icon={Users} label="合作达人" value={fmt(s.totalIflCnt)} hint="累计带货达人数" />
         <Stat icon={Video} label="带货视频" value={fmt(s.totalVideoCnt)} hint={`直播 ${fmt(s.totalLiveCnt)} 场`} />
@@ -179,7 +179,7 @@ export function SellerDetailClient({
       <Card>
         <div className="mb-2 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-brand-600" />
-          <span className="text-sm font-medium text-zinc-900">销量 / GMV 趋势(近 14 天)</span>
+          <span className="text-sm font-medium text-zinc-900">销量 / GMV 趋势（近 14 天）</span>
         </div>
         <TrendChart data={s.trend} />
       </Card>

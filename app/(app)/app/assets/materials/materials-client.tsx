@@ -21,7 +21,7 @@ import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { apiBrowser } from "@/lib/api-browser";
 import { CREDIT_COST } from "@/lib/credits";
 
-// 每张图做成商品 = 出 4 张展示图(白底/场景/细节/俯拍),纯出图、不含文案。
+// 每张图做成商品 = 出 4 张展示图（白底/场景/细节/俯拍），纯出图、不含文案。
 const SHOTS_PER_PRODUCT = 4;
 const PER_IMAGE_CREDITS = CREDIT_COST.image * SHOTS_PER_PRODUCT;
 
@@ -108,20 +108,20 @@ export function MaterialsClient({
     });
   }
 
-  // 「把商品图变成商品」:每个 group(一组图)= 一个商品,据组内原图(多角度多参考)出 4 张展示图。
-  // 纯出图、不写文案(文案进商品详情页按需生成)。groups 由调用方按「合并/各做」组装。
+  // 「把商品图变成商品」:每个 group(一组图)= 一个商品，据组内原图（多角度多参考）出 4 张展示图。
+  // 纯出图、不写文案（文案进商品详情页按需生成）。groups 由调用方按「合并/各做」组装。
   async function submitProducts(groups: string[][], merged: boolean) {
     if (gateGuest()) return;
     const valid = groups.filter((g) => g.length > 0);
     if (valid.length === 0) return;
     const total = valid.reduce((n, g) => n + g.length, 0);
     const desc = merged
-      ? `把选中的 ${total} 张图合并成 1 个商品(同款多角度),`
+      ? `把选中的 ${total} 张图合并成 1 个商品（同款多角度）,`
       : `为 ${valid.length} 张图各做 1 个商品,`;
     if (
       !confirm(
-        `${desc}每个商品据原图生成 ${SHOTS_PER_PRODUCT} 张展示图(白底/场景/细节/俯拍)。\n` +
-          `预计消耗约 ${valid.length * PER_IMAGE_CREDITS} 积分。继续?`,
+        `${desc}每个商品据原图生成 ${SHOTS_PER_PRODUCT} 张商品图（白底/场景/细节/俯拍）。\n` +
+          `预计消耗约 ${valid.length * PER_IMAGE_CREDITS} 积分。继续？`,
       )
     )
       return;
@@ -131,11 +131,11 @@ export function MaterialsClient({
         method: "POST",
         body: JSON.stringify({ groups: valid }),
       });
-      toast.success(`已创建 ${valid.length} 个商品,正在生成展示图…`);
+      toast.success(`已创建 ${valid.length} 个商品，正在生成商品图…`);
       exitSelect();
       router.push("/app/assets/products"); // 去「资产 · 我的商品」看卡片「出图中 → 已出图」自填充
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "生成失败");
+      toast.error(e instanceof Error ? e.message : "生成失败，稍后再试");
     } finally {
       setBatchBusy(false);
     }
@@ -163,10 +163,10 @@ export function MaterialsClient({
           setMaterials((prev) => [json.data.material, ...prev]);
           toast.success(`上传成功：${file.name}`);
         } else {
-          toast.error(`${file.name}：${json?.error?.message ?? "上传失败"}`);
+          toast.error(`${file.name}：${json?.error?.message ?? "上传失败，稍后再试"}`);
         }
       } catch (e) {
-        toast.error(`${file.name}：${e instanceof Error ? e.message : "网络错误"}`);
+        toast.error(`${file.name}：${e instanceof Error ? e.message : "网络错误，请检查网络后重试"}`);
       } finally {
         setUploading((prev) => prev.filter((n) => n !== file.name));
       }
@@ -185,7 +185,7 @@ export function MaterialsClient({
       toast.success("已删除");
       router.refresh();
     } else {
-      toast.error("删除失败");
+      toast.error("删除失败，稍后再试");
     }
   }
 
@@ -195,7 +195,7 @@ export function MaterialsClient({
         title="素材库"
         description={
           <>
-            上传你自己的图片 / 视频 / 音频，发现猫 会在视频生成时优先用作底料。
+            上传你自己的图片 / 视频 / 音频，发现猫会在视频生成时优先用作底料。
           </>
         }
         actions={
@@ -207,7 +207,7 @@ export function MaterialsClient({
                 ? "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
                 : "bg-brand-600 text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700"
             }`}
-            title="多选商品图,批量生成商品卡 + Listing"
+            title="多选商品图，批量生成商品卡 + Listing"
           >
             {selectMode ? <X className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5" />}
             {selectMode ? "退出多选" : "批量做商品"}
@@ -298,14 +298,14 @@ export function MaterialsClient({
           {visible.map((m) => {
             const tm = typeMeta[m.type];
             const Icon = tm.icon;
-            const selectable = m.type === "IMAGE"; // 只有商品图能「做商品」(后端也只认 IMAGE)
+            const selectable = m.type === "IMAGE"; // 只有商品图能「做商品」（后端也只认 IMAGE）
             const isSel = selected.has(m.id);
             const picking = selectMode && selectable;
             return (
               <div
                 key={m.id}
                 onClick={picking ? () => toggleSelect(m.id) : undefined}
-                className={`group dk-lift relative rounded-lg border bg-white overflow-hidden transition ${
+                className={`group dk-lift relative rounded-2xl border bg-white overflow-hidden transition ${
                   picking ? "cursor-pointer" : ""
                 } ${
                   isSel
@@ -351,7 +351,7 @@ export function MaterialsClient({
                       onClick={() => submitProducts([[m.id]], false)}
                       disabled={batchBusy}
                       className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-brand-600/95 px-2 py-1 text-2xs font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700 disabled:opacity-60"
-                      title="用这张商品图建一张商品(看图写 Listing + 出主图),产出到「资产 · 我的商品」"
+                      title="用这张商品图建一个商品（看图写 Listing + 出主图），产出到「资产 · 我的商品」"
                     >
                       <Wand2 className="h-2.5 w-2.5" />
                       做成商品
@@ -389,7 +389,7 @@ export function MaterialsClient({
               <button
                 onClick={() => submitProducts([Array.from(selected)], true)}
                 disabled={batchBusy}
-                title="选中的都是同一个商品的不同角度,合并成 1 个商品"
+                title="选中的都是同一个商品的不同角度，合并成 1 个商品"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-medium text-brand-700 hover:bg-[var(--dk-action-regular)] disabled:opacity-60"
               >
                 合并为 1 个商品

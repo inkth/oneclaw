@@ -79,8 +79,8 @@ export function ShopsClient({
   const [modalOpen, setModalOpen] = useState(false);
   const { open: openAuthModal } = useAuthModal();
 
-  // 营收/订单/转化看板只在真有店铺 OAuth 连上(CONNECTED)时显示;
-  // 当前无真实平台对接,一律 PENDING → 看板隐藏,避免永远 0 的伪 dashboard。
+  // 营收/订单/转化看板只在真有店铺 OAuth 连上（CONNECTED）时显示;
+  // 当前无真实平台对接，一律 PENDING → 看板隐藏，避免永远 0 的伪 dashboard。
   const hasMetrics = shops.some((s) => s.status === "CONNECTED");
 
   function gateGuest(): boolean {
@@ -102,7 +102,7 @@ export function ShopsClient({
       toast.success("店铺已删除");
       router.refresh();
     } else {
-      toast.error("删除失败");
+      toast.error("删除失败，稍后再试");
     }
   }
 
@@ -110,7 +110,7 @@ export function ShopsClient({
     <div className="space-y-6">
       <PageHeader
         title="店铺"
-        description="登记你绑定的店铺，Agent 的选品 / 复盘报告会自动归到对应店铺。真实平台对接(OAuth 自动同步订单 / 营收)开发中。"
+        description="登记你绑定的店铺，Agent 的选品 / 复盘报告会自动归到对应店铺。真实平台对接（OAuth 自动同步订单 / 营收）开发中。"
         actions={
           <Button
             variant="primary"
@@ -136,7 +136,7 @@ export function ShopsClient({
         <div className="flex items-start gap-2.5 rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface-2)] p-3.5 text-xs text-zinc-600">
           <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
           <span className="leading-relaxed">
-            营收 / 订单 / 转化看板将在店铺 <span className="font-medium text-zinc-900">OAuth 自动同步</span> 上线后开放(开发中)。当前可登记店铺、关联选品,Agent 的报告会自动归属到对应店铺。
+            营收 / 订单 / 转化看板将在店铺 <span className="font-medium text-zinc-900">OAuth 自动同步</span> 上线后开放（开发中）。当前可登记店铺、关联选品,Agent 的报告会自动归属到对应店铺。
           </span>
         </div>
       )}
@@ -265,7 +265,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
     <EmptyStatePrimitive
       icon={Store}
       title="还没添加店铺"
-      description="把你的 TikTok Shop 店铺先登记进来，Agent 的选品 / 复盘报告会自动归到对应店铺。真实平台对接(OAuth 自动同步商品 / 订单 / 营收)开发中。"
+      description="把你的 TikTok Shop 店铺先登记进来，Agent 的选品 / 复盘报告会自动归到对应店铺。真实平台对接（OAuth 自动同步商品 / 订单 / 营收）开发中。"
       action={
         <Button variant="primary" onClick={onAdd}>
           <Plus className="h-4 w-4" />
@@ -310,7 +310,7 @@ function AddShopModal({
     const json = await res.json();
     setSubmitting(false);
     if (!res.ok || !json.ok) {
-      setError(json?.error?.message || "添加失败");
+      setError(json?.error?.message || "添加失败，稍后再试");
       return;
     }
     onCreated({
@@ -363,7 +363,7 @@ function AddShopModal({
                 })}
             </div>
             <p className="mt-2 text-2xs text-zinc-400">
-              更多平台(Amazon / Shopify / Lazada…)开发中
+              更多平台（Amazon / Shopify / Lazada…）开发中
             </p>
           </div>
 
@@ -395,7 +395,7 @@ function AddShopModal({
 
           <div className="rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface-2)] p-3 text-2xs text-zinc-600 leading-relaxed">
             真实平台对接（OAuth + 拉取订单 / 商品）正在开发中。
-            当前先以「待对接」状态保存，发现猫 会把后续生成的 Agent 报告关联到对应店铺。
+            当前先以「待对接」状态保存，发现猫会把后续生成的 Agent 报告关联到对应店铺。
           </div>
 
           {error && (

@@ -5,7 +5,7 @@ import { Delta } from "./Delta";
 import { Sparkline } from "./Sparkline";
 
 /** 统计卡：图标轻描边、数字主导、可选跳转 / 涨跌 / 迷你趋势。
- *  size="lg" 把核心 KPI 放大（工作台 / 复盘头部）。trend/spark 全可选,向后兼容。 */
+ *  size="lg" 把核心 KPI 放大（工作台 / 复盘头部）。trend/spark 全可选，向后兼容。 */
 export function Stat({
   icon: Icon,
   label,
@@ -53,10 +53,9 @@ export function Stat({
     </>
   );
 
-  // 卡片规格与 dk-card 对齐：8px 圆角 + 发丝边 + 极弱阴影；hover 只做 dk-lift 的整卡缩放，
+  // 卡片规格走 dk-card（16px 圆角、无边框）；hover 只做 dk-lift 的离地阴影，
   // 不再换成 violet 描边（品牌色不进 hover 态装饰，只用于真正的强调场景）。
-  const cls =
-    "group rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface)] shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] p-6";
+  const cls = "group dk-card p-6";
   return href ? (
     <Link href={href} className={cn(cls, "dk-lift")}>
       {inner}

@@ -71,14 +71,14 @@ export function InfluencersClient({
         categoryId={categoryId}
         categories={categories}
         keyword={keyword}
-        searchPlaceholder="搜索达人昵称 / @handle…"
+        searchPlaceholder="搜索达人昵称 / 账号…"
       />
 
       {state === "empty" || influencers.length === 0 ? (
         <EmptyState
           hint={
             searching
-              ? `没找到与「${keyword}」相关的达人。换个关键词,或切换国家 / 地区再搜。`
+              ? `没找到与「${keyword}」相关的达人。换个关键词，或切换国家 / 地区再搜。`
               : undefined
           }
         />
@@ -88,7 +88,7 @@ export function InfluencersClient({
             <tr>
               <Th>#</Th>
               <Th>达人</Th>
-              <Th align="right">带货分</Th>
+              <Th align="right"><span title="综合销量、GMV 与内容表现的带货能力评分，越高越强">带货分</span></Th>
               <Th align="right">粉丝</Th>
               <Th align="right">带货销量</Th>
               <Th align="right">带货 GMV</Th>

@@ -50,8 +50,8 @@ function mapProduct(p: GoProduct): Product {
   };
 }
 
-// 资产 · 我的商品:用户在素材库「批量做商品」生成的自建商品(discoverProductId 为空)。
-// EchoTik 收藏的爆品走「选品 · 收藏」,这里只看自己的货。
+// 资产 · 我的商品：用户在素材库「批量做商品」生成的自建商品（discoverProductId 为空）。
+// EchoTik 收藏的爆品走「选品 · 收藏」，这里只看自己的货。
 export default async function MyProductsPage() {
   const me = await getMe();
   const workspace = me?.workspace ?? null;
@@ -62,7 +62,7 @@ export default async function MyProductsPage() {
         <EmptyState
           icon={Package}
           title="登录后查看你的商品"
-          description="在素材库多选商品图「批量做商品」,生成的商品卡会汇总在这里。"
+          description="在素材库多选商品图「批量做商品」，生成的商品卡会汇总在这里。"
         />
         <div className="text-center">
           <AuthModalTrigger

@@ -1,6 +1,6 @@
-// 新手品类预设:工作台 Workbench 在空账户态渲染为一行 chips,
+// 新手品类预设：工作台 Workbench 在空账户态渲染为一行 chips,
 // 点击预填选品分析 prompt(原 OnboardingCard 整卡 + Step 三连卡已被
-// 快捷功能卡片 + 胶囊行取代,本文件只保留预设数据源)。
+// 快捷功能卡片 + 胶囊行取代，本文件只保留预设数据源)。
 export const industryPresets = [
   { label: "3C 数码", prompt: "找一些适合 TikTok 的 3C 数码新爆品，毛利 45%+，售价 $15-50" },
   { label: "厨房小电", prompt: "找便携、颜值高、单价 $20-60 的厨房小家电，覆盖欧美和东南亚" },

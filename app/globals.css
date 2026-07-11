@@ -196,12 +196,13 @@ body {
   font-weight: 700;
   text-wrap: balance;
 }
-/* 工作台 Hero 标题：照抄 Designkit —— Poppins 32px，字重 400 而非 700。
+/* 工作台 Hero 标题：照抄 Designkit —— Poppins 字重 400 而非 700，
+   窄视口 26px → 宽视口 32px（站点实测 1280 视口是 26px）。
    高级感来自「大字号 + 常规字重 + 110% 行高」，不是来自压字距的粗体。 */
 .text-hero {
   font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
     -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
-  font-size: 2rem;
+  font-size: clamp(1.625rem, 0.55rem + 1.34vw, 2rem);
   line-height: 110%;
   letter-spacing: 0;
   font-weight: 400;
@@ -302,13 +303,12 @@ body {
    页面级氛围光（原 .gradient-bg / .aura-violet）已全部移除：一处铺色，就到处要铺色。 */
 
 /* ---------- 照搬 Designkit 的核心表面原语 ---------- */
-/* 卡片：纯白 + 8px 圆角 + 发丝边。Designkit 的卡片圆角是 8，不是 20 ——
-   20 只用在弹窗/大面板（--radius-20）。 */
+/* 卡片：纯白 + 16px 圆角，无边框无阴影 —— 分层靠纯白卡面压在冷灰画布上的色差，
+   不靠描边（实测 workspace 页白卡只有 16/24 两档，均无边框）。
+   全站圆角阶梯：8 小控件 / 12 导航条目 / 16 卡片 / 24 composer 与弹窗。 */
 .dk-card {
   background: var(--surface);
-  border-radius: 8px;
-  border: 1px solid var(--dk-stroke-overlay);
-  box-shadow: 0 1px 2px rgba(16, 14, 30, 0.03);
+  border-radius: 16px;
 }
 /* 导航轨条目：hover / selected 共用同一个淡蓝灰底 + 12px 圆角。
    Designkit 没有「左缘竖条」，激活靠 填充图标 + 600 字重 + 底色 三者叠加。 */
@@ -321,12 +321,12 @@ body {
   border: 1px solid var(--dk-stroke-border);
 }
 
-/* 主输入框：20px 圆角（取自 Designkit 的表单骨架屏 --radius-20）。
+/* 主输入框：24px 圆角（实测 workspace 的 chat-form 白框）。
    关键是 opacity + backdrop-blur —— 框体本身是半透明磨砂，背后的极光要透过它，
    聚焦时提到 .9 让底色收一点、文字更实。不加这两条，光晕就只是「框外一圈彩色」。 */
 .dk-composer {
   background: var(--surface);
-  border-radius: 20px;
+  border-radius: 24px;
   border: 1px solid var(--dk-stroke-overlay);
   opacity: 0.8;
   backdrop-filter: blur(40px);
@@ -347,13 +347,13 @@ body {
     0 4px 12px -8px rgba(16, 14, 30, 0.12);
 }
 
-/* 可点击卡片：Designkit 的 hover 是整卡放大 1.03（transform .3s ease-in-out），
-   不上浮、不加阴影、不换描边色。 */
+/* 可点击卡片：Designkit 实测的 hover 是「离地阴影」——一圈 2px 定界 + 一层 24px 弥散，
+   无 transform、不换描边色。放大/上浮都比这吵。 */
 .dk-lift {
-  transition: transform 0.3s ease-in-out;
+  transition: box-shadow 0.2s ease-out;
 }
 .dk-lift:hover {
-  transform: scale(1.03);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.08), 0 6px 24px rgba(0, 0, 0, 0.06);
 }
 
 /* ---------- Designkit 输入框光晕（1:1 复刻）----------
@@ -619,7 +619,6 @@ body {
     opacity: 1;
   }
   .lift:hover,
-  .dk-lift:hover,
   .pop:hover {
     transform: none;
   }

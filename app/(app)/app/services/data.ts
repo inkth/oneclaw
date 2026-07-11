@@ -64,7 +64,7 @@ export const CONTACT = {
   wecomUrl: "", // 企业微信「联系我」活码链接 → 自动渲染成二维码，扫码即加顾问
   qrImageSrc: "", // 或：客服微信/企微二维码图片，放进 public/ 后填路径，如 "/contact-qr.png"
   wechatId: "", // 备用：客服微信号，弹窗内展示并支持一键复制
-  email: "hello@oneclaw.ai", // 兜底：始终展示的邮件入口
+  email: "contact@faxianmao.com", // 兜底：始终展示的邮件入口
 };
 
 // 合作方名录。联系方式会在对应服务的「预约咨询」弹窗里直接展示。

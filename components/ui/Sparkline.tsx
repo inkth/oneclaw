@@ -1,7 +1,7 @@
 import { DELTA_STROKE, deltaDir, type DeltaDir } from "@/lib/ui/tokens";
 
 /** 裸 SVG 迷你折线：用于表格 cell 内的时序趋势，轻量、可内联（不用 recharts）。
- *  方向由首尾值决定，正负取统一涨跌色;数据 < 2 点不渲染。 */
+ *  方向由首尾值决定，正负取统一涨跌色；数据 < 2 点不渲染。 */
 export function Sparkline({
   data,
   width = 64,

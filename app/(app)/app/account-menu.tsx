@@ -9,9 +9,9 @@ import { apiBrowser } from "@/lib/api-browser";
 const PLAN_LABEL: Record<string, string> = { FREE: "免费版", PRO: "专业版", TEAM: "团队版" };
 
 /**
- * 顶栏右侧账户区:积分余额 + 升级会员 + 头像下拉菜单(替代原来的独立退出图标)。
- * 桌面端把积分/升级平铺在头像左侧;移动端收进菜单,只留头像。
- * 团队版(limit<0=不限积分)不显示升级入口、积分显示 ∞。
+ * 顶栏右侧账户区：积分余额 + 升级会员 + 头像下拉菜单（替代原来的独立退出图标）。
+ * 桌面端把积分/升级平铺在头像左侧；移动端收进菜单，只留头像。
+ * 团队版（limit<0=不限积分）不显示升级入口、积分显示 ∞。
  */
 export function AccountMenu({
   display,
@@ -51,12 +51,12 @@ export function AccountMenu({
 
   return (
     <div className="flex items-center gap-2">
-      {/* 积分余额(桌面常驻,移动端折进菜单)→ 点击进设置 */}
+      {/* 积分余额（桌面常驻，移动端折进菜单）→ 点击进设置 */}
       {hasCredits && (
         <Link
           href="/app/settings"
           title="本周期积分余额"
-          className={`hidden sm:inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
             low
               ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
               : "border-[var(--dk-stroke-border)] bg-white text-zinc-600 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
@@ -67,7 +67,7 @@ export function AccountMenu({
         </Link>
       )}
 
-      {/* 升级会员(非团队版才显示)*/}
+      {/* 升级会员（非团队版才显示）*/}
       {!isTeam && (
         <Link
           href={upgradeHref}
@@ -108,7 +108,7 @@ export function AccountMenu({
               </div>
             </div>
 
-            {/* 积分(移动端主要靠这里看)*/}
+            {/* 积分（移动端主要靠这里看）*/}
             {hasCredits && (
               <Link
                 href="/app/settings"

@@ -58,7 +58,7 @@ export type VideoDetail = {
     rating: number;
   }[];
   videoUrl: string; // COS 永久 mp4;非空=站内可直接播放
-  analysis: VideoAnalysisData | null; // AI 拆解结果;非空=已拆解
+  analysis: VideoAnalysisData | null; // AI 拆解结果；非空=已拆解
 };
 
 function Img({ src, seed, className }: { src: string; seed: string; className: string }) {
@@ -165,7 +165,7 @@ export function VideoDetailClient({
         }
       />
 
-      {/* Hero:视频(站内可播则直接 <video>,否则封面外链 TikTok)+ 创作者 + 关键数据 */}
+      {/* Hero:视频（站内可播则直接 <video>,否则封面外链 TikTok）+ 创作者 + 关键数据 */}
       <Card className="grid gap-6 sm:grid-cols-[260px_1fr]">
         {v.videoUrl ? (
           <video
@@ -251,7 +251,7 @@ export function VideoDetailClient({
 
       {/* 互动指标 */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat icon={Eye} label="播放" value={fmt(v.views)} hint={v.views7d > 0 ? `近7天 +${fmt(v.views7d)}` : undefined} />
+        <Stat icon={Eye} label="播放" value={fmt(v.views)} hint={v.views7d > 0 ? `近 7 天 +${fmt(v.views7d)}` : undefined} />
         <Stat icon={Heart} label="点赞" value={fmt(v.digg)} />
         <Stat icon={MessageCircle} label="评论" value={fmt(v.comments)} />
         <Stat icon={Share2} label="分享" value={fmt(v.shares)} hint={v.favorites > 0 ? `收藏 ${fmt(v.favorites)}` : undefined} />
@@ -265,9 +265,9 @@ export function VideoDetailClient({
         </div>
       )}
 
-      {/* AI 拆解:逐句脚本 + 带货结构 + 可复用要点 + 改编建议(后台预生成)。
-          默认折叠 —— 逐句脚本动辄几十条,展开后会把下方的带货商品、达人信息挤出屏幕;
-          浏览态看拆解走首页弹层,这里只留一个可展开的入口。 */}
+      {/* AI 拆解：逐句脚本 + 带货结构 + 可复用要点 + 改编建议（后台预生成）。
+          默认折叠 —— 逐句脚本动辄几十条，展开后会把下方的带货商品、达人信息挤出屏幕；
+          浏览态看拆解走首页弹层，这里只留一个可展开的入口。 */}
       {v.analysis && <AnalysisSection data={v.analysis} />}
 
       {/* 视频带货商品 */}
@@ -309,12 +309,12 @@ export function VideoDetailClient({
         </Card>
       )}
 
-      {/* 兜底:无带货商品 */}
+      {/* 兜底：无带货商品 */}
       {v.products.length === 0 && (
         <Card>
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Bookmark className="h-4 w-4 text-zinc-400" />
-            该视频暂无关联带货商品(纯内容/品牌视频)。
+            该视频暂无关联带货商品（纯内容/品牌视频）。
           </div>
         </Card>
       )}
