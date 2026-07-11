@@ -13,7 +13,7 @@ type ListingMeta = NonNullable<StreamTask["metadata"]>;
 function copy(text: string, label: string) {
   navigator.clipboard.writeText(text).then(
     () => toast.success(`${label}已复制`),
-    () => toast.error("复制失败,请手动选择文本"),
+    () => toast.error("复制失败，请手动选择文本"),
   );
 }
 
@@ -31,14 +31,14 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
 }
 
 /**
- * LISTING 任务的结构化结果卡:标题/五点/A+/标签逐区块可复制,
- * 主图走「确认生成」流程(同 DIRECTOR 出片):PENDING 出按钮 → RUNNING 组件内轮询 → DONE 图片网格。
- * 工作台全局轮询只管 QUEUED/RUNNING 任务,出图发生在任务 DONE 之后,所以这里自己轮询。
+ * LISTING 任务的结构化结果卡：标题/五点/A+/标签逐区块可复制,
+ * 主图走「确认生成」流程（同 DIRECTOR 出片）:PENDING 出按钮 → RUNNING 组件内轮询 → DONE 图片网格。
+ * 工作台全局轮询只管 QUEUED/RUNNING 任务，出图发生在任务 DONE 之后，所以这里自己轮询。
  */
 export function ListingResults({ task }: { task: StreamTask }) {
   const [meta, setMeta] = useState<ListingMeta>(task.metadata ?? {});
   const [submitting, setSubmitting] = useState(false);
-  // 主图回写商品:记录已设为主图的那张 + 正在回写的那张。
+  // 主图回写商品：记录已设为主图的那张 + 正在回写的那张。
   const [appliedUrl, setAppliedUrl] = useState<string | null>(null);
   const [applyingUrl, setApplyingUrl] = useState<string | null>(null);
   const running = meta.imagesStatus === "RUNNING";
@@ -57,13 +57,13 @@ export function ListingResults({ task }: { task: StreamTask }) {
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.message || json?.error?.message || "回写失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "回写失败，稍后再试");
         return;
       }
       setAppliedUrl(url);
       toast.success("已设为商品主图");
     } catch {
-      toast.error("网络异常,稍后再试");
+      toast.error("网络异常，稍后再试");
     } finally {
       setApplyingUrl(null);
     }
@@ -80,7 +80,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
         const fresh = (json?.data?.task ?? json?.task) as StreamTask | undefined;
         if (res.ok && fresh?.metadata) setMeta(fresh.metadata);
       } catch {
-        // 网络抖动忽略,下个周期重试
+        // 网络抖动忽略，下个周期重试
       }
     }, 5000);
     return () => clearInterval(timer);
@@ -96,13 +96,13 @@ export function ListingResults({ task }: { task: StreamTask }) {
       );
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        toast.error(json?.message || json?.error?.message || "提交失败,稍后再试");
+        toast.error(json?.message || json?.error?.message || "提交失败，稍后再试");
         return;
       }
       setMeta((m) => ({ ...m, imagesStatus: "RUNNING" }));
-      toast.success("已开始生成主图,约 1-2 分钟");
+      toast.success("已开始生成主图，约 1-2 分钟");
     } catch {
-      toast.error("网络异常,稍后再试");
+      toast.error("网络异常，稍后再试");
     } finally {
       setSubmitting(false);
     }
@@ -147,14 +147,14 @@ export function ListingResults({ task }: { task: StreamTask }) {
         </div>
       )}
 
-      {/* A+ 图文结构 */}
+      {/* 图文详情结构 */}
       {sections.length > 0 && (
         <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
-            <div className="text-2xs font-medium text-zinc-400">A+ 图文结构</div>
+            <div className="text-2xs font-medium text-zinc-400">图文详情结构</div>
             <CopyBtn
               text={sections.map((s) => `${s.heading}\n${s.body}\n配图 prompt: ${s.imagePrompt}`).join("\n\n")}
-              label="A+ 内容"
+              label="图文详情"
             />
           </div>
           <div className="mt-1.5 space-y-2">
@@ -163,7 +163,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
                 <div className="text-xs font-semibold text-ink">{s.heading}</div>
                 <div className="mt-0.5 leading-relaxed text-zinc-600">{s.body}</div>
                 {s.imagePrompt && (
-                  <div className="mt-1 text-2xs leading-relaxed text-zinc-400">配图:{s.imagePrompt}</div>
+                  <div className="mt-1 text-2xs leading-relaxed text-zinc-400">配图：{s.imagePrompt}</div>
                 )}
               </div>
             ))}
@@ -171,7 +171,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
         </div>
       )}
 
-      {/* 主图:已出图展示网格;否则按 imagesStatus 走确认生成流程 */}
+      {/* 主图：已出图展示网格；否则按 imagesStatus 走确认生成流程 */}
       {(prompts.length > 0 || images.length > 0) && (
         <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2.5">
           <div className="text-2xs font-medium text-zinc-400">Listing 主图</div>
@@ -216,7 +216,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
               </div>
               {meta.productId && (
                 <p className="mt-1.5 text-2xs text-zinc-400">
-                  设为主图后,会回写到选品库该商品(替换原图),做视频选商品时即用这张。
+                  设为主图后，会回写到收藏里的该商品（替换原图），做视频选商品时即用这张。
                 </p>
               )}
             </>
@@ -233,7 +233,7 @@ export function ListingResults({ task }: { task: StreamTask }) {
               {running ? (
                 <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  正在生成主图,约 1-2 分钟,完成后会出现在这里…
+                  正在生成主图，约 1-2 分钟，完成后会出现在这里…
                 </div>
               ) : meta.imagesStatus === "PENDING" || meta.imagesStatus === "FAILED" ? (
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -258,9 +258,9 @@ export function ListingResults({ task }: { task: StreamTask }) {
                   <CreditCost credits={CREDIT_COST.image * Math.min(prompts.length, 3)} />
                   <span className="text-2xs text-zinc-400">
                     {meta.imagesStatus === "FAILED"
-                      ? "上次生成失败,可直接重试"
+                      ? "上次生成失败，可直接重试"
                       : `最多出 ${Math.min(prompts.length, 3)} 张 · 确认后才消耗积分`}
-                    {meta.coverUrl ? " · 以商品实拍图为参考,真货入画" : ""}
+                    {meta.coverUrl ? " · 以商品实拍图为参考，真货入画" : ""}
                   </span>
                 </div>
               ) : null}

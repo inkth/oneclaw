@@ -8,8 +8,8 @@ import type { StreamTask } from "./task-stream";
 import { authFetch } from "@/lib/api-browser";
 
 /**
- * 虚拟试穿结果:任务 DONE 后出图仍异步进行,按 imagesStatus 自轮询。
- * 输入两张图(模特 / 服饰)+ 输出上身图;失败给可重试提示(重新派活)。
+ * 虚拟试穿结果：任务 DONE 后出图仍异步进行，按 imagesStatus 自轮询。
+ * 输入两张图（模特 / 服饰）+ 输出上身图；失败给可重试提示（重新派活）。
  */
 export function TryOnResult({ task }: { task: StreamTask }) {
   const [meta, setMeta] = useState(task.metadata ?? {});
@@ -24,7 +24,7 @@ export function TryOnResult({ task }: { task: StreamTask }) {
         const fresh = (json?.data?.task ?? json?.task) as StreamTask | undefined;
         if (res.ok && fresh?.metadata) setMeta(fresh.metadata);
       } catch {
-        // 网络抖动忽略,下个周期重试
+        // 网络抖动忽略，下个周期重试
       }
     }, 4000);
     return () => clearInterval(timer);
@@ -46,7 +46,7 @@ export function TryOnResult({ task }: { task: StreamTask }) {
               <Image src={result} alt="上身效果图" fill sizes="128px" unoptimized className="object-cover" />
             ) : meta.imagesStatus === "FAILED" ? (
               <div className="flex h-full items-center justify-center px-2 text-center text-2xs text-rose-500">
-                出图失败,积分已退回
+                出图失败，积分已退回
               </div>
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-1.5 text-2xs text-zinc-400">
@@ -79,7 +79,7 @@ export function TryOnResult({ task }: { task: StreamTask }) {
       )}
       {meta.imagesStatus === "FAILED" && (
         <p className="text-2xs text-zinc-400">
-          {meta.imagesError ?? "可换一位模特或换一张更清晰的服饰平铺图,重新发起试穿。"}
+          {meta.imagesError ?? "可换一位模特或换一张更清晰的服饰平铺图，重新发起试穿。"}
         </p>
       )}
     </div>

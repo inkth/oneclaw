@@ -1,8 +1,8 @@
 /**
- * 选品各榜共用的纯展示格式化工具(无副作用,Client / Server 都可用)。
+ * 选品各榜共用的纯展示格式化工具（无副作用,Client / Server 都可用）。
  */
 
-/** 紧凑数字:12.3K / 4.5M */
+/** 紧凑数字：12.3K / 4.5M */
 export function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -10,7 +10,7 @@ export function fmt(n: number): string {
   return n.toLocaleString();
 }
 
-/** 紧凑金额(美元):$1.23M / $4.5K / $9.99 */
+/** 紧凑金额（美元）:$1.23M / $4.5K / $9.99 */
 export function fmtMoney(n: number): string {
   if (!Number.isFinite(n)) return "$0";
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
@@ -18,7 +18,7 @@ export function fmtMoney(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-/** 把任意字符串映射成稳定的渐变色,给缺图的封面/头像当占位。 */
+/** 把任意字符串映射成稳定的渐变色，给缺图的封面/头像当占位。 */
 export function stringToGradient(s: string): string {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -27,7 +27,7 @@ export function stringToGradient(s: string): string {
   return `linear-gradient(135deg, hsl(${hue1} 70% 55%), hsl(${hue2} 70% 65%))`;
 }
 
-/** 取字符串首个有效字符(去掉前导 [标签] / @ / 空白)做占位字母。 */
+/** 取字符串首个有效字符（去掉前导 [标签] / @ / 空白）做占位字母。 */
 export function initial(s: string): string {
   const cleaned = s.replace(/\[.*?\]/g, "").replace(/^@/, "").trim();
   return (cleaned.charAt(0) || "?").toUpperCase();
@@ -41,7 +41,7 @@ export function fmtDuration(sec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-/** unix 秒(字符串或数字)→ 本地日期 YYYY-MM-DD。 */
+/** unix 秒（字符串或数字）→ 本地日期 YYYY-MM-DD。 */
 export function fmtUnixDate(unixSeconds: string | number): string {
   const n = typeof unixSeconds === "string" ? Number(unixSeconds) : unixSeconds;
   if (!n) return "—";

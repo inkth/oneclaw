@@ -61,7 +61,7 @@ export default async function VideoDetailPage({
         <EmptyState
           icon={Clapperboard}
           title="视频暂不可用"
-          description="该视频数据暂时取不到,或数据源不可用。请回到视频榜重试。"
+          description="该视频数据暂时取不到，或数据源不可用。请回到视频榜重试。"
         />
       </div>
     );

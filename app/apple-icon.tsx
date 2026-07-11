@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { CAT_MARK_PATH } from "@/components/ui/BrandMark";
 
 // iOS「添加到主屏」图标。此前缺失,Safari 只能拿 32px 的 favicon 硬撑。
-// 不加圆角:iOS 自己会套 squircle 蒙版,我们画圆角就会被裁两次。
+// 不加圆角：iOS 自己会套 squircle 蒙版，我们画圆角就会被裁两次。
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 

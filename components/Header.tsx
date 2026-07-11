@@ -16,7 +16,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full glass border-b border-zinc-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <a href="/intro" aria-label="发现猫 首页">
+          <a href="/intro" aria-label="发现猫首页">
             <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
           </a>
 

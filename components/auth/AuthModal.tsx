@@ -8,11 +8,12 @@ import { toast } from "sonner";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { LoginForm } from "./LoginForm";
 
-const PITCH_KEYS = ["ANALYST", "DIRECTOR", "REVIEW"] as const;
+const PITCH_KEYS = ["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const;
 
 const PITCH_DESC: Record<(typeof PITCH_KEYS)[number], string> = {
   ANALYST: "TikTok 真实销售数据，AI 判断能不能做",
   DIRECTOR: "商品图到带货视频，10 分钟出片",
+  LISTING: "英文标题、卖点到主图，一次备齐可上架",
   REVIEW: "上传投放报表，AI 告诉你停谁加谁",
 };
 
@@ -63,7 +64,7 @@ export function AuthModal({
           <X className="h-4 w-4" />
         </button>
 
-        {/* 左：品牌面板（桌面端）。用 --accent-pop 而非硬编码色值,与全站电紫点睛通道同源 */}
+        {/* 左：品牌面板（桌面端）。用 --accent-pop 而非硬编码色值，与全站电紫点睛通道同源 */}
         <div className="hidden flex-col justify-between bg-[var(--accent-pop)] p-8 text-white md:flex">
           <div>
             <div className="flex items-center gap-2.5">
@@ -115,7 +116,7 @@ export function AuthModal({
         {/* 右：登录表单 */}
         <div className="p-6 sm:p-8">
           <h2 className="text-lg font-bold tracking-tight">
-            {context?.title ?? "登录 / 注册 发现猫"}
+            {context?.title ?? "登录 / 注册发现猫"}
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
             {context?.desc ?? "中国大陆手机号，验证码登录，新用户自动开通工作台。"}

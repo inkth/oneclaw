@@ -5,7 +5,7 @@ import { Delta } from "./Delta";
 import { Sparkline } from "./Sparkline";
 
 /** 统计卡：图标轻描边、数字主导、可选跳转 / 涨跌 / 迷你趋势。
- *  size="lg" 把核心 KPI 放大（工作台 / 复盘头部）。trend/spark 全可选,向后兼容。 */
+ *  size="lg" 把核心 KPI 放大（工作台 / 复盘头部）。trend/spark 全可选，向后兼容。 */
 export function Stat({
   icon: Icon,
   label,

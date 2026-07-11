@@ -24,11 +24,11 @@ export function SubscribeForm({ source = "landing-footer" }: { source?: string }
     const json = await res.json();
     if (!res.ok || !json.ok) {
       setState("error");
-      setMessage(json?.error?.message || "订阅失败");
+      setMessage(json?.error?.message || "订阅失败，稍后再试");
       return;
     }
     setState("done");
-    setMessage("已加入订阅，下周一见 👋");
+    setMessage("已加入订阅，下周一见");
   }
 
   if (state === "done") {

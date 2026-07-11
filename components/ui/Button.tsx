@@ -5,7 +5,7 @@ type Variant = "primary" | "brand" | "vibrant" | "secondary" | "ghost" | "subtle
 type Size = "sm" | "md" | "lg";
 
 // primary = 中性强操作（发送/确认）→ 近黑胶囊；
-// brand / vibrant = 品牌级主 CTA → 电紫「点睛」(.pop-cta，恒电紫，不被 app-skin 近黑级联压制)，
+// brand / vibrant = 品牌级主 CTA → 电紫「点睛」（.pop-cta，恒电紫，不被 app-skin 近黑级联压制），
 // 让关键转化动作（收藏爆品 / 升级会员 等）发声。
 // 全部取自 Designkit 的 --background-btn-* token。注意它的主操作是近黑而非品牌色，
 // 品牌色只留给「成交」级动作（brand / vibrant）。

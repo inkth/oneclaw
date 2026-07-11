@@ -17,7 +17,7 @@ type AnalysisStructure = {
   cta?: string;
 };
 
-/** 视频拆解结果数据(后端 videoAnalysisOut / runVideoAnalysis 写入的结构)。 */
+/** 视频拆解结果数据（后端 videoAnalysisOut / runVideoAnalysis 写入的结构）。 */
 export type VideoAnalysisData = {
   lang?: string;
   title?: string;
@@ -29,7 +29,7 @@ export type VideoAnalysisData = {
 };
 
 /**
- * 视频解析结果:逐句脚本(原文/中文双列、带时间码)+ 带货结构拆解 + 可复用要点 + 改编建议。
+ * 视频解析结果：逐句脚本（原文/中文双列、带时间码）+ 带货结构拆解 + 可复用要点 + 改编建议。
  * 数据来自 VIDEO_ANALYSIS 任务的 metadata 或选品视频详情的 analysis(后端结构一致)。
  */
 export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null }) {
@@ -57,7 +57,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
       await navigator.clipboard.writeText(text);
       toast.success("已复制逐句脚本");
     } catch {
-      toast.error("复制失败,请手动选择");
+      toast.error("复制失败，请手动选择");
     }
   }
 
@@ -67,7 +67,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
         <p className="text-sm leading-relaxed text-zinc-600">{summary}</p>
       )}
 
-      {/* 逐句脚本:时间码 + 原文 + 中文翻译 */}
+      {/* 逐句脚本：时间码 + 原文 + 中文翻译 */}
       {lines.length > 0 ? (
         <section className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -106,7 +106,7 @@ export function VideoAnalysisResult({ data }: { data?: VideoAnalysisData | null 
         </section>
       ) : (
         <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          未检测到口播台词(可能是纯音乐/无人声),以下基于画面与节奏的拆解。
+          未检测到口播台词（可能是纯音乐/无人声），以下基于画面与节奏的拆解。
         </p>
       )}
 

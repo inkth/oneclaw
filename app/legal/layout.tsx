@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-// 法律页通用外壳:站点 Header/Footer + 居中正文排版。服务条款 / 隐私政策共用。
+// 法律页通用外壳：站点 Header/Footer + 居中正文排版。服务条款 / 隐私政策共用。
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white">

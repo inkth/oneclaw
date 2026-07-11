@@ -30,7 +30,7 @@ type ModelAsset = {
   avatarUrl: string | null;
   usageCount: number;
   isFavorite: boolean;
-  /** 全局预置人设:所有工作台可见,只读(不可收藏/删除)。 */
+  /** 全局预置人设：所有工作台可见，只读（不可收藏/删除）。 */
   isPreset?: boolean;
   createdAt: string;
 };
@@ -99,7 +99,7 @@ export function ModelsClient({
       toast.success(`已加入：${p.name}`);
       router.refresh();
     } else {
-      toast.error(json?.error?.message ?? "创建失败");
+      toast.error(json?.error?.message ?? "创建失败，稍后再试");
     }
   }
 
@@ -297,7 +297,7 @@ function CreateModelModal({
     const json = await res.json();
     setSubmitting(false);
     if (!res.ok || !json.ok) {
-      setError(json?.error?.message ?? "创建失败");
+      setError(json?.error?.message ?? "创建失败，稍后再试");
       return;
     }
     onCreated(json.data.model);

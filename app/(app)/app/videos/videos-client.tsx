@@ -97,14 +97,14 @@ export function VideosClient({
     const json = await res.json().catch(() => null);
     setRetryingId(null);
     if (res.ok && json?.ok && json.data.video) {
-      // 状态切回 GENERATING 后,既有轮询 effect 会自动接管
+      // 状态切回 GENERATING 后，既有轮询 effect 会自动接管
       setVideos((prev) =>
         prev.map((v) => (v.id === id ? { ...v, ...json.data.video } : v)),
       );
     }
   }
 
-  // 重出后重新拉全量列表:新片(GENERATING)即时上墙,既有轮询接管后续状态。
+  // 重出后重新拉全量列表：新片（GENERATING）即时上墙，既有轮询接管后续状态。
   async function reload() {
     const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos`);
     const json = await res.json().catch(() => null);
@@ -114,7 +114,7 @@ export function VideosClient({
   }
 
   async function deleteVideo(id: string) {
-    if (!confirm("确定删除这条视频？fal 上的资产将无法找回。")) return;
+    if (!confirm("确定删除这条视频？删除后无法恢复。")) return;
     const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos/${id}`, {
       method: "DELETE",
     });
@@ -156,7 +156,7 @@ export function VideosClient({
               ) : (
                 <MediaPlaceholder seed={v.id} icon={Video} rounded="rounded-none" className="absolute inset-0" />
               )}
-              {/* 去渐变(硬规则):封面遮罩改纯色半透明黑,只为给上下叠字/徽章提对比度 */}
+              {/* 去渐变（硬规则）:封面遮罩改纯色半透明黑，只为给上下叠字/徽章提对比度 */}
               <div className="absolute inset-0 bg-black/25" />
 
               {/* 视频播放 / 处理状态 */}
@@ -225,7 +225,7 @@ export function VideosClient({
                     rel="noopener noreferrer"
                     download={`${v.title}.mp4`}
                     className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700 hover:bg-emerald-100"
-                    title="下载视频（fal CDN 链接 48h 后失效，建议尽快保存）"
+                    title="下载视频（在线链接 48 小时后失效，建议尽快保存）"
                   >
                     <Download className="h-2.5 w-2.5" />
                   </a>
@@ -248,7 +248,7 @@ export function VideosClient({
                     onClick={() => refresh(v.id)}
                     disabled={refreshingId === v.id}
                     className="inline-flex items-center gap-0.5 rounded-full bg-[var(--dk-btn-tertiary)] px-1.5 py-0.5 text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)] disabled:opacity-50"
-                    title="检查 fal 状态"
+                    title="检查生成状态"
                   >
                     <RefreshCw
                       className={`h-2.5 w-2.5 ${

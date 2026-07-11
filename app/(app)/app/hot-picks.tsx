@@ -23,8 +23,8 @@ export type HotPick = {
 };
 
 /**
- * 驾驶舱的今日爆品推荐:EchoTik 榜单前 3,带「收藏 / AI 分析」接力。
- * 游客可看榜,操作走登录引导;交互与发现页同款(收藏 → 选品候选,分析 → ANALYST 任务轮询)。
+ * 驾驶舱的今日爆品推荐：EchoTik 榜单前 3，带「收藏 / AI 分析」接力。
+ * 游客可看榜，操作走登录引导；交互与发现页同款（收藏 → 选品候选，分析 → ANALYST 任务轮询）。
  */
 export function HotPicks({
   workspaceId,
@@ -46,7 +46,7 @@ export function HotPicks({
     if (!isGuest) return false;
     openAuthModal({
       title: "登录后即可操作",
-      desc: "收藏、AI 分析都需要账号。榜单随便逛,登录后一键操作。",
+      desc: "收藏、AI 分析都需要账号。榜单随便逛，登录后一键操作。",
     });
     return true;
   }
@@ -73,7 +73,7 @@ export function HotPicks({
       );
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "加入失败");
+      toast.error(e instanceof Error ? e.message : "收藏失败");
     } finally {
       setImporting((prev) => {
         const n = new Set(prev);
@@ -83,7 +83,7 @@ export function HotPicks({
     }
   }
 
-  // AI 可行性分析:派发 ANALYST 任务 → 轮询 → toast 弹判定(与发现页同链路)。
+  // AI 可行性分析：派发 ANALYST 任务 → 轮询 → toast 弹判定（与发现页同链路）。
   async function analyzeProduct(p: HotPick) {
     if (analyzing.has(p.productId) || gateGuest()) return;
     setAnalyzing((prev) => new Set(prev).add(p.productId));
@@ -111,7 +111,7 @@ export function HotPicks({
       }
       toast.message("分析仍在进行", { description: "稍后可在下方任务进展里查看结果" });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "分析失败");
+      toast.error(e instanceof Error ? e.message : "分析失败，稍后再试");
     } finally {
       setAnalyzing((prev) => {
         const n = new Set(prev);

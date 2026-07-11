@@ -148,7 +148,7 @@ export function InfluencerDetailClient({
           <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
             {i.ecScore > 0 && (
               <div>
-                <div className="text-xs text-zinc-500">带货分</div>
+                <div className="text-xs text-zinc-500" title="综合销量、GMV 与内容表现的带货能力评分，越高越强">带货分</div>
                 <div className="inline-flex items-center gap-1 text-2xl font-semibold tabular-nums text-brand-600">
                   <Award className="h-5 w-5" />
                   {i.ecScore.toFixed(2)}
@@ -159,7 +159,7 @@ export function InfluencerDetailClient({
               <div className="text-xs text-zinc-500">粉丝</div>
               <div className="text-2xl font-semibold tabular-nums">{fmt(i.followers)}</div>
               {i.followers30d > 0 && (
-                <div className="mt-0.5 text-2xs text-emerald-600">近30天 +{fmt(i.followers30d)}</div>
+                <div className="mt-0.5 text-2xs text-emerald-600">近 30 天 +{fmt(i.followers30d)}</div>
               )}
             </div>
             {i.interactionRate > 0 && (
@@ -193,7 +193,7 @@ export function InfluencerDetailClient({
 
       {/* 核心指标 */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat icon={Users} label="粉丝" value={fmt(i.followers)} hint={i.followers30d > 0 ? `近30天 +${fmt(i.followers30d)}` : undefined} />
+        <Stat icon={Users} label="粉丝" value={fmt(i.followers)} hint={i.followers30d > 0 ? `近 30 天 +${fmt(i.followers30d)}` : undefined} />
         <Stat icon={Eye} label="总播放" value={fmt(i.totalViewsCnt)} hint={`累计点赞 ${fmt(i.totalDiggCnt)}`} />
         <Stat icon={DollarSign} label="带货 GMV" value={fmtMoney(i.totalSaleGmv)} hint={`带货 ${fmt(i.totalSaleCnt)} 件`} />
         <Stat icon={Video} label="作品数" value={fmt(i.postVideoCnt)} hint={`带货商品 ${fmt(i.productCnt)}`} />
@@ -203,7 +203,7 @@ export function InfluencerDetailClient({
       <Card>
         <div className="mb-2 flex items-center gap-2">
           <Users className="h-4 w-4 text-brand-600" />
-          <span className="text-sm font-medium text-zinc-900">粉丝增长趋势(近 14 天)</span>
+          <span className="text-sm font-medium text-zinc-900">粉丝增长趋势（近 14 天）</span>
         </div>
         <TrendChart data={i.trend} series={FOLLOWER_SERIES} empty="暂无粉丝趋势数据" />
       </Card>

@@ -3,15 +3,15 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { CAT_MARK_PATH } from "@/components/ui/BrandMark";
 
-// 分享到微信 / X 时的品牌卡片。此前缺失,链接是一张白板。
+// 分享到微信 / X 时的品牌卡片。此前缺失，链接是一张白板。
 export const alt = "发现猫 · TikTok Shop 出海全链路";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Satori 自带字体不含中文,不喂字体「发现猫」会渲染成豆腐块。
+// Satori 自带字体不含中文，不喂字体「发现猫」会渲染成豆腐块。
 // 完整思源黑体简体分片 1.5MB,超过 ImageResponse 的 500KB 打包上限,
-// 故 app/_brand/wordmark-600.ttf 是只含本图用到的字的子集(21KB)。
-// 改这张图的文案 = 要重新子集化,否则新字渲染不出来。
+// 故 app/_brand/wordmark-600.ttf 是只含本图用到的字的子集（21KB）。
+// 改这张图的文案 = 要重新子集化，否则新字渲染不出来。
 const FONT = join(process.cwd(), "app/_brand/wordmark-600.ttf");
 
 // Satori 不认内联 <svg>,只能吃 <img> 里的 SVG。必须 base64:

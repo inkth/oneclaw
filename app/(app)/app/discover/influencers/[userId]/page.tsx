@@ -75,7 +75,7 @@ export default async function InfluencerDetailPage({
         <EmptyState
           icon={Users}
           title="达人暂不可用"
-          description="该达人数据暂时取不到,或数据源不可用。请回到达人榜重试。"
+          description="该达人数据暂时取不到，或数据源不可用。请回到达人榜重试。"
         />
       </div>
     );

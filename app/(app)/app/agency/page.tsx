@@ -10,7 +10,7 @@ import {
 
 export const metadata = { title: "推广中心 · 发现猫" };
 
-/** 代理商专页。非代理商(后端 /agency/summary 返回 403)重定向回工作台。 */
+/** 代理商专页。非代理商（后端 /agency/summary 返回 403）重定向回工作台。 */
 export default async function AgencyPage() {
   const me = await getMe();
   if (!me) redirect("/login?callbackUrl=/app/agency");

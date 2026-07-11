@@ -20,7 +20,7 @@ export function EmptyState({ hint }: { hint?: string }) {
   );
 }
 
-/** 缩略图:有图显示图,无图用名字生成稳定渐变 + 首字母占位。 */
+/** 缩略图：有图显示图，无图用名字生成稳定渐变 + 首字母占位。 */
 export function Thumb({
   src,
   name,
@@ -33,8 +33,8 @@ export function Thumb({
   rounded?: boolean;
 }) {
   const shape = rounded ? className.replace(/rounded-\S+/, "rounded-full") : className;
-  // 图片加载失败(签名过期 / 防盗链 / 网络)时回退渐变占位,不露浏览器裂图。
-  // 记录失败的具体 src:换榜/翻页后 src 变化会自动重新尝试新图(纯 boolean 会卡在占位)。
+  // 图片加载失败（签名过期 / 防盗链 / 网络）时回退渐变占位，不露浏览器裂图。
+  // 记录失败的具体 src:换榜/翻页后 src 变化会自动重新尝试新图（纯 boolean 会卡在占位）。
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   if (src && failedSrc !== src) {
     // eslint-disable-next-line @next/next/no-img-element

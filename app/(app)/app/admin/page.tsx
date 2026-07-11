@@ -9,7 +9,7 @@ import {
 
 export const metadata = { title: "管理后台 · 发现猫" };
 
-/** 管理后台。前端按 role 拦截(体验层),真正安全边界是后端 RequireAdmin 中间件。 */
+/** 管理后台。前端按 role 拦截（体验层），真正安全边界是后端 RequireAdmin 中间件。 */
 export default async function AdminPage() {
   const me = await getMe();
   if (!me) redirect("/login?callbackUrl=/app/admin");

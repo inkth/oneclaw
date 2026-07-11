@@ -48,7 +48,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
         toast.success("验证码已发送");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "发送失败");
+      setError(e instanceof Error ? e.message : "发送失败，稍后再试");
     } finally {
       setSending(false);
     }

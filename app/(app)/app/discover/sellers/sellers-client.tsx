@@ -76,7 +76,7 @@ export function SellersClient({
         <EmptyState
           hint={
             searching
-              ? `没找到与「${keyword}」相关的店铺。换个关键词,或切换国家 / 地区再搜。`
+              ? `没找到与「${keyword}」相关的店铺。换个关键词，或切换国家 / 地区再搜。`
               : undefined
           }
         />
