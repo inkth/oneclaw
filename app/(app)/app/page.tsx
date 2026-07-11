@@ -67,9 +67,11 @@ export default async function DashboardPage({
         </p>
       </div>
 
-      {/* key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*) */}
+      {/* key：弹窗内登录后 refresh 重传 props，强制重挂载以重置 useState(initial*)。
+          接力参数也进 key —— 从 /app 自身 push 回 /app?agent=…&prompt=… 是软导航，
+          key 不变则组件不重挂载，预填指令会被已有 state 吞掉。 */}
       <Workbench
-        key={user?.id ?? "guest"}
+        key={[user?.id ?? "guest", initialAgent, initialInput, initialProductId, initialMaterialId].join("|")}
         workspaceId={workspace?.id ?? ""}
         isGuest={!workspace}
         showStream={false}

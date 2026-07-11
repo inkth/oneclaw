@@ -24,6 +24,7 @@ import {
   Star,
   Megaphone,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 
 export type VideoDetail = {
@@ -74,6 +75,40 @@ function Img({ src, seed, className }: { src: string; seed: string; className: s
   }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt="" className={className} loading="lazy" onError={() => setFailed(true)} />;
+}
+
+/** AI 拆解:默认折叠。折叠时只露标题 + 概述两行,展开才铺开逐句脚本与结构。 */
+function AnalysisSection({ data }: { data: VideoAnalysisData }) {
+  const [open, setOpen] = useState(false);
+  const lineCount = data.lines?.length ?? 0;
+
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 text-left"
+      >
+        <Sparkles className="h-4 w-4 shrink-0 text-fuchsia-500" />
+        <span className="text-sm font-medium text-zinc-900">AI 拆解</span>
+        <span className="text-xs text-zinc-400">
+          这条为什么爆 · 可直接借鉴{lineCount > 0 ? ` · ${lineCount} 句脚本` : ""}
+        </span>
+        <ChevronDown
+          className={`ml-auto h-4 w-4 shrink-0 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <VideoAnalysisResult data={data} />
+      ) : (
+        data.summary && (
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500">{data.summary}</p>
+        )
+      )}
+    </Card>
+  );
 }
 
 export function VideoDetailClient({
@@ -230,17 +265,10 @@ export function VideoDetailClient({
         </div>
       )}
 
-      {/* AI 拆解:逐句脚本 + 带货结构 + 可复用要点 + 改编建议(后台预生成) */}
-      {v.analysis && (
-        <Card>
-          <div className="mb-1 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-fuchsia-500" />
-            <span className="text-sm font-medium text-zinc-900">AI 拆解</span>
-            <span className="text-xs text-zinc-400">这条为什么爆 · 可直接借鉴</span>
-          </div>
-          <VideoAnalysisResult data={v.analysis} />
-        </Card>
-      )}
+      {/* AI 拆解:逐句脚本 + 带货结构 + 可复用要点 + 改编建议(后台预生成)。
+          默认折叠 —— 逐句脚本动辄几十条,展开后会把下方的带货商品、达人信息挤出屏幕;
+          浏览态看拆解走首页弹层,这里只留一个可展开的入口。 */}
+      {v.analysis && <AnalysisSection data={v.analysis} />}
 
       {/* 视频带货商品 */}
       {v.products.length > 0 && (
