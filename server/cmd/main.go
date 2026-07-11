@@ -174,6 +174,23 @@ func main() {
 			logger.Info("[backfill] 商品全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
 			return
 		}
+		// 一次性:清理库里遗留的 mock 占位数据(历史上 EchoTik 短暂不可用时错误兜底落进过库)。幂等。
+		// 用法:docker compose run --rm go-api ./server --purge-mock
+		if arg == "--purge-mock" {
+			rep, err := discSvc.PurgeMockData(context.Background())
+			if err != nil {
+				logger.Fatal("[purge-mock] 清理 mock 数据失败", logger.Err(err))
+			}
+			logger.Info("[purge-mock] 清理 mock 数据完成",
+				zap.Int64("products", rep.Products),
+				zap.Int64("importedCandidates", rep.ImportedCandidates),
+				zap.Int64("sellers", rep.Sellers),
+				zap.Int64("influencers", rep.Influencers),
+				zap.Int64("videos", rep.Videos),
+				zap.Int64("ranklistEntriesFixed", rep.RanklistEntriesFixed),
+			)
+			return
+		}
 		// 一次性:整个选品板块四榜(商品/店铺/达人/视频)全量本地化。同样 1 req/s、断点续跑。
 		// 用法:docker compose run --rm go-api ./server --backfill-discover
 		if arg == "--backfill-discover" {
@@ -188,6 +205,16 @@ func main() {
 
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)
 	tplSvc := service.NewTemplateService(db, llmClient)
+
+	// 自愈:每次启动清掉任何遗留的 mock 占位数据(历史错误兜底落库的存量)。
+	// 使生产永不带 mock,无需人工命令;幂等,清完即 no-op;失败只告警不阻断启动。
+	go func() {
+		pctx, pcancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer pcancel()
+		if _, err := discSvc.PurgeMockData(pctx); err != nil {
+			logger.Warn("[purge-mock] 启动自愈清理失败", logger.Err(err))
+		}
+	}()
 
 	// 重启恢复:续上生成中视频的轮询,清掉随进程消失的悬挂任务(额度退回)。
 	go func() {
@@ -219,8 +246,8 @@ func main() {
 	defer jobCancel()
 	job.NewDiscoverSync(cfg.DiscoverSync, discSvc, echoClient).Start(jobCtx)
 	job.NewOverflowSettle(cfg.OverflowSettle, billingSvc).Start(jobCtx)
-	discSvc.StartCoverRehost(jobCtx) // 封面转存后台 worker(读路径投递、异步存 COS)
-	discSvc.StartTranslate(jobCtx)   // 外文字段翻译后台 worker(落库投递、异步译中文回填)
+	discSvc.StartCoverRehost(jobCtx)                      // 封面转存后台 worker(读路径投递、异步存 COS)
+	discSvc.StartTranslate(jobCtx)                        // 外文字段翻译后台 worker(落库投递、异步译中文回填)
 	discSvc.StartVideoPipeline(jobCtx, cfg.VideoPipeline) // 爆款视频下载转存 COS + AI 拆解(sale_cnt>阈值,后台预计算)
 
 	r := router.New(router.Deps{

@@ -59,7 +59,7 @@ const entityRanklistStaleTTL = 24 * time.Hour
 
 // maybeRefreshEntityRanklist 实体榜顺序表 SWR:条目陈旧(>24h)则后台重拉该组合落库。
 // 默认榜第 1 页另有 job 6h 保鲜;这里是类目页/深页/非 combo 站点等长尾组合的唯一保鲜途径
-//(否则落库即永久冻结)。in-flight 去重防同组合并发重复拉;失败静默,旧值继续可读。
+// (否则落库即永久冻结)。in-flight 去重防同组合并发重复拉;失败静默,旧值继续可读。
 func (s *DiscoverService) maybeRefreshEntityRanklist(ctx context.Context, kind string, p echotik.RanklistParams, fetchedAt time.Time) {
 	if !s.echo.Configured() || time.Since(fetchedAt) < entityRanklistStaleTTL {
 		return
@@ -153,7 +153,8 @@ func (s *DiscoverService) fetchSellerRanklistLive(ctx context.Context, p echotik
 	}
 	raw, err := s.echo.GetSellerRanklist(ctx, p)
 	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[SellerDTO]{State: "error", Rows: s.hostMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
+		// 生产上游报错:返回空态而非 mock 假数据。
+		return &EntityRanklistResult[SellerDTO]{State: "error", Rows: []SellerDTO{}}
 	}
 	// 任意页都落库 + 写本页顺序,使该 (类目,页) 下次走本地;再回查以统一返回 COS/本地口径。
 	s.upsertSellerList(ctx, p.Region, raw)
@@ -222,7 +223,8 @@ func (s *DiscoverService) fetchInfluencerRanklistLive(ctx context.Context, p ech
 	}
 	raw, err := s.echo.GetInfluencerRanklist(ctx, p)
 	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[InfluencerDTO]{State: "error", Rows: s.hostMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
+		// 生产上游报错:返回空态而非 mock 假数据。
+		return &EntityRanklistResult[InfluencerDTO]{State: "error", Rows: []InfluencerDTO{}}
 	}
 	s.upsertInfluencerList(ctx, p.Region, raw)
 	s.writeEntityRanklist(ctx, "influencer", p, influencerIDsOf(raw))
@@ -291,7 +293,8 @@ func (s *DiscoverService) fetchVideoRanklistLive(ctx context.Context, p echotik.
 	}
 	raw, err := s.echo.GetVideoRanklist(ctx, p)
 	if err != nil || len(raw) == 0 {
-		return &EntityRanklistResult[VideoDTO]{State: "error", Rows: s.hostMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
+		// 生产上游报错:返回空态而非 mock 假数据。
+		return &EntityRanklistResult[VideoDTO]{State: "error", Rows: []VideoDTO{}}
 	}
 	s.upsertVideoList(ctx, p.Region, raw)
 	s.writeEntityRanklist(ctx, "video", p, videoIDsOf(raw))
