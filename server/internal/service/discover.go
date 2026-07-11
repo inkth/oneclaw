@@ -140,13 +140,15 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		}
 	}
 
-	// 2. 取数据源(live / mock)。
-	state := "live"
+	// 2. 取数据源(live / mock)。mock 只在本地无凭证时兜底看 UI;生产已配置,
+	//    上游报错绝不落 mock 假数据(否则会永久污染商品库),直接返回 error 空态。
 	raw, err := s.fetchRaw(ctx, p)
 	if err != nil {
-		state = "error"
-		raw = echotik.MockRanklist(p.Region, p.PageSize)
-	} else if !s.echo.Configured() {
+		logger.Warn("商品榜实时拉取失败", logger.String("region", p.Region), logger.Err(err))
+		return &RanklistResult{State: "error"}, nil
+	}
+	state := "live"
+	if !s.echo.Configured() {
 		state = "mock"
 	}
 
@@ -179,8 +181,8 @@ func (s *DiscoverService) searchProducts(ctx context.Context, wsID uuid.UUID, p 
 		if dps, ok := s.searchLocalProducts(ctx, p); ok {
 			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}
 		}
-		state = "error"
-		raw = echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
+		// 生产上游报错且本地无兜底:返回空态而非 mock 假数据(避免污染搜索兜底库)。
+		return &RanklistResult{State: "error"}
 	} else {
 		raw = rows
 	}
