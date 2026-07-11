@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Play, Eye, X } from "lucide-react";
+import { Play, Eye } from "lucide-react";
 import { fmt } from "./discover/_components/format";
+import { VideoBreakdownModal } from "./video-breakdown-modal";
 
 /**
  * 爆款短视频示例：工作台门面的成片橱窗。
  *
  * 两种形态，组件按是否传入 videos 自动切换：
- *  - 有 videos：临时用真实 EchoTik「带货视频榜」填充（别人的 TikTok 成片，封面 + 点开进详情/外链，
+ *  - 有 videos：临时用真实 EchoTik「带货视频榜」填充（别人的 TikTok 成片，封面 + 点开看 AI 拆解弹层，
  *    非本平台产出，故文案如实写「TikTok 上正在爆」）。
  *  - 无 videos：回落到占位渐变卡，仅为定版式。
  *
@@ -50,8 +50,8 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
             {!hasReal
               ? "即将上架的选题方向，先占个位"
               : anyPlayable
-                ? "TikTok 上正在爆的带货短视频 · 站内直接播放 · 点开看 AI 拆解"
-                : "TikTok 上正在爆的带货短视频 · 点开拆解脚本玩法"}
+                ? "TikTok 上正在爆的带货短视频 · 点开看 AI 拆解 · 部分可站内直接播放"
+                : "TikTok 上正在爆的带货短视频 · 点开看 AI 拆解"}
           </p>
         </div>
         <span className="shrink-0 text-xs text-zinc-400">
@@ -69,9 +69,9 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
 }
 
 /** 真·EchoTik 带货视频：封面 + 播放键 + 播放量 + 文案。
- *  已转存 COS(videoUrl)→ 点击弹层站内直接播放（不跳转）;否则点开进站内详情（再外链 TikTok）。 */
+ *  点击一律开拆解弹层（左片右拆解，不跳转）；已转存 COS（videoUrl）的额外可站内播放。 */
 function RealCard({ v }: { v: SampleVid }) {
-  const [playing, setPlaying] = useState(false);
+  const [open, setOpen] = useState(false);
   const playable = !!v.videoUrl;
 
   const inner = (
@@ -116,57 +116,13 @@ function RealCard({ v }: { v: SampleVid }) {
 
   const cardClass = "dk-card dk-lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40";
 
-  if (!playable) {
-    return (
-      <Link href={`/app/discover/videos/${v.videoId}?region=${v.region}`} title={v.desc || undefined} className={cardClass}>
-        {inner}
-      </Link>
-    );
-  }
-
   return (
     <>
-      <button type="button" onClick={() => setPlaying(true)} title={v.desc || undefined} className={cardClass}>
+      <button type="button" onClick={() => setOpen(true)} title={v.desc || undefined} className={cardClass}>
         {inner}
       </button>
-      {playing && <PlayerModal v={v} onClose={() => setPlaying(false)} />}
+      {open && <VideoBreakdownModal v={v} onClose={() => setOpen(false)} />}
     </>
-  );
-}
-
-/** 站内播放弹层：直接播放已转存 COS 的 mp4，并给「看完整拆解 →」入口进详情页。 */
-function PlayerModal({ v, onClose }: { v: SampleVid; onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div className="relative w-full max-w-[360px]" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="关闭"
-          className="absolute -right-2 -top-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-white"
-        >
-          <X className="h-4 w-4" />
-        </button>
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          src={v.videoUrl}
-          poster={v.coverUrl || undefined}
-          controls
-          autoPlay
-          playsInline
-          className="aspect-[9/16] w-full rounded-2xl bg-zinc-900 object-contain shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
-        />
-        <Link
-          href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
-          className="mt-3 flex items-center justify-center gap-1 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-ink shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-white"
-        >
-          看完整拆解 →
-        </Link>
-      </div>
-    </div>
   );
 }
 
