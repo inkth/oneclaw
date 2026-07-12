@@ -12,9 +12,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm/clause"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // coverLegacyHost 是 EchoTik 防盗链图床域名;cover_urls 里若含它,说明存的还是旧的

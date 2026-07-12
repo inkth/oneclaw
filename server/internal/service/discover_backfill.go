@@ -10,9 +10,9 @@ import (
 
 	"gorm.io/gorm/clause"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // 选品板块四榜的 kind 标识(与 EntityRanklistEntry.Kind / 游标 Kind 对齐)。
@@ -30,7 +30,7 @@ var (
 )
 
 // backfillRegions 取「前端 regions.ts 站点 ∩ EchoTik 支持站点」。EchoTik 白名单
-//(2026-07 实测 code 500 报错回显):US|ID|TH|PH|MY|VN|GB|MX|SG|SA|BR|ES|DE|FR|JP|IT。
+// (2026-07 实测 code 500 报错回显):US|ID|TH|PH|MY|VN|GB|MX|SG|SA|BR|ES|DE|FR|JP|IT。
 // 前端有 IE(爱尔兰)但 EchoTik 不支持(整站 500),故不在此列;SA 反之(EchoTik 有、前端没有)。
 // 可用 BACKFILL_PRODUCTS_REGIONS=US,GB,... 覆盖(逗号分隔)。
 var backfillRegions = []string{

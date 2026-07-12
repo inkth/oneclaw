@@ -3,7 +3,7 @@ package service
 import (
 	"testing"
 
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // FREE/PRO 硬上限:边界放行 / 超一积分即拒;非 TEAM 永不计超额。
@@ -32,8 +32,8 @@ func TestQuotaDecisionFreePro(t *testing.T) {
 		{"FREE 出图十张够", model.PlanFree, model.UsageImage, 10, 0, 0, true}, // 60<=450
 		// 赠送积分抬高上限:FREE 450+300=750
 		{"FREE+bonus 原超限转放行", model.PlanFree, model.UsageVideo, 1, 350, 300, true}, // 525<=750
-		{"FREE+bonus 恰好用满", model.PlanFree, model.UsageVideo, 1, 575, 300, true},  // 575+175=750
-		{"FREE+bonus 超一即拒", model.PlanFree, model.UsageVideo, 1, 576, 300, false}, // 751>750
+		{"FREE+bonus 恰好用满", model.PlanFree, model.UsageVideo, 1, 575, 300, true},   // 575+175=750
+		{"FREE+bonus 超一即拒", model.PlanFree, model.UsageVideo, 1, 576, 300, false},  // 751>750
 	}
 	for _, c := range cases {
 		gotAllowed, gotBillable := quotaDecision(c.plan, c.kind, c.qty, c.used, c.bonus)

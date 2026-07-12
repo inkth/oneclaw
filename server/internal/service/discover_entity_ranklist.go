@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm/clause"
 
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // 榜单读 DB 化:店铺/达人/视频榜 = EntityRanklistEntry 顺序 + 关联实体主表渲染(零 EchoTik)。

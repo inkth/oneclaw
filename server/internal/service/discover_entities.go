@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // 店铺/达人/视频三榜:不落库、不导入、不收藏,只「取数 → 签图 → 映射 DTO」。

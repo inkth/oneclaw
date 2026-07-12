@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm/clause"
 
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // 店铺/达人/视频榜 + 类目下拉的通用缓存 TTL。这些数据无工作台个性化,可全局复用。

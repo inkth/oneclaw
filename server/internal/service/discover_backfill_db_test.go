@@ -14,13 +14,13 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
-// 跑法:ONECLAW_TEST_DB_DSN="host=localhost port=5432 user=... dbname=oneclaw_backfill_test sslmode=disable" \
+// 跑法:FAXIANMAO_TEST_DB_DSN="host=localhost port=5432 user=... dbname=faxianmao_backfill_test sslmode=disable" \
 //   go test ./internal/service/ -run TestBackfill -v
 // 不设 DSN 则 skip(沙箱无 PG)。用假 EchoTik HTTP 服务,无需真实凭证/网络。
 
@@ -31,9 +31,9 @@ func TestMain(m *testing.M) {
 
 func openTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	dsn := os.Getenv("ONECLAW_TEST_DB_DSN")
+	dsn := os.Getenv("FAXIANMAO_TEST_DB_DSN")
 	if dsn == "" {
-		t.Skip("ONECLAW_TEST_DB_DSN 未设置,跳过 DB 集成测试")
+		t.Skip("FAXIANMAO_TEST_DB_DSN 未设置,跳过 DB 集成测试")
 	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -198,7 +198,7 @@ func TestBackfillSellerReadPath(t *testing.T) {
 
 // TestEntityRanklistIndexMigration 模拟生产:已存在旧 6 列唯一索引 uq_ere_key,验证
 // 「DROP 旧索引 + AutoMigrate」后:page_num 列补上(存量行回填为 1)、新索引 uq_ere_pg 生效
-//(同 6 列不同页可共存,同 7 列冲突),旧索引消失。
+// (同 6 列不同页可共存,同 7 列冲突),旧索引消失。
 func TestEntityRanklistIndexMigration(t *testing.T) {
 	db := openTestDB(t)
 	_ = db.Migrator().DropTable(&model.EntityRanklistEntry{})

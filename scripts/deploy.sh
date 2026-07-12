@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# 部署 OneClaw (Next.js SSR) 到宿主机: PM2 + Nginx 反向代理 + Let's Encrypt SSL
+# 部署 发现猫 (Next.js SSR) 到宿主机: PM2 + Nginx 反向代理 + Let's Encrypt SSL
 # 用法: bash scripts/deploy.sh
 #
 # 前置条件:
-#   1. DNS 已把 test.oneclaw.club 的 A 记录指向 $SERVER_IP
+#   1. DNS 已把 faxianmao.com 的 A 记录指向 $SERVER_IP
 #   2. 服务器可用 server.pem 通过 SSH 登录
 set -e
 
@@ -11,11 +11,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KEY_FILE="$ROOT/server.pem"
 SERVER_USER=ubuntu
 SERVER_IP=124.220.67.168
-DOMAIN=test.oneclaw.club
-EMAIL=admin@oneclaw.club
-APP_NAME=oneclaw                   # PM2 进程名
+DOMAIN=faxianmao.com
+EMAIL=admin@faxianmao.club
+APP_NAME=faxianmao                   # PM2 进程名
 APP_PORT=3100                      # Node.js 监听端口（避免和其他项目冲突）
-DEPLOY_DIR=/home/$SERVER_USER/oneclaw  # 服务器上的部署目录
+DEPLOY_DIR=/home/$SERVER_USER/faxianmao  # 服务器上的部署目录
 
 if [ ! -f "$KEY_FILE" ]; then
   echo "✗ SSH 密钥不存在: $KEY_FILE"
@@ -28,7 +28,7 @@ TARGET="$SERVER_USER@$SERVER_IP"
 run_remote() { ssh "${SSH_OPTS[@]}" "$TARGET" "$@"; }
 
 echo "═══════════════════════════════════════"
-echo "  OneClaw 部署 (SSR + PM2 + Nginx)"
+echo "  发现猫 部署 (SSR + PM2 + Nginx)"
 echo "  域名: $DOMAIN"
 echo "  服务器: $TARGET"
 echo "  端口: $APP_PORT"

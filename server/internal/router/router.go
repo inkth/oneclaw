@@ -4,10 +4,10 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/handler"
-	"github.com/oneclaw/server/internal/middleware"
-	"github.com/oneclaw/server/internal/service"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/handler"
+	"github.com/faxianmao/server/internal/middleware"
+	"github.com/faxianmao/server/internal/service"
 )
 
 type Deps struct {

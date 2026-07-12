@@ -15,9 +15,9 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/echotik"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // zipHTTP 下载 COS 图打包用(服务器→COS 同区直连,快)。
@@ -257,19 +257,19 @@ type PublishKitListing struct {
 
 type PublishKit struct {
 	Product struct {
-		ID         uuid.UUID `json:"id"`
-		Title      string    `json:"title"`
-		Emoji      *string   `json:"emoji,omitempty"`
-		Status     string    `json:"status"`
-		PriceCents int       `json:"priceCents"`
-		CostCents  int       `json:"costCents"`
-		CostSource string    `json:"costSource"`
-		MarginPct  int       `json:"marginPct"`
-		Note         *string  `json:"note,omitempty"`
-		CoverURL     string   `json:"coverUrl,omitempty"`     // 当前商品主图
-		Images       []string `json:"images,omitempty"`       // 生成的商品展示图(白底/场景/细节/俯拍)
-		SourceImages []string `json:"sourceImages,omitempty"` // 用户原图(多角度)
-		ImagesStatus string   `json:"imagesStatus,omitempty"` // 出图进度:RUNNING→详情页显示「出图中」
+		ID           uuid.UUID `json:"id"`
+		Title        string    `json:"title"`
+		Emoji        *string   `json:"emoji,omitempty"`
+		Status       string    `json:"status"`
+		PriceCents   int       `json:"priceCents"`
+		CostCents    int       `json:"costCents"`
+		CostSource   string    `json:"costSource"`
+		MarginPct    int       `json:"marginPct"`
+		Note         *string   `json:"note,omitempty"`
+		CoverURL     string    `json:"coverUrl,omitempty"`     // 当前商品主图
+		Images       []string  `json:"images,omitempty"`       // 生成的商品展示图(白底/场景/细节/俯拍)
+		SourceImages []string  `json:"sourceImages,omitempty"` // 用户原图(多角度)
+		ImagesStatus string    `json:"imagesStatus,omitempty"` // 出图进度:RUNNING→详情页显示「出图中」
 	} `json:"product"`
 	Videos  []PublishKitVideo  `json:"videos"`
 	Listing *PublishKitListing `json:"listing,omitempty"`

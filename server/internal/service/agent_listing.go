@@ -16,10 +16,10 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/llm"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/llm"
 )
 
 // ── Listing:标题 / 五点卖点 / A+ 结构 / 主图(prompt → 用户确认 → fal 出图)──────

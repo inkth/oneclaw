@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/oneclaw/server/internal/config"
+	"github.com/faxianmao/server/internal/config"
 )
 
 // 服务端单页最多 10 条;要更多就多页并发拉。

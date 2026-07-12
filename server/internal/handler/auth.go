@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/oneclaw/server/internal/config"
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/middleware"
-	"github.com/oneclaw/server/internal/service"
+	"github.com/faxianmao/server/internal/config"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/middleware"
+	"github.com/faxianmao/server/internal/service"
 )
 
 type AuthHandler struct {

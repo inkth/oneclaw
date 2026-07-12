@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/service"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/service"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // 三榜端点无 DB 依赖:未配置 EchoTik 凭证时降级到 mock。用 nil db 构造服务即可端到端验证

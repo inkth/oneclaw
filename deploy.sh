@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# oneclaw 部署脚本(Next + Go API + Postgres + nginx,整仓上同一台服务器)。
+# faxianmao 部署脚本(Next + Go API + Postgres + nginx,整仓上同一台服务器)。
 #
 # 用法:
 #   ./deploy.sh                完整:rsync 代码 + 重建 go-api & next + 健康检查
@@ -12,10 +12,10 @@
 #   ./deploy.sh --help         帮助
 #
 # 连接配置:同目录建 .deploy.env(见 .deploy.env.example):
-#   ONECLAW_SSH_HOST  公网 IP / 域名
-#   ONECLAW_SSH_USER  登录用户(默认 ubuntu)
-#   ONECLAW_SSH_KEY   .pem 路径(相对此脚本目录)
-#   ONECLAW_REMOTE_DIR 远端目录(默认 /opt/oneclaw-server)
+#   FAXIANMAO_SSH_HOST  公网 IP / 域名
+#   FAXIANMAO_SSH_USER  登录用户(默认 ubuntu)
+#   FAXIANMAO_SSH_KEY   .pem 路径(相对此脚本目录)
+#   FAXIANMAO_REMOTE_DIR 远端目录(默认 /opt/faxianmao-server)
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -24,7 +24,7 @@ if [ -f .deploy.env ]; then
   set -a; . ./.deploy.env; set +a
 fi
 
-ONECLAW_REMOTE_DIR="${ONECLAW_REMOTE_DIR:-/opt/oneclaw-server}"
+FAXIANMAO_REMOTE_DIR="${FAXIANMAO_REMOTE_DIR:-/opt/faxianmao-server}"
 COMPOSE="docker compose -f docker-compose.prod.yml"
 BACKUP_DIR="./backups"
 
@@ -42,22 +42,22 @@ info()  { echo "${C_DIM}  $*${C_RESET}"; }
 head()  { echo; echo "${C_CYAN}━━ $* ━━${C_RESET}"; }
 
 SSH_TARGET=""; SSH_BASE=(); RSYNC_E=""
-if [ -n "${ONECLAW_SSH:-}" ]; then
-  SSH_TARGET="$ONECLAW_SSH"
+if [ -n "${FAXIANMAO_SSH:-}" ]; then
+  SSH_TARGET="$FAXIANMAO_SSH"
   SSH_BASE=(ssh -o BatchMode=yes -o ConnectTimeout=10)
   RSYNC_E="ssh -o BatchMode=yes -o ConnectTimeout=10"
-elif [ -n "${ONECLAW_SSH_HOST:-}" ]; then
-  user="${ONECLAW_SSH_USER:-ubuntu}"
-  SSH_TARGET="${user}@${ONECLAW_SSH_HOST}"
+elif [ -n "${FAXIANMAO_SSH_HOST:-}" ]; then
+  user="${FAXIANMAO_SSH_USER:-ubuntu}"
+  SSH_TARGET="${user}@${FAXIANMAO_SSH_HOST}"
   SSH_BASE=(ssh -o BatchMode=yes -o ConnectTimeout=10
             -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
   RSYNC_E="ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
-  if [ -n "${ONECLAW_SSH_KEY:-}" ]; then
-    [ -f "$ONECLAW_SSH_KEY" ] || fail "ONECLAW_SSH_KEY 指向的文件不存在:$ONECLAW_SSH_KEY"
-    SSH_BASE+=(-i "$ONECLAW_SSH_KEY"); RSYNC_E="$RSYNC_E -i $ONECLAW_SSH_KEY"
+  if [ -n "${FAXIANMAO_SSH_KEY:-}" ]; then
+    [ -f "$FAXIANMAO_SSH_KEY" ] || fail "FAXIANMAO_SSH_KEY 指向的文件不存在:$FAXIANMAO_SSH_KEY"
+    SSH_BASE+=(-i "$FAXIANMAO_SSH_KEY"); RSYNC_E="$RSYNC_E -i $FAXIANMAO_SSH_KEY"
   fi
 else
-  fail "未配置 SSH。请在 .deploy.env 设置 ONECLAW_SSH_HOST 或 ONECLAW_SSH。"
+  fail "未配置 SSH。请在 .deploy.env 设置 FAXIANMAO_SSH_HOST 或 FAXIANMAO_SSH。"
 fi
 remote() { "${SSH_BASE[@]}" "$SSH_TARGET" "$@"; }
 
@@ -116,42 +116,42 @@ confirm_or_abort() {
   esac
 }
 
-cmd_logs() { remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE logs -f --tail=${1:-200} go-api next"; }
+cmd_logs() { remote "cd $FAXIANMAO_REMOTE_DIR && $COMPOSE logs -f --tail=${1:-200} go-api next"; }
 
 cmd_status() {
   precheck_ssh
-  head "容器状态"; remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE ps"
+  head "容器状态"; remote "cd $FAXIANMAO_REMOTE_DIR && $COMPOSE ps"
   head "健康检查(容器内)"
-  if remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE exec -T go-api wget -qO- http://localhost:8080/health" 2>/dev/null; then
+  if remote "cd $FAXIANMAO_REMOTE_DIR && $COMPOSE exec -T go-api wget -qO- http://localhost:8080/health" 2>/dev/null; then
     echo; ok "go-api 健康"
   else
     fail "/health 不可达"
   fi
 }
 
-cmd_shell() { "${SSH_BASE[@]}" -t "$SSH_TARGET" "cd $ONECLAW_REMOTE_DIR && exec \$SHELL"; }
+cmd_shell() { "${SSH_BASE[@]}" -t "$SSH_TARGET" "cd $FAXIANMAO_REMOTE_DIR && exec \$SHELL"; }
 
 cmd_init() {
   precheck_git; precheck_ssh; precheck_local_env
   head "首次初始化"
-  step "确保远端目录存在 $ONECLAW_REMOTE_DIR"
-  remote "sudo mkdir -p $ONECLAW_REMOTE_DIR && sudo chown -R \$(id -u):\$(id -g) $ONECLAW_REMOTE_DIR"
+  step "确保远端目录存在 $FAXIANMAO_REMOTE_DIR"
+  remote "sudo mkdir -p $FAXIANMAO_REMOTE_DIR && sudo chown -R \$(id -u):\$(id -g) $FAXIANMAO_REMOTE_DIR"
   step "首次 rsync(整仓,排除 node_modules/.next)"
-  rsync -az --delete -e "$RSYNC_E" "${RSYNC_EXCLUDES[@]}" ./ "$SSH_TARGET:$ONECLAW_REMOTE_DIR/"
-  if ! remote "[ -f $ONECLAW_REMOTE_DIR/.env ]"; then
+  rsync -az --delete -e "$RSYNC_E" "${RSYNC_EXCLUDES[@]}" ./ "$SSH_TARGET:$FAXIANMAO_REMOTE_DIR/"
+  if ! remote "[ -f $FAXIANMAO_REMOTE_DIR/.env ]"; then
     step "上传本地 .env(仅首次)"
-    rsync -az -e "$RSYNC_E" ./.env "$SSH_TARGET:$ONECLAW_REMOTE_DIR/.env"
+    rsync -az -e "$RSYNC_E" ./.env "$SSH_TARGET:$FAXIANMAO_REMOTE_DIR/.env"
   fi
   step "首启全栈(postgres + go-api + next + nginx)"
-  remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE up -d --build"
-  ok "完成。./deploy.sh --status 验证;入口 http://${ONECLAW_SSH_HOST:-<host>}/(确认安全组放行 80)"
+  remote "cd $FAXIANMAO_REMOTE_DIR && $COMPOSE up -d --build"
+  ok "完成。./deploy.sh --status 验证;入口 http://${FAXIANMAO_SSH_HOST:-<host>}/(确认安全组放行 80)"
 }
 
 cmd_backup() {
   precheck_ssh; mkdir -p "$BACKUP_DIR"
-  local f="$BACKUP_DIR/oneclaw-pg-$(date +%Y%m%d-%H%M%S).sql.gz"
+  local f="$BACKUP_DIR/faxianmao-pg-$(date +%Y%m%d-%H%M%S).sql.gz"
   step "pg_dumpall → $f"
-  remote "cd $ONECLAW_REMOTE_DIR && set -a && . ./.env && set +a && $COMPOSE exec -T postgres pg_dumpall -U \"\${DB_USER}\"" | gzip > "$f"
+  remote "cd $FAXIANMAO_REMOTE_DIR && set -a && . ./.env && set +a && $COMPOSE exec -T postgres pg_dumpall -U \"\${DB_USER}\"" | gzip > "$f"
   ok "备份完成($(du -h "$f" | awk '{print $1}'))"
 }
 
@@ -160,17 +160,17 @@ cmd_deploy() {
   precheck_git; precheck_ssh; precheck_local_env
   head "$([ "$quick" = "true" ] && echo "快速重建" || echo "完整部署")"
   step "备份远端 .env"
-  remote "[ -f $ONECLAW_REMOTE_DIR/.env ] && cp $ONECLAW_REMOTE_DIR/.env $ONECLAW_REMOTE_DIR/.env.bak.\$(date +%s) || true"
+  remote "[ -f $FAXIANMAO_REMOTE_DIR/.env ] && cp $FAXIANMAO_REMOTE_DIR/.env $FAXIANMAO_REMOTE_DIR/.env.bak.\$(date +%s) || true"
   if [ "$quick" != "true" ]; then
-    step "rsync 代码 → $SSH_TARGET:$ONECLAW_REMOTE_DIR"
-    rsync -az --delete -e "$RSYNC_E" "${RSYNC_EXCLUDES[@]}" ./ "$SSH_TARGET:$ONECLAW_REMOTE_DIR/"
+    step "rsync 代码 → $SSH_TARGET:$FAXIANMAO_REMOTE_DIR"
+    rsync -az --delete -e "$RSYNC_E" "${RSYNC_EXCLUDES[@]}" ./ "$SSH_TARGET:$FAXIANMAO_REMOTE_DIR/"
   fi
   step "重建 go-api + next(postgres 不动)"
-  remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE up -d --build go-api next nginx"
+  remote "cd $FAXIANMAO_REMOTE_DIR && $COMPOSE up -d --build go-api next nginx"
   step "等待 /health 就绪(最多 90s)"
   for i in $(seq 1 45); do
-    if remote "cd $ONECLAW_REMOTE_DIR && $COMPOSE exec -T go-api wget -qO- http://localhost:8080/health" >/dev/null 2>&1; then
-      ok "上线(约 $((i*2))s)"; info "入口:http://${ONECLAW_SSH_HOST:-<host>}/"; return 0
+    if remote "cd $FAXIANMAO_REMOTE_DIR && $COMPOSE exec -T go-api wget -qO- http://localhost:8080/health" >/dev/null 2>&1; then
+      ok "上线(约 $((i*2))s)"; info "入口:http://${FAXIANMAO_SSH_HOST:-<host>}/"; return 0
     fi
     sleep 2
   done

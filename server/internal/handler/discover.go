@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service"
-	"github.com/oneclaw/server/internal/service/echotik"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 type DiscoverHandler struct {

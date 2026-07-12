@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // 出片后处理:把口播逐句烧成硬字幕 + 末尾价格 CTA 尾帧。全程 best-effort,

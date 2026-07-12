@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oneclaw/server/internal/config"
+	"github.com/faxianmao/server/internal/config"
 )
 
 const endpoint = "https://openrouter.ai/api/v1/chat/completions"

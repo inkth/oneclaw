@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/oneclaw/server/internal/config"
+	"github.com/faxianmao/server/internal/config"
 )
 
 // 首次风控 code=500 应重试;取址优先无水印;并透传字段。

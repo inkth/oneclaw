@@ -6,7 +6,7 @@ import { REGION_CODES, type Region } from "./regions";
 
 // 选品筛选（地区/类别）在选品内的记忆：只存浏览器 localStorage,不进后端。
 // region 与 categoryId 成对保存，回填时该地区的类目恒有效。
-const KEY = "oneclaw:discover-filter";
+const KEY = "faxianmao:discover-filter";
 
 type Saved = { region: Region; categoryId: string | null };
 

@@ -1,4 +1,4 @@
-// Package config 加载并校验 oneclaw-server 的运行时配置。
+// Package config 加载并校验 faxianmao-server 的运行时配置。
 //
 // 优先级:.env 文件 → 进程环境变量 → 代码内默认值。
 // Phase 1 不依赖 Redis(限流走内存、验证码落 Postgres),配置已相应精简。
@@ -211,7 +211,7 @@ func Load() *Config {
 			Port:         getEnv("DB_PORT", "5432"),
 			User:         getEnv("DB_USER", "postgres"),
 			Password:     getEnv("DB_PASSWORD", "postgres"),
-			DBName:       getEnv("DB_NAME", "oneclaw"),
+			DBName:       getEnv("DB_NAME", "faxianmao"),
 			SSLMode:      getEnv("DB_SSLMODE", "disable"),
 			MaxOpenConns: getEnvInt("DB_MAX_OPEN_CONNS", 20),
 			MaxIdleConns: getEnvInt("DB_MAX_IDLE_CONNS", 5),

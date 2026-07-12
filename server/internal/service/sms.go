@@ -14,10 +14,10 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/oneclaw/server/internal/config"
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/config"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
 )
 
 const (
@@ -131,6 +131,6 @@ func (s *SMSService) Verify(ctx context.Context, phone, code string) error {
 }
 
 func hashCode(code string) string {
-	h := sha256.Sum256([]byte("oneclaw:" + code))
+	h := sha256.Sum256([]byte("faxianmao:" + code))
 	return hex.EncodeToString(h[:])
 }

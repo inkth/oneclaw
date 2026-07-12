@@ -1,11 +1,11 @@
-# OneClaw 生产编排:Next + Go API + 自托管 Postgres + nginx 同域反代。
+# 发现猫 生产编排:Next + Go API + 自托管 Postgres + nginx 同域反代。
 # 与 jifou(:8081)/ deepclaw(:8080)同主机共存,使用独立端口/库/网络。
 # nginx 占 80,作为统一入口(/ → next,/api → go-api),实现同域 Cookie。
 services:
   go-api:
     build:
       context: ./server
-    container_name: oneclaw-go-api
+    container_name: faxianmao-go-api
     restart: always
     ports:
       - "8082:8080" # 调试直连;正式流量走 nginx
@@ -21,7 +21,7 @@ services:
       GOMEMLIMIT: 400MiB
     depends_on:
       postgres: { condition: service_healthy }
-    networks: [oneclaw-net]
+    networks: [faxianmao-net]
     deploy:
       resources:
         limits:
@@ -31,7 +31,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.next
-    container_name: oneclaw-next
+    container_name: faxianmao-next
     restart: always
     ports:
       - "3001:3000" # 调试直连;正式流量走 nginx
@@ -40,7 +40,7 @@ services:
       GO_API_INTERNAL_URL: http://go-api:8080 # SSR 走容器内网
     depends_on:
       - go-api
-    networks: [oneclaw-net]
+    networks: [faxianmao-net]
     deploy:
       resources:
         limits:
@@ -48,20 +48,20 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: oneclaw-postgres
+    container_name: faxianmao-postgres
     restart: always
     environment:
       POSTGRES_DB: ${DB_NAME:?DB_NAME required}
       POSTGRES_USER: ${DB_USER:?DB_USER required}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
     volumes:
-      - oneclaw-pg-data:/var/lib/postgresql/data
+      - faxianmao-pg-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks: [oneclaw-net]
+    networks: [faxianmao-net]
     deploy:
       resources:
         limits:
@@ -69,7 +69,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
-    container_name: oneclaw-nginx
+    container_name: faxianmao-nginx
     restart: always
     ports:
       - "80:80"
@@ -80,11 +80,11 @@ services:
     depends_on:
       - next
       - go-api
-    networks: [oneclaw-net]
+    networks: [faxianmao-net]
 
 volumes:
-  oneclaw-pg-data:
+  faxianmao-pg-data:
 
 networks:
-  oneclaw-net:
+  faxianmao-net:
     driver: bridge

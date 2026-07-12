@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/llm"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/llm"
 )
 
 // ── Advisor ─────────────────────────────────────────────────────────────────

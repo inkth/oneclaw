@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneclaw/server/internal/service/review"
+	"github.com/faxianmao/server/internal/service/review"
 )
 
 func TestBuildPlaybook(t *testing.T) {

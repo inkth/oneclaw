@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // productBatchMax 单批最多处理的商品图数(控成本/出图并发;超出引导用户分批)。

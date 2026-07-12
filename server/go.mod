@@ -1,4 +1,4 @@
-module github.com/oneclaw/server
+module github.com/faxianmao/server
 
 go 1.25
 

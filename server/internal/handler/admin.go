@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/middleware"
-	"github.com/oneclaw/server/internal/service"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/middleware"
+	"github.com/faxianmao/server/internal/service"
 )
 
 // AdminHandler 管理端(仅 role=admin,路由挂 RequireAdmin)。

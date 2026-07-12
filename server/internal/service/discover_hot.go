@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // HotVideoRef 一条「已跑出销量」的真实带货视频精简引用,供 DIRECTOR 逆向钩子/结构用。

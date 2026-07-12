@@ -11,10 +11,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"github.com/oneclaw/server/internal/config"
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/config"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // AgencyService 代理商系统:归因绑定 + 佣金记账 + 提现 + 管理侧开通/审核。
@@ -183,14 +183,14 @@ func (s *AgencyService) requireAgency(ctx context.Context, userID uuid.UUID) (*m
 
 // AgencySummary 代理面板概览。
 type AgencySummary struct {
-	Code                    string `json:"code"`
-	Status                  string `json:"status"`
-	CommissionBP            int    `json:"commissionBp"`
-	CustomerCount           int    `json:"customerCount"`
-	TotalPaidCents          int    `json:"totalPaidCents"`          // 客户累计付费(计佣基数)
-	TotalCommissionCents    int    `json:"totalCommissionCents"`    // 累计佣金
-	BalanceCents            int    `json:"balanceCents"`            // 可提现余额
-	PendingWithdrawalCents  int    `json:"pendingWithdrawalCents"`  // 审核中提现占用
+	Code                   string `json:"code"`
+	Status                 string `json:"status"`
+	CommissionBP           int    `json:"commissionBp"`
+	CustomerCount          int    `json:"customerCount"`
+	TotalPaidCents         int    `json:"totalPaidCents"`         // 客户累计付费(计佣基数)
+	TotalCommissionCents   int    `json:"totalCommissionCents"`   // 累计佣金
+	BalanceCents           int    `json:"balanceCents"`           // 可提现余额
+	PendingWithdrawalCents int    `json:"pendingWithdrawalCents"` // 审核中提现占用
 }
 
 func (s *AgencyService) Summary(ctx context.Context, userID uuid.UUID) (*AgencySummary, error) {
@@ -502,12 +502,12 @@ func (s *AgencyService) AdminReviewWithdrawal(ctx context.Context, withdrawalID,
 
 // AgencyOverview 管理端总览。
 type AgencyOverview struct {
-	AgencyCount              int `json:"agencyCount"`
-	ActiveAgencyCount        int `json:"activeAgencyCount"`
-	ReferredUserCount        int `json:"referredUserCount"`
-	TotalCommissionCents     int `json:"totalCommissionCents"`
-	PendingWithdrawalCount   int `json:"pendingWithdrawalCount"`
-	PendingWithdrawalCents   int `json:"pendingWithdrawalCents"`
+	AgencyCount            int `json:"agencyCount"`
+	ActiveAgencyCount      int `json:"activeAgencyCount"`
+	ReferredUserCount      int `json:"referredUserCount"`
+	TotalCommissionCents   int `json:"totalCommissionCents"`
+	PendingWithdrawalCount int `json:"pendingWithdrawalCount"`
+	PendingWithdrawalCents int `json:"pendingWithdrawalCents"`
 }
 
 func (s *AgencyService) AdminOverview(ctx context.Context) (*AgencyOverview, error) {

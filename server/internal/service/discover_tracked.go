@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // 详情级数据新鲜期按「是否被跟踪」分档(热度加权):被收藏/选品的实体刷得勤,

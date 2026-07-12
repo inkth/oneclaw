@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	apperr "github.com/oneclaw/server/internal/errors"
+	apperr "github.com/faxianmao/server/internal/errors"
 )
 
 // TokenValidator 由 service.AuthService 实现,解耦中间件与 service 包。

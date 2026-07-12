@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/service/llm"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/service/llm"
 )
 
 // 选品板块外文本地化:商品标题、短视频文案是 EchoTik 直传的目标市场语言(英/泰/越…),

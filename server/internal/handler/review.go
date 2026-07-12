@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/service"
-	"github.com/oneclaw/server/internal/service/review"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/service"
+	"github.com/faxianmao/server/internal/service/review"
 )
 
 const maxReviewBytes = 15 << 20 // 15MB

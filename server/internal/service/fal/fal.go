@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oneclaw/server/internal/config"
+	"github.com/faxianmao/server/internal/config"
 )
 
 type Client struct {

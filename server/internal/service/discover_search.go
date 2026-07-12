@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // 搜索:EchoTik 优先(探索新内容是其强项),失败/未配置时回落到已落库实体的本地匹配,

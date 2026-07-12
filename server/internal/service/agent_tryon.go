@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/llm"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/llm"
 )
 
 // ── 虚拟试穿(TRYON):模特图 + 服饰图 → fal 试穿模型出上身图 ───────────────────

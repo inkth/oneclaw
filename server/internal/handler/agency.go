@@ -3,9 +3,9 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/middleware"
-	"github.com/oneclaw/server/internal/service"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/middleware"
+	"github.com/faxianmao/server/internal/service"
 )
 
 // AgencyHandler 代理商本人视角(user 级路由,身份挂 user 而非 workspace)。

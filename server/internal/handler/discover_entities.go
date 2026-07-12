@@ -3,7 +3,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // 店铺/达人/视频三榜:公开只读,无需工作台上下文。query: region & rank_type & field & page_size & date。

@@ -11,9 +11,9 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/llm"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/llm"
 )
 
 const discoverAnalyzeSystem = `你是 发现猫 的"选品分析 Agent"，专门基于 EchoTik 真实销售数据做出海商品可行性分析。

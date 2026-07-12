@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/service"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/service"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // DiscoverSync 定时拉取 EchoTik 榜单落库:预热发现页缓存 + 保证每日快照连续。

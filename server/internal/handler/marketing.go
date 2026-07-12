@@ -3,9 +3,9 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service"
 )
 
 // MarketingHandler 落地页公开表单:订阅 + 预约演示。无需登录。

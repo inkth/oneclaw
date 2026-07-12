@@ -3,7 +3,7 @@ package service
 import (
 	"testing"
 
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/model"
 )
 
 func TestDiffSellerTrend(t *testing.T) {

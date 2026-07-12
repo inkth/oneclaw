@@ -1,4 +1,4 @@
-# OneClaw 前端(Next.js standalone)。在仓库根作为 build context。
+# 发现猫 前端(Next.js standalone)。在仓库根作为 build context。
 # —— 依赖 ——————————————————————————————————————————————
 FROM node:20-alpine AS deps
 WORKDIR /app

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/model"
 )
 
 func ymd(t time.Time) string { return t.In(cnZone).Format("2006-01-02") }

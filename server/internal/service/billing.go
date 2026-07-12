@@ -12,9 +12,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // BillingService 订阅下单与订单状态。
@@ -106,7 +106,7 @@ func (s *BillingService) Checkout(ctx context.Context, wsID, userID uuid.UUID, i
 // createQRCode 生成扫码内容。真实商户凭证未配置 → mock 占位(IsMock=true,前端提示并在 dev 提供模拟支付)。
 // TODO(P4-live): 接微信 Native 下单 / 支付宝当面付,返回 code_url。
 func (s *BillingService) createQRCode(o *model.PaymentOrder) (string, bool) {
-	return "oneclaw://mock-pay/" + o.OutTradeNo, true
+	return "faxianmao://mock-pay/" + o.OutTradeNo, true
 }
 
 // GetOrder 查单(自动把过期 PENDING 翻成 EXPIRED)。

@@ -1,8 +1,8 @@
-# OneClaw
+# 发现猫
 
 > 给跨境电商新手的 TikTok Shop 全链路 AI 工具 —— 选品、做视频、复盘,一句话开干。
 
-OneClaw 把「找爆品 → 出带货短视频 → 复盘投放」三件事收进一个工作台,由一排 AI Agent 完成。
+发现猫 把「找爆品 → 出带货短视频 → 复盘投放」三件事收进一个工作台,由一排 AI Agent 完成。
 
 ## 产品 = 三件事 + 5 个 Agent
 
@@ -57,7 +57,7 @@ go run ./cmd           # 默认 :8082,启动自动建表
 - `SMS_PROVIDER` —— 手机验证码
 - COS 桶配置 —— 对象存储(榜单封面永久化依赖)
 
-> **只想预览前端、本地没 Postgres**:在 `.env.local` 里设 `GO_API_INTERNAL_URL=https://test.oneclaw.club` 指向测试后端,即可用真实数据跑游客页;验证完删掉。
+> **只想预览前端、本地没 Postgres**:在 `.env.local` 里设 `GO_API_INTERNAL_URL=https://faxianmao.com` 指向测试后端,即可用真实数据跑游客页;验证完删掉。
 
 预置出镜人设(虚拟试穿 / 出镜)补种:
 
@@ -73,7 +73,7 @@ docker compose run --rm go-api ./server --seed-personas
 ./deploy.sh            # build → 推镜像 → 远端起服务;compose 文件 docker-compose.prod.yml
 ```
 
-→ test.oneclaw.club(腾讯云)。具体流程见 [`deploy.sh`](deploy.sh)。
+→ faxianmao.com(腾讯云)。具体流程见 [`deploy.sh`](deploy.sh)。
 
 ## 仓库结构
 

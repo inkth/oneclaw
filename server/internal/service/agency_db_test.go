@@ -10,11 +10,11 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/model"
 )
 
-// 跑法:ONECLAW_TEST_DB_DSN="host=localhost port=5432 user=... dbname=oneclaw_agency_test sslmode=disable" \
+// 跑法:FAXIANMAO_TEST_DB_DSN="host=localhost port=5432 user=... dbname=faxianmao_agency_test sslmode=disable" \
 //   go test ./internal/service/ -run TestAgency -v
 // 不设 DSN 则 skip(沙箱无 PG)。TestMain 由 discover_backfill_db_test.go 提供,同包不重复。
 
@@ -27,9 +27,9 @@ var agencyTestTables = []any{
 
 func openAgencyTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	dsn := os.Getenv("ONECLAW_TEST_DB_DSN")
+	dsn := os.Getenv("FAXIANMAO_TEST_DB_DSN")
 	if dsn == "" {
-		t.Skip("ONECLAW_TEST_DB_DSN 未设置,跳过 DB 集成测试")
+		t.Skip("FAXIANMAO_TEST_DB_DSN 未设置,跳过 DB 集成测试")
 	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

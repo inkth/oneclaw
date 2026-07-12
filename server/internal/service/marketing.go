@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/model"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // MarketingService 处理落地页的公开表单:邮件订阅 + 预约演示。

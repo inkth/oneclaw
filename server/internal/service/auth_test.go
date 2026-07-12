@@ -6,7 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
-	"github.com/oneclaw/server/internal/config"
+	"github.com/faxianmao/server/internal/config"
 )
 
 // authSvc 构造一个仅含 JWT 配置的 AuthService(GenerateToken/ValidateToken 不触 DB)。

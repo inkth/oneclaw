@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"github.com/oneclaw/server/internal/config"
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/model"
+	"github.com/faxianmao/server/internal/config"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/model"
 )
 
 // AuthService 账号 + 令牌。手机号 + 短信验证码登录(首次自动注册 + 建默认工作台)。

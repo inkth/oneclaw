@@ -11,7 +11,7 @@ import (
 
 	"github.com/tencentyun/cos-go-sdk-v5"
 
-	"github.com/oneclaw/server/internal/config"
+	"github.com/faxianmao/server/internal/config"
 )
 
 // Storage 是对象存储抽象。未配置 COS 时 Configured()=false,上传返回错误。

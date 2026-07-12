@@ -15,9 +15,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/llm"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/llm"
 )
 
 // ── 视频解析:上传带货视频 → 抽音轨 + 关键帧 → 多模态模型转录/翻译/拆解 ──────────────

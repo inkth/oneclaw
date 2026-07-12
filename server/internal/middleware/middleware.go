@@ -1,4 +1,4 @@
-// Package middleware 集中 oneclaw-server 的 HTTP 中间件。
+// Package middleware 集中 faxianmao-server 的 HTTP 中间件。
 package middleware
 
 import (
@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/logger"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
 )
 
 const (

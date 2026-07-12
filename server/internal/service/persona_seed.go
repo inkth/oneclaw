@@ -11,10 +11,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/fal"
-	"github.com/oneclaw/server/internal/storage"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/fal"
+	"github.com/faxianmao/server/internal/storage"
 )
 
 // ── 预置人设库种子(./server --seed-personas 一次性执行)──────────────────────

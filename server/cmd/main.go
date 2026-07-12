@@ -1,4 +1,4 @@
-// oneclaw-server 入口。
+// faxianmao-server 入口。
 package main
 
 import (
@@ -13,16 +13,16 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/job"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/router"
-	"github.com/oneclaw/server/internal/service"
-	"github.com/oneclaw/server/internal/service/echotik"
-	"github.com/oneclaw/server/internal/service/fal"
-	"github.com/oneclaw/server/internal/service/llm"
-	"github.com/oneclaw/server/internal/storage"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/job"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/router"
+	"github.com/faxianmao/server/internal/service"
+	"github.com/faxianmao/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/service/fal"
+	"github.com/faxianmao/server/internal/service/llm"
+	"github.com/faxianmao/server/internal/storage"
 )
 
 func main() {
@@ -289,7 +289,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("oneclaw-server 启动",
+		logger.Info("faxianmao-server 启动",
 			zap.String("addr", srv.Addr),
 			zap.String("mode", cfg.Server.Mode),
 		)

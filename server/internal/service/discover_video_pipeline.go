@@ -11,10 +11,10 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/llm"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/llm"
 )
 
 // 热门视频管线下载超时:热门带货短视频体积通常几~几十 MB,给足 120s(交互式解析仍用 60s)。

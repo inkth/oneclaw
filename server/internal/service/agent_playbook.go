@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/review"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/review"
 )
 
 // 复盘闭环:把本店最近一次 GMVMax 复盘蒸馏成「本店投放经验」,注入 DIRECTOR 写脚本上下文。

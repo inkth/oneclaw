@@ -9,10 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	apperr "github.com/oneclaw/server/internal/errors"
-	"github.com/oneclaw/server/internal/model"
-	"github.com/oneclaw/server/internal/service/llm"
-	"github.com/oneclaw/server/internal/service/review"
+	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/model"
+	"github.com/faxianmao/server/internal/service/llm"
+	"github.com/faxianmao/server/internal/service/review"
 )
 
 // reviewSystem 复盘 AI 深挖的系统设定;result.GeminiPrompt(含基线+重点素材+任务)作为 user 消息传入。

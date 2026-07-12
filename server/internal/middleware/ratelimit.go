@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/oneclaw/server/internal/config"
-	apperr "github.com/oneclaw/server/internal/errors"
+	"github.com/faxianmao/server/internal/config"
+	apperr "github.com/faxianmao/server/internal/errors"
 )
 
 // 进程内固定窗口限流(Phase 1 无 Redis)。单实例足够;多实例横向扩展时再换 Redis。

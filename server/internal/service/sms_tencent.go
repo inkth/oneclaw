@@ -11,8 +11,8 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	sms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
 
-	"github.com/oneclaw/server/internal/config"
-	"github.com/oneclaw/server/internal/logger"
+	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/logger"
 )
 
 const (

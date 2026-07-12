@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 // categoriesTTL 一级类目极稳定,长缓存:读路径基本零 EchoTik(约 7 天 miss 一次后刷新)。
