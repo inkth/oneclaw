@@ -6,7 +6,7 @@ import { VideosClient, type Video } from "./videos-client";
 
 export const metadata = { title: "选品 · 带货视频榜 · 发现猫" };
 
-type Result = { state: DiscoverState; fetchedAt: string | null; rows: Video[] };
+type Result = { state: DiscoverState; fetchedAt: string | null; warming?: boolean; rows: Video[] };
 
 export default async function DiscoverVideosPage({
   searchParams,
@@ -46,6 +46,7 @@ export default async function DiscoverVideosPage({
       keyword={q}
       ai={ai}
       state={result.state}
+      warming={result.warming ?? false}
       videos={result.rows}
       page={page}
       hasNext={!q && result.rows.length >= 20 && page < 10}

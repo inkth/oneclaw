@@ -6,7 +6,7 @@ import { InfluencersClient, type Influencer } from "./influencers-client";
 
 export const metadata = { title: "选品 · 达人榜 · 发现猫" };
 
-type Result = { state: DiscoverState; fetchedAt: string | null; rows: Influencer[] };
+type Result = { state: DiscoverState; fetchedAt: string | null; warming?: boolean; rows: Influencer[] };
 
 export default async function DiscoverInfluencersPage({
   searchParams,
@@ -43,6 +43,7 @@ export default async function DiscoverInfluencersPage({
       categories={categories}
       keyword={q}
       state={result.state}
+      warming={result.warming ?? false}
       influencers={result.rows}
       page={page}
       hasNext={!q && result.rows.length >= 20 && page < 10}

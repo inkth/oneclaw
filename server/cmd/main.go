@@ -47,19 +47,6 @@ func main() {
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	// EntityRanklistEntry 增加 page_num 维度:旧 6 列唯一索引 uq_ere_key 需先删,
-	// AutoMigrate 才会按新列集重建为 uq_ere_pg(GORM 不会改既有同名索引的列)。幂等:删后即 no-op。
-	db.Exec("DROP INDEX IF EXISTS uq_ere_key")
-
-	// DiscoverBackfillCursor 增加 kind 维度:旧 3 列唯一索引(provider,region,category_id)与
-	// saveBackfillCursor 的 ON CONFLICT 4 列不匹配(42P10 → 游标 upsert 全失败、断点续跑失效)。
-	// 仅当索引还是旧列集(缺 kind)时删除,AutoMigrate 按模型标签重建 4 列版;新环境/已修复则 no-op。
-	db.Exec(`DO $$ BEGIN
-		IF EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'uq_dbc_key' AND indexdef NOT LIKE '%kind%') THEN
-			EXECUTE 'DROP INDEX uq_dbc_key';
-		END IF;
-	END $$`)
-
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.PhoneVerificationCode{},
@@ -93,34 +80,26 @@ func main() {
 		&model.UsageRecord{},
 		&model.PaymentOrder{},
 		&model.OverflowBill{},
-		&model.Agency{},
-		&model.AgencyReferral{},
-		&model.CommissionRecord{},
-		&model.AgencyWithdrawal{},
-		&model.BonusCreditGrant{},
-		&model.AdminAuditLog{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
 
 	// Services
-	agencySvc := service.NewAgencyService(db, cfg.Agency)
 	smsSvc := service.NewSMSService(db, &cfg.SMS, cfg.IsDev())
-	authSvc := service.NewAuthService(db, cfg, smsSvc, agencySvc)
+	authSvc := service.NewAuthService(db, cfg, smsSvc)
 	wsSvc := service.NewWorkspaceService(db)
 	prodSvc := service.NewProductService(db)
 	echoClient := echotik.New(cfg.EchoTik)
 	store := storage.New(cfg.Storage)
-	llmClient := llm.New(cfg.OpenRouter)
-	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient)
+	discSvc := service.NewDiscoverService(db, echoClient, store)
 	mktSvc := service.NewMarketingService(db)
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
+	llmClient := llm.New(cfg.OpenRouter)
 	falClient := fal.New(cfg.Fal)
 	quotaSvc := service.NewQuotaService(db)
 	matSvc := service.NewMaterialService(db, store, falClient, quotaSvc)
-	billingSvc := service.NewBillingService(db, cfg.IsDev(), agencySvc, cfg.Agency.CommissionOnMock)
-	adminSvc := service.NewAdminService(db, billingSvc, quotaSvc, agencySvc)
+	billingSvc := service.NewBillingService(db, cfg.IsDev())
 	videoSvc := service.NewVideoService(db, llmClient, store, falClient, quotaSvc)
 	if falClient.Configured() {
 		logger.Info("[fal] 已配置(封面图)")
@@ -156,67 +135,30 @@ func main() {
 			logger.Info("[backfill] 封面回填完成", zap.Int("updated", up), zap.Int("skipped", sk))
 			return
 		}
-		// 一次性:把存量未翻译的商品标题/视频文案批量译成中文回填后退出(幂等,已译跳过)。
-		// 用法:docker compose run --rm go-api ./server --backfill-translations
-		if arg == "--backfill-translations" {
-			q, err := discSvc.BackfillTranslations(context.Background())
-			if err != nil {
-				logger.Fatal("[backfill] 翻译回填失败", logger.Err(err))
-			}
-			logger.Info("[backfill] 翻译回填完成", zap.Int("queued", q))
-			return
-		}
 		// 一次性:遍历所有站点 × 所有一级类目,把每组合前 5 页商品落库(1 req/s,断点续跑)。
 		// 用法:docker compose run --rm go-api ./server --backfill-products
 		if arg == "--backfill-products" {
-			ft, sk, err := discSvc.BackfillDiscover(context.Background(), service.BackfillKindsProductOnly)
+			ft, sk, err := discSvc.BackfillAllProducts(context.Background())
 			if err != nil {
 				logger.Fatal("[backfill] 商品全量回填失败", logger.Err(err))
 			}
 			logger.Info("[backfill] 商品全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
 			return
 		}
-		// 一次性:清理库里遗留的 mock 占位数据(历史上 EchoTik 短暂不可用时错误兜底落进过库)。幂等。
-		// 用法:docker compose run --rm go-api ./server --purge-mock
-		if arg == "--purge-mock" {
-			rep, err := discSvc.PurgeMockData(context.Background())
+		// 一次性:遍历所有站点 × 类目 × 三类实体(店铺/达人/视频),把每组合前 N 页落库(1 req/s,断点续跑)。
+		// 用法:docker compose run --rm go-api ./server --backfill-entities
+		if arg == "--backfill-entities" {
+			ft, sk, err := discSvc.BackfillAllEntities(context.Background())
 			if err != nil {
-				logger.Fatal("[purge-mock] 清理 mock 数据失败", logger.Err(err))
+				logger.Fatal("[backfill] 实体全量回填失败", logger.Err(err))
 			}
-			logger.Info("[purge-mock] 清理 mock 数据完成",
-				zap.Int64("products", rep.Products),
-				zap.Int64("importedCandidates", rep.ImportedCandidates),
-				zap.Int64("sellers", rep.Sellers),
-				zap.Int64("influencers", rep.Influencers),
-				zap.Int64("videos", rep.Videos),
-				zap.Int64("ranklistEntriesFixed", rep.RanklistEntriesFixed),
-			)
-			return
-		}
-		// 一次性:整个选品板块四榜(商品/店铺/达人/视频)全量本地化。同样 1 req/s、断点续跑。
-		// 用法:docker compose run --rm go-api ./server --backfill-discover
-		if arg == "--backfill-discover" {
-			ft, sk, err := discSvc.BackfillDiscover(context.Background(), service.BackfillKindsAll)
-			if err != nil {
-				logger.Fatal("[backfill] 选品板块全量回填失败", logger.Err(err))
-			}
-			logger.Info("[backfill] 选品板块全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
+			logger.Info("[backfill] 实体全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
 			return
 		}
 	}
 
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)
 	tplSvc := service.NewTemplateService(db, llmClient)
-
-	// 自愈:每次启动清掉任何遗留的 mock 占位数据(历史错误兜底落库的存量)。
-	// 使生产永不带 mock,无需人工命令;幂等,清完即 no-op;失败只告警不阻断启动。
-	go func() {
-		pctx, pcancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer pcancel()
-		if _, err := discSvc.PurgeMockData(pctx); err != nil {
-			logger.Warn("[purge-mock] 启动自愈清理失败", logger.Err(err))
-		}
-	}()
 
 	// 重启恢复:续上生成中视频的轮询,清掉随进程消失的悬挂任务(额度退回)。
 	go func() {
@@ -248,9 +190,6 @@ func main() {
 	defer jobCancel()
 	job.NewDiscoverSync(cfg.DiscoverSync, discSvc, echoClient).Start(jobCtx)
 	job.NewOverflowSettle(cfg.OverflowSettle, billingSvc).Start(jobCtx)
-	discSvc.StartCoverRehost(jobCtx)                      // 封面转存后台 worker(读路径投递、异步存 COS)
-	discSvc.StartTranslate(jobCtx)                        // 外文字段翻译后台 worker(落库投递、异步译中文回填)
-	discSvc.StartVideoPipeline(jobCtx, cfg.VideoPipeline) // 爆款视频下载转存 COS + AI 拆解(sale_cnt>阈值,后台预计算)
 
 	r := router.New(router.Deps{
 		Cfg:       cfg,
@@ -267,8 +206,6 @@ func main() {
 		Template:  tplSvc,
 		Billing:   billingSvc,
 		Quota:     quotaSvc,
-		Agency:    agencySvc,
-		Admin:     adminSvc,
 		// 就绪探针:DB ping(带 2s 超时)。让 /ready 在 DB 不可达时返回 503,
 		// 而非像过去那样空探针恒 200(伪健康)。
 		Ready: []func() error{

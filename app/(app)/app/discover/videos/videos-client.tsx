@@ -8,6 +8,7 @@ import { Pagination } from "../_components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { RankMedal } from "@/components/ui/RankMedal";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, stringToGradient, initial } from "../_components/format";
+import { useWarmingRefresh } from "../_components/useWarmingRefresh";
 
 export type Video = {
   videoId: string;
@@ -38,6 +39,7 @@ export function VideosClient({
   keyword = "",
   ai = false,
   state,
+  warming,
   videos,
   page,
   hasNext,
@@ -50,10 +52,12 @@ export function VideosClient({
   keyword?: string;
   ai?: boolean;
   state: DiscoverState;
+  warming?: boolean;
   videos: Video[];
   page: number;
   hasNext: boolean;
 }) {
+  useWarmingRefresh(warming);
   const searching = keyword.trim().length > 0;
   return (
     <div className="space-y-6">

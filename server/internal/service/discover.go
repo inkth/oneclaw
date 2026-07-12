@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,55 +15,27 @@ import (
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
 	"github.com/faxianmao/server/internal/service/echotik"
-	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
 
 const (
 	providerEchoTik = "echotik"
 	cacheTTL        = 6 * time.Hour
-
-	// maxDiscoverPageNum 商品榜本地化的页数上限,与 handler.maxDiscoverPage 对齐。
-	maxDiscoverPageNum = 10
-	// ranklistPageSize 前端商品榜每页条数,与 page.tsx 的 page_size 对齐;
-	// 缓存整张深度 = maxDiscoverPageNum * ranklistPageSize = 160(见 DISCOVER_SYNC_PAGE_SIZE)。
-	ranklistPageSize = 16
 )
 
 type DiscoverService struct {
 	db        *gorm.DB
 	echo      *echotik.Client
 	storage   *storage.Storage
-	llm       *llm.Client // 榜单外文字段(商品标题/视频文案)后台翻译成中文;nil/未配置时跳过翻译
 	coverHTTP *http.Client
-
-	// 封面转存后台调度:读路径(搜索/首见)只投递 rawURL、立即返回,worker 异步 rehost 到 COS。
-	// 有界 channel + 固定 worker 数统一限速(防 EchoTik 429),inflight 集合跨请求去重。
-	rehostCh       chan []string
-	rehostInflight map[string]struct{}
-	rehostMu       sync.Mutex
-
-	// 外文字段翻译后台调度:落库后投递(id, 原文),worker 批量调 LLM 译成中文回填 name_zh/desc_zh。
-	// 同封面套路——有界 channel + 固定 worker + inflight 去重,读路径零阻塞。
-	translateCh       chan []translateJob
-	translateInflight map[string]struct{}
-	translateMu       sync.Mutex
-
-	// 实体三榜顺序表 SWR 的 in-flight 去重(键=kind+榜单参数),防同组合并发重复拉。
-	ranklistRefreshing sync.Map
 }
 
-func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage, llmc *llm.Client) *DiscoverService {
+func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage) *DiscoverService {
 	return &DiscoverService{
-		db:                db,
-		echo:              echo,
-		storage:           store,
-		llm:               llmc,
-		coverHTTP:         &http.Client{Timeout: 30 * time.Second},
-		rehostCh:          make(chan []string, 256),
-		rehostInflight:    make(map[string]struct{}),
-		translateCh:       make(chan []translateJob, 256),
-		translateInflight: make(map[string]struct{}),
+		db:        db,
+		echo:      echo,
+		storage:   store,
+		coverHTTP: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -72,7 +43,6 @@ func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storag
 type DecoratedProduct struct {
 	ProductID         string   `json:"productId"` // EchoTik external id
 	Name              string   `json:"name"`
-	NameZh            string   `json:"nameZh"` // 中文译文(空=尚未翻译,前端退回 name)
 	Region            string   `json:"region"`
 	AvgPriceCents     int      `json:"avgPriceCents"`
 	MinPriceCents     int      `json:"minPriceCents"`
@@ -89,122 +59,121 @@ type DecoratedProduct struct {
 type RanklistResult struct {
 	State     string             `json:"state"` // live | cached | mock | error
 	FetchedAt *time.Time         `json:"fetchedAt,omitempty"`
+	Warming   bool               `json:"warming,omitempty"` // 当前返回为空/部分,已触发后台异步补全,前端可稍后重取
 	Products  []DecoratedProduct `json:"products"`
 }
 
-// Ranklist 取榜单(缓存优先),并按工作台装饰(已导入 / 收藏)。
+// defaultRanklistDepth 冷启动/定时预热默认拉取的页数(让默认榜前几页开机即可本地翻页)。
+const defaultRanklistDepth = 3
+
+// Ranklist 取榜单:读路径**零同步 EchoTik**。读本地 DB(顺序表 + 主表),按页切片;
+// miss/陈旧/请求页超出已存深度 → goRefresh 后台异步拉取落库,当前请求按"库存为准"返回
+// (可能为空 + warming);EchoTik 未配置时回落 mock(开发演示),不阻塞、不在请求内打跨境接口。
 func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echotik.RanklistParams) (*RanklistResult, error) {
 	if p.PageSize <= 0 {
 		p.PageSize = 10
 	}
-	// 带关键词=搜索:走独立路径(不命中/不写榜单缓存,结果多变)。
+	// 带关键词=搜索:走独立路径(DB-first)。
 	if p.Keyword != "" {
 		return s.searchProducts(ctx, wsID, p), nil
 	}
 
-	// 「全部」榜单:整张有序 ExternalIDs 缓存在一条记录里,前 maxDiscoverPage(10)页都按页切片本地读、
-	// 零 EchoTik;预热深度由 DISCOVER_SYNC_PAGE_SIZE(160)保证。超出预热范围的深页 lookupCache 返回 false 回退实时拉。
-	// 按类目筛选另走 lookupProductsByCategory 本地分页。
-	useCache := p.CategoryID == "" && p.PageNum <= maxDiscoverPageNum
+	// ── 类目筛选:本地按累计销量分页;后台异步拉深保鲜。 ──
+	if p.CategoryID != "" {
+		if s.echo.Configured() {
+			goRefresh(ctx, "ranklist-category", func(bg context.Context) {
+				if _, e := s.RefreshRanklistDeep(bg, p, p.PageNum); e != nil {
+					logger.Warn("类目商品榜后台刷新失败", logger.String("cat", p.CategoryID), logger.Err(e))
+				}
+			})
+		}
+		if dps, ok := s.lookupProductsByCategory(ctx, p); ok {
+			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}, nil
+		}
+		if !s.echo.Configured() {
+			return s.mockRanklist(ctx, wsID, p), nil
+		}
+		return &RanklistResult{State: "cached", Warming: true, Products: []DecoratedProduct{}}, nil
+	}
 
-	// 1. 缓存命中?有就用(不看 TTL,EchoTik 不可用也能读);陈旧则后台刷新,不阻塞用户。
-	if useCache {
-		if dps, fetchedAt, ok := s.lookupCache(ctx, p); ok {
-			// 陈旧则后台刷新:只在第 1 页触发,且按完整深度刷整张榜,
-			// 避免深页的小 PageSize 把整张有序缓存覆盖成单页。
-			if s.echo.Configured() && p.PageNum <= 1 && time.Since(fetchedAt) > cacheTTL {
-				full := p
-				full.PageNum = 1
-				full.PageSize = maxDiscoverPageNum * ranklistPageSize
+	// ── 默认榜:读顺序表 + 主表,按页切片;后台异步保鲜/拉深。 ──
+	if ids, fetchedAt, ok := s.lookupCacheIDs(ctx, p); ok {
+		pageIDs := pageSlice(ids, p.PageNum, p.PageSize)
+		if s.echo.Configured() {
+			stale := time.Since(fetchedAt) > cacheTTL
+			beyond := len(pageIDs) == 0 && p.PageNum > 1 // 请求页超出已存深度 → 拉深
+			if stale || beyond {
+				depth := p.PageNum
+				if depth < defaultRanklistDepth {
+					depth = defaultRanklistDepth
+				}
 				goRefresh(ctx, "ranklist", func(bg context.Context) {
-					if _, e := s.RefreshRanklist(bg, full); e != nil {
+					if _, e := s.RefreshRanklistDeep(bg, p, depth); e != nil {
 						logger.Warn("商品榜后台刷新失败", logger.String("region", p.Region), logger.Err(e))
 					}
 				})
 			}
-			return &RanklistResult{State: "cached", FetchedAt: &fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
 		}
+		dps := s.loadProductsOrdered(ctx, p.Region, pageIDs)
+		fa := fetchedAt
+		return &RanklistResult{State: "cached", FetchedAt: &fa, Warming: len(dps) == 0 && s.echo.Configured(), Products: s.decorate(ctx, wsID, dps)}, nil
 	}
 
-	// 1b. 类目筛选:本地按累计销量分页取(数据足够零 EchoTik);命中则后台刷新补新。
-	if p.CategoryID != "" {
-		if dps, ok := s.lookupProductsByCategory(ctx, p); ok {
-			if s.echo.Configured() {
-				goRefresh(ctx, "ranklist-category", func(bg context.Context) {
-					if _, e := s.RefreshRanklist(bg, p); e != nil {
-						logger.Warn("类目商品榜后台刷新失败", logger.String("cat", p.CategoryID), logger.Err(e))
-					}
-				})
-			}
-			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}, nil
-		}
-	}
-
-	// 2. 取数据源(live / mock)。mock 只在本地无凭证时兜底看 UI;生产已配置,
-	//    上游报错绝不落 mock 假数据(否则会永久污染商品库),直接返回 error 空态。
-	raw, err := s.fetchRaw(ctx, p)
-	if err != nil {
-		logger.Warn("商品榜实时拉取失败", logger.String("region", p.Region), logger.Err(err))
-		return &RanklistResult{State: "error"}, nil
-	}
-	state := "live"
+	// ── 冷启动(顺序表为空)。 ──
 	if !s.echo.Configured() {
-		state = "mock"
+		return s.mockRanklist(ctx, wsID, p), nil
 	}
-
-	// 3. 落库(DiscoverProduct 永远 upsert,以支持导入;封面永久化对所有 live 数据都做——含类目筛选)。
-	//    榜单缓存(整张有序 ExternalIDs)只许「全部·第 1 页」这种完整深度拉取写入;page>1 的兜底
-	//    只取该页 16 条,若也写缓存会把整张榜覆盖成单页(useCache 已放宽到前 10 页,故不能再用它当写闸)。
-	writeCache := state == "live" && p.CategoryID == "" && p.PageNum <= 1
-	dps := s.persist(ctx, p, raw, writeCache, state == "live")
-	var fetchedAt *time.Time
-	if state == "live" {
-		now := time.Now()
-		fetchedAt = &now
-	}
-	return &RanklistResult{State: state, FetchedAt: fetchedAt, Products: s.decorate(ctx, wsID, dps)}, nil
+	goRefresh(ctx, "ranklist-cold", func(bg context.Context) {
+		if _, e := s.RefreshRanklistDeep(bg, p, defaultRanklistDepth); e != nil {
+			logger.Warn("商品榜冷启动后台拉取失败", logger.String("region", p.Region), logger.Err(e))
+		}
+	})
+	return &RanklistResult{State: "cached", Warming: true, Products: []DecoratedProduct{}}, nil
 }
 
-// searchProducts 关键词搜商品:不进/不写榜单缓存(结果多变),但仍 upsert DiscoverProduct
-// 以支持收藏/导入,并对 live 结果补取封面(同榜单经 product/detail 签名)。
+// mockRanklist EchoTik 未配置时的开发兜底:用预置 mock 数据 upsert 进 DiscoverProduct
+// (支持导入/收藏演示),不写榜单顺序/快照/封面。
+func (s *DiscoverService) mockRanklist(ctx context.Context, wsID uuid.UUID, p echotik.RanklistParams) *RanklistResult {
+	raw := echotik.MockRanklist(p.Region, p.PageSize)
+	dps := s.persist(ctx, p, raw, false, false, false)
+	return &RanklistResult{State: "mock", Products: s.decorate(ctx, wsID, dps)}
+}
+
+// searchProducts 关键词搜商品:**DB-first**。先返回已落库商品的本地 ILIKE 匹配(零 EchoTik),
+// 再 goRefresh 后台用 echo.SearchProducts 拉取落库供下次;本地无结果且 echo 已配置时返回空+warming。
 func (s *DiscoverService) searchProducts(ctx context.Context, wsID uuid.UUID, p echotik.RanklistParams) *RanklistResult {
-	state := "live"
-	var raw []echotik.ProductListItem
+	if s.echo.Configured() {
+		goRefresh(ctx, "search-products", func(bg context.Context) { s.warmSearchProducts(bg, p) })
+	}
+	if dps, ok := s.searchLocalProducts(ctx, p); ok {
+		return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}
+	}
 	if !s.echo.Configured() {
-		if dps, ok := s.searchLocalProducts(ctx, p); ok {
-			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}
-		}
-		state = "mock"
-		raw = echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
-	} else if rows, err := s.echo.SearchProducts(ctx, p.Keyword, p.Region, p.PageSize); err != nil {
-		logger.Warn("选品搜索失败,本地兜底", logger.String("keyword", p.Keyword), logger.Err(err))
-		if dps, ok := s.searchLocalProducts(ctx, p); ok {
-			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}
-		}
-		// 生产上游报错且本地无兜底:返回空态而非 mock 假数据(避免污染搜索兜底库)。
-		return &RanklistResult{State: "error"}
-	} else {
-		raw = rows
+		raw := echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
+		dps := s.persist(ctx, p, raw, false, false, false)
+		return &RanklistResult{State: "mock", Products: s.decorate(ctx, wsID, dps)}
 	}
-
-	// 搜索响应可能回 priority_region 而非 region,导致行 region 为空;回填查询 region(详情链接/落库要用)。
-	for i := range raw {
-		if raw[i].Region == "" {
-			raw[i].Region = p.Region
-		}
-	}
-
-	dps := s.persist(ctx, p, raw, false, state == "live")
-	var fetchedAt *time.Time
-	if state == "live" {
-		now := time.Now()
-		fetchedAt = &now
-	}
-	return &RanklistResult{State: state, FetchedAt: fetchedAt, Products: s.decorate(ctx, wsID, dps)}
+	return &RanklistResult{State: "cached", Warming: true, Products: []DecoratedProduct{}}
 }
 
-// RefreshRanklist 强制拉取并落库(定时预热用):跳过缓存检查、不做工作台装饰。
-// 走 persist 既有路径,刷新后 6h 内用户请求命中缓存。返回落库条数。
+// warmSearchProducts 后台拉取搜索结果并落库(支持下次本地命中 + 收藏/导入)。
+func (s *DiscoverService) warmSearchProducts(ctx context.Context, p echotik.RanklistParams) {
+	rows, err := s.echo.SearchProducts(ctx, p.Keyword, p.Region, p.PageSize)
+	if err != nil {
+		logger.Warn("选品搜索后台拉取失败", logger.String("keyword", p.Keyword), logger.Err(err))
+		return
+	}
+	// 搜索响应可能回 priority_region 而非 region,导致行 region 为空;回填查询 region(详情链接/落库要用)。
+	for i := range rows {
+		if rows[i].Region == "" {
+			rows[i].Region = p.Region
+		}
+	}
+	s.persist(ctx, p, rows, false, false, true) // 不写顺序/快照,补封面
+}
+
+// RefreshRanklist 强制拉取单页并落库(定时预热 / 现场兜底):跳过缓存检查、不做工作台装饰。
+// 走 persist 既有路径,刷新后用户请求命中缓存。返回落库条数。多页累积见 RefreshRanklistDeep。
 func (s *DiscoverService) RefreshRanklist(ctx context.Context, p echotik.RanklistParams) (int, error) {
 	if !s.echo.Configured() {
 		return 0, errors.New("echotik 未配置")
@@ -216,86 +185,153 @@ func (s *DiscoverService) RefreshRanklist(ctx context.Context, p echotik.Ranklis
 	if err != nil {
 		return 0, err
 	}
-	dps := s.persist(ctx, p, raw, p.CategoryID == "", p.CategoryID == "")
+	writeDefault := p.CategoryID == ""
+	dps := s.persist(ctx, p, raw, writeDefault, writeDefault, writeDefault)
 	return len(dps), nil
 }
 
-func (s *DiscoverService) fetchRaw(ctx context.Context, p echotik.RanklistParams) ([]echotik.ProductListItem, error) {
+// RefreshRanklistDeep 拉取榜单前 upto 页并累积落库:商品+封面+快照逐页 upsert;
+// 默认榜(无类目)把所有页 ID 去重累积后统一写一条顺序表(供翻页切片)。类目榜只落主表
+// (读路径走 lookupProductsByCategory)。供定时预热 / 冷启动 / 翻页拉深。
+func (s *DiscoverService) RefreshRanklistDeep(ctx context.Context, p echotik.RanklistParams, upto int) (int, error) {
 	if !s.echo.Configured() {
-		return echotik.MockRanklist(p.Region, p.PageSize), nil
+		return 0, errors.New("echotik 未配置")
 	}
-	return s.echo.GetProductRanklist(ctx, p)
+	if p.PageSize <= 0 {
+		p.PageSize = 10
+	}
+	if upto < 1 {
+		upto = 1
+	}
+	writeDefault := p.CategoryID == "" // 仅默认榜累积顺序表/写快照
+	var allIDs []string
+	seen := make(map[string]struct{})
+	total := 0
+	for page := 1; page <= upto; page++ {
+		pp := p
+		pp.PageNum = page
+		raw, err := s.echo.GetProductRanklist(ctx, pp)
+		if err != nil {
+			if page == 1 {
+				return total, err
+			}
+			break // 部分深度可接受
+		}
+		if len(raw) == 0 {
+			break
+		}
+		// 逐页落库:商品 + 快照(默认榜) + 封面;顺序表累积后统一写。
+		dps := s.persist(ctx, pp, raw, writeDefault, false, true)
+		total += len(dps)
+		for _, d := range dps {
+			if _, dup := seen[d.ExternalID]; !dup {
+				seen[d.ExternalID] = struct{}{}
+				allIDs = append(allIDs, d.ExternalID)
+			}
+		}
+		if len(raw) < p.PageSize {
+			break // 不足一页=没有更多
+		}
+	}
+	if writeDefault && len(allIDs) > 0 {
+		s.writeRanklistEntry(ctx, p, allIDs)
+	}
+	return total, nil
 }
 
-func (s *DiscoverService) lookupCache(ctx context.Context, p echotik.RanklistParams) ([]model.DiscoverProduct, time.Time, bool) {
+// writeRanklistEntry upsert 一条商品榜顺序((provider,region,rank_type,rank_field) 幂等)。
+func (s *DiscoverService) writeRanklistEntry(ctx context.Context, p echotik.RanklistParams, ids []string) {
+	if s.db == nil || len(ids) == 0 {
+		return
+	}
+	entry := model.RanklistCacheEntry{
+		Provider: providerEchoTik, Region: p.Region, RankType: p.RankType, RankField: p.RankField,
+		Date: time.Now().Format("2006-01-02"), ExternalIDs: ids, FetchedAt: time.Now(),
+	}
+	s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "provider"}, {Name: "region"}, {Name: "rank_type"}, {Name: "rank_field"}},
+		DoUpdates: clause.AssignmentColumns([]string{"date", "external_ids", "fetched_at"}),
+	}).Create(&entry)
+}
+
+// pageSlice 取 ids 的第 pageNum 页(1-based)、每页 pageSize 条;越界返回空。
+func pageSlice(ids []string, pageNum, pageSize int) []string {
+	if pageSize <= 0 {
+		return ids
+	}
+	if pageNum <= 0 {
+		pageNum = 1
+	}
+	start := (pageNum - 1) * pageSize
+	if start >= len(ids) {
+		return nil
+	}
+	end := start + pageSize
+	if end > len(ids) {
+		end = len(ids)
+	}
+	return ids[start:end]
+}
+
+// lookupCacheIDs 读商品榜顺序表的 ID 列表(不看 TTL,有就用);新鲜度由后台刷新与定时 job 保证。
+func (s *DiscoverService) lookupCacheIDs(ctx context.Context, p echotik.RanklistParams) ([]string, time.Time, bool) {
 	var entry model.RanklistCacheEntry
 	err := s.db.WithContext(ctx).
 		Where("provider = ? AND region = ? AND rank_type = ? AND rank_field = ?",
 			providerEchoTik, p.Region, p.RankType, p.RankField).
 		First(&entry).Error
-	// 不看 TTL:有就用(榜单可读不依赖 EchoTik);新鲜度由 Ranklist 的后台刷新与定时 job 保证。
 	if err != nil || len(entry.ExternalIDs) == 0 {
 		return nil, time.Time{}, false
 	}
-	// 整张有序 ExternalIDs 按页码切窗:只取当前页对应的 ID 段(保留 EchoTik 真实榜序)。
-	// 越界(深页超出预热范围)→ 返回 false,调用方回退实时拉。
-	pageSize := p.PageSize
-	if pageSize <= 0 {
-		pageSize = ranklistPageSize
-	}
-	start := (normPage(p.PageNum) - 1) * pageSize
-	if start >= len(entry.ExternalIDs) {
-		return nil, time.Time{}, false
-	}
-	end := start + pageSize
-	if end > len(entry.ExternalIDs) {
-		end = len(entry.ExternalIDs)
-	}
-	pageIDs := entry.ExternalIDs[start:end]
+	return entry.ExternalIDs, entry.FetchedAt, true
+}
 
+// loadProductsOrdered 按给定 ID 顺序从主表取商品(缺失的跳过)。
+func (s *DiscoverService) loadProductsOrdered(ctx context.Context, region string, ids []string) []model.DiscoverProduct {
+	if len(ids) == 0 {
+		return nil
+	}
 	var dps []model.DiscoverProduct
 	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, p.Region, pageIDs).
+		Where("provider = ? AND region = ? AND external_id IN ?", providerEchoTik, region, ids).
 		Find(&dps).Error; err != nil {
-		return nil, time.Time{}, false
+		return nil
 	}
-	// 按缓存顺序排列。
 	byID := make(map[string]model.DiscoverProduct, len(dps))
 	for _, d := range dps {
 		byID[d.ExternalID] = d
 	}
-	ordered := make([]model.DiscoverProduct, 0, len(pageIDs))
-	for _, id := range pageIDs {
+	ordered := make([]model.DiscoverProduct, 0, len(ids))
+	for _, id := range ids {
 		if d, ok := byID[id]; ok {
 			ordered = append(ordered, d)
 		}
 	}
-	if len(ordered) == 0 {
-		return nil, time.Time{}, false
-	}
-	return ordered, entry.FetchedAt, true
+	return ordered
 }
 
-// lookupProductsByCategory 本地按类目分页取商品榜(累计销量降序)。数据足够时类目筛选/翻页零 EchoTik。
-// 全程同一排序(sale_cnt desc)+ offset 翻页,页间口径一致;offset 越界则返回空 → 调用方回退 live。
+// lookupProductsByCategory 本地按类目取商品榜(累计销量降序,按页 offset)。数据足够时类目筛选零 EchoTik。
 func (s *DiscoverService) lookupProductsByCategory(ctx context.Context, p echotik.RanklistParams) ([]model.DiscoverProduct, bool) {
 	if s.db == nil {
 		return nil, false
 	}
+	offset := 0
+	if p.PageNum > 1 {
+		offset = (p.PageNum - 1) * p.PageSize
+	}
 	var dps []model.DiscoverProduct
 	if err := s.db.WithContext(ctx).
 		Where("provider = ? AND region = ? AND category_id = ?", providerEchoTik, p.Region, p.CategoryID).
-		Order("total_sale_cnt DESC").
-		Offset((normPage(p.PageNum) - 1) * p.PageSize).Limit(p.PageSize).
-		Find(&dps).Error; err != nil || len(dps) == 0 {
+		Order("total_sale_cnt DESC").Offset(offset).Limit(p.PageSize).Find(&dps).Error; err != nil || len(dps) == 0 {
 		return nil, false
 	}
 	return dps, true
 }
 
-// persist 落库 DiscoverProduct(永远 upsert,支持导入);writeCache 控制是否写榜单缓存+快照
-// (搜索/类目筛选/翻页时为 false);enrichCover 控制是否补取封面(与缓存解耦,搜索 live 也补图)。
-func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams, raw []echotik.ProductListItem, writeCache, enrichCover bool) []model.DiscoverProduct {
+// persist 落库 DiscoverProduct(永远 upsert,支持导入);writeSnapshot 控制是否写每日快照(趋势源),
+// writeCacheEntry 控制是否写榜单顺序表(单页路径用;多页累积走 RefreshRanklistDeep+writeRanklistEntry),
+// enrichCover 控制是否补取封面(与缓存解耦,搜索 live 也补图)。
+func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams, raw []echotik.ProductListItem, writeSnapshot, writeCacheEntry, enrichCover bool) []model.DiscoverProduct {
 	today := time.Now().Format("2006-01-02")
 	out := make([]model.DiscoverProduct, 0, len(raw))
 	externalIDs := make([]string, 0, len(raw))
@@ -354,7 +390,7 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 			out = append(out, stored)
 			externalIDs = append(externalIDs, it.ProductID)
 
-			if writeCache {
+			if writeSnapshot {
 				snap := model.DiscoverSnapshot{
 					DiscoverProductID: stored.ID, Dt: today,
 					TotalSaleCnt: it.TotalSaleCnt, TotalSaleGmv: echotik.DollarsToCents(it.TotalSaleGmvAmt),
@@ -367,7 +403,7 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 			}
 		}
 
-		if writeCache && len(externalIDs) > 0 {
+		if writeCacheEntry && len(externalIDs) > 0 {
 			entry := model.RanklistCacheEntry{
 				Provider: providerEchoTik, Region: p.Region, RankType: p.RankType, RankField: p.RankField,
 				Date: today, ExternalIDs: externalIDs, FetchedAt: time.Now(),
@@ -379,16 +415,6 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 		}
 		return nil
 	})
-
-	// 落库后投递未翻译的标题给后台翻译 worker(仅 name_zh 为空且有原文的行)。
-	jobs := make([]translateJob, 0, len(out))
-	for _, d := range out {
-		if d.NameZh == "" && d.Name != "" {
-			jobs = append(jobs, translateJob{Table: "discover_products", Column: "name_zh", ID: d.ID, Text: d.Name})
-		}
-	}
-	s.enqueueTranslate(jobs)
-
 	return out
 }
 
@@ -418,7 +444,7 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 	out := make([]DecoratedProduct, 0, len(dps))
 	for _, d := range dps {
 		dp := DecoratedProduct{
-			ProductID: d.ExternalID, Name: d.Name, NameZh: d.NameZh, Region: d.Region,
+			ProductID: d.ExternalID, Name: d.Name, Region: d.Region,
 			AvgPriceCents: d.AvgPriceCents, MinPriceCents: d.MinPriceCents, MaxPriceCents: d.MaxPriceCents,
 			CommissionRate: d.CommissionRate, TotalSaleCnt: d.TotalSaleCnt, TotalSaleGmvCents: d.TotalSaleGmv,
 			TotalIflCnt: d.TotalIflCnt, TotalVideoCnt: d.TotalVideoCnt,

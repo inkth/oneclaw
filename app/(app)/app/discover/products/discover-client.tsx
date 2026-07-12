@@ -18,6 +18,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { RankMedal } from "@/components/ui/RankMedal";
 import { Delta } from "@/components/ui/Delta";
+import { useWarmingRefresh } from "../_components/useWarmingRefresh";
 import { VERDICT_TONE, VERDICT_LABEL } from "@/lib/ui/tokens";
 import {
   Compass,
@@ -75,6 +76,7 @@ export function DiscoverClient({
   categoryId,
   categories,
   keyword = "",
+  warming,
   products,
   page,
   hasNext,
@@ -89,6 +91,7 @@ export function DiscoverClient({
   keyword?: string;
   state: DiscoverState;
   fetchedAt: string | null;
+  warming?: boolean;
   products: DiscoverProduct[];
   page: number;
   hasNext: boolean;
@@ -96,6 +99,7 @@ export function DiscoverClient({
 }) {
   const searching = keyword.trim().length > 0;
   const router = useRouter();
+  useWarmingRefresh(warming);
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const { open: openAuthModal } = useAuthModal();
 
