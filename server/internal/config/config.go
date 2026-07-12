@@ -23,12 +23,23 @@ type Config struct {
 	SMS            SMSConfig
 	EchoTik        EchoTikConfig
 	DiscoverSync   DiscoverSyncConfig
+	VideoPipeline  DiscoverVideoPipelineConfig
 	OverflowSettle OverflowSettleConfig
 	Storage        StorageConfig
 	OpenRouter     OpenRouterConfig
 	Fal            FalConfig
+	Agency         AgencyConfig
 	CORS           CORSConfig
 	Log            LogConfig
+}
+
+// AgencyConfig 代理商系统。BonusCredits 经邀请码注册的新人一次性赠送积分;
+// DefaultCommissionBP 新开通代理商的默认佣金比例(万分比,2000=20%);
+// CommissionOnMock 仅 dev 生效:是否让 mock 支付也计佣(联调计佣链路用,默认 false 保持「mock 不计佣」)。
+type AgencyConfig struct {
+	BonusCredits        int
+	DefaultCommissionBP int
+	CommissionOnMock    bool
 }
 
 type ServerConfig struct {
@@ -101,11 +112,12 @@ func (e EchoTikConfig) Configured() bool { return e.Username != "" && e.Password
 // DiscoverSyncConfig 选品榜单定时同步:预热榜单缓存 + 保证每日快照连续。
 // 仅在 EchoTik 已配置时生效(mock 模式无预热价值)。
 type DiscoverSyncConfig struct {
-	Enabled  bool
-	Interval time.Duration // 与榜单缓存 TTL(6h)对齐
-	Combos   []SyncCombo   // 抓取的 region × 榜单组合
-	PageSize int           // 每榜抓取条数
-	Pages    int           // 每组合预热的页数(累积到顺序表,供本地翻页);默认 3
+	Enabled       bool
+	Interval      time.Duration // 与榜单缓存 TTL(6h)对齐
+	Combos        []SyncCombo   // 抓取的 region × 榜单组合
+	PageSize      int           // 每榜抓取条数
+	Pages         int           // 每组合预热的页数(累积到顺序表,供本地翻页)
+	CategorySweep bool          // 每日一轮 combo 站点 × 全一级类目 × 四榜第 1 页(类目首屏保鲜)
 }
 
 // SyncCombo 一组榜单抓取参数。RankType/RankField 取值见 echotik 包枚举(1=热销榜/销量)。
@@ -113,6 +125,19 @@ type SyncCombo struct {
 	Region    string
 	RankType  int
 	RankField int
+}
+
+// DiscoverVideoPipelineConfig 爆款视频永久化 + AI 拆解后台管线。
+// 对某站点 sale_cnt>阈值 的热门带货视频:下载无水印 mp4 转存 COS + 复用多模态管线做 AI 拆解,
+// 全后台预计算。需 EchoTik + COS + LLM 三者都配置才启动(缺一即跳过)。
+type DiscoverVideoPipelineConfig struct {
+	Enabled       bool
+	Interval      time.Duration
+	Region        string // 只处理该站点(先只跑美国站)
+	SaleThreshold int    // 带货销量门槛,超过才处理
+	PerRun        int    // 每轮每支路认领上限(成本闸门:直接封顶 EchoTik 实时调用 + gemini 调用数)
+	Concurrency   int    // 并发处理数(gemini 多模态 + ffmpeg 均重,宜小)
+	MaxAttempts   int    // 单条失败退避上限
 }
 
 // OverflowSettleConfig TEAM 超额月度结算 job:把上一账期 billable 用量出账(幂等)。
@@ -137,13 +162,14 @@ func (s StorageConfig) Configured() bool {
 
 // OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
 type OpenRouterConfig struct {
-	APIKey      string
-	Model       string // 文本默认 deepseek/deepseek-chat
-	ReviewModel string // 投放复盘深挖默认 google/gemini-3.5-flash(长上下文+便宜)
-	ReviewProxy string // 复盘模型出网代理(绕国内 IP 的 OpenRouter 地区限制);空=直连。如 http://1.2.3.4:8888
-	VideoModel  string // 视频默认 bytedance/seedance-2.0-fast
-	ImageModel  string // 图像默认 google/gemini-3.1-flash-image-preview
-	Referer     string // HTTP-Referer 头
+	APIKey         string
+	Model          string // 文本默认 deepseek/deepseek-chat
+	TranslateModel string // 选品外文字段翻译默认 deepseek/deepseek-v4-flash(快且便宜)
+	ReviewModel    string // 投放复盘深挖默认 google/gemini-3.5-flash(长上下文+便宜)
+	ReviewProxy    string // 复盘模型出网代理(绕国内 IP 的 OpenRouter 地区限制);空=直连。如 http://1.2.3.4:8888
+	VideoModel     string // 视频默认 bytedance/seedance-2.0-fast
+	ImageModel     string // 图像默认 google/gemini-3.1-flash-image-preview
+	Referer        string // HTTP-Referer 头
 }
 
 func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
@@ -154,6 +180,10 @@ type FalConfig struct {
 	BaseURL    string // 默认 https://fal.run
 	ImageModel string // 默认 fal-ai/flux/schnell
 	TryOnModel string // 虚拟试穿:默认 fal-ai/fashn/tryon/v1.6
+	// DownloadProxy 结果图下载代理:生成 API(queue.fal.run)国内直连可达,但结果图托管在
+	// fal.media CDN,跨境 TLS 间歇挂死(实测直连 90s 下不完、经代理 6s)。仅下载结果图走此代理;
+	// 空=直连。默认复用 OPENROUTER_REVIEW_PROXY,生产已配则零额外配置。
+	DownloadProxy string
 }
 
 func (f FalConfig) Configured() bool { return f.APIKey != "" }
@@ -218,8 +248,21 @@ func Load() *Config {
 			Enabled:  getEnvBool("DISCOVER_SYNC_ENABLED", true),
 			Interval: time.Duration(getEnvInt("DISCOVER_SYNC_INTERVAL_HOURS", 6)) * time.Hour,
 			Combos:   parseSyncCombos(getEnv("DISCOVER_SYNC_COMBOS", "US,ID,TH,VN")),
-			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 30),
+			// 预热前 maxDiscoverPage(10)页商品榜:10 页 × 前端 page_size 16 = 160,
+			// 让「全部」类目前 10 页全命中缓存零 EchoTik。改小会让深页回退实时拉。
+			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 160),
 			Pages:    getEnvInt("DISCOVER_SYNC_PAGES", 3),
+			// 每日类目扫:combo 站点 × 全一级类目 × 四榜第 1 页,约 500 请求/天。
+			CategorySweep: getEnvBool("DISCOVER_SYNC_CATEGORY_SWEEP", true),
+		},
+		VideoPipeline: DiscoverVideoPipelineConfig{
+			Enabled:       getEnvBool("VIDEO_PIPELINE_ENABLED", true),
+			Interval:      time.Duration(getEnvInt("VIDEO_PIPELINE_INTERVAL_MINUTES", 10)) * time.Minute,
+			Region:        getEnv("VIDEO_PIPELINE_REGION", "US"),
+			SaleThreshold: getEnvInt("VIDEO_PIPELINE_SALE_THRESHOLD", 500),
+			PerRun:        getEnvInt("VIDEO_PIPELINE_PER_RUN", 20),
+			Concurrency:   getEnvInt("VIDEO_PIPELINE_CONCURRENCY", 2),
+			MaxAttempts:   getEnvInt("VIDEO_PIPELINE_MAX_ATTEMPTS", 3),
 		},
 		OverflowSettle: OverflowSettleConfig{
 			Enabled:  getEnvBool("OVERFLOW_SETTLE_ENABLED", true),
@@ -233,19 +276,27 @@ func Load() *Config {
 			COSDomain:    getEnv("TENCENT_COS_DOMAIN", ""),
 		},
 		OpenRouter: OpenRouterConfig{
-			APIKey:      getEnv("OPENROUTER_API_KEY", ""),
-			Model:       getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
-			ReviewModel: getEnv("OPENROUTER_REVIEW_MODEL", "google/gemini-3.5-flash"),
-			ReviewProxy: getEnv("OPENROUTER_REVIEW_PROXY", ""),
-			VideoModel:  getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
-			ImageModel:  getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
-			Referer:     getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
+			APIKey:         getEnv("OPENROUTER_API_KEY", ""),
+			Model:          getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
+			TranslateModel: getEnv("OPENROUTER_TRANSLATE_MODEL", "deepseek/deepseek-v4-flash"),
+			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "google/gemini-3.5-flash"),
+			ReviewProxy:    getEnv("OPENROUTER_REVIEW_PROXY", ""),
+			VideoModel:     getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
+			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
+			Referer:        getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
 		},
 		Fal: FalConfig{
 			APIKey:     getEnv("FALAI_API_KEY", ""),
 			BaseURL:    getEnv("FALAI_BASE_URL", "https://fal.run"),
 			ImageModel: getEnv("FALAI_DEFAULT_IMAGE_MODEL", "fal-ai/flux/schnell"),
 			TryOnModel: getEnv("FALAI_TRYON_MODEL", "fal-ai/fashn/tryon/v1.6"),
+			// 默认复用复盘代理:生产已配 OPENROUTER_REVIEW_PROXY,无需新增 env。
+			DownloadProxy: getEnv("FALAI_DOWNLOAD_PROXY", getEnv("OPENROUTER_REVIEW_PROXY", "")),
+		},
+		Agency: AgencyConfig{
+			BonusCredits:        getEnvInt("AGENCY_BONUS_CREDITS", 300),
+			DefaultCommissionBP: getEnvInt("AGENCY_DEFAULT_COMMISSION_BP", 2000),
+			CommissionOnMock:    getEnvBool("AGENCY_COMMISSION_ON_MOCK", false),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),

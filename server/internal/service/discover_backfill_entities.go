@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/oneclaw/server/internal/logger"
-	"github.com/oneclaw/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/logger"
+	"github.com/faxianmao/server/internal/service/echotik"
 )
 
 const (
