@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +16,7 @@ import (
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
 	"github.com/faxianmao/server/internal/service/echotik"
+	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
 
@@ -24,18 +26,31 @@ const (
 )
 
 type DiscoverService struct {
-	db        *gorm.DB
-	echo      *echotik.Client
-	storage   *storage.Storage
-	coverHTTP *http.Client
+	db                 *gorm.DB
+	echo               *echotik.Client
+	storage            *storage.Storage
+	llm                *llm.Client
+	coverHTTP          *http.Client
+	rehostCh           chan []string
+	rehostInflight     map[string]struct{}
+	rehostMu           sync.Mutex
+	translateCh        chan []translateJob
+	translateInflight  map[string]struct{}
+	translateMu        sync.Mutex
+	ranklistRefreshing sync.Map
 }
 
-func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage) *DiscoverService {
+func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storage, llmc *llm.Client) *DiscoverService {
 	return &DiscoverService{
-		db:        db,
-		echo:      echo,
-		storage:   store,
-		coverHTTP: &http.Client{Timeout: 30 * time.Second},
+		db:                db,
+		echo:              echo,
+		storage:           store,
+		llm:               llmc,
+		coverHTTP:         &http.Client{Timeout: 30 * time.Second},
+		rehostCh:          make(chan []string, 256),
+		rehostInflight:    make(map[string]struct{}),
+		translateCh:       make(chan []translateJob, 256),
+		translateInflight: make(map[string]struct{}),
 	}
 }
 

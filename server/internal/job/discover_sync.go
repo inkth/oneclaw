@@ -125,7 +125,7 @@ func (j *DiscoverSync) sweepCategories(ctx context.Context) {
 				Region: c.Region, RankType: c.RankType, RankField: c.RankField,
 				CategoryID: cat.ID, PageSize: entityPrewarmPageSize,
 			}
-			if err := j.discover.PrewarmEntities(cctx, p); err != nil {
+			if err := j.discover.PrewarmEntities(cctx, p, 1); err != nil {
 				logger.Warn("[job] 类目扫 entity 榜失败",
 					logger.String("region", c.Region), logger.String("cat", cat.ID), logger.Err(err))
 			}

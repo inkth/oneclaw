@@ -59,8 +59,7 @@ func (s *DiscoverService) BackfillAllEntities(ctx context.Context) (fetched, ski
 				if ctx.Err() != nil {
 					return fetched, skipped, ctx.Err()
 				}
-				cursorKey := "ent:" + kind + ":" + catID
-				cur := s.loadBackfillCursor(ctx, region, cursorKey)
+				cur := s.loadBackfillCursor(ctx, "entity:"+kind, region, catID)
 				if cur.Completed {
 					skipped++
 					continue

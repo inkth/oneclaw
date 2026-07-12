@@ -80,26 +80,34 @@ func main() {
 		&model.UsageRecord{},
 		&model.PaymentOrder{},
 		&model.OverflowBill{},
+		&model.Agency{},
+		&model.AgencyReferral{},
+		&model.CommissionRecord{},
+		&model.AgencyWithdrawal{},
+		&model.BonusCreditGrant{},
+		&model.AdminAuditLog{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
 
 	// Services
+	agencySvc := service.NewAgencyService(db, cfg.Agency)
 	smsSvc := service.NewSMSService(db, &cfg.SMS, cfg.IsDev())
-	authSvc := service.NewAuthService(db, cfg, smsSvc)
+	authSvc := service.NewAuthService(db, cfg, smsSvc, agencySvc)
 	wsSvc := service.NewWorkspaceService(db)
 	prodSvc := service.NewProductService(db)
 	echoClient := echotik.New(cfg.EchoTik)
 	store := storage.New(cfg.Storage)
-	discSvc := service.NewDiscoverService(db, echoClient, store)
 	mktSvc := service.NewMarketingService(db)
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
 	llmClient := llm.New(cfg.OpenRouter)
+	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient)
 	falClient := fal.New(cfg.Fal)
 	quotaSvc := service.NewQuotaService(db)
 	matSvc := service.NewMaterialService(db, store, falClient, quotaSvc)
-	billingSvc := service.NewBillingService(db, cfg.IsDev())
+	billingSvc := service.NewBillingService(db, cfg.IsDev(), agencySvc, cfg.Agency.CommissionOnMock)
+	adminSvc := service.NewAdminService(db, billingSvc, quotaSvc, agencySvc)
 	videoSvc := service.NewVideoService(db, llmClient, store, falClient, quotaSvc)
 	if falClient.Configured() {
 		logger.Info("[fal] 已配置(封面图)")
@@ -138,7 +146,7 @@ func main() {
 		// 一次性:遍历所有站点 × 所有一级类目,把每组合前 5 页商品落库(1 req/s,断点续跑)。
 		// 用法:docker compose run --rm go-api ./server --backfill-products
 		if arg == "--backfill-products" {
-			ft, sk, err := discSvc.BackfillAllProducts(context.Background())
+			ft, sk, err := discSvc.BackfillDiscover(context.Background(), service.BackfillKindsProductOnly)
 			if err != nil {
 				logger.Fatal("[backfill] 商品全量回填失败", logger.Err(err))
 			}
@@ -190,6 +198,9 @@ func main() {
 	defer jobCancel()
 	job.NewDiscoverSync(cfg.DiscoverSync, discSvc, echoClient).Start(jobCtx)
 	job.NewOverflowSettle(cfg.OverflowSettle, billingSvc).Start(jobCtx)
+	discSvc.StartCoverRehost(jobCtx)
+	discSvc.StartTranslate(jobCtx)
+	discSvc.StartVideoPipeline(jobCtx, cfg.VideoPipeline)
 
 	r := router.New(router.Deps{
 		Cfg:       cfg,
@@ -206,6 +217,8 @@ func main() {
 		Template:  tplSvc,
 		Billing:   billingSvc,
 		Quota:     quotaSvc,
+		Agency:    agencySvc,
+		Admin:     adminSvc,
 		// 就绪探针:DB ping(带 2s 超时)。让 /ready 在 DB 不可达时返回 503,
 		// 而非像过去那样空探针恒 200(伪健康)。
 		Ready: []func() error{
