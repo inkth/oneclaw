@@ -7,6 +7,7 @@ import "./globals.css";
 import "@fontsource/noto-sans-sc/chinese-simplified-600.css";
 import "@fontsource/noto-sans-sc/chinese-simplified-700.css";
 import { Toaster } from "sonner";
+import { BRAND_NAME, BRAND_SLOGAN } from "@/lib/brand";
 
 // 照搬 Designkit：标题 Poppins，正文 Open Sans。
 const poppins = Poppins({
@@ -30,9 +31,9 @@ export const metadata: Metadata = {
         ? "https://faxianmao.com"
         : "http://localhost:3000"),
   ),
-  title: "发现猫 · 你的 AI 出海团队",
+  title: `${BRAND_NAME} · ${BRAND_SLOGAN}`,
   description:
-    "发现猫用 AI Agent 帮你完成跨境电商从选品分析、短视频创作、Listing 内容到投放复盘的全链路，榜单数据免费逛，一句话就能派活。",
+    `${BRAND_SLOGAN}。${BRAND_NAME} 用 AI Agent 帮你完成跨境电商从选品分析、短视频创作、Listing 内容到投放复盘的全链路，榜单数据免费逛，一句话就能派活。`,
 };
 
 export default function RootLayout({

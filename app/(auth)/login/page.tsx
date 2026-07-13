@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { LoginForm } from "./login-form";
+import { BRAND_SLOGAN } from "@/lib/brand";
 
 export const metadata = { title: "登录 · 发现猫" };
 
 export default function LoginPage() {
   return (
     <div className="rounded-lg border border-zinc-200/80 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="mb-4 inline-flex rounded-full bg-brand-50 px-3 py-1 text-2xs font-semibold text-brand-700">{BRAND_SLOGAN}</div>
       <h1 className="text-2xl font-semibold tracking-tight">登录 / 注册发现猫</h1>
       <p className="mt-1.5 text-sm text-zinc-500">
         中国大陆手机号，验证码登录，新用户自动开通工作台。

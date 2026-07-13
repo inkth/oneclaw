@@ -12,6 +12,7 @@ import {
   Video,
 } from "lucide-react";
 import { DkAura } from "@/components/ui/GradientBackground";
+import { BRAND_SLOGAN_FOCUS, BRAND_SLOGAN_LEAD } from "@/lib/brand";
 
 /* 首屏即产品：复刻工作台 composer 的「一句话派活」交互。
    占位文字打字机轮换三条真实指令，对应的 Agent pill 同步点亮，
@@ -107,7 +108,7 @@ export function HomeHero() {
           </div>
 
           <h1 className="text-display">
-            出海，从<span className="gradient-text">一句话</span>开始
+            {BRAND_SLOGAN_LEAD}<span className="gradient-text">{BRAND_SLOGAN_FOCUS}</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base text-zinc-600 text-cjk-relaxed sm:text-lg">

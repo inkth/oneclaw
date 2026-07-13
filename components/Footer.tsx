@@ -1,5 +1,6 @@
 import { Mail, MessageSquare } from "lucide-react";
 import { BrandLockup } from "@/components/ui/BrandMark";
+import { BRAND_SLOGAN } from "@/lib/brand";
 import { SubscribeForm } from "./SubscribeForm";
 
 const sections: Array<{ title: string; links: Array<{ label: string; href: string }> }> = [
@@ -45,8 +46,9 @@ export function Footer() {
           <div className="col-span-2">
             <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
             <p className="mt-4 text-sm text-zinc-600 leading-relaxed max-w-xs">
-              用 AI Agent 团队，把跨境电商的重复工作交给机器，
-              让每一个出海人都能像团队一样高效。
+              <span className="font-medium text-zinc-900">{BRAND_SLOGAN}</span>
+              <br />
+              用 AI Agent 团队，让每一个出海人都能像团队一样高效。
             </p>
             <div className="mt-6 flex flex-col gap-2 text-sm text-zinc-600">
               <a href="mailto:contact@faxianmao.com" className="inline-flex items-center gap-2 hover:text-brand-600">
