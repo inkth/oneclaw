@@ -106,7 +106,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   }
 
   async function remove(c: Conversation) {
-    if (!window.confirm(`删除会话「${c.title}」?该会话的对话记录会一并清除（已生成的视频/选品不受影响）。`))
+    if (!window.confirm(`删除对话「${c.title}」？这段对话记录会一并清除，已生成的视频和选品结果不受影响。`))
       return;
     setBusyId(c.id);
     try {
@@ -129,26 +129,26 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
     <aside className="hidden md:flex sticky top-0 h-screen w-56 shrink-0 flex-col self-start border-r border-[var(--dk-stroke-border)] bg-transparent">
       <div className="flex items-center justify-between px-3 py-4">
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
-          <MessagesSquare className="h-4 w-4 text-brand-500" /> 会话
+          <MessagesSquare className="h-4 w-4 text-brand-500" /> 对话
         </span>
         <Link
           href="/app/agents/new"
           className="press inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
         >
-          <Plus className="h-3 w-3" /> 新会话
+          <Plus className="h-3 w-3" /> 新对话
         </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         {!workspaceId ? (
           <p className="px-2 py-6 text-xs leading-relaxed text-zinc-400">
-            登录后，你的每段会话都会列在这里。
+            登录后，你和 Agent 的对话会保存在这里。
           </p>
         ) : !loaded ? (
           <p className="px-2 py-6 text-xs text-zinc-400">加载中…</p>
         ) : convs.length === 0 ? (
           <p className="px-2 py-6 text-xs leading-relaxed text-zinc-400">
-            还没有会话。点「新会话」派个活，这里就会出现。
+            还没有对话。新建一条，说说你想解决什么。
           </p>
         ) : (
           <ul className="space-y-0.5">

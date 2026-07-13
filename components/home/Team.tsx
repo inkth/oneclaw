@@ -42,9 +42,9 @@ export function Team() {
           <div className="text-xs font-semibold uppercase tracking-widest text-brand-600">
             AI 团队
           </div>
-          <h2 className="text-display-sm mt-3">四位全职 Agent，7×24 在线</h2>
+          <h2 className="text-display-sm mt-3">四位 Agent，各自负责一个环节</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            像招了四位老练的同事——不休假、不离职，一句话就能派活。
+            你只管说清目标，Agent 会给出可继续使用的结果，也能接着上一步往下做。
           </p>
         </div>
 

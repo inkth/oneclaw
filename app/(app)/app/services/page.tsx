@@ -75,7 +75,7 @@ export default function ServicesPage() {
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
         title="服务"
-        description="把跨境经营全链路要用到的外部能力聚合到一处：物流、达人、收款、财税…… 标注「合作方」的由第三方渠道提供，预约咨询直接给到对接方式、非平台背书。"
+        description="集中寻找物流、达人、公司注册等出海服务；可对接项目会直接提供联系方式。"
       />
 
       <div className="space-y-6">
@@ -113,12 +113,12 @@ export default function ServicesPage() {
 
       <div className="space-y-3 pt-1">
         <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-[var(--dk-stroke-border)] px-5 py-6 text-center">
-          <p className="text-sm text-[var(--dk-content-secondary)]">没找到需要的服务，或想加快某个对接？</p>
+          <p className="text-sm text-[var(--dk-content-secondary)]">没找到合适的服务？告诉我们你要解决什么。</p>
           <button
             onClick={() => setContact({ title: "其他服务需求" })}
             className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
           >
-            预约咨询，告诉我们你的优先级
+            提交服务需求
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>

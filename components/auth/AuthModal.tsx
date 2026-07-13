@@ -6,15 +6,16 @@ import { X } from "lucide-react";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { toast } from "sonner";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
+import { BRAND_SLOGAN } from "@/lib/brand";
 import { LoginForm } from "./LoginForm";
 
 const PITCH_KEYS = ["ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const;
 
 const PITCH_DESC: Record<(typeof PITCH_KEYS)[number], string> = {
-  ANALYST: "TikTok 真实销售数据，AI 判断能不能做",
-  DIRECTOR: "商品图到带货视频，10 分钟出片",
-  LISTING: "英文标题、卖点到主图，一次备齐可上架",
-  REVIEW: "上传投放报表，AI 告诉你停谁加谁",
+  ANALYST: "结合 TikTok 真实销售数据判断机会",
+  DIRECTOR: "从商品素材到可发布的带货视频",
+  LISTING: "标题、卖点、详情和主图一次备齐",
+  REVIEW: "上传投放报表，找到该停和该加的素材",
 };
 
 /**
@@ -76,7 +77,7 @@ export function AuthModal({
               </span>
             </div>
             <h3 className="mt-6 text-xl font-bold leading-snug tracking-tight">
-              你的 AI 出海团队
+              {BRAND_SLOGAN}
             </h3>
             <ul className="mt-6 space-y-5">
               {PITCH_KEYS.map((key) => {
@@ -109,17 +110,17 @@ export function AuthModal({
           </span>
           <div>
             <span className="text-sm font-semibold">发现猫</span>
-            <span className="ml-2 text-xs text-white/70">你的 AI 出海团队</span>
+            <span className="ml-2 text-xs text-white/70">{BRAND_SLOGAN}</span>
           </div>
         </div>
 
         {/* 右：登录表单 */}
         <div className="p-6 sm:p-8">
           <h2 className="text-lg font-bold tracking-tight">
-            {context?.title ?? "登录 / 注册发现猫"}
+            {context?.title ?? "登录发现猫"}
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            {context?.desc ?? "中国大陆手机号，验证码登录，新用户自动开通工作台。"}
+            {context?.desc ?? "使用中国大陆手机号验证码登录；首次登录会自动创建账号和工作台。"}
           </p>
           <div className="mt-6">
             <LoginForm onSuccess={handleSuccess} />

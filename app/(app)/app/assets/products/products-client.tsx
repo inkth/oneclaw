@@ -243,13 +243,13 @@ export function ProductsClient({
       ) : scope === "self" ? (
         <PageHeader
           title="我的商品"
-          description="你在素材库「批量做商品」生成的商品，在这里管理、点进详情继续完善。"
+          description="管理从素材创建的商品，继续补主图、写 Listing 或做视频。"
           actions={filterBar}
         />
       ) : (
         <PageHeader
           title="收藏 · 商品"
-          description="你从爆品榜收藏的商品，按推进阶段管理。"
+          description="管理从爆品榜收藏的商品，跟进成本、利润和创作进度。"
           actions={filterBar}
         />
       )}
@@ -273,11 +273,11 @@ export function ProductsClient({
           description={
             scope === "self" ? (
               <>
-                去 <Link href="/app/assets/materials" className="text-brand-600">素材库</Link> 多选你拍的商品图「批量做商品」，一键生成商品卡 + Listing。
+                去 <Link href="/app/assets/materials" className="text-brand-600">素材库</Link> 上传并选择商品图，生成商品卡和 Listing。
               </>
             ) : (
               <>
-                去 <Link href="/app/discover/products" className="text-brand-600">爆品榜</Link> 点「收藏」，商品会出现在这里。
+                去 <Link href="/app/discover/products" className="text-brand-600">爆品榜</Link> 收藏值得跟进的商品，它们会出现在这里。
               </>
             )
           }

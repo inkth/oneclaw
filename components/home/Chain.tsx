@@ -57,10 +57,10 @@ export function Chain() {
           <div className="text-xs font-semibold uppercase tracking-widest text-brand-600">
             全链路
           </div>
-          <h2 className="text-display-sm mt-3">一条链路，跑完一单生意</h2>
+          <h2 className="text-display-sm mt-3">从发现机会，到做出结果</h2>
           <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            别再在十几个工具之间搬运数据。发现猫把出海的四个关键环节连成一条流水线，
-            上一步的产出自动成为下一步的输入。
+            发现猫把选品、内容、Listing 和复盘连在一起，
+            上一步的结果可以直接交给下一位 Agent 继续做。
           </p>
         </div>
 

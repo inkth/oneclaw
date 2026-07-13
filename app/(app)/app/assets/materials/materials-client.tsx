@@ -195,7 +195,7 @@ export function MaterialsClient({
         title="素材库"
         description={
           <>
-            上传你自己的图片 / 视频 / 音频，发现猫会在视频生成时优先用作底料。
+            上传商品图、参考视频和音频，创作时可直接调用。
           </>
         }
         actions={
@@ -256,7 +256,7 @@ export function MaterialsClient({
       >
         <Upload className="mx-auto h-6 w-6 text-zinc-400" />
         <div className="mt-2 text-sm font-medium text-zinc-900">
-          点击或拖拽上传
+          拖入文件，或点击选择
         </div>
         <p className="mt-1 text-xs text-zinc-500">
           支持图片 / 视频 / 音频，单文件 ≤ 50MB
@@ -289,9 +289,10 @@ export function MaterialsClient({
         <EmptyState
           title={
             filter === "ALL"
-              ? "还没上传素材，拖一个文件到上方区域开始。"
+              ? "还没有素材"
               : "这个分类下还没有素材"
           }
+          description={filter === "ALL" ? "将文件拖到上方上传区域，或点击选择文件。" : undefined}
         />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

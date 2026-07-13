@@ -45,7 +45,7 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
     <div>
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-ink">爆款短视频示例</h2>
+          <h2 className="text-sm font-semibold text-ink">热门带货视频参考</h2>
           <p className="mt-0.5 text-xs text-zinc-500">
             {!hasReal
               ? "即将上架的选题方向，先占个位"

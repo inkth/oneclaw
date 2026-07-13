@@ -46,7 +46,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "advisor-route",
       title: "起步路线",
-      desc: "结合预算排先后顺序",
+      desc: "按预算拆出第一步",
       icon: Route,
       status: "live",
       agent: "ADVISOR",
@@ -54,8 +54,8 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     },
     {
       key: "advisor-cost",
-      title: "成本摸底",
-      desc: "起步到底要花多少钱",
+      title: "启动预算",
+      desc: "看清钱要花在哪里",
       icon: Wallet,
       status: "live",
       agent: "ADVISOR",
@@ -63,8 +63,8 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     },
     {
       key: "advisor-term",
-      title: "术语扫盲",
-      desc: "行业黑话一次讲明白",
+      title: "术语翻译",
+      desc: "把行业黑话讲明白",
       icon: BookOpen,
       status: "live",
       agent: "ADVISOR",
@@ -72,8 +72,8 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     },
     {
       key: "advisor-next",
-      title: "下一步干嘛",
-      desc: "按你的进度给建议",
+      title: "下一步建议",
+      desc: "按当前进度继续走",
       icon: Compass,
       status: "live",
       agent: "ADVISOR",
@@ -83,8 +83,8 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
   ANALYST: [
     {
       key: "analyst-bluesea",
-      title: "蓝海选品",
-      desc: "低竞争 + 上升趋势新品",
+      title: "找潜力新品",
+      desc: "低竞争、趋势向上",
       icon: Search,
       status: "live",
       agent: "ANALYST",
@@ -93,8 +93,8 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     },
     {
       key: "analyst-competitor",
-      title: "竞品拆解",
-      desc: "卖点 / 定价 / 差异化机会",
+      title: "拆解竞品",
+      desc: "看卖点、定价和机会",
       icon: Target,
       status: "live",
       agent: "ANALYST",
@@ -112,7 +112,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "analyst-margin",
       title: "利润测算",
-      desc: "到手成本与毛利空间",
+      desc: "算到手成本和毛利",
       icon: Wallet,
       status: "live",
       agent: "ANALYST",
@@ -123,7 +123,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "ugc-video",
       title: "UGC 开箱",
-      desc: "真人开箱口播感带货",
+      desc: "真人口播感的开箱视频",
       icon: Clapperboard,
       status: "live",
       agent: "DIRECTOR",
@@ -141,7 +141,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "video-beforeafter",
       title: "效果对比",
-      desc: "使用前后反差带货",
+      desc: "用前后反差突出效果",
       icon: Video,
       status: "live",
       agent: "DIRECTOR",
@@ -150,7 +150,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "video-quicksell",
       title: "卖点速览",
-      desc: "15 秒快节奏卖点",
+      desc: "15 秒讲清核心卖点",
       icon: Clapperboard,
       status: "live",
       agent: "DIRECTOR",
@@ -160,8 +160,8 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
   LISTING: [
     {
       key: "listing-set",
-      title: "Listing 图集",
-      desc: "标题 + 五点卖点 + 主图方案",
+      title: "商品页全套",
+      desc: "标题、卖点、主图一次备齐",
       icon: Images,
       status: "live",
       agent: "LISTING",
@@ -172,7 +172,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "aplus",
       title: "图文详情",
-      desc: "图文详情页结构化生成",
+      desc: "按模块生成详情页内容",
       icon: LayoutPanelTop,
       status: "live",
       agent: "LISTING",
@@ -183,7 +183,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "listing-title",
       title: "标题优化",
-      desc: "关键词 + 搜索权重",
+      desc: "兼顾关键词和可读性",
       icon: Tag,
       status: "live",
       agent: "LISTING",
@@ -206,7 +206,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "review-stoploss",
       title: "止损诊断",
-      desc: "低 ROI 素材停还是改",
+      desc: "判断低 ROI 素材停还是改",
       icon: BarChart3,
       status: "live",
       agent: "REVIEW",
@@ -215,7 +215,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "review-scaleup",
       title: "加投建议",
-      desc: "找赢家素材放量",
+      desc: "找到值得放量的素材",
       icon: TrendingUp,
       status: "live",
       agent: "REVIEW",

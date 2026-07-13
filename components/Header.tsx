@@ -5,8 +5,8 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import { BrandLockup } from "@/components/ui/BrandMark";
 
 const navItems: Array<{ label: string; href: string; badge?: string }> = [
-  { label: "全链路", href: "/intro#chain" },
-  { label: "AI 团队", href: "/intro#team" },
+  { label: "怎么用", href: "/intro#chain" },
+  { label: "认识 Agent", href: "/intro#team" },
   { label: "定价", href: "/pricing" },
 ];
 
@@ -48,7 +48,7 @@ export function Header() {
               href="/app"
               className="bg-vibrant pop group relative inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm"
             >
-              开始体验
+              进入工作台
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
@@ -56,7 +56,7 @@ export function Header() {
           <button
             className="md:hidden p-2 text-zinc-700"
             onClick={() => setOpen(!open)}
-            aria-label="Toggle menu"
+            aria-label={open ? "关闭菜单" : "打开菜单"}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -83,7 +83,7 @@ export function Header() {
                 登录
               </a>
               <a href="/app" className="bg-vibrant flex-1 text-center rounded-lg py-2 text-sm font-medium text-white">
-                开始体验
+                进入工作台
               </a>
             </div>
           </div>

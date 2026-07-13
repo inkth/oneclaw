@@ -96,7 +96,7 @@ export function Workbench({
       setTasks((prev) => [task, ...prev]);
     } else {
       const cid = task.conversationId;
-      if (!showStream) toast.success("已派活，结果在「会话」里");
+      if (!showStream) toast.success("已交给 Agent，可在「对话」查看进度");
       router.push(cid ? `/app/agents/${cid}` : "/app/agents");
     }
   }
@@ -238,8 +238,8 @@ export function Workbench({
                 </span>
                 <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
                   {isGuest
-                    ? "选个 Agent，在下面写一句指令试试。登录后对话会存进这里。"
-                    : "还没有对话。选个 Agent，在下面写一句指令开始。"}
+                    ? "选一个 Agent，说说你想解决什么。登录后会自动保存这段对话。"
+                    : "还没有内容。选一个 Agent，说说你想解决什么。"}
                 </p>
               </div>
             ) : (
@@ -286,7 +286,7 @@ export function Workbench({
             align === "center" ? "justify-center" : "justify-start"
           }`}
         >
-          <span className="text-xs text-zinc-400">不知道从哪开始？选个品类试试：</span>
+          <span className="text-xs text-zinc-400">还没想好？从一个常见品类开始：</span>
           {industryPresets.map((p) => (
             <button
               key={p.label}

@@ -29,7 +29,7 @@ const tiers: Array<{
     icon: Sparkles,
     tone: "zinc",
     highlight: false,
-    description: "适合个人测试发现猫的能力边界",
+    description: "适合先看数据、验证方向",
     features: [
       "每月 450 积分（≈ 2 条出片 / 150 次选品）",
       "选品 3 / 出片 175 / 出图 6 积分",
@@ -39,7 +39,7 @@ const tiers: Array<{
     ],
     planned: [],
     notIncluded: ["团队协作", "API 访问", "数据导出", "优先客服"],
-    cta: "免费开始",
+    cta: "免费使用",
   },
   {
     name: "PRO",
@@ -49,7 +49,7 @@ const tiers: Array<{
     icon: Zap,
     tone: "brand",
     highlight: true,
-    description: "出海个体卖家 / 独立站团队的甜点配置",
+    description: "适合持续选品和生产内容的个人卖家",
     features: [
       "每月 6000 积分（≈ 34 条出片）",
       "选品 3 / 出片 175 / 出图 6 积分",
@@ -63,7 +63,7 @@ const tiers: Array<{
       "邮件 + 站内通知",
     ],
     notIncluded: ["私有部署", "SLA"],
-    cta: "升级到 Pro",
+    cta: "升级专业版",
   },
   {
     name: "TEAM",
@@ -73,7 +73,7 @@ const tiers: Array<{
     icon: Crown,
     tone: "fuchsia",
     highlight: false,
-    description: "MCN / 服务商 / 多品牌团队",
+    description: "适合多账号、多品牌协作团队",
     features: [
       "含 30000 积分/月，超出按量计费",
       "超基线后约 ¥7.9/条出片结算",
@@ -142,15 +142,15 @@ export default function PricingPage() {
           <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-200/60 bg-white/60 px-3 py-1 text-xs font-medium text-brand-700 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" />
-              数据浏览免费 · 无需信用卡
+              榜单数据免费 · 无需信用卡
             </div>
             <h1 className="mt-6 text-display-sm">
-              定价透明，<span className="gradient-text">按真实用量算</span>
+              先免费找机会，再按需使用 AI
             </h1>
             <p className="mt-4 text-zinc-600 max-w-2xl mx-auto text-cjk-relaxed">
-              逛榜单、看数据永久免费；让 AI 干活（选品分析 / 出片 / 出图）才消耗积分。
-              三档方案都包含全部核心功能（选品 / 短视频 / Listing / 复盘），
-              区别主要在每月给多少积分、超额后怎么结算。
+              浏览榜单和市场数据永久免费；让 Agent 分析、出片或出图时才消耗积分。
+              所有方案都包含选品、短视频、Listing 和复盘，
+              主要区别是每月积分额度与协作能力。
             </p>
           </div>
         </section>

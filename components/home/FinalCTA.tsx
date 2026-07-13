@@ -4,9 +4,9 @@ import { ArrowRight, Languages, Sparkles, Wallet } from "lucide-react";
    面向「第一次出海」的人，把门槛说清楚比喊口号更有说服力。 */
 
 const PROMISES = [
-  { icon: Languages, text: "全中文界面，一句话派活" },
-  { icon: Sparkles, text: "不需要团队，也不需要经验" },
-  { icon: Wallet, text: "数据浏览免费，手机号登录即用" },
+  { icon: Languages, text: "全中文操作，一句话说明目标" },
+  { icon: Sparkles, text: "一个人也能跑完整流程" },
+  { icon: Wallet, text: "榜单免费浏览，手机号即用" },
 ];
 
 export function FinalCTA() {
@@ -17,11 +17,11 @@ export function FinalCTA() {
         <div className="relative overflow-hidden rounded-2xl bg-zinc-950 px-6 py-16 text-center sm:px-12 sm:py-20">
           <div className="relative">
             <h2 className="text-display-sm text-white">
-              第一单出海生意，今天就跑起来
+              今天，推进你的下一门好生意
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-zinc-400 text-cjk-relaxed">
-              新用户自动开通工作台，进去先给 Agent 派个活——
-              十分钟后回来，看看它替你做了什么。
+              先免费逛榜单找机会，再把选品、内容或复盘交给 Agent。
+              每一次操作，都更接近可执行的下一步。
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -29,7 +29,7 @@ export function FinalCTA() {
                 href="/app"
                 className="pop group inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-sm font-semibold text-zinc-900 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
               >
-                免费开始体验
+                进入工作台
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </a>
               <a

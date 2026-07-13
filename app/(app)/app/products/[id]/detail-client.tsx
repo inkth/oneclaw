@@ -432,11 +432,11 @@ export function ProductDetail({
                   <h3 className="text-sm font-semibold text-zinc-900">Listing 文案</h3>
                   <button
                     onClick={goListingChat}
-                    title="去会话里重新生成，可用语言指挥改哪段、强调什么"
+                    title="回到对话重新生成，也可以说明要改哪段、强调什么"
                     className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
                   >
                     <RefreshCw className="h-3 w-3" />
-                    去会话重写
+                    去对话重写
                   </button>
                 </div>
 
@@ -488,11 +488,11 @@ export function ProductDetail({
                     <h3 className="text-sm font-semibold text-zinc-900">图文详情结构</h3>
                     <button
                       onClick={goListingChat}
-                      title="去会话里重新生成，可用语言指挥改哪段、强调什么"
+                      title="回到对话重新生成，也可以说明要改哪段、强调什么"
                       className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
                     >
                       <RefreshCw className="h-3 w-3" />
-                      去会话重新生成
+                      去对话重新生成
                     </button>
                   </div>
                   <div className="space-y-3">

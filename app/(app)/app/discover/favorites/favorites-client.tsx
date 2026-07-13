@@ -114,7 +114,7 @@ export function FavoritesClient({
             收藏
           </span>
         }
-        description="把看中的商品、店铺、达人、视频收在一处。商品收藏可推进阶段、回填成本、直接做视频。"
+        description="集中管理值得跟进的商品、店铺、达人和视频，随时继续分析或创作。"
       />
 
       <div className="flex items-center gap-1 border-b border-[var(--dk-stroke-divider)]">

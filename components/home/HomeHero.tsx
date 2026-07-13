@@ -104,7 +104,7 @@ export function HomeHero() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="dk-ring mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            TikTok Shop 出海全链路 · 榜单数据免费逛
+            TikTok Shop 数据洞察与 AI 创作
           </div>
 
           <h1 className="text-display">
@@ -112,9 +112,9 @@ export function HomeHero() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base text-zinc-600 text-cjk-relaxed sm:text-lg">
-            选品、做视频、写 Listing、看投放复盘——都交给你的 AI Agent，上一步的结果就是下一步的起点。
+            从真实榜单里找机会，再让 AI 帮你选品、做视频、写 Listing、复盘投放。
             <br className="hidden sm:block" />
-            哪怕你是第一次做跨境电商。
+            每一步都有结果，下一步接着用。
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export function HomeHero() {
                 className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm"
               >
                 <Send className="h-4 w-4" />
-                派给 Agent
+                去工作台试试
               </a>
             </div>
           </div>
@@ -177,7 +177,7 @@ export function HomeHero() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-              数据浏览免费 · AI 派活才花积分
+              榜单数据免费浏览 · 使用 AI 才消耗积分
             </span>
             <span className="hidden h-3 w-px bg-zinc-200 sm:block" />
             <span>手机号登录即用 · 无需信用卡</span>

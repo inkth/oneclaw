@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { MessagesSquare } from "lucide-react";
 import { type Conversation } from "../conversation-rail";
 
-export const metadata = { title: "会话 · 发现猫" };
+export const metadata = { title: "对话 · 发现猫" };
 
 // 会话板块落地：有历史会话则进最近一条；无则落到新对话（游客直接渲染新对话页）。
 export default async function AgentsPage() {
@@ -18,10 +18,10 @@ export default async function AgentsPage() {
           title={
             <span className="inline-flex items-center gap-2">
               <MessagesSquare className="h-5 w-5 text-brand-500" />
-              会话
+              对话
             </span>
           }
-          description="选个 Agent，写一句指令试试。登录后对话会按会话存进左侧列表。"
+          description="选一个 Agent，说清目标。登录后每段对话都会自动保存。"
         />
         <Workbench workspaceId="" isGuest conversationId="" />
       </div>

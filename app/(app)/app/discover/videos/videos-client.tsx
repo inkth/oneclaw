@@ -65,10 +65,10 @@ export function VideosClient({
         title={
           <span className="inline-flex items-center gap-2">
             <Clapperboard className="h-5 w-5 text-brand-500" />
-            选品 · 带货视频榜
+            带货视频榜
           </span>
         }
-        description="各国带货短视频榜单 · 看播放、互动与转化 · 拆解爆款脚本和带货玩法"
+        description="从高表现带货视频里找选题，拆解开头钩子、内容结构和转化方式。"
       />
 
       <FilterBar
@@ -81,7 +81,7 @@ export function VideosClient({
         keyword={keyword}
         ai={ai}
         showAiFilter
-        searchPlaceholder="搜索视频文案 / 话题…"
+        searchPlaceholder="搜索视频文案或话题"
       />
 
       {state === "empty" || videos.length === 0 ? (

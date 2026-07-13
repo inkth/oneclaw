@@ -45,7 +45,7 @@ const BOARDS: Board[] = [
   {
     // 会话板块：左侧窄会话列表（ConversationRail） + 右侧会话内容，汇总你和各 Agent 的全部对话。
     key: "conversations",
-    label: "会话",
+    label: "对话",
     icon: MessagesSquare,
     href: "/app/agents",
     paths: ["/app/agents"],
@@ -58,7 +58,7 @@ const BOARDS: Board[] = [
     href: "/app/videos",
     paths: ["/app/assets", "/app/videos"],
     tabs: [
-      { label: "作品", href: "/app/videos" },
+      { label: "视频", href: "/app/videos" },
       { label: "商品", href: "/app/assets/products" },
       { label: "模特", href: "/app/assets/models" },
       { label: "素材库", href: "/app/assets/materials" },

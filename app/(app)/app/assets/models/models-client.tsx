@@ -133,7 +133,7 @@ export function ModelsClient({
     <div className="space-y-6">
       <PageHeader
         title="模特"
-        description="为视频生成准备的人设。可选 AI 数字人或绑定的真人合作模特。"
+        description="管理视频出镜人设和上身图模特；使用预设 AI 模特，或创建专属人设。"
         actions={
           <Button
             variant="primary"

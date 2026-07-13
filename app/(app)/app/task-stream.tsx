@@ -141,7 +141,7 @@ export function TaskStream({
             href={moreHref}
             className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-ink"
           >
-            查看全部 {items.length} 条会话 <ArrowRight className="h-3 w-3" />
+            查看全部 {items.length} 条对话 <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       )}
@@ -709,7 +709,7 @@ function VideoResultCard({
         className="mt-3 inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
       >
         <Clapperboard className="h-3 w-3" />
-        去「资产 · 作品」查看成片 <ArrowRight className="h-3 w-3" />
+        去「资产 · 视频」查看成片 <ArrowRight className="h-3 w-3" />
       </Link>
     );
   }

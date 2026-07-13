@@ -152,10 +152,10 @@ export function DiscoverClient({
         title={
           <span className="inline-flex items-center gap-2">
             <Compass className="h-5 w-5 text-brand-500" />
-            选品 · 爆品榜
+            爆品榜
           </span>
         }
-        description="TikTok Shop 真实销售数据 · 点商品行查看趋势 · 一键交给选品分析 Agent 深度判断"
+        description="用真实销量、GMV 和佣金筛机会；打开商品看趋势，收藏后继续算利润、做内容。"
       />
 
       <FilterBar
@@ -167,7 +167,7 @@ export function DiscoverClient({
         categoryId={categoryId}
         categories={categories}
         keyword={keyword}
-        searchPlaceholder="搜索商品名 / 关键词…"
+        searchPlaceholder="搜索商品或关键词"
       />
 
       {/* Main table — 无数据时不渲染裸表头，改用统一空态 */}
@@ -176,13 +176,13 @@ export function DiscoverClient({
           <EmptyState
             icon={PackageSearch}
             title={`没找到与「${keyword}」相关的商品`}
-            description="换个关键词，或切换国家 / 地区再搜。也可以清空搜索回到爆品榜。"
+            description="换个关键词或地区再试，也可以清空搜索回到爆品榜。"
           />
         ) : (
           <EmptyState
             icon={PackageSearch}
             title="该榜单暂无数据"
-            description="这个区域 / 榜单组合下还没有可用数据。试试换个国家 / 地区再看看。"
+            description="这个地区或榜单暂时没有数据，换个地区或排序方式看看。"
           />
         )
       ) : (

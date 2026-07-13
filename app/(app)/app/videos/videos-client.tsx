@@ -128,8 +128,8 @@ export function VideosClient({
     return (
       <EmptyState
         icon={Video}
-        title="还没有视频"
-        description="去工作台让「短视频创作」生成差异化短视频，AI 会自动挑最合适的叙事角度。"
+        title="还没有生成的视频"
+        description="回到工作台选择「短视频创作」，添加商品并说明目标，Agent 会自动选择合适的内容角度。"
       />
     );
   }

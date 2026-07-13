@@ -5,7 +5,7 @@ import { type StreamTask } from "../../task-stream";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MessagesSquare } from "lucide-react";
 
-export const metadata = { title: "会话 · 发现猫" };
+export const metadata = { title: "对话 · 发现猫" };
 
 export default async function ConversationPage({
   params,
@@ -35,10 +35,10 @@ export default async function ConversationPage({
         title={
           <span className="inline-flex items-center gap-2">
             <MessagesSquare className="h-5 w-5 text-brand-500" />
-            会话
+            对话
           </span>
         }
-        description="跨境顾问 / 选品分析 / 短视频创作 / Listing 内容 / 投放复盘——这条会话里你和 AI 的全部往来。"
+        description="这段对话会保留你的指令、Agent 进度和产出结果，方便随时回来继续。"
       />
       <Workbench
         workspaceId={ws.id}

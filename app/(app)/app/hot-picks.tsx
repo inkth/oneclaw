@@ -124,7 +124,7 @@ export function HotPicks({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-ink">今日爆品推荐</h2>
+        <h2 className="text-sm font-semibold text-ink">今日热销商品</h2>
         <Link
           href="/app/discover/products"
           className="inline-flex items-center gap-1 text-xs text-zinc-500 transition-colors hover:text-ink"

@@ -61,10 +61,10 @@ export function InfluencersClient({
         title={
           <span className="inline-flex items-center gap-2">
             <Users className="h-5 w-5 text-brand-500" />
-            选品 · 达人榜
+            达人榜
           </span>
         }
-        description="各国带货达人榜单 · 看粉丝量、带货 GMV、商品与内容产出 · 找对的人合作"
+        description="按带货表现找达人，快速判断受众、商品匹配和合作潜力。"
       />
 
       <FilterBar
@@ -75,7 +75,7 @@ export function InfluencersClient({
         categoryId={categoryId}
         categories={categories}
         keyword={keyword}
-        searchPlaceholder="搜索达人昵称 / 账号…"
+        searchPlaceholder="搜索达人昵称或账号"
       />
 
       {state === "empty" || influencers.length === 0 ? (

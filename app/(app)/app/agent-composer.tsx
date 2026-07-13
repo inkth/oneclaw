@@ -44,10 +44,10 @@ const PILL_AGENTS = (["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as 
 );
 
 const PLACEHOLDERS: Record<ComposerKind, string> = {
-  ADVISOR: "例：预算 5000，没有货源，想做美国市场，我该从哪一步开始？（跨境问题随便问）",
-  ANALYST: "例：从美国爆品榜帮我挑 3 个高佣金潜力品（基于 TikTok 真实榜单筛选）",
-  DIRECTOR: "例：为推荐榜首产品生成一条 UGC 风格 TikTok 带货短视频，真人开箱口播感",
-  LISTING: "例：为「便携榨汁杯」生成 TikTok Shop Listing：标题、五点卖点、图文详情、主图方案",
+  ADVISOR: "例：预算 5000 元，没有货源，想做美国市场，我该从哪一步开始？",
+  ANALYST: "例：从美国爆品榜挑 3 个高佣金、仍在增长的潜力商品",
+  DIRECTOR: "例：为榜首商品做一条 UGC 开箱带货视频，突出使用前后对比",
+  LISTING: "例：为便携榨汁杯生成标题、五点卖点、图文详情和主图方案",
   TRYON: "选一位模特 + 一张服饰图，生成模特上身效果图",
   REVIEW: "点左下角「上传报表」上传 GMV Max 投放报表（.csv / .xlsx），即可开始复盘",
 };
@@ -213,8 +213,8 @@ export function AgentComposer({
   function gateGuest(): boolean {
     if (!isGuest) return false;
     openAuthModal({
-      title: "登录后即可使用 Agent",
-      desc: "跨境顾问答疑，以及派活给选品分析、短视频创作、Listing 内容、投放复盘 Agent,都需要账号。",
+      title: "登录后交给 Agent",
+      desc: "登录后可以提问、派活，并把每次对话和结果保存到工作台。",
     });
     return true;
   }
@@ -222,7 +222,7 @@ export function AgentComposer({
   function attach(f: File) {
     if (!allowReview) return;
     if (!REVIEW_EXTENSIONS.test(f.name)) {
-      toast("暂仅支持投放报表（.csv / .tsv / .xlsx），图片素材即将支持");
+      toast("请选择 .csv、.tsv 或 .xlsx 格式的投放报表");
       return;
     }
     if (!isReview) prevAgentRef.current = activeAgent;
