@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   BarChart3,
   BookOpen,
+  Calculator,
   Clapperboard,
   Compass,
   Images,
@@ -229,6 +230,17 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       status: "live",
       agent: "REVIEW",
       promptTemplate: "诊断各素材的 CTR / 加购 / 转化漏斗，定位掉量环节并给优化方向",
+    },
+    {
+      // 唯一不依赖报表的投前卡：先定保本线，另外三张投后卡的判断才有标尺。
+      key: "review-breakeven",
+      title: "保本线测算",
+      desc: "算出你的止损 ROI 线",
+      icon: Calculator,
+      status: "live",
+      agent: "REVIEW",
+      promptTemplate:
+        "我的商品售价「」美元，到手成本「」美元，帮我算保本 ROI 和最高能接受的出单成本，之后止损就按这条线判断",
     },
   ],
 };
