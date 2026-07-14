@@ -65,8 +65,7 @@ export default async function AppLayout({
           isAdmin={isAdmin}
         />
         <main className="relative flex-1 px-4 pb-10 pt-5 sm:px-8 sm:pb-12 sm:pt-7">
-          {/* Designkit 的画布是平的：唯一的色彩来自输入框背后的极光（DkAura），
-              页面本身不铺任何顶部柔光。 */}
+          {/* 业务端画布保持平面中性灰，层级只由内容、留白和下一步操作建立。 */}
           <div className="relative">
             {/* 桌面端二级 Tab 已融进顶栏 AppHeader；这里只在移动端兜底显示 Tab 行 */}
             <div className="md:hidden">
