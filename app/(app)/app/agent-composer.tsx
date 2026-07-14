@@ -471,6 +471,7 @@ export function AgentComposer({
           </div>
         ) : (
           <textarea
+            id="agent-composer"
             ref={textareaRef}
             value={input}
             onChange={(e) => onInputChange(e.target.value)}

@@ -112,6 +112,23 @@ export function Workbench({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 从全局「发现猫助手」进入新对话时，落点直接回到派活输入框。
+  useEffect(() => {
+    function focusFromHash() {
+      if (window.location.hash !== "#agent-composer") return;
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.focus({ preventScroll: true });
+      });
+    }
+
+    focusFromHash();
+    window.addEventListener("hashchange", focusFromHash);
+    return () => window.removeEventListener("hashchange", focusFromHash);
+  }, []);
+
   // Agent 切换与其子模式在同一个交互中更新，避免额外的 effect 渲染。
   function changeAgent(next: ComposerKind) {
     setActiveAgent(next);

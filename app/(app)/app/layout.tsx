@@ -5,6 +5,7 @@ import { BrandTile } from "@/components/ui/BrandMark";
 import { SidebarNav, BoardTabs } from "./_nav";
 import { ConversationRail } from "./conversation-rail";
 import { AppHeader } from "./app-header";
+import { FloatingMascot } from "./floating-mascot";
 import type { Usage } from "./settings/settings-client";
 
 export default async function AppLayout({
@@ -75,6 +76,7 @@ export default async function AppLayout({
           </div>
         </main>
       </div>
+      <FloatingMascot />
     </div>
     </AuthModalProvider>
   );
