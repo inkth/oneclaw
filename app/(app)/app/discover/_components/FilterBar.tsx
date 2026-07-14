@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, ChevronDown, ChevronUp, Search, X, Sparkles } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
@@ -76,11 +76,12 @@ export function FilterBar({
 
   return (
     <div
-      className={`dk-card px-5 py-4 divide-y divide-[var(--dk-stroke-divider)] transition-opacity ${
+      className={`dk-card divide-y divide-[var(--dk-stroke-divider)] px-5 py-4 shadow-[var(--shadow-card)] transition-opacity ${
         pending ? "opacity-60" : ""
       }`}
     >
       <SearchRow
+        key={keyword}
         keyword={keyword}
         placeholder={searchPlaceholder}
         // 提交搜索：丢弃类目（接口不支持组合），回到第 1 页。清空：退出搜索态。
@@ -135,9 +136,6 @@ function SearchRow({
   onSubmit: (kw: string) => void;
 }) {
   const [value, setValue] = useState(keyword);
-  // URL 变化（切榜/清除/后退）时同步输入框。
-  useEffect(() => setValue(keyword), [keyword]);
-
   return (
     <form
       onSubmit={(e) => {

@@ -78,9 +78,9 @@ export function Workbench({
   // 创作工具链选中的资产：与 productId 同生命周期，派活成功即消费清空。
   const [personaId, setPersonaId] = useState<string | null>(null);
   const [materialId, setMaterialId] = useState<string | null>(initialMaterialId ?? null);
-  // Listing 子模式（文案 / 上身图试穿）:切走 Listing 自动回 copy(见下方 effect)。
+  // Listing 子模式（文案 / 上身图试穿）:切走 Listing 自动回 copy。
   const [listingMode, setListingMode] = useState<ListingMode>("copy");
-  // 短视频子模式（做视频 / 视频解析）:切走 DIRECTOR 自动回 create(见下方 effect)。
+  // 短视频子模式（做视频 / 视频解析）:切走 DIRECTOR 自动回 create。
   const [directorMode, setDirectorMode] = useState<DirectorMode>("create");
   // 所有 Agent(含同步复盘)统一落任务表，流就是任务列表。
   const [tasks, setTasks] = useState<StreamTask[]>(initialTasks);
@@ -112,11 +112,12 @@ export function Workbench({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 切到非 Listing 的 Agent 时,Listing 子模式回到「文案」，避免下次选 Listing 仍停在试穿。
-  useEffect(() => {
-    if (activeAgent !== "LISTING") setListingMode("copy");
-    if (activeAgent !== "DIRECTOR") setDirectorMode("create");
-  }, [activeAgent]);
+  // Agent 切换与其子模式在同一个交互中更新，避免额外的 effect 渲染。
+  function changeAgent(next: ComposerKind) {
+    setActiveAgent(next);
+    if (next !== "LISTING") setListingMode("copy");
+    if (next !== "DIRECTOR") setDirectorMode("create");
+  }
 
   // 有排队/执行中的任务时轮询当前会话的任务流，全部到达终态自动停。
   const hasActive = tasks.some((t) => t.status === "QUEUED" || t.status === "RUNNING");
@@ -163,14 +164,14 @@ export function Workbench({
   }
 
   function pickQuickAction(a: QuickAction) {
-    if (a.agent) setActiveAgent(a.agent);
+    if (a.agent) changeAgent(a.agent);
     // Listing 卡带子模式：上身图卡切 tryon,文案卡回 copy(切走后再回也保持一致)。
     if (a.listingMode) setListingMode(a.listingMode);
     if (a.promptTemplate) focusInput(a.promptTemplate);
   }
 
   function pickPreset(prompt: string) {
-    setActiveAgent("ANALYST");
+    changeAgent("ANALYST");
     focusInput(prompt);
   }
 
@@ -183,7 +184,7 @@ export function Workbench({
       conversationId={conversationId}
       isGuest={isGuest}
       activeAgent={activeAgent}
-      onAgentChange={setActiveAgent}
+      onAgentChange={changeAgent}
       input={input}
       onInputChange={setInput}
       productId={productId}
@@ -219,7 +220,7 @@ export function Workbench({
   );
 
   const pills = (
-    <AgentPills active={activeAgent} onChange={setActiveAgent} kinds={agents} align={align} />
+    <AgentPills active={activeAgent} onChange={changeAgent} kinds={agents} align={align} />
   );
 
   // 聊天布局（会话页）:会话流在上（正序，旧→新），对话框常驻底部 —— 与微信、ChatGPT 同方向。

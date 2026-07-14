@@ -53,18 +53,18 @@ type BrandTileProps = {
   markClassName?: string;
 };
 
-/** 品牌方块 + 白色猫标记：app 图标式锁定（侧栏 / 顶栏 / 登录面板）。
- *  Design Language §4/§16：单一强调色实底（去 indigo→fuchsia 三色渐变）。
- *  用字面值 #6E56FF(非 brand 变量)，故在 .app-skin 近黑皮肤下仍保留这一抹电紫。 */
+/** 品牌方块：珊瑚主面 + 墨色/月光叠层，保留猫标识并强化应用图标辨识度。 */
 export function BrandTile({ className, markClassName }: BrandTileProps) {
   return (
     <span
       className={
-        "inline-flex shrink-0 items-center justify-center bg-[#6e56ff] text-white shadow-sm " +
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-brand-500 text-white shadow-[0_10px_24px_-12px_rgba(237,63,29,0.75)] ring-1 ring-black/10 " +
         (className ?? "h-10 w-10 rounded-2xl")
       }
     >
-      <BrandMark className={markClassName ?? "h-[78%] w-[78%]"} />
+      <span aria-hidden className="absolute -right-[30%] -top-[36%] h-[85%] w-[85%] rounded-full bg-[#121419]" />
+      <span aria-hidden className="absolute -bottom-[42%] -left-[24%] h-[72%] w-[72%] rounded-full bg-[#ffab3d]" />
+      <BrandMark className={"relative " + (markClassName ?? "h-[72%] w-[72%]")} />
     </span>
   );
 }
@@ -92,11 +92,11 @@ export function BrandLockup({
       {showWordmark && (
         <span
           className={
-            "font-display font-semibold tracking-[0.06em] text-ink " +
+            "font-display font-bold tracking-[0.01em] text-ink " +
             (wordmarkClassName ?? "text-lg")
           }
         >
-          发现猫
+          发现<span className="text-brand-500">猫</span>
         </span>
       )}
     </span>

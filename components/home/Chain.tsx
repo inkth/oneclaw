@@ -17,7 +17,7 @@ const STEPS = [
     no: "02",
     agent: "短视频创作",
     icon: Clapperboard,
-    tone: "text-violet-600 bg-violet-50",
+    tone: "text-blue-600 bg-blue-50",
     title: "一个产品，选对角度出片",
     desc: "AI 按产品挑最合适的叙事角度，直出 9:16 成片与封面。",
     visual: <VideoVisual />,
@@ -51,24 +51,26 @@ const PROOFS = [
 
 export function Chain() {
   return (
-    <section id="chain" className="relative py-20 sm:py-28">
+    <section id="chain" className="relative bg-white/55 py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="text-xs font-semibold uppercase tracking-widest text-brand-600">
-            全链路
+        <div className="grid items-end gap-6 lg:grid-cols-[.72fr_1.28fr]">
+          <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">
+            01 / 全链路
           </div>
-          <h2 className="text-display-sm mt-3">从发现机会，到做出结果</h2>
-          <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            发现猫把选品、内容、Listing 和复盘连在一起，
-            上一步的结果可以直接交给下一位 Agent 继续做。
-          </p>
+          <div>
+            <h2 className="text-display-sm">从发现机会，到做出结果</h2>
+            <p className="mt-4 max-w-2xl text-base text-zinc-600 text-cjk-relaxed">
+              发现猫把选品、内容、Listing 和复盘连在一起，
+              上一步的结果可以直接交给下一位 Agent 继续做。
+            </p>
+          </div>
         </div>
 
         <div className="relative mt-14">
           {/* 流水线连接光带（仅大屏） */}
           <div
             aria-hidden
-            className="absolute left-[10%] right-[10%] top-4 hidden h-px bg-brand-200 lg:block"
+            className="absolute left-[10%] right-[10%] top-4 hidden h-px bg-gradient-to-r from-brand-300 via-blue-400 to-emerald-300 lg:block"
           />
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
@@ -78,7 +80,7 @@ export function Chain() {
                     {s.no}
                   </span>
                 </div>
-                <div className="dk-card dk-lift mt-4 flex flex-1 flex-col p-5">
+                <div className="dk-card dk-lift mt-4 flex flex-1 flex-col p-6">
                   <div className="flex items-center gap-2">
                     <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${s.tone}`}>
                       <s.icon className="h-4 w-4" />
@@ -97,10 +99,10 @@ export function Chain() {
         </div>
 
         {/* 数字证明带 */}
-        <div className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-black/[0.07] bg-black/[0.06] lg:grid-cols-4">
+        <div className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-[20px] border border-black/[0.07] bg-white/15 lg:grid-cols-4">
           {PROOFS.map((p) => (
-            <div key={p.label} className="bg-white px-6 py-5 text-center">
-              <div className="font-display text-lg font-semibold text-ink nums">{p.value}</div>
+            <div key={p.label} className="bg-ink px-6 py-6 text-center">
+              <div className="font-display text-lg font-semibold text-white nums">{p.value}</div>
               <div className="mt-1 text-xs text-zinc-500">{p.label}</div>
             </div>
           ))}

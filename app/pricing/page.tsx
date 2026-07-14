@@ -138,13 +138,16 @@ export default function PricingPage() {
     <>
       <Header />
       <main className="flex-1">
-        <section className="relative pt-16 pb-12 sm:pt-24">
+        <section className="gradient-bg relative overflow-hidden pb-14 pt-16 sm:pt-24">
+          <div className="app-grid pointer-events-none absolute inset-0 opacity-40" />
+          <div className="pointer-events-none absolute -right-24 top-8 h-72 w-72 rounded-full bg-brand-300/30 blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-blue-300/25 blur-3xl" />
           <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-200/60 bg-white/60 px-3 py-1 text-xs font-medium text-brand-700 backdrop-blur">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">
               <Sparkles className="h-3.5 w-3.5" />
               榜单数据免费 · 无需信用卡
             </div>
-            <h1 className="mt-6 text-display-sm">
+            <h1 className="mt-7 text-display-sm">
               先免费找机会，再按需使用 AI
             </h1>
             <p className="mt-4 text-zinc-600 max-w-2xl mx-auto text-cjk-relaxed">
@@ -155,7 +158,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="relative pb-20">
+        <section className="relative pb-20 pt-2">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {tiers.map((t) => {
@@ -164,18 +167,18 @@ export default function PricingPage() {
                 return (
                   <div
                     key={t.name}
-                    className={`relative rounded-lg bg-white p-6 sm:p-8 ${c.ring} ${
+                    className={`relative rounded-[24px] bg-white p-6 sm:p-8 ${c.ring} ${
                       t.highlight ? "md:-translate-y-2" : ""
-                    } transition-transform`}
+                    } transition-transform hover:-translate-y-1`}
                   >
                     {t.highlight && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white shadow-sm">
+                      <div className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand-500 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-white shadow-[0_8px_20px_rgba(255,90,54,.24)]">
                         <Zap className="h-3 w-3" />
                         最受欢迎
                       </div>
                     )}
 
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${c.icon} text-white`}>
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${c.icon} text-white`}>
                       <Icon className="h-5 w-5" />
                     </div>
 
@@ -196,7 +199,7 @@ export default function PricingPage() {
                     <PricingCTA
                       plan={t.name}
                       label={t.cta}
-                      className={`mt-6 inline-flex w-full items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${c.cta}`}
+                      className={`mt-6 inline-flex w-full items-center justify-center gap-1 rounded-full px-4 py-3 text-sm font-bold transition-all ${c.cta}`}
                     />
 
                     <div className="mt-6 border-t border-zinc-100 pt-5">
@@ -255,7 +258,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="bg-zinc-50/60 py-20">
+        <section className="border-t border-black/[0.05] bg-white/55 py-20">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <h2 className="text-display-sm text-center">
               常见问题
@@ -264,7 +267,7 @@ export default function PricingPage() {
               {faqs.map((f) => (
                 <details
                   key={f.q}
-                  className="group rounded-lg border border-zinc-200/80 bg-white px-5 py-4 [&_summary::-webkit-details-marker]:hidden"
+                  className="group rounded-[18px] border border-zinc-200/80 bg-white px-5 py-4 transition-colors open:border-brand-200 open:bg-brand-50/25 [&_summary::-webkit-details-marker]:hidden"
                 >
                   <summary className="flex cursor-pointer items-center justify-between text-sm font-medium">
                     {f.q}

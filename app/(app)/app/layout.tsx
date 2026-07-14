@@ -33,19 +33,18 @@ export default async function AppLayout({
 
   return (
     <AuthModalProvider>
-    <div className="app-skin min-h-screen flex bg-background">
+    <div className="app-skin flex min-h-screen overflow-x-clip bg-background">
       {/* 照搬 Designkit 导航轨：宽 80px，底色 --dk-rail 比画布深一档 —— 靠色阶划界，
           所以没有右边框。Logo 槽 64×64，图标 28px。 */}
       <aside
-        className="hidden md:flex sticky top-0 h-screen w-20 shrink-0 flex-col items-center self-start gap-2 overflow-y-auto px-2 pb-2"
-        style={{ background: "var(--dk-rail)" }}
+        className="sticky top-0 hidden h-screen w-24 shrink-0 flex-col items-center self-start gap-2 overflow-y-auto border-r border-black/5 bg-[var(--dk-rail)]/90 px-3 pb-3 backdrop-blur-xl md:flex"
       >
         <Link
           href="/"
           aria-label="发现猫首页"
-          className="flex h-16 w-16 shrink-0 items-center justify-center"
+          className="flex h-20 w-16 shrink-0 items-center justify-center"
         >
-          <BrandTile className="h-7 w-7 rounded-lg" />
+          <BrandTile className="h-11 w-11 rounded-2xl shadow-[0_10px_24px_rgba(255,90,54,.24)]" />
         </Link>
 
         <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />
@@ -64,7 +63,7 @@ export default async function AppLayout({
           isAgency={isAgency}
           isAdmin={isAdmin}
         />
-        <main className="relative flex-1 p-4 sm:p-8">
+        <main className="relative flex-1 px-4 pb-10 pt-5 sm:px-8 sm:pb-12 sm:pt-7">
           {/* Designkit 的画布是平的：唯一的色彩来自输入框背后的极光（DkAura），
               页面本身不铺任何顶部柔光。 */}
           <div className="relative">

@@ -36,28 +36,32 @@ const MEMBERS = [
 
 export function Team() {
   return (
-    <section id="team" className="relative py-20 sm:py-28">
+    <section id="team" className="relative overflow-hidden bg-ink py-20 text-white sm:py-28">
+      <div aria-hidden className="absolute -right-40 top-0 h-96 w-96 rounded-full bg-brand-500/20 blur-[120px]" />
+      <div aria-hidden className="absolute -left-32 bottom-0 h-80 w-80 rounded-full bg-blue-500/15 blur-[110px]" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="text-xs font-semibold uppercase tracking-widest text-brand-600">
-            AI 团队
+        <div className="relative grid items-end gap-6 lg:grid-cols-[.72fr_1.28fr]">
+          <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-400">
+            02 / AI 团队
           </div>
-          <h2 className="text-display-sm mt-3">四位 Agent，各自负责一个环节</h2>
-          <p className="mt-4 text-base text-zinc-600 text-cjk-relaxed">
-            你只管说清目标，Agent 会给出可继续使用的结果，也能接着上一步往下做。
-          </p>
+          <div>
+            <h2 className="text-display-sm text-white">四位 Agent，各自负责一个环节</h2>
+            <p className="mt-4 max-w-2xl text-base text-zinc-400 text-cjk-relaxed">
+              你只管说清目标，Agent 会给出可继续使用的结果，也能接着上一步往下做。
+            </p>
+          </div>
         </div>
 
-        <div className="mx-auto mt-12 grid max-w-6xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {MEMBERS.map((m) => (
-            <div key={m.name} className="dk-card dk-lift flex flex-col p-6">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-black/[0.04] text-accent-pop">
+            <div key={m.name} className="dk-lift flex flex-col rounded-[22px] border border-white/10 bg-white/[0.055] p-6 backdrop-blur-sm">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500 text-white shadow-md">
                 <m.icon className="h-5 w-5" />
               </div>
-              <h3 className="font-display mt-4 text-base font-semibold text-ink">{m.name}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{m.role}</p>
+              <h3 className="font-display mt-4 text-base font-semibold text-white">{m.name}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{m.role}</p>
 
-              <blockquote className="mt-4 border-l-2 border-zinc-200 pl-3 text-xs leading-relaxed text-zinc-500">
+              <blockquote className="mt-4 border-l-2 border-brand-400/70 pl-3 text-xs leading-relaxed text-zinc-400">
                 「{m.quote}」
               </blockquote>
 
@@ -65,7 +69,7 @@ export function Team() {
                 {m.skills.map((s) => (
                   <span
                     key={s}
-                    className="rounded-full border border-black/[0.07] bg-zinc-50 px-2.5 py-1 text-2xs font-medium text-zinc-600"
+                    className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-2xs font-medium text-zinc-300"
                   >
                     {s}
                   </span>

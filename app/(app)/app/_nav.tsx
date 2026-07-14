@@ -217,7 +217,7 @@ function RailItem({
         "transition-colors hover:bg-[var(--dk-action-regular)] " +
         (active ? "dk-rail-item" : "")
       }
-      style={{ color: "var(--dk-content-primary)" }}
+      style={{ color: active ? "#fff" : "var(--dk-content-primary)" }}
     >
       {/* 激活项用实心图标：lucide 无 fill 变体，故以 currentColor 填充描边内区，
           视觉等价于 Designkit 的 icon-HomeV2 → icon-HomeV2Fill 切换。

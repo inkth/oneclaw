@@ -116,11 +116,15 @@ export function VideoDetailDrawer({
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError(null);
-    fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => {
+
+    async function loadVideo() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, {
+          cache: "no-store",
+        });
+        const j = await response.json();
         if (!alive) return;
         if (!j.ok) {
           setError(j.error?.message || "加载失败");
@@ -128,12 +132,14 @@ export function VideoDetailDrawer({
           setVideo(j.data.video as VideoFull);
         }
         setLoading(false);
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!alive) return;
         setError(e instanceof Error ? e.message : "网络错误，请检查网络后重试");
         setLoading(false);
-      });
+      }
+    }
+
+    void loadVideo();
     return () => {
       alive = false;
     };

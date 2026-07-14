@@ -50,12 +50,12 @@ export function SubscribeForm({ source = "landing-footer" }: { source?: string }
         type="email"
         required
         placeholder="your@email.com"
-        className="w-full sm:w-64 rounded-full border border-zinc-200 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
+        className="w-full rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-white/35 focus:ring-2 focus:ring-brand-300/30 sm:w-64"
       />
       <button
         type="submit"
         disabled={state === "loading"}
-        className="inline-flex items-center gap-1 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-60 transition-colors"
+        className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-400 disabled:opacity-60"
       >
         {state === "loading" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />

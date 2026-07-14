@@ -16,7 +16,7 @@ export function PageHeader({
 }) {
   return (
     <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between", className)}>
-      <div className="min-w-0">
+      <div className="relative min-w-0 pl-4 before:absolute before:bottom-0.5 before:left-0 before:top-0.5 before:w-1 before:rounded-full before:bg-brand-500">
         <div className="flex items-center gap-2.5">
           <h1 className="text-title text-ink">{title}</h1>
           {badge}

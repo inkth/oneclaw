@@ -40,7 +40,7 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-zinc-200/80 bg-zinc-50/60">
+    <footer className="relative border-t border-black/[0.08] bg-[#efeee8]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           <div className="col-span-2">
@@ -78,10 +78,10 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 rounded-lg border border-zinc-200/80 bg-white p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-[22px] border border-black/10 bg-ink p-6 text-white sm:flex-row sm:items-center">
           <div>
             <div className="text-sm font-semibold">订阅出海周报</div>
-            <div className="mt-0.5 text-xs text-zinc-500">
+            <div className="mt-0.5 text-xs text-zinc-400">
               每周一封，AI 出海赛道动态 + 选品趋势 + 案例拆解。
             </div>
           </div>

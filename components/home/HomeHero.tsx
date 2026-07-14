@@ -99,19 +99,25 @@ export function HomeHero() {
   const showDemo = value === "" && !focused;
 
   return (
-    <section className="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28">
+    <section className="grain relative overflow-hidden border-b border-black/[0.06] pb-20 pt-14 sm:pb-28 sm:pt-20">
+      <div className="gradient-bg absolute inset-0" aria-hidden />
+      <div className="app-grid absolute inset-x-0 top-0 h-[42rem] opacity-70" aria-hidden />
+      <div aria-hidden className="absolute left-[-8rem] top-28 h-64 w-64 rounded-full border border-brand-200/60" />
+      <div aria-hidden className="absolute -right-28 top-16 h-80 w-80 rounded-full border border-blue-200/60" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="dk-ring mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            TikTok Shop 数据洞察与 AI 创作
+        <div className="grid items-end gap-8 lg:grid-cols-[1.35fr_.65fr] lg:gap-16">
+          <div>
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm backdrop-blur">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-[9px] font-bold text-white">AI</span>
+              TikTok Shop 数据洞察与 AI 创作
+            </div>
+
+            <h1 className="text-display max-w-4xl text-ink">
+              {BRAND_SLOGAN_LEAD}<span className="gradient-text">{BRAND_SLOGAN_FOCUS}</span>
+            </h1>
           </div>
 
-          <h1 className="text-display">
-            {BRAND_SLOGAN_LEAD}<span className="gradient-text">{BRAND_SLOGAN_FOCUS}</span>
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-2xl text-base text-zinc-600 text-cjk-relaxed sm:text-lg">
+          <p className="max-w-xl border-l-2 border-brand-400 pl-5 text-base text-zinc-600 text-cjk-relaxed sm:text-lg lg:mb-2">
             从真实榜单里找机会，再让 AI 帮你选品、做视频、写 Listing、复盘投放。
             <br className="hidden sm:block" />
             每一步都有结果，下一步接着用。
@@ -119,8 +125,8 @@ export function HomeHero() {
         </div>
 
         {/* 真实 composer：访客可直接输入，空闲时打字机演示真实指令 */}
-        <div className="relative isolate mx-auto mt-12 max-w-3xl">
-          <DkAura className="absolute left-1/2 top-[70px] z-0 w-[70%] -translate-x-1/2 -translate-y-1/2" />
+        <div className="relative isolate mx-auto mt-14 max-w-4xl">
+          <DkAura className="absolute left-1/2 top-[70px] z-0 w-[78%] -translate-x-1/2 -translate-y-1/2" />
 
           <div className="dk-composer relative z-10 overflow-hidden text-left">
             <div className="relative">
@@ -131,12 +137,12 @@ export function HomeHero() {
                 onBlur={() => setFocused(false)}
                 rows={3}
                 aria-label="告诉 Agent 你想做什么"
-                className="w-full resize-none bg-transparent px-5 py-4 text-[15px] leading-relaxed outline-none"
+                className="w-full resize-none bg-transparent px-5 py-5 text-[15px] leading-relaxed outline-none sm:px-6"
               />
               {showDemo && (
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-0 px-5 py-4 text-[15px] leading-relaxed text-zinc-500"
+                  className="pointer-events-none absolute inset-0 px-5 py-5 text-[15px] leading-relaxed text-zinc-500 sm:px-6"
                 >
                   {typed}
                   <span className="ml-0.5 inline-block h-[1.1em] w-0.5 translate-y-[0.18em] animate-pulse rounded-full bg-zinc-400" />
@@ -164,7 +170,7 @@ export function HomeHero() {
 
               <a
                 href="/app"
-                className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
               >
                 <Send className="h-4 w-4" />
                 去工作台试试
@@ -241,8 +247,8 @@ function RunDemo() {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setTick(4);
-      return;
+      const frame = requestAnimationFrame(() => setTick(4));
+      return () => cancelAnimationFrame(frame);
     }
     const t = setInterval(
       () => setTick((v) => (v + 1) % (RUN_STEPS.length + 2)),

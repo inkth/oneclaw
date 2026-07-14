@@ -83,8 +83,8 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
       {step === "phone" ? (
         <>
           <div>
-            <label className="block text-xs font-medium text-zinc-700">手机号</label>
-            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-zinc-200/80 px-3 py-2.5 focus-within:ring-2 focus-within:ring-brand-200 focus-within:border-brand-300">
+            <label className="block text-xs font-semibold text-zinc-700">手机号</label>
+            <div className="mt-2 flex items-center gap-2 rounded-2xl border border-zinc-200/80 bg-zinc-50/70 px-4 py-3.5 transition-all focus-within:border-brand-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100">
               <span className="text-sm text-zinc-500">+86</span>
               <input
                 type="tel"
@@ -109,7 +109,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
           <button
             onClick={sendCode}
             disabled={sending || !phone}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700 disabled:opacity-60 transition-all"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(255,90,54,.24)] transition-all hover:-translate-y-0.5 hover:bg-brand-600 disabled:translate-y-0 disabled:opacity-60"
           >
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
             发送验证码
@@ -135,7 +135,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700">6 位验证码</label>
+            <label className="block text-xs font-semibold text-zinc-700">6 位验证码</label>
             <input
               type="text"
               inputMode="numeric"
@@ -145,7 +145,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               onKeyDown={(e) => e.key === "Enter" && verifyAndSignIn()}
               placeholder="000000"
-              className="mt-1.5 w-full rounded-lg border border-zinc-200/80 px-3 py-2.5 text-center font-mono text-lg tracking-[0.5em] outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
+              className="mt-2 w-full rounded-2xl border border-zinc-200/80 bg-zinc-50/70 px-3 py-3.5 text-center font-mono text-lg tracking-[0.5em] outline-none transition-all focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
               autoFocus
             />
           </div>
@@ -159,7 +159,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
           <button
             onClick={verifyAndSignIn}
             disabled={verifying || code.length !== 6}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700 disabled:opacity-60 transition-all"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(255,90,54,.24)] transition-all hover:-translate-y-0.5 hover:bg-brand-600 disabled:translate-y-0 disabled:opacity-60"
           >
             {verifying && <Loader2 className="h-4 w-4 animate-spin" />}
             登录
