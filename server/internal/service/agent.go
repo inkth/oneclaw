@@ -106,6 +106,28 @@ func (s *AgentService) List(ctx context.Context, wsID uuid.UUID) ([]model.AgentT
 	return items, nil
 }
 
+// AgentTaskLite 全局运行态信标(悬浮吉祥物)轮询用的轻量投影:
+// 不带 output/metadata,QUEUED/RUNNING 通常只有个位数,响应恒小。
+type AgentTaskLite struct {
+	ID             uuid.UUID `json:"id"`
+	ConversationID uuid.UUID `json:"conversationId"`
+	Agent          string    `json:"agent"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+func (s *AgentService) ListActive(ctx context.Context, wsID uuid.UUID) ([]AgentTaskLite, error) {
+	items := []AgentTaskLite{}
+	if err := s.db.WithContext(ctx).Model(&model.AgentTask{}).
+		Where("workspace_id = ? AND status IN ?", wsID, []string{model.TaskQueued, model.TaskRunning}).
+		Order("created_at DESC").
+		Limit(20).
+		Find(&items).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询任务失败", err)
+	}
+	return items, nil
+}
+
 func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.AgentTask, error) {
 	var t model.AgentTask
 	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", taskID, wsID).First(&t).Error

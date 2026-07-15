@@ -24,6 +24,7 @@ import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { CreditCost } from "@/components/ui/CreditCost";
 import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
+import { TASK_DISPATCHED_EVENT } from "./floating-mascot";
 import { AssetChips, DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./create/asset-chips";
 import { AssetPickerModal } from "./create/asset-picker-modal";
 
@@ -317,6 +318,8 @@ export function AgentComposer({
     // 新任务气泡立即出现在输入框下方，无需跳转提示
     const task = (json.data?.task ?? json.task) as StreamTask | undefined;
     if (task) onDispatched?.(task);
+    // 通知全局运行态信标（悬浮吉祥物）立刻进入进行中状态
+    window.dispatchEvent(new Event(TASK_DISPATCHED_EVENT));
   }
 
   async function analyze() {
