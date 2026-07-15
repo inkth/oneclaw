@@ -43,8 +43,8 @@ const STEPS = [
 ];
 
 const PROOFS = [
-  { value: "4 个环节", label: "选品 · 视频 · Listing · 复盘" },
-  { value: "1 个人", label: "跑通完整链路" },
+  { value: "4 份连续产物", label: "围绕同一件商品生成" },
+  { value: "1 条共享上下文", label: "不用重复搬运资料" },
   { value: "AI 选角度", label: "按产品匹配叙事，单条直出" },
   { value: "ROI 四象限", label: "投流报表一键复盘" },
 ];
@@ -54,8 +54,14 @@ export function Chain() {
     <section id="chain" className="relative bg-white/55 py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-end gap-6 lg:grid-cols-[.72fr_1.28fr]">
-          <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">
-            01 / 全链路
+          <div>
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">
+              01 / 全链路
+            </div>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-black/[0.07] bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-brand-500" />
+              连续案例：USB 便携榨汁杯
+            </div>
           </div>
           <div>
             <h2 className="text-display-sm">从发现机会，到做出结果</h2>
@@ -68,10 +74,7 @@ export function Chain() {
 
         <div className="relative mt-14">
           {/* 流水线连接光带（仅大屏） */}
-          <div
-            aria-hidden
-            className="absolute left-[10%] right-[10%] top-4 hidden h-px bg-gradient-to-r from-brand-300 via-blue-400 to-emerald-300 lg:block"
-          />
+          <div aria-hidden className="claw-trail absolute left-[8%] right-[8%] top-4 hidden lg:block" />
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <div key={s.no} className="flex flex-col">
@@ -116,8 +119,8 @@ export function Chain() {
 
 function ProductVisual() {
   const rows = [
-    { name: "USB 便携榨汁杯", roi: 94, w: "w-[94%]" },
-    { name: "宠物智能饮水机", roi: 88, w: "w-[88%]" },
+    { name: "机会评分", value: "94 / 100", w: "w-[94%]" },
+    { name: "预估毛利", value: "48%", w: "w-[78%]" },
   ];
   return (
     <div className="space-y-2.5 rounded-lg border border-black/[0.05] bg-zinc-50/60 p-3">
@@ -125,7 +128,7 @@ function ProductVisual() {
         <div key={r.name}>
           <div className="flex items-center justify-between text-2xs">
             <span className="font-medium text-zinc-700">{r.name}</span>
-            <span className="font-semibold text-brand-600 nums">ROI {r.roi}</span>
+            <span className="font-semibold text-brand-600 nums">{r.value}</span>
           </div>
           <div className="mt-1 h-1 overflow-hidden rounded-full bg-brand-100">
             <div className={`h-full ${r.w} rounded-full bg-brand-500`} />
@@ -137,13 +140,13 @@ function ProductVisual() {
 }
 
 function VideoVisual() {
-  const tiles = ["开箱", "测评", "场景", "对比"];
+  const tiles = ["痛点", "开箱", "榨汁", "成品"];
   return (
     <div className="grid grid-cols-4 gap-1.5">
       {tiles.map((t, i) => (
         <div
           key={t}
-          className="skeleton-media relative flex aspect-[9/16] items-end justify-center overflow-hidden rounded-lg"
+          className="story-frame relative flex aspect-[9/16] items-end justify-center overflow-hidden rounded-lg"
         >
           {i === 0 && (
             <span className="absolute inset-0 flex items-center justify-center">

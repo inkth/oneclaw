@@ -173,7 +173,7 @@ html { scroll-behavior: smooth; }
     -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: clamp(2.75rem, 1.45rem + 4.5vw, 5.9rem);
   line-height: 0.98;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.035em;
   font-weight: 700;
   text-wrap: balance;
 }
@@ -182,7 +182,7 @@ html { scroll-behavior: smooth; }
     -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: clamp(2rem, 1.35rem + 2.3vw, 3.4rem);
   line-height: 1.05;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.028em;
   font-weight: 700;
   text-wrap: balance;
 }
@@ -513,25 +513,72 @@ html { scroll-behavior: smooth; }
   transform: scale(0.97);
 }
 
-/* ---------- 进场动画（配合 Reveal 组件） ---------- */
+/* ---------- 进场动画（内容默认可见，动效仅作渐进增强） ---------- */
 .reveal {
-  opacity: 0;
+  opacity: 1;
+  transform: none;
   transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--reveal-delay, 0ms);
 }
-.reveal-rise {
-  transform: translateY(16px);
+
+@starting-style {
+  .reveal {
+    opacity: 0;
+  }
+  .reveal-rise {
+    transform: translateY(16px);
+  }
+  .reveal-scale {
+    transform: scale(0.98);
+  }
 }
-.reveal-scale {
-  transform: scale(0.96);
+
+/* 发现猫的接力母题：三道同色爪痕把四位 Agent 串成一条工作流。 */
+.claw-trail {
+  height: 12px;
+  background:
+    linear-gradient(100deg, transparent 0 1%, rgba(77, 95, 212, 0.75) 12%, rgba(77, 95, 212, 0.75) 88%, transparent 99%) 0 1px / 100% 1px no-repeat,
+    linear-gradient(100deg, transparent 0 4%, rgba(77, 95, 212, 0.38) 15%, rgba(77, 95, 212, 0.38) 91%, transparent 100%) 0 6px / 100% 1px no-repeat,
+    linear-gradient(100deg, transparent 0 7%, rgba(77, 95, 212, 0.22) 18%, rgba(77, 95, 212, 0.22) 94%, transparent 100%) 0 11px / 100% 1px no-repeat;
+  transform: skewX(-12deg);
 }
-.reveal-fade {
-  transform: none;
+
+.agent-handoff-line {
+  background: linear-gradient(to bottom, var(--brand-400), var(--brand-600), var(--ai-violet));
+  box-shadow: 0 0 18px rgba(77, 95, 212, 0.24);
 }
-.reveal.in-view {
-  opacity: 1;
-  transform: none;
+
+.claw-stamp {
+  width: 68px;
+  height: 52px;
+  background:
+    linear-gradient(112deg, transparent 0 30%, currentColor 31% 34%, transparent 35% 100%) 0 0 / 28px 52px,
+    linear-gradient(112deg, transparent 0 30%, currentColor 31% 34%, transparent 35% 100%) 20px 0 / 28px 52px,
+    linear-gradient(112deg, transparent 0 30%, currentColor 31% 34%, transparent 35% 100%) 40px 0 / 28px 52px;
+}
+
+.story-frame {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(255, 255, 255, 0.94) 0 12%, transparent 13%),
+    linear-gradient(160deg, var(--brand-50) 0%, #e9edff 58%, var(--ai-violet-soft) 100%);
+  box-shadow: inset 0 0 0 1px rgba(18, 20, 25, 0.05);
+}
+
+.story-frame::after {
+  content: "";
+  position: absolute;
+  inset: 42% 16% 18%;
+  border-radius: 40% 40% 24% 24%;
+  background: linear-gradient(145deg, var(--brand-500), var(--ai-violet));
+  opacity: 0.52;
+}
+
+.story-frame > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ---------- 微光骨架 / shimmer ---------- */

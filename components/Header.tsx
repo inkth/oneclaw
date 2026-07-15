@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { BrandLockup } from "@/components/ui/BrandMark";
 
@@ -16,9 +17,9 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-black/[0.07] bg-[#f7f6f2]/90 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-[72px] items-center justify-between">
-          <a href="/intro" aria-label="发现猫首页">
+          <Link href="/intro" aria-label="发现猫首页">
             <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-1 rounded-full border border-black/[0.07] bg-white/70 p-1 md:flex">
             {navItems.map((item) => (
@@ -38,28 +39,37 @@ export function Header() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <a
+            <Link
               href="/login"
               className="px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:text-ink"
             >
               登录
-            </a>
-            <a
+            </Link>
+            <Link
               href="/app"
               className="pop group relative inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-brand)] hover:bg-brand-600"
             >
               进入工作台
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </a>
+            </Link>
           </div>
 
-          <button
-            className="md:hidden p-2 text-zinc-700"
-            onClick={() => setOpen(!open)}
-            aria-label={open ? "关闭菜单" : "打开菜单"}
-          >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-1.5 md:hidden">
+            <Link
+              href="/app"
+              className="rounded-full bg-brand-500 px-3.5 py-2 text-xs font-semibold text-white shadow-[var(--shadow-brand)]"
+            >
+              免费体验
+            </Link>
+            <button
+              className="p-2 text-zinc-700"
+              onClick={() => setOpen(!open)}
+              aria-label={open ? "关闭菜单" : "打开菜单"}
+              aria-expanded={open}
+            >
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         {open && (

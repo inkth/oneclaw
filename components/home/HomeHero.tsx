@@ -20,6 +20,7 @@ import { BRAND_SLOGAN_FOCUS, BRAND_SLOGAN_LEAD } from "@/lib/brand";
 
 type DemoPrompt = {
   agent: string;
+  kind: "ANALYST" | "DIRECTOR" | "LISTING" | "REVIEW";
   text: string;
   icon: React.ComponentType<{ className?: string }>;
 };
@@ -27,21 +28,25 @@ type DemoPrompt = {
 const PROMPTS: DemoPrompt[] = [
   {
     agent: "选品分析",
+    kind: "ANALYST",
     text: "找 3 个适合新手起步的高毛利宠物用品，要欧美市场的",
     icon: TrendingUp,
   },
   {
     agent: "短视频创作",
+    kind: "DIRECTOR",
     text: "给这款便携榨汁杯生成一支 15 秒带货短视频，叙事角度你帮我挑",
     icon: Video,
   },
   {
     agent: "Listing 内容",
+    kind: "LISTING",
     text: "给这款便携榨汁杯写一套英文 Listing，标题带核心关键词",
     icon: FileText,
   },
   {
     agent: "投放复盘",
+    kind: "REVIEW",
     text: "分析我店铺上周的投流报表，哪些素材值得加预算？",
     icon: BarChart3,
   },
@@ -96,10 +101,20 @@ export function HomeHero() {
   const { prompt, typed } = useTypewriter();
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
+  const [selectedKind, setSelectedKind] = useState<DemoPrompt["kind"]>("ANALYST");
   const showDemo = value === "" && !focused;
 
+  function dispatch(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const task = value.trim() || prompt.text;
+    const kind = value.trim() ? selectedKind : prompt.kind;
+    window.location.assign(
+      `/app?prompt=${encodeURIComponent(task)}&agent=${kind}#agent-composer`,
+    );
+  }
+
   return (
-    <section className="grain relative overflow-hidden border-b border-black/[0.06] pb-20 pt-14 sm:pb-28 sm:pt-20">
+    <section className="grain relative overflow-hidden border-b border-black/[0.06] pb-16 pt-12 sm:pb-20 sm:pt-16">
       <div className="gradient-bg absolute inset-0" aria-hidden />
       <div className="app-grid absolute inset-x-0 top-0 h-[42rem] opacity-70" aria-hidden />
       <div aria-hidden className="absolute left-[-8rem] top-28 h-64 w-64 rounded-full border border-brand-200/60" />
@@ -107,7 +122,7 @@ export function HomeHero() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-end gap-8 lg:grid-cols-[1.35fr_.65fr] lg:gap-16">
           <div>
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm backdrop-blur">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm backdrop-blur">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-[9px] font-bold text-white">AI</span>
               TikTok Shop 数据洞察与 AI 创作
             </div>
@@ -125,19 +140,22 @@ export function HomeHero() {
         </div>
 
         {/* 真实 composer：访客可直接输入，空闲时打字机演示真实指令 */}
-        <div className="relative isolate mx-auto mt-14 max-w-4xl">
+        <div className="relative isolate mx-auto mt-10 max-w-5xl sm:mt-12">
           <DkAura className="absolute left-1/2 top-[70px] z-0 w-[78%] -translate-x-1/2 -translate-y-1/2" />
 
-          <div className="dk-composer relative z-10 overflow-hidden text-left">
+          <form onSubmit={dispatch} className="dk-composer relative z-10 overflow-hidden text-left">
             <div className="relative">
               <textarea
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                onFocus={() => setFocused(true)}
+                onFocus={() => {
+                  setFocused(true);
+                  if (!value) setSelectedKind(prompt.kind);
+                }}
                 onBlur={() => setFocused(false)}
-                rows={3}
+                rows={2}
                 aria-label="告诉 Agent 你想做什么"
-                className="w-full resize-none bg-transparent px-5 py-5 text-[15px] leading-relaxed outline-none sm:px-6"
+                className="min-h-24 w-full resize-none bg-transparent px-5 py-5 text-[15px] leading-relaxed outline-none sm:min-h-28 sm:px-6"
               />
               {showDemo && (
                 <div
@@ -154,33 +172,38 @@ export function HomeHero() {
               {PROMPTS.map((p) => {
                 const active = showDemo && p.agent === prompt.agent;
                 return (
-                  <span
+                  <button
+                    type="button"
                     key={p.agent}
+                    onClick={() => {
+                      setSelectedKind(p.kind);
+                      setValue(p.text);
+                    }}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
-                      active
+                      (showDemo ? active : p.kind === selectedKind)
                         ? "dk-ring text-ink shadow-sm"
                         : "border border-black/10 bg-white text-zinc-500"
                     }`}
                   >
                     <p.icon className="h-3.5 w-3.5" />
                     {p.agent}
-                  </span>
+                  </button>
                 );
               })}
 
-              <a
-                href="/app"
+              <button
+                type="submit"
                 className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
               >
                 <Send className="h-4 w-4" />
-                去工作台试试
-              </a>
+                带着指令去工作台
+              </button>
             </div>
-          </div>
+          </form>
 
           <RunDemo />
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               榜单数据免费浏览 · 使用 AI 才消耗积分
