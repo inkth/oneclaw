@@ -85,7 +85,7 @@ export function AccountMenu({
         trigger={({ open }) => (
           <span
             title={display}
-            className={`flex h-8 w-8 items-center justify-center rounded-full bg-[#6e56ff] text-xs font-semibold text-white transition-shadow ${
+            className={`flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white transition-shadow ${
               open ? "ring-2 ring-brand-200" : ""
             }`}
           >
@@ -97,7 +97,7 @@ export function AccountMenu({
           <div className="text-sm">
             {/* 身份 */}
             <div className="flex items-center gap-2.5 px-3.5 py-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6e56ff] text-sm font-semibold text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white">
                 {initial}
               </span>
               <div className="min-w-0">

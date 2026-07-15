@@ -42,38 +42,37 @@
   --ink-action: var(--dk-btn-black);
   --hairline: var(--dk-stroke-overlay);
 
-  /* 主品牌：高能珊瑚，承载内容、电商与行动。 */
-  --brand-50: #fff4ef;
-  --brand-100: #ffe5d8;
-  --brand-200: #ffc8b2;
-  --brand-300: #ffa183;
-  --brand-400: #ff7954;
-  --brand-500: #ff5a36;
-  --brand-600: #ed3f1d;
-  --brand-700: #c82f14;
-  --brand-800: #a52914;
-  --brand-900: #862617;
-  --brand-950: #491006;
+  /* 主品牌：深靛蓝负责结构、可信与行动；电紫只用于 AI 与少量品牌高光。 */
+  --brand-50: #f2f3ff;
+  --brand-100: #e5e7ff;
+  --brand-200: #c9ceff;
+  --brand-300: #a4adff;
+  --brand-400: #727fea;
+  --brand-500: #4d5fd4;
+  --brand-600: #3046b8;
+  --brand-700: #25389a;
+  --brand-800: #202f7e;
+  --brand-900: #1e2a65;
+  --brand-950: #12183c;
 
   /* 兼容别名：旧的 --brand / --accent 引用点继续可用 */
   --brand: var(--brand-600);
   --brand-dark: var(--brand-800);
   --accent: var(--brand-600);
 
-  /* Design Language：单一强调色，去渐变。旧「活力渐变面」保留变量名以兼容引用，
-     但收敛为纯品牌实底 —— 成交/CTA/奖牌/PRO 一律安静的电紫单色（不再电紫→品红）。 */
-  --gradient-vibrant: linear-gradient(120deg, #ff633f 0%, #ff4f2a 52%, #ff7a32 100%);
-  --gradient-vibrant-soft: linear-gradient(120deg, #ff8468 0%, #ff6545 58%, #ff9b54 100%);
+  /* 蓝紫渐变只允许出现在 Logo、营销页与 AI 高光，不进入普通业务卡片。 */
+  --gradient-vibrant: linear-gradient(120deg, #3046b8 0%, #4d5fd4 54%, #7c5cfc 100%);
+  --gradient-vibrant-soft: linear-gradient(120deg, #7180e3 0%, #7f86ea 54%, #9b83ff 100%);
 
-  /* 电紫「点睛」通道：独立命名，故不被 .app-skin 的 --brand-* 近黑级联改写，
-     全站(含 /app 工作台近黑皮肤)恒为电紫。仅用于点睛位 ——
-     主 CTA / 选中态 / 当前路径 / 数据 hover / 焦点环，不铺面。 */
-  --accent-pop: #ff5a36;
-  --accent-pop-strong: #ed3f1d;
-  --accent-pop-soft: #ffe5d8;
-  --accent-pop-ink: #c82f14;
-  --focus-pop: rgba(255, 90, 54, 0.38);
-  --signal: #315efb;
+  --accent-pop: #3046b8;
+  --accent-pop-strong: #25389a;
+  --accent-pop-soft: #e5e7ff;
+  --accent-pop-ink: #25389a;
+  --focus-pop: rgba(124, 92, 252, 0.38);
+  --ai-violet: #7c5cfc;
+  --ai-violet-strong: #6847e8;
+  --ai-violet-soft: #f0edff;
+  --signal: #3d6fea;
   --lime: #c8f45d;
 
   /* 专业中文字体真源：思源黑体 Noto Sans SC（SIL OFL 开源、零授权风险，
@@ -103,6 +102,9 @@
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-accent: var(--accent);
+  --color-ai-violet: var(--ai-violet);
+  --color-ai-violet-strong: var(--ai-violet-strong);
+  --color-ai-violet-soft: var(--ai-violet-soft);
 
   /* 照搬 Designkit：正文 Open Sans，标题 Poppins（font-display 工具类用） */
   --font-sans: var(--font-open-sans);
@@ -121,9 +123,9 @@
   --shadow-lg: 0 20px 44px -22px rgba(20, 18, 14, 0.32), 0 8px 18px -12px rgba(20, 18, 14, 0.16);
   --shadow-xl: 0 32px 72px -32px rgba(20, 18, 14, 0.42), 0 14px 30px -24px rgba(20, 18, 14, 0.2);
   /* 品牌「投影」：可点击/重点卡 hover —— 去发光，仅极淡单层带一点品牌色温 */
-  --shadow-brand: 0 18px 36px -18px rgba(255, 79, 42, 0.52), 0 4px 12px -6px rgba(237, 63, 29, 0.24);
+  --shadow-brand: 0 18px 36px -20px rgba(48, 70, 184, 0.42), 0 4px 12px -8px rgba(48, 70, 184, 0.18);
   /* 兼容旧引用：同样收敛为安静单层，不再是电紫→品红光晕 */
-  --shadow-vibrant: 0 20px 42px -18px rgba(255, 79, 42, 0.6), 0 6px 14px -8px rgba(237, 63, 29, 0.32);
+  --shadow-vibrant: 0 20px 42px -20px rgba(124, 92, 252, 0.4), 0 6px 14px -10px rgba(48, 70, 184, 0.22);
 }
 
 /* 照搬 Designkit：把 /app 外壳子树内的「电紫 brand 色阶」整体改写为中性近黑，
@@ -242,7 +244,7 @@ html { scroll-behavior: smooth; }
 
 /* Design Language §3/§4：强调字用单一品牌实色（去渐变），仅用于极少数关键词 */
 .gradient-text {
-  background: linear-gradient(105deg, #ed3f1d 0%, #ff6a3d 55%, #ff9838 100%);
+  background: linear-gradient(105deg, #3046b8 0%, #5064d5 55%, #7c5cfc 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -271,8 +273,7 @@ html { scroll-behavior: smooth; }
   transition-duration: 0.08s;
 }
 
-/* 电紫「点睛」主 CTA：品牌电紫实底（引用 --accent-pop，不受 .app-skin 近黑级联，
-   故工作台内主 CTA 恒为电紫）。调用点自带 transition-colors，此处不重复声明。 */
+/* 主 CTA 使用纯深靛蓝；电紫保留给 AI 状态与焦点反馈。 */
 .pop-cta {
   background: var(--accent-pop);
   color: #fff;
@@ -317,15 +318,15 @@ html { scroll-behavior: smooth; }
    Designkit 没有「左缘竖条」，激活靠 填充图标 + 600 字重 + 底色 三者叠加。 */
 .dk-rail-item {
   color: #fff;
-  background: var(--dk-title);
+  background: var(--brand-600);
   border-radius: 16px;
-  box-shadow: 0 10px 22px -14px rgba(18, 20, 25, 0.78);
+  box-shadow: 0 10px 22px -14px rgba(48, 70, 184, 0.48);
 }
 /* 激活态 pill / 高亮卡：发丝边 */
 .dk-ring {
   border: 1px solid transparent;
   background: linear-gradient(var(--surface), var(--surface)) padding-box,
-    linear-gradient(100deg, #ff6845, #ffad3d 38%, #315efb 72%, #89d7c8) border-box;
+    linear-gradient(100deg, #3046b8, #5367da 52%, #7c5cfc) border-box;
 }
 
 /* 主输入框：24px 圆角（实测 workspace 的 chat-form 白框）。
@@ -340,7 +341,7 @@ html { scroll-behavior: smooth; }
 }
 .dk-composer:focus-within {
   border-color: var(--brand-300);
-  box-shadow: 0 0 0 3px rgba(255, 90, 54, 0.12);
+  box-shadow: 0 0 0 3px rgba(124, 92, 252, 0.12);
 }
 
 /* 业务端不使用动态极光。保留组件供营销页使用，应用内依靠内容和操作层级引导注意力。 */
@@ -424,36 +425,36 @@ html { scroll-behavior: smooth; }
   animation-delay: var(--blob-phase);
   background: radial-gradient(
     ellipse 62% 76% at 50% 50%,
-    #ffb49c 0,
-    rgba(255, 180, 156, 0.66) 30%,
-    rgba(255, 180, 156, 0) 72%
+    #8da2ff 0,
+    rgba(141, 162, 255, 0.62) 30%,
+    rgba(141, 162, 255, 0) 72%
   );
 }
 .dk-aura-mint {
   animation-delay: calc(var(--blob-phase) - 4s);
   background: radial-gradient(
     ellipse 62% 76% at 50% 50%,
-    #d4f697 0,
-    rgba(212, 246, 151, 0.6) 30%,
-    rgba(212, 246, 151, 0) 72%
+    #c2b8ff 0,
+    rgba(194, 184, 255, 0.58) 30%,
+    rgba(194, 184, 255, 0) 72%
   );
 }
 .dk-aura-blue {
   animation-delay: calc(var(--blob-phase) - 8s);
   background: radial-gradient(
     ellipse 62% 76% at 50% 50%,
-    #a8f2ff 0,
-    rgba(168, 242, 255, 0.62) 30%,
-    rgba(168, 242, 255, 0) 70%
+    #93c5fd 0,
+    rgba(147, 197, 253, 0.58) 30%,
+    rgba(147, 197, 253, 0) 70%
   );
 }
 .dk-aura-lilac {
   animation-delay: calc(var(--blob-phase) - 12s);
   background: radial-gradient(
     ellipse 62% 76% at 50% 50%,
-    rgba(229, 194, 255, 0.98) 0,
-    rgba(229, 194, 255, 0.58) 30%,
-    rgba(229, 194, 255, 0) 70%
+    rgba(190, 160, 255, 0.96) 0,
+    rgba(190, 160, 255, 0.56) 30%,
+    rgba(190, 160, 255, 0) 70%
   );
 }
 @keyframes dkToneCycle {
@@ -559,7 +560,7 @@ html { scroll-behavior: smooth; }
 .skeleton-media {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--brand-100), #e9efff 58%, #fff0d8);
+  background: linear-gradient(135deg, var(--brand-100), #e9edff 58%, var(--ai-violet-soft));
 }
 .skeleton-media::after {
   content: "";
@@ -579,10 +580,10 @@ html { scroll-behavior: smooth; }
 @keyframes glowPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 90, 54, 0);
+    box-shadow: 0 0 0 0 rgba(77, 95, 212, 0);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(255, 90, 54, 0.18);
+    box-shadow: 0 0 0 4px rgba(77, 95, 212, 0.16);
   }
 }
 .glow-pulse {
@@ -605,16 +606,16 @@ html { scroll-behavior: smooth; }
 .gradient-border {
   border: 1px solid transparent;
   background: linear-gradient(#fff, #fff) padding-box,
-    linear-gradient(135deg, var(--brand-500), #ffb13d 48%, #315efb) border-box;
+    linear-gradient(135deg, var(--brand-600), #5367da 52%, var(--ai-violet)) border-box;
 }
 .gradient-border-soft {
   border: 1px solid transparent;
   background: linear-gradient(#fff, #fff) padding-box,
-    linear-gradient(135deg, var(--brand-300), #ffd08a 52%, #a9bbff) border-box;
+    linear-gradient(135deg, var(--brand-300), #a6aff7 52%, #c1b4ff) border-box;
 }
 
 :focus-visible {
-  outline: 2px solid rgba(49, 94, 251, 0.65);
+  outline: 2px solid rgba(124, 92, 252, 0.62);
   outline-offset: 3px;
 }
 
@@ -667,6 +668,6 @@ details > summary { list-style: none; }
 }
 
 ::selection {
-  background: rgba(255, 90, 54, 0.2);
+  background: rgba(124, 92, 252, 0.18);
   color: var(--ink);
 }

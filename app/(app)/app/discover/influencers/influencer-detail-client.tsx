@@ -63,7 +63,7 @@ export type InfluencerDetail = {
 };
 
 const FOLLOWER_SERIES: TrendSeries[] = [
-  { key: "followers", label: "粉丝总数", kind: "area", axis: "left", color: "#6e56ff" },
+  { key: "followers", label: "粉丝总数", kind: "area", axis: "left", color: "#3d6fea" },
   { key: "newFollowers", label: "日增粉", kind: "line", axis: "right", color: "#64748b" },
 ];
 

@@ -36,7 +36,7 @@ export function AppHeader({
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-black/[0.04] bg-background/75 px-4 backdrop-blur-xl sm:px-8">
       <div className="flex min-w-0 items-center gap-2">
         <Link href="/app" aria-label="发现猫首页" className="md:hidden">
-          <BrandTile className="h-9 w-9 rounded-xl shadow-[0_8px_18px_rgba(255,90,54,.22)]" markClassName="h-[84%] w-[84%]" />
+          <BrandTile className="h-9 w-9 rounded-xl shadow-[0_8px_18px_rgba(48,70,184,.2)]" markClassName="h-[84%] w-[84%]" />
         </Link>
         <BoardHeaderNav />
       </div>

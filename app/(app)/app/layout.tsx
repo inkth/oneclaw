@@ -45,7 +45,7 @@ export default async function AppLayout({
           aria-label="发现猫首页"
           className="flex h-20 w-16 shrink-0 items-center justify-center"
         >
-          <BrandTile className="h-11 w-11 rounded-2xl shadow-[0_10px_24px_rgba(255,90,54,.24)]" />
+          <BrandTile className="h-11 w-11 rounded-2xl shadow-[0_10px_24px_rgba(48,70,184,.2)]" />
         </Link>
 
         <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />

@@ -172,7 +172,7 @@ export default function PricingPage() {
                     } transition-transform hover:-translate-y-1`}
                   >
                     {t.highlight && (
-                      <div className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand-500 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-white shadow-[0_8px_20px_rgba(255,90,54,.24)]">
+                      <div className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand-600 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-white shadow-[0_8px_20px_rgba(48,70,184,.2)]">
                         <Zap className="h-3 w-3" />
                         最受欢迎
                       </div>

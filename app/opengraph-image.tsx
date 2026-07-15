@@ -31,7 +31,7 @@ export default async function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          background: "#f6f7fa",
+          background: "#f4f6fa",
           padding: "0 96px",
         }}
       >
@@ -44,7 +44,7 @@ export default async function OpengraphImage() {
               width: 148,
               height: 148,
               borderRadius: 36,
-              background: "#6e56ff",
+              background: "#3046b8",
             }}
           >
             <img width={104} height={104} src={markSrc} alt="" />
@@ -69,7 +69,7 @@ export default async function OpengraphImage() {
             display: "flex",
             marginTop: 24,
             fontSize: 34,
-            color: "#6e56ff",
+            color: "#7c5cfc",
           }}
         >
           TikTok Shop 出海全链路

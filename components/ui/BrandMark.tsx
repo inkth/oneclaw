@@ -53,17 +53,16 @@ type BrandTileProps = {
   markClassName?: string;
 };
 
-/** 品牌方块：珊瑚主面 + 墨色/月光叠层，保留猫标识并强化应用图标辨识度。 */
+/** 品牌方块：深靛蓝主面 + 一处电紫高光，保留猫标识并强化应用图标辨识度。 */
 export function BrandTile({ className, markClassName }: BrandTileProps) {
   return (
     <span
       className={
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-brand-500 text-white shadow-[0_10px_24px_-12px_rgba(237,63,29,0.75)] ring-1 ring-black/10 " +
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-brand-600 text-white shadow-[0_10px_24px_-14px_rgba(48,70,184,0.55)] ring-1 ring-black/10 " +
         (className ?? "h-10 w-10 rounded-2xl")
       }
     >
-      <span aria-hidden className="absolute -right-[30%] -top-[36%] h-[85%] w-[85%] rounded-full bg-[#121419]" />
-      <span aria-hidden className="absolute -bottom-[42%] -left-[24%] h-[72%] w-[72%] rounded-full bg-[#ffab3d]" />
+      <span aria-hidden className="absolute -right-[34%] -top-[42%] h-[90%] w-[90%] rounded-full bg-[#7c5cfc]" />
       <BrandMark className={"relative " + (markClassName ?? "h-[72%] w-[72%]")} />
     </span>
   );

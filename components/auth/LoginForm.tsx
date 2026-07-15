@@ -109,7 +109,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
           <button
             onClick={sendCode}
             disabled={sending || !phone}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(255,90,54,.24)] transition-all hover:-translate-y-0.5 hover:bg-brand-600 disabled:translate-y-0 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(48,70,184,.2)] transition-all hover:-translate-y-0.5 hover:bg-brand-700 disabled:translate-y-0 disabled:opacity-60"
           >
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
             发送验证码
@@ -159,7 +159,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
           <button
             onClick={verifyAndSignIn}
             disabled={verifying || code.length !== 6}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(255,90,54,.24)] transition-all hover:-translate-y-0.5 hover:bg-brand-600 disabled:translate-y-0 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(48,70,184,.2)] transition-all hover:-translate-y-0.5 hover:bg-brand-700 disabled:translate-y-0 disabled:opacity-60"
           >
             {verifying && <Loader2 className="h-4 w-4 animate-spin" />}
             登录

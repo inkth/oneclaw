@@ -1,5 +1,5 @@
 // 全站唯一的色板真源。各页面/组件不要再内联 toneMap / tonePalette / 渐变字符串，
-// 一律从这里取。明亮精致：中性 zinc 基底 + 单一主色电紫 brand，彩色仅作语义化点缀。
+// 一律从这里取。中性灰基底 + 深靛蓝结构色，电紫仅作 AI 高光，彩色只表达语义。
 
 import {
   BarChart3,
@@ -12,9 +12,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-/** 全站统一聚焦环：电紫点睛（violet 不受 app-skin 近黑级联，故工作台内焦点环亦电紫）。 */
+/** 全站统一聚焦环：电紫只承担交互与 AI 状态提示。 */
 export const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ai-violet/40";
 
 /** 语义状态色：用于 Badge / Pill / 状态徽章。 */
 export const STATUS_TONES = {

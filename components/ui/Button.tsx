@@ -4,18 +4,13 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "brand" | "vibrant" | "secondary" | "ghost" | "subtle";
 type Size = "sm" | "md" | "lg";
 
-// primary = 中性强操作（发送/确认）→ 近黑胶囊；
-// brand / vibrant = 品牌级主 CTA → 电紫「点睛」（.pop-cta，恒电紫，不被 app-skin 近黑级联压制），
-// 让关键转化动作（收藏爆品 / 升级会员 等）发声。
-// 全部取自 Designkit 的 --background-btn-* token。注意它的主操作是近黑而非品牌色，
-// 品牌色只留给「成交」级动作（brand / vibrant）。
+// primary / brand / vibrant 都属于明确主操作，统一使用深靛蓝；
+// 中性工具动作继续使用 secondary / subtle，避免一页出现多个竞争焦点。
 const VARIANTS: Record<Variant, string> = {
-  // 中性强操作 == Designkit Send 按钮：近黑
-  primary:
-    "bg-[var(--dk-btn-black)] text-white hover:bg-[var(--dk-btn-black-hover)] press",
-  // 页面级主 CTA：电紫点睛
+  primary: "bg-brand-600 text-white hover:bg-brand-700 press",
+  // 页面级主 CTA：深靛蓝
   brand: "pop-cta press",
-  // 成交/兴奋操作：电紫点睛
+  // 成交操作：同一深靛蓝，不额外制造第二种按钮主色
   vibrant: "pop-cta press",
   // 次级：白底 + 发丝描边
   secondary:
@@ -42,7 +37,7 @@ const base =
   "inline-flex items-center justify-center font-semibold transition-colors whitespace-nowrap " +
   "disabled:pointer-events-none disabled:border-transparent disabled:bg-[var(--dk-btn-tertiary)] disabled:text-[var(--dk-content-tertiary)] disabled:shadow-none " +
   "shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ai-violet/40";
 
 type CommonProps = {
   variant?: Variant;
