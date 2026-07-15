@@ -177,6 +177,10 @@ html { scroll-behavior: smooth; }
   font-weight: 700;
   text-wrap: balance;
 }
+.hero-display {
+  font-size: clamp(2.6rem, 1.45rem + 4.2vw, 5.35rem);
+  line-height: 1;
+}
 .text-display-sm {
   font-family: var(--font-poppins), var(--font-cjk), var(--font-open-sans),
     -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;

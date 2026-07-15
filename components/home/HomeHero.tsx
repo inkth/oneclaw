@@ -114,25 +114,25 @@ export function HomeHero() {
   }
 
   return (
-    <section className="grain relative overflow-hidden border-b border-black/[0.06] pb-16 pt-12 sm:pb-20 sm:pt-16">
+    <section className="grain relative overflow-hidden border-b border-black/[0.06] pb-10 pt-8 sm:pb-14 sm:pt-12">
       <div className="gradient-bg absolute inset-0" aria-hidden />
       <div className="app-grid absolute inset-x-0 top-0 h-[42rem] opacity-70" aria-hidden />
       <div aria-hidden className="absolute left-[-8rem] top-28 h-64 w-64 rounded-full border border-brand-200/60" />
       <div aria-hidden className="absolute -right-28 top-16 h-80 w-80 rounded-full border border-blue-200/60" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-end gap-8 lg:grid-cols-[1.35fr_.65fr] lg:gap-16">
+        <div className="grid items-end gap-5 lg:grid-cols-[1.35fr_.65fr] lg:gap-12">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm backdrop-blur">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm backdrop-blur">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-[9px] font-bold text-white">AI</span>
               TikTok Shop 数据洞察与 AI 创作
             </div>
 
-            <h1 className="text-display max-w-4xl text-ink">
+            <h1 className="text-display hero-display max-w-4xl text-ink">
               {BRAND_SLOGAN_LEAD}<span className="gradient-text">{BRAND_SLOGAN_FOCUS}</span>
             </h1>
           </div>
 
-          <p className="max-w-xl border-l-2 border-brand-400 pl-5 text-base text-zinc-600 text-cjk-relaxed sm:text-lg lg:mb-2">
+          <p className="max-w-xl border-l-2 border-brand-400 pl-4 text-sm text-zinc-600 text-cjk-relaxed sm:pl-5 sm:text-base lg:mb-1 lg:text-lg">
             从真实榜单里找机会，再让 AI 帮你选品、做视频、写 Listing、复盘投放。
             <br className="hidden sm:block" />
             每一步都有结果，下一步接着用。
@@ -140,8 +140,8 @@ export function HomeHero() {
         </div>
 
         {/* 真实 composer：访客可直接输入，空闲时打字机演示真实指令 */}
-        <div className="relative isolate mx-auto mt-10 max-w-5xl sm:mt-12">
-          <DkAura className="absolute left-1/2 top-[70px] z-0 w-[78%] -translate-x-1/2 -translate-y-1/2" />
+        <div className="relative isolate mx-auto mt-7 max-w-5xl sm:mt-9">
+          <DkAura className="absolute left-1/2 top-[58px] z-0 w-[78%] -translate-x-1/2 -translate-y-1/2" />
 
           <form onSubmit={dispatch} className="dk-composer relative z-10 overflow-hidden text-left">
             <div className="relative">
@@ -155,12 +155,12 @@ export function HomeHero() {
                 onBlur={() => setFocused(false)}
                 rows={2}
                 aria-label="告诉 Agent 你想做什么"
-                className="min-h-24 w-full resize-none bg-transparent px-5 py-5 text-[15px] leading-relaxed outline-none sm:min-h-28 sm:px-6"
+                className="min-h-20 w-full resize-none bg-transparent px-4 py-4 text-[15px] leading-relaxed outline-none sm:min-h-24 sm:px-6"
               />
               {showDemo && (
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-0 px-5 py-5 text-[15px] leading-relaxed text-zinc-500 sm:px-6"
+                  className="pointer-events-none absolute inset-0 px-4 py-4 text-[15px] leading-relaxed text-zinc-500 sm:px-6"
                 >
                   {typed}
                   <span className="ml-0.5 inline-block h-[1.1em] w-0.5 translate-y-[0.18em] animate-pulse rounded-full bg-zinc-400" />
@@ -168,7 +168,7 @@ export function HomeHero() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 px-3 pb-3 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2.5">
               {PROMPTS.map((p) => {
                 const active = showDemo && p.agent === prompt.agent;
                 return (
@@ -179,7 +179,7 @@ export function HomeHero() {
                       setSelectedKind(p.kind);
                       setValue(p.text);
                     }}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all duration-300 sm:px-3 sm:text-xs ${
                       (showDemo ? active : p.kind === selectedKind)
                         ? "dk-ring text-ink shadow-sm"
                         : "border border-black/10 bg-white text-zinc-500"
@@ -193,17 +193,17 @@ export function HomeHero() {
 
               <button
                 type="submit"
-                className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm sm:px-4 sm:py-2 sm:text-sm"
               >
                 <Send className="h-4 w-4" />
-                带着指令去工作台
+                派给 Agent
               </button>
             </div>
           </form>
 
           <RunDemo />
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-xs text-zinc-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               榜单数据免费浏览 · 使用 AI 才消耗积分
@@ -281,13 +281,13 @@ function RunDemo() {
   }, []);
 
   return (
-    <div className="relative mt-6">
+    <div className="relative mt-4">
       <div
         aria-hidden
-        className="absolute -top-6 left-1/2 h-6 w-px -translate-x-1/2 bg-gradient-to-b from-transparent to-zinc-300"
+        className="absolute -top-4 left-1/2 h-4 w-px -translate-x-1/2 bg-gradient-to-b from-transparent to-zinc-300"
       />
       <div className="dk-card overflow-hidden">
-        <div className="flex items-center justify-between border-b border-black/5 px-5 py-3">
+        <div className="flex items-center justify-between border-b border-black/5 px-4 py-2.5 sm:px-5">
           <span className="font-display text-xs font-semibold text-ink">
             发送之后，Agent 这样接力
           </span>
@@ -300,7 +300,7 @@ function RunDemo() {
             return (
               <li
                 key={s.agent}
-                className={`flex items-center gap-3 px-5 py-3 transition-colors duration-500 ${
+                className={`flex items-center gap-2 px-4 py-2.5 transition-colors duration-500 sm:gap-3 sm:px-5 ${
                   active ? "bg-zinc-50/80" : ""
                 } ${i > 0 ? "border-t border-black/[0.04]" : ""}`}
               >
