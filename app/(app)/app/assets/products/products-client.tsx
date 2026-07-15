@@ -283,7 +283,132 @@ export function ProductsClient({
           }
         />
       ) : (
-        <TableWrap minWidth={760}>
+        <>
+          <div className="space-y-3 md:hidden">
+            {visible.map((p) => (
+              <article
+                key={p.id}
+                className="rounded-2xl border border-black/[0.065] bg-white p-4 shadow-[0_1px_2px_rgba(18,20,25,.025)]"
+              >
+                <div className="flex items-start gap-3">
+                  <Thumb src={p.coverUrl} seed={p.id} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <Link href={`/app/products/${p.id}`} className="line-clamp-2 text-sm font-semibold leading-5 text-ink">
+                        {p.title}
+                      </Link>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-medium ${statusMap[p.status].cls}`}>
+                        {statusMap[p.status].label}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-zinc-500">
+                      <span>{p.category}</span>
+                      {p.shop && <span>· {p.shop.name}</span>}
+                      {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING") && (
+                        <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 ${imagesStatusMap.RUNNING.cls}`}>
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" /> 出图中
+                        </span>
+                      )}
+                      {p.imagesStatus === "DONE" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">
+                          <Sparkles className="h-2.5 w-2.5" /> 已出图
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs text-zinc-500 nums">
+                  <span>售价 ${(p.priceCents / 100).toFixed(2)}</span>
+                  <span className="text-zinc-300">·</span>
+                  <span>成本</span>
+                  {editCostId === p.id ? (
+                    <span className="inline-flex items-center gap-1">
+                      <span>$</span>
+                      <input
+                        autoFocus
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={costDraft}
+                        onChange={(e) => setCostDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitCost(p);
+                          if (e.key === "Escape") {
+                            committedRef.current = p.id;
+                            setEditCostId(null);
+                          }
+                        }}
+                        onBlur={() => commitCost(p)}
+                        className="h-7 w-16 rounded-lg border border-brand-300 bg-white px-2 text-xs outline-none"
+                      />
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => startEditCost(p)}
+                      disabled={busyId === p.id}
+                      className="inline-flex items-center gap-0.5 rounded-md px-1 py-0.5 font-medium text-zinc-700 hover:bg-[var(--dk-action-regular)]"
+                    >
+                      ${(p.costCents / 100).toFixed(2)} <Pencil className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                  <CostBadge source={p.costSource} />
+                </div>
+
+                <div className="mt-3 grid grid-cols-4 divide-x divide-black/[0.055] rounded-xl bg-[var(--dk-surface-2)] px-1 py-2.5 text-center">
+                  <div>
+                    <div className="text-2xs text-zinc-400">ROI</div>
+                    <div className="mt-0.5 text-xs font-semibold nums">{p.roiScore}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-zinc-400">毛利率</div>
+                    <div className="mt-0.5 text-xs font-semibold nums">
+                      {p.costSource === "ESTIMATE" ? "~" : ""}{p.marginPct}%
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-zinc-400">月销</div>
+                    <div className="mt-0.5 text-xs font-semibold nums">{p.monthlySales.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-zinc-400">14 天</div>
+                    <div className="mt-0.5 text-xs font-semibold nums">
+                      <Delta value={p.trendDelta} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-black/[0.055] pt-3">
+                  <Link href={`/app/products/${p.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700">
+                    打开详情 <ArrowRight className="h-3 w-3" />
+                  </Link>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => patchProduct(p.id, { status: p.status === "ARCHIVED" ? "EVALUATING" : "ARCHIVED" })}
+                      disabled={busyId === p.id}
+                      className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-2xs font-medium text-zinc-500 hover:bg-[var(--dk-action-regular)]"
+                    >
+                      {p.status === "ARCHIVED" ? <RotateCcw className="h-3 w-3" /> : <Archive className="h-3 w-3" />}
+                      {p.status === "ARCHIVED" ? "恢复" : "归档"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteProduct(p.id)}
+                      disabled={busyId === p.id}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-rose-50 hover:text-rose-600"
+                      aria-label={`删除商品 ${p.title}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <TableWrap minWidth={760} className="hidden md:block">
             <THead>
               <tr>
                 <Th>商品</Th>
@@ -500,7 +625,8 @@ export function ProductsClient({
                 </Tr>
               ))}
             </tbody>
-        </TableWrap>
+          </TableWrap>
+        </>
       )}
     </div>
   );

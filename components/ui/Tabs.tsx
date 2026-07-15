@@ -17,8 +17,13 @@ export function Tabs({
   bare?: boolean;
 }) {
   return (
-    // 底部整条 hairline 用 divider 级描边（比 overlay 更淡，Tab 栏本身只是弱分界）
-    <div className={cn("flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", !bare && "border-b border-[var(--dk-stroke-divider)]", className)}>
+    <div
+      className={cn(
+        "flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        !bare && "rounded-2xl border border-black/[0.06] bg-white/55 p-1 shadow-[0_1px_2px_rgba(18,20,25,.02)]",
+        className,
+      )}
+    >
       {items.map((tab) => {
         const isActive = tab.href === activeHref;
         return (
@@ -26,11 +31,12 @@ export function Tabs({
             key={tab.href}
             href={tab.href}
             className={cn(
-              "-mb-px shrink-0 border-b-2 px-3 py-2.5 text-sm transition-colors",
-              // 激活态字重用 550（按钮/强调档），非 zinc 灰阶收敛到 secondary
-              isActive
-                ? "border-brand-600 font-[550] text-ink"
-                : "border-transparent text-[var(--dk-content-secondary)] hover:text-ink"
+              "shrink-0 text-sm transition-colors",
+              bare ? "-mb-px border-b-2 px-3 py-2.5" : "rounded-xl border border-transparent px-3 py-2",
+              isActive && bare && "border-brand-600 font-[550] text-ink",
+              !isActive && bare && "border-transparent text-[var(--dk-content-secondary)] hover:text-ink",
+              isActive && !bare && "border-black/[0.055] bg-white font-[550] text-ink shadow-[0_1px_2px_rgba(18,20,25,.045)]",
+              !isActive && !bare && "text-[var(--dk-content-secondary)] hover:bg-white/70 hover:text-ink",
             )}
           >
             {tab.label}

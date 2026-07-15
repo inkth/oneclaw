@@ -155,7 +155,7 @@ function SearchRow({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={placeholder}
-            className="w-full rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] py-1.5 pl-4 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition-colors focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-100"
+            className="h-9 w-full rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] pl-3.5 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition-[background-color,border-color,box-shadow] focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-100"
           />
           {value && (
             <button
@@ -173,7 +173,7 @@ function SearchRow({
         </div>
         <button
           type="submit"
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[var(--dk-btn-black)] px-3.5 py-1.5 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)]"
+          className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-[var(--dk-btn-black)] px-4 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)]"
         >
           <Search className="h-3.5 w-3.5" />
           搜索
@@ -227,7 +227,7 @@ function CategoryRow({
       {overflow && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="inline-flex shrink-0 self-start items-center gap-0.5 rounded-lg bg-[var(--dk-btn-tertiary)] px-3 py-1 text-xs font-medium text-brand-600 hover:bg-[var(--dk-btn-tertiary-hover)] sm:text-sm"
+          className="inline-flex h-8 shrink-0 self-start items-center gap-0.5 rounded-full bg-[var(--dk-btn-tertiary)] px-3 text-xs font-medium text-brand-600 hover:bg-[var(--dk-btn-tertiary-hover)] sm:text-[13px]"
         >
           {expanded ? "收起" : "展开"}
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

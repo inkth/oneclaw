@@ -16,7 +16,7 @@ export function TableWrap({
     // 表格容器当卡片看：16px 圆角、无边框无阴影，与 dk-card 同规格（分层靠卡面色差）
     <div
       className={cn(
-        "overflow-x-auto rounded-2xl border border-black/[0.065] bg-[var(--dk-surface)] shadow-[0_1px_2px_rgba(18,20,25,.025)]",
+        "overflow-x-auto overscroll-x-contain rounded-2xl border border-black/[0.065] bg-[var(--dk-surface)] shadow-[0_1px_2px_rgba(18,20,25,.025)]",
         className
       )}
     >

@@ -241,8 +241,11 @@ export function ModelsClient({
         </div>
       )}
 
-      <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-zinc-50/60 p-4 text-xs text-zinc-600 leading-relaxed">
-        当前模特是「人设档案」，给短视频创作 Agent 写脚本时作为风格输入。
+      <div className="flex items-start gap-3 rounded-2xl border border-black/[0.06] bg-white/55 p-4 text-xs leading-relaxed text-zinc-600">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <UserSquare2 className="h-4 w-4" />
+        </span>
+        <p className="pt-1.5">当前模特是「人设档案」，给短视频创作 Agent 写脚本时作为风格输入。</p>
       </div>
 
       {modalOpen && (

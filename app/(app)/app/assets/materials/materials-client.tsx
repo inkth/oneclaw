@@ -199,39 +199,39 @@ export function MaterialsClient({
           </>
         }
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-              selectMode
-                ? "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
-                : "bg-brand-600 text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700"
-            }`}
-            title="多选商品图，批量生成商品卡 + Listing"
-          >
-            {selectMode ? <X className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5" />}
-            {selectMode ? "退出多选" : "批量做商品"}
-          </button>
-          <div className="flex items-center gap-1.5 bg-zinc-100 rounded-full p-0.5 self-start">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  filter === f.key
-                    ? "bg-white text-zinc-900 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
-                    : "text-zinc-600 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
-                }`}
-              >
-                {f.label}
-                <span className="ml-1 text-2xs text-zinc-400">
-                  {f.key === "ALL"
-                    ? materials.length
-                    : materials.filter((m) => m.type === f.key).length}
-                </span>
-              </button>
-            ))}
-          </div>
+          <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
+            <button
+              onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-medium transition-colors ${
+                selectMode
+                  ? "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
+                  : "bg-brand-600 text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700"
+              }`}
+              title="多选商品图，批量生成商品卡 + Listing"
+            >
+              {selectMode ? <X className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5" />}
+              {selectMode ? "退出多选" : "批量做商品"}
+            </button>
+            <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-xl border border-black/[0.055] bg-white/60 p-1">
+              {filters.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    filter === f.key
+                      ? "bg-white text-zinc-900 shadow-[0_1px_2px_rgba(18,20,25,.06)]"
+                      : "text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
+                  }`}
+                >
+                  {f.label}
+                  <span className="ml-1 text-2xs text-zinc-400">
+                    {f.key === "ALL"
+                      ? materials.length
+                      : materials.filter((m) => m.type === f.key).length}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         }
       />
@@ -248,14 +248,16 @@ export function MaterialsClient({
           if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
         }}
         onClick={() => fileRef.current?.click()}
-        className={`rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
+        className={`cursor-pointer rounded-2xl border border-dashed px-5 py-9 text-center transition-all ${
           dragOver
-            ? "border-brand-300 bg-brand-50/40"
-            : "border-[var(--dk-stroke-border)] bg-white hover:border-zinc-400"
+            ? "border-brand-400 bg-brand-50/50 shadow-[inset_0_0_0_1px_rgba(139,92,246,.08)]"
+            : "border-black/[0.11] bg-white/65 hover:border-brand-300 hover:bg-white"
         }`}
       >
-        <Upload className="mx-auto h-6 w-6 text-zinc-400" />
-        <div className="mt-2 text-sm font-medium text-zinc-900">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-black/[0.055] bg-white text-brand-600 shadow-[0_2px_8px_rgba(18,20,25,.05)]">
+          <Upload className="h-5 w-5" />
+        </span>
+        <div className="mt-3 text-sm font-semibold text-zinc-900">
           拖入文件，或点击选择
         </div>
         <p className="mt-1 text-xs text-zinc-500">
@@ -275,7 +277,7 @@ export function MaterialsClient({
       </div>
 
       {uploading.length > 0 && (
-        <div className="rounded-lg bg-brand-50/60 border border-brand-100 p-3 space-y-1">
+        <div className="space-y-1 rounded-2xl border border-brand-100 bg-brand-50/60 p-3.5">
           {uploading.map((name) => (
             <div key={name} className="flex items-center gap-2 text-xs text-brand-900">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -287,12 +289,24 @@ export function MaterialsClient({
 
       {visible.length === 0 ? (
         <EmptyState
+          icon={Upload}
           title={
             filter === "ALL"
               ? "还没有素材"
               : "这个分类下还没有素材"
           }
           description={filter === "ALL" ? "将文件拖到上方上传区域，或点击选择文件。" : undefined}
+          action={
+            filter === "ALL" ? (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="inline-flex h-9 items-center rounded-full bg-[var(--dk-btn-black)] px-4 text-xs font-semibold text-white hover:opacity-90"
+              >
+                选择文件
+              </button>
+            ) : undefined
+          }
         />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -375,7 +389,7 @@ export function MaterialsClient({
       )}
 
       {selectMode && selected.size > 0 && (
-        <div className="sticky bottom-4 z-20 mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-full border border-[var(--dk-stroke-border)] bg-white/95 px-4 py-2.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] backdrop-blur">
+        <div className="sticky bottom-[76px] z-20 mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--dk-stroke-border)] bg-white/95 px-4 py-2.5 shadow-[0_8px_24px_rgba(18,20,25,.1)] backdrop-blur md:bottom-4 sm:rounded-full">
           <div className="text-xs text-zinc-600">
             已选 <span className="font-semibold text-zinc-900">{selected.size}</span> 张
           </div>

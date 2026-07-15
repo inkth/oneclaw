@@ -23,7 +23,7 @@ export function Pill({
       className={cn(
         // Pill 本身就是「胶囊」这一档的例外，圆角保留 rounded-full；
         // 未选中 hover 底色统一用 --dk-action-regular，不用 black/5。
-        "press rounded-full px-3.5 py-1 text-sm font-[550] transition-colors",
+        "press inline-flex h-8 items-center rounded-full px-3 text-xs font-[550] transition-colors sm:text-[13px]",
         active
           ? "bg-[var(--dk-btn-black)] text-white"
           : "text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)] hover:text-ink",

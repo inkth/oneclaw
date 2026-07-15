@@ -15,7 +15,7 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between", className)}>
+    <div className={cn("flex flex-col gap-4 pb-0.5 sm:flex-row sm:items-start sm:justify-between", className)}>
       <div className="min-w-0">
         <div className="flex items-center gap-2.5">
           <h1 className="text-title text-ink">{title}</h1>
@@ -25,7 +25,7 @@ export function PageHeader({
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--dk-content-secondary)]">{description}</p>
         )}
       </div>
-      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">{actions}</div>}
     </div>
   );
 }

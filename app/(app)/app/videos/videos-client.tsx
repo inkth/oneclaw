@@ -166,15 +166,15 @@ export function VideosClient({
         }
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {videos.map((v) => {
-        const style = styleMap[v.style] ?? styleMap.UNBOXING;
-        const isGenerating = v.processing === "GENERATING";
-        const isFailed = v.processing === "FAILED";
-        return (
-          <div
-            key={v.id}
-            className="dk-card group overflow-hidden flex flex-col"
-          >
+        {videos.map((v) => {
+          const style = styleMap[v.style] ?? styleMap.UNBOXING;
+          const isGenerating = v.processing === "GENERATING";
+          const isFailed = v.processing === "FAILED";
+          return (
+            <div
+              key={v.id}
+              className="dk-card dk-lift group flex flex-col overflow-hidden"
+            >
             <div className={`relative aspect-[9/14]`}>
               {v.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -307,9 +307,9 @@ export function VideosClient({
                 </pre>
               </details>
             )}
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
       </div>
       {drawerVideoId && (
         <VideoDetailDrawer
