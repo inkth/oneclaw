@@ -206,9 +206,8 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
       if (document.visibilityState === "visible") onDispatched();
     };
 
-    void poll().then(() => {
-      if (!disposed) schedule();
-    });
+    // 首轮同样走调度器，避免 effect 挂载阶段同步触发状态更新。
+    timerRef.current = setTimeout(tick, 0);
     window.addEventListener(TASK_DISPATCHED_EVENT, onDispatched);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
