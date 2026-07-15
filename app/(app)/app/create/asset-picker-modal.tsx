@@ -15,6 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
+import { Button } from "@/components/ui/Button";
+import { DialogShell } from "@/components/ui/Dialog";
 import { usePersonas } from "../use-personas";
 import type { ComposerKind } from "../agent-composer";
 
@@ -125,26 +127,21 @@ export function AssetPickerModal({
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
+    <DialogShell
+      onClose={onClose}
+      labelledBy="asset-picker-title"
+      panelClassName="flex max-h-[88vh] max-w-2xl flex-col p-5"
     >
-      <div
-        // 弹窗/抽屉圆角走 16~24(硬规则),dk-card 的 16px 是给常规卡片用的,
-        // 这里不能借 dk-card(全局类不在 tailwind layer 里，工具类圆角覆盖不掉它),改为手写等价视觉。
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dk-overlay p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
         {/* 头部 */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center pr-10">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--dk-surface-2)] text-zinc-600">
               <ImagePlus className="h-4 w-4" />
             </span>
             <div>
-              <div className="text-sm font-semibold text-ink">
+              <h2 id="asset-picker-title" className="text-sm font-semibold text-ink">
                 {isTryOn ? "选模特与服饰图" : "添加素材"}
-              </div>
+              </h2>
               <div className="text-2xs text-zinc-500">
                 {isTryOn
                   ? "选一位模特 + 一张服饰图（上传图 / 商品主图），生成上身效果图"
@@ -152,18 +149,11 @@ export function AssetPickerModal({
               </div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-600"
-            aria-label="关闭"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         {/* 已选托盘 */}
         {selectedCount > 0 && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-lg bg-[var(--dk-surface-2)] p-2">
+          <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-xl bg-[var(--dk-surface-2)] p-2">
             <span className="px-1 text-2xs font-medium text-zinc-500">已选 {selectedCount} 项</span>
             {selectedProduct && (
               <SelectedChip
@@ -207,12 +197,12 @@ export function AssetPickerModal({
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-dashed border-[var(--dk-stroke-border)] px-3 py-2 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:opacity-50"
+                  className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-dashed border-[var(--dk-stroke-border)] px-3 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:opacity-50"
                 >
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                   从本地上传
                 </button>
-                <div className="flex flex-1 items-center gap-1.5 rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-2">
+                <div className="flex h-9 flex-1 items-center gap-1.5 rounded-xl border border-[var(--dk-stroke-border)] bg-white px-2.5 focus-within:border-brand-300 focus-within:ring-4 focus-within:ring-brand-100/60">
                   <Search className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                   <input
                     value={search}
@@ -250,7 +240,7 @@ export function AssetPickerModal({
                         key={m.id}
                         onClick={() => onMaterialChange(sel ? null : m.id)}
                         title={m.originalName}
-                        className={`relative aspect-square overflow-hidden rounded-md border ${
+                        className={`relative aspect-square overflow-hidden rounded-xl border ${
                           sel ? "border-brand-500 ring-2 ring-brand-200" : "border-[var(--dk-stroke-border)]"
                         }`}
                       >
@@ -282,7 +272,7 @@ export function AssetPickerModal({
                       <button
                         key={p.id}
                         onClick={() => onProductChange(sel ? null : p.id)}
-                        className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${
+                        className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs transition-colors ${
                           sel ? "bg-[var(--dk-action-regular)] ring-1 ring-[var(--dk-stroke-border)]" : "hover:bg-[var(--dk-action-regular)]"
                         }`}
                       >
@@ -326,7 +316,7 @@ export function AssetPickerModal({
                         key={m.id}
                         onClick={() => onPersonaChange(sel ? null : m.id)}
                         title={m.style ?? undefined}
-                        className={`relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border bg-[var(--dk-surface-2)] ${
+                        className={`relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-xl border bg-[var(--dk-surface-2)] ${
                           sel ? "border-brand-500 ring-2 ring-brand-200" : "border-[var(--dk-stroke-border)]"
                         }`}
                       >
@@ -354,15 +344,15 @@ export function AssetPickerModal({
 
         {/* 底部 */}
         <div className="mt-4 flex items-center justify-end border-t border-[var(--dk-stroke-border)] pt-3">
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={onClose}
-            className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-5 py-2 text-xs font-semibold text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-[var(--dk-btn-black-hover)]"
           >
             完成
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

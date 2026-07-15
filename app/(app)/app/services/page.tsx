@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   Truck,
   Warehouse,
@@ -22,13 +22,13 @@ import {
   Copy,
   Check,
   ChevronRight,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { DialogShell } from "@/components/ui/Dialog";
 import {
   CATEGORIES,
   CONTACT,
@@ -323,50 +323,24 @@ function PartnerBlock({ partner }: { partner: Partner }) {
 }
 
 function ContactModal({ target, onClose }: { target: ContactTarget | null; onClose: () => void }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  // ESC 关闭（仅在打开时挂监听）。
-  useEffect(() => {
-    if (!target) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", onKey);
-    const frame = requestAnimationFrame(() => closeRef.current?.focus());
-    return () => {
-      cancelAnimationFrame(frame);
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [target, onClose]);
-
   if (!target) return null;
 
   const partners = target.partners ?? [];
   const hasPartners = partners.length > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
+    <DialogShell
+      onClose={onClose}
+      labelledBy="service-contact-title"
+      panelClassName="max-w-sm"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="service-contact-title"
-        className="dk-overlay animate-fade-up relative w-full max-w-sm overflow-hidden rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="flex items-center justify-between border-b border-[var(--dk-stroke-divider)] px-5 py-3.5">
+        <header className="flex items-center border-b border-[var(--dk-stroke-divider)] px-5 py-3.5 pr-14">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
               <Headset className="h-3.5 w-3.5" />
             </div>
             <h2 id="service-contact-title" className="text-sm font-bold text-[var(--dk-content-primary)]">预约咨询</h2>
           </div>
-          <button ref={closeRef} onClick={onClose} aria-label="关闭预约咨询" className="rounded-full p-1.5 text-[var(--dk-content-tertiary)] hover:bg-[var(--dk-action-regular)]">
-            <X className="h-4 w-4" />
-          </button>
         </header>
 
         <div className="space-y-4 p-6">
@@ -399,7 +373,6 @@ function ContactModal({ target, onClose }: { target: ContactTarget | null; onClo
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

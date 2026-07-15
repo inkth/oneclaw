@@ -6,7 +6,6 @@ import {
   Store,
   Plus,
   Trash2,
-  X,
   Loader2,
   TrendingUp,
   ShoppingCart,
@@ -17,6 +16,8 @@ import { toast } from "sonner";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { DialogShell } from "@/components/ui/Dialog";
+import { FieldLabel, Input } from "@/components/ui/Field";
 import { EmptyState as EmptyStatePrimitive } from "@/components/ui/EmptyState";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 
@@ -321,26 +322,19 @@ function AddShopModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={onClose}
+    <DialogShell
+      onClose={onClose}
+      labelledBy="create-shop-title"
+      panelClassName="max-w-md"
     >
-      <div
-        className="relative w-full max-w-md rounded-2xl dk-overlay"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)]"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="p-6 space-y-5">
-          <h2 className="text-subtitle">添加店铺</h2>
+      <div className="space-y-5 p-6">
+          <div>
+            <h2 id="create-shop-title" className="text-subtitle">添加店铺</h2>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">先建立经营档案，后续平台授权与数据会关联到这里。</p>
+          </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-600 mb-2">平台</label>
+            <FieldLabel>平台</FieldLabel>
             <div className="grid grid-cols-2 gap-2">
               {(Object.keys(platformMeta) as Platform[])
                 .filter((p) => platformMeta[p].available)
@@ -351,10 +345,11 @@ function AddShopModal({
                     <button
                       key={p}
                       onClick={() => setPlatform(p)}
-                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
+                      aria-pressed={active}
+                      className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-all ${
                         active
-                          ? "border-[var(--dk-stroke-border)] bg-[var(--dk-action-regular)] ring-2 ring-[var(--dk-stroke-border)]"
-                          : "border-[var(--dk-stroke-border)] hover:bg-[var(--dk-action-regular)]"
+                          ? "border-brand-300 bg-brand-50/60 text-brand-800 ring-2 ring-brand-100"
+                          : "border-[var(--dk-stroke-border)] bg-white text-zinc-600 hover:bg-[var(--dk-action-regular)]"
                       }`}
                     >
                       <span className="text-left">{m.cn}</span>
@@ -368,38 +363,39 @@ function AddShopModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-600 mb-1.5">店铺名称</label>
-            <input
+            <FieldLabel htmlFor="shop-name">店铺名称</FieldLabel>
+            <Input
+              id="shop-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
               placeholder="例：发现猫 US 旗舰店"
-              className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+            <FieldLabel htmlFor="shop-country">
               国家 / 地区（可选）
-            </label>
-            <input
+            </FieldLabel>
+            <Input
+              id="shop-country"
               type="text"
               value={country}
               onChange={(e) => setCountry(e.target.value.toUpperCase())}
               maxLength={4}
               placeholder="US / GB / SG / JP …"
-              className="w-full rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none font-mono focus:ring-2 focus:ring-brand-200 focus:border-brand-300"
+              className="font-mono uppercase"
             />
           </div>
 
-          <div className="rounded-lg border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface-2)] p-3 text-2xs text-zinc-600 leading-relaxed">
+          <div className="rounded-xl border border-[var(--dk-stroke-overlay)] bg-[var(--dk-surface-2)] p-3.5 text-2xs leading-relaxed text-zinc-600">
             真实平台对接（OAuth + 拉取订单 / 商品）正在开发中。
             当前先以「待对接」状态保存，发现猫会把后续生成的 Agent 报告关联到对应店铺。
           </div>
 
           {error && (
-            <div className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-100">
+            <div className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
               {error}
             </div>
           )}
@@ -413,8 +409,7 @@ function AddShopModal({
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             保存
           </Button>
-        </div>
       </div>
-    </div>
+    </DialogShell>
   );
 }
