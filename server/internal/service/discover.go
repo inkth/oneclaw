@@ -350,6 +350,7 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 	today := time.Now().Format("2006-01-02")
 	out := make([]model.DiscoverProduct, 0, len(raw))
 	externalIDs := make([]string, 0, len(raw))
+	var transJobs []translateJob // 待翻译商品标题(name_zh 空),事务后统一投递
 
 	// 商品榜接口不带封面;仅 live 拉取时补取并签名(防盗链),避免给 mock/error 数据空跑。
 	var coverByID map[string]model.JSONB
@@ -404,6 +405,10 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 			}
 			out = append(out, stored)
 			externalIDs = append(externalIDs, it.ProductID)
+			// 标题外文本地化:仅补空、不覆盖既有译文(与视频文案同一 worker 批量翻译回填)。
+			if stored.NameZh == "" && stored.Name != "" {
+				transJobs = append(transJobs, translateJob{Table: "discover_products", Column: "name_zh", ID: stored.ID, Text: stored.Name})
+			}
 
 			if writeSnapshot {
 				snap := model.DiscoverSnapshot{
@@ -430,6 +435,7 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 		}
 		return nil
 	})
+	s.enqueueTranslate(transJobs)
 	return out
 }
 
