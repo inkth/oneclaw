@@ -75,7 +75,7 @@ export default async function AppLayout({
           </div>
         </main>
       </div>
-      <FloatingMascot />
+      <FloatingMascot workspaceId={workspace?.id ?? ""} />
       <MobileBoardNav />
     </div>
     </AuthModalProvider>

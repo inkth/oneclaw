@@ -24,6 +24,16 @@ func (h *AgentHandler) List(c *gin.Context) {
 	if !ok {
 		return
 	}
+	// active=1:运行态信标轮询专用,只回 QUEUED/RUNNING 的轻量投影。
+	if c.Query("active") == "1" {
+		items, err := h.agents.ListActive(c.Request.Context(), wid)
+		if err != nil {
+			_ = c.Error(err)
+			return
+		}
+		OK(c, gin.H{"tasks": items})
+		return
+	}
 	items, err := h.agents.List(c.Request.Context(), wid)
 	if err != nil {
 		_ = c.Error(err)
