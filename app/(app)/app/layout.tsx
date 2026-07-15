@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getMe, apiServer } from "@/lib/api-client";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import { BrandTile } from "@/components/ui/BrandMark";
-import { SidebarNav, BoardTabs } from "./_nav";
+import { SidebarNav, BoardTabs, MobileBoardNav } from "./_nav";
 import { ConversationRail } from "./conversation-rail";
 import { AppHeader } from "./app-header";
 import { FloatingMascot } from "./floating-mascot";
@@ -38,14 +38,14 @@ export default async function AppLayout({
       {/* 照搬 Designkit 导航轨：宽 80px，底色 --dk-rail 比画布深一档 —— 靠色阶划界，
           所以没有右边框。Logo 槽 64×64，图标 28px。 */}
       <aside
-        className="sticky top-0 hidden h-screen w-24 shrink-0 flex-col items-center self-start gap-2 overflow-y-auto border-r border-black/5 bg-[var(--dk-rail)]/90 px-3 pb-3 backdrop-blur-xl md:flex"
+        className="sticky top-0 hidden h-screen w-20 shrink-0 flex-col items-center self-start gap-1 overflow-y-auto border-r border-black/5 bg-[var(--dk-rail)]/88 px-2 pb-2 backdrop-blur-xl md:flex"
       >
         <Link
           href="/"
           aria-label="发现猫首页"
-          className="flex h-20 w-16 shrink-0 items-center justify-center"
+          className="flex h-16 w-14 shrink-0 items-center justify-center"
         >
-          <BrandTile className="h-11 w-11 rounded-2xl shadow-[0_10px_24px_rgba(48,70,184,.2)]" />
+          <BrandTile className="h-10 w-10 rounded-[14px] shadow-[0_10px_24px_-16px_rgba(48,70,184,.5)]" />
         </Link>
 
         <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />
@@ -64,7 +64,7 @@ export default async function AppLayout({
           isAgency={isAgency}
           isAdmin={isAdmin}
         />
-        <main className="relative flex-1 px-4 pb-10 pt-5 sm:px-8 sm:pb-12 sm:pt-7">
+        <main className="relative flex-1 px-4 pb-28 pt-5 sm:px-7 sm:pt-7 md:pb-12 lg:px-8">
           {/* 业务端画布保持平面中性灰，层级只由内容、留白和下一步操作建立。 */}
           <div className="relative">
             {/* 桌面端二级 Tab 已融进顶栏 AppHeader；这里只在移动端兜底显示 Tab 行 */}
@@ -76,6 +76,7 @@ export default async function AppLayout({
         </main>
       </div>
       <FloatingMascot />
+      <MobileBoardNav />
     </div>
     </AuthModalProvider>
   );

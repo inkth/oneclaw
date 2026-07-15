@@ -74,7 +74,7 @@ export function AgentPills({
   const pills = kinds ? PILL_AGENTS.filter((a) => kinds.includes(a.kind)) : PILL_AGENTS;
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 ${
+      className={`flex items-center gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible ${
         align === "center" ? "justify-center" : "justify-start"
       }`}
     >
@@ -84,7 +84,7 @@ export function AgentPills({
           <button
             key={a.kind}
             onClick={() => onChange(a.kind)}
-            className={`group inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors ${
+            className={`group inline-flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors ${
               isActive
                 ? "dk-ring text-ink"
                 : "border border-black/10 bg-white text-zinc-600 hover:border-black/20 hover:text-ink"

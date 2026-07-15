@@ -70,20 +70,54 @@ type ContactTarget = { title: string; partners?: Partner[] };
 
 export default function ServicesPage() {
   const [contact, setContact] = useState<ContactTarget | null>(null);
+  const totalServices = CATEGORIES.reduce((sum, category) => sum + category.services.length, 0);
+  const liveServices = CATEGORIES.reduce(
+    (sum, category) => sum + category.services.filter((service) => service.status !== "soon").length,
+    0,
+  );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8">
       <PageHeader
         title="服务"
         description="集中寻找物流、达人、公司注册等出海服务；可对接项目会直接提供联系方式。"
+        badge={
+          <Badge tone="success" outline={false}>
+            {liveServices}/{totalServices} 可对接
+          </Badge>
+        }
       />
 
-      <div className="space-y-6">
+      <nav aria-label="服务分类" className="grid gap-3 sm:grid-cols-3">
+        {CATEGORIES.map((category) => {
+          const Icon = ICONS[category.icon] ?? Boxes;
+          const available = category.services.filter((service) => service.status !== "soon").length;
+          return (
+            <a
+              key={category.key}
+              href={`#service-${category.key}`}
+              className="group flex items-center gap-3 rounded-2xl border border-black/[0.065] bg-white p-4 shadow-[0_1px_2px_rgba(18,20,25,.025)] transition-shadow hover:shadow-[0_10px_28px_-22px_rgba(18,20,25,.38)]"
+            >
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${ACCENT[category.accent]}`}>
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-ink">{category.label}</span>
+                <span className="mt-0.5 block text-xs text-zinc-400">{available} 项当前可对接</span>
+              </span>
+              <ChevronRight className="h-4 w-4 text-zinc-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500" />
+            </a>
+          );
+        })}
+      </nav>
+
+      <div className="space-y-5">
         {CATEGORIES.map((c) => {
           const CatIcon = ICONS[c.icon] ?? Boxes;
           const liveCount = c.services.filter((s) => s.status !== "soon").length;
           return (
-            <Card key={c.key} padded={false} className="overflow-hidden">
+            <section key={c.key} id={`service-${c.key}`} className="scroll-mt-24">
+            <Card padded={false} className="overflow-hidden">
               <header className="flex items-center gap-3 border-b border-[var(--dk-stroke-divider)] bg-[var(--dk-surface-2)] px-5 py-3.5">
                 <span
                   className={
@@ -107,6 +141,7 @@ export default function ServicesPage() {
                 ))}
               </div>
             </Card>
+            </section>
           );
         })}
       </div>
@@ -203,10 +238,11 @@ function ServiceRow({
         variant={status === "live" ? "primary" : status === "beta" ? "secondary" : "ghost"}
         size="sm"
         className="w-full shrink-0 sm:w-auto"
-        onClick={() => onContact({ title: label, partners })}
+        onClick={() => actionable && onContact({ title: label, partners })}
+        disabled={!actionable}
       >
         <Headset className="h-3.5 w-3.5" />
-        {status === "beta" ? "申请内测" : "预约咨询"}
+        {status === "beta" ? "申请内测" : status === "soon" ? "暂未开放" : "预约咨询"}
       </Button>
     </div>
   );
@@ -316,7 +352,7 @@ function ContactModal({ target, onClose }: { target: ContactTarget | null; onClo
             </div>
             <h2 className="text-sm font-bold text-[var(--dk-content-primary)]">预约咨询</h2>
           </div>
-          <button onClick={onClose} className="rounded-full p-1.5 text-[var(--dk-content-tertiary)] hover:bg-[var(--dk-action-regular)]">
+          <button onClick={onClose} aria-label="关闭预约咨询" className="rounded-full p-1.5 text-[var(--dk-content-tertiary)] hover:bg-[var(--dk-action-regular)]">
             <X className="h-4 w-4" />
           </button>
         </header>

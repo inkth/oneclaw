@@ -76,7 +76,7 @@ export function FilterBar({
 
   return (
     <div
-      className={`dk-card divide-y divide-[var(--dk-stroke-divider)] px-5 py-4 shadow-[var(--shadow-card)] transition-opacity ${
+      className={`dk-card divide-y divide-[var(--dk-stroke-divider)] px-4 py-3.5 transition-opacity sm:px-5 sm:py-4 ${
         pending ? "opacity-60" : ""
       }`}
     >
@@ -142,9 +142,9 @@ function SearchRow({
         e.preventDefault();
         onSubmit(value.trim());
       }}
-      className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+      className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3"
     >
-      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-zinc-900 w-[84px] whitespace-nowrap">
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:text-sm">
         <Search className="h-3.5 w-3.5" />
         搜索
       </span>
@@ -185,8 +185,8 @@ function SearchRow({
 
 function PillRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-      <span className="inline-flex shrink-0 items-center gap-1 pt-1.5 text-sm font-semibold text-zinc-900 w-[84px] whitespace-nowrap">
+    <div className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
         {label}
       </span>
       <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">{children}</div>
@@ -210,8 +210,8 @@ function CategoryRow({
   const visible = overflow && !expanded ? categories.slice(0, COLLAPSED) : categories;
 
   return (
-    <div className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-      <span className="shrink-0 pt-1.5 text-sm font-semibold text-zinc-900 w-[84px] whitespace-nowrap">
+    <div className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
+      <span className="shrink-0 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
         商品分类
       </span>
       <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">
@@ -227,7 +227,7 @@ function CategoryRow({
       {overflow && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded-lg bg-[var(--dk-btn-tertiary)] px-3 py-1 text-sm font-medium text-brand-600 hover:bg-[var(--dk-btn-tertiary-hover)]"
+          className="inline-flex shrink-0 self-start items-center gap-0.5 rounded-lg bg-[var(--dk-btn-tertiary)] px-3 py-1 text-xs font-medium text-brand-600 hover:bg-[var(--dk-btn-tertiary-hover)] sm:text-sm"
         >
           {expanded ? "收起" : "展开"}
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

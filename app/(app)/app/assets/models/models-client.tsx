@@ -201,7 +201,7 @@ export function ModelsClient({
                     )}
                   </div>
                   {!m.isPreset && (
-                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute right-2 top-2 flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                       <button
                         onClick={() => toggleFavorite(m)}
                         className="inline-flex items-center justify-center rounded-full bg-white/90 p-1 hover:bg-white"
@@ -214,13 +214,14 @@ export function ModelsClient({
                       <button
                         onClick={() => deleteModel(m.id)}
                         className="inline-flex items-center justify-center rounded-full bg-rose-500/90 p-1 text-white hover:bg-rose-600"
+                        aria-label={`删除模特 ${m.name}`}
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                   )}
                   {m.isFavorite && (
-                    <Star className="absolute right-2 bottom-2 h-3 w-3 fill-amber-400 text-amber-400 group-hover:opacity-0" />
+                    <Star className="absolute bottom-2 right-2 h-3 w-3 fill-amber-400 text-amber-400 transition-opacity sm:group-hover:opacity-0" />
                   )}
                 </div>
                 <div className="p-3">

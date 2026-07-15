@@ -354,10 +354,11 @@ html { scroll-behavior: smooth; }
 /* 导航轨条目：hover / selected 共用同一个淡蓝灰底 + 12px 圆角。
    Designkit 没有「左缘竖条」，激活靠 填充图标 + 600 字重 + 底色 三者叠加。 */
 .dk-rail-item {
-  color: #fff;
-  background: var(--brand-600);
-  border-radius: 16px;
-  box-shadow: 0 10px 22px -14px rgba(48, 70, 184, 0.48);
+  color: var(--brand-700);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(18, 20, 25, 0.06);
+  border-radius: 14px;
+  box-shadow: 0 8px 20px -18px rgba(18, 20, 25, 0.55);
 }
 /* 激活态 pill / 高亮卡：发丝边 */
 .dk-ring {

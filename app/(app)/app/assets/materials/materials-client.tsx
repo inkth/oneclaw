@@ -341,7 +341,7 @@ export function MaterialsClient({
                   {!selectMode && (
                     <button
                       onClick={() => deleteMaterial(m.id)}
-                      className="absolute right-2 top-2 hidden group-hover:inline-flex items-center justify-center rounded-full bg-rose-500/90 p-1 text-white hover:bg-rose-600"
+                      className="absolute right-2 top-2 inline-flex items-center justify-center rounded-full bg-rose-500/90 p-1 text-white transition-opacity hover:bg-rose-600 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                       title="删除"
                     >
                       <Trash2 className="h-2.5 w-2.5" />
@@ -351,7 +351,7 @@ export function MaterialsClient({
                     <button
                       onClick={() => submitProducts([[m.id]], false)}
                       disabled={batchBusy}
-                      className="absolute inset-x-2 bottom-2 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-brand-600/95 px-2 py-1 text-2xs font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] hover:bg-brand-700 disabled:opacity-60"
+                      className="absolute inset-x-2 bottom-2 inline-flex items-center justify-center gap-1 rounded-full bg-brand-600/95 px-2 py-1 text-2xs font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-opacity hover:bg-brand-700 disabled:opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                       title="用这张商品图建一个商品（看图写 Listing + 出主图），产出到「资产 · 我的商品」"
                     >
                       <Wand2 className="h-2.5 w-2.5" />

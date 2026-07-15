@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, MessagesSquare, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, MessagesSquare, Pencil, Trash2, Check, X, ChevronDown } from "lucide-react";
 import { authFetch } from "@/lib/api-browser";
 import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
 
@@ -53,6 +53,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // 进入/切换会话页时刷新列表，新建会话路由后也随之更新（pathname 变化触发）。
   useEffect(() => {
@@ -125,18 +126,61 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
     }
   }
 
+  const currentTitle = current
+    ? convs.find((c) => c.id === current)?.title ?? "对话"
+    : pathname.endsWith("/new")
+      ? "新对话"
+      : "对话";
+
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-56 shrink-0 flex-col self-start border-r border-[var(--dk-stroke-border)] bg-transparent">
+    <>
+      <button
+        type="button"
+        onClick={() => setDrawerOpen(true)}
+        className="fixed left-16 top-3 z-40 inline-flex h-10 max-w-[calc(100vw-8.5rem)] items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold text-ink transition-colors hover:bg-black/[0.04] md:hidden"
+        aria-label="打开对话历史"
+        aria-expanded={drawerOpen}
+      >
+        <MessagesSquare className="h-4 w-4 shrink-0 text-brand-600" />
+        <span className="truncate">{currentTitle}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+      </button>
+
+      {drawerOpen && (
+        <button
+          type="button"
+          aria-label="关闭对话历史"
+          onClick={() => setDrawerOpen(false)}
+          className="fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px] md:hidden"
+        />
+      )}
+
+      <aside
+        className={`${
+          drawerOpen
+            ? "fixed inset-y-0 left-0 z-[60] flex w-[min(86vw,20rem)] shadow-[18px_0_50px_-28px_rgba(18,20,25,.45)]"
+            : "hidden"
+        } h-screen shrink-0 flex-col border-r border-[var(--dk-stroke-border)] bg-[var(--dk-canvas)]/98 md:sticky md:top-0 md:z-auto md:flex md:w-56 md:self-start md:bg-transparent md:shadow-none`}
+      >
       <div className="flex items-center justify-between px-3 py-4">
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
           <MessagesSquare className="h-4 w-4 text-brand-500" /> 对话
         </span>
         <Link
           href="/app/agents/new"
+          onClick={() => setDrawerOpen(false)}
           className="press inline-flex items-center gap-1 rounded-full border border-[var(--dk-stroke-border)] bg-white px-2.5 py-1 text-2xs font-medium text-zinc-600 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
         >
           <Plus className="h-3 w-3" /> 新对话
         </Link>
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(false)}
+          className="ml-1 rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-black/[0.05] md:hidden"
+          aria-label="关闭对话历史"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-4">
@@ -197,6 +241,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
                 <li key={c.id} className="group/item relative">
                   <Link
                     href={`/app/agents/${c.id}`}
+                    onClick={() => setDrawerOpen(false)}
                     className={`block rounded-xl px-2 py-2 pr-12 transition-colors ${
                       isActive ? "bg-[var(--dk-action-regular)]" : "hover:bg-[var(--dk-action-regular)]"
                     } ${isBusy ? "opacity-50" : ""}`}
@@ -219,7 +264,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
                   </Link>
 
                   {/* hover 操作：重命名 / 删除，绝对定位不挤压标题 */}
-                  <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100">
+                  <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover/item:opacity-100 md:group-focus-within/item:opacity-100">
                     <button
                       onClick={() => startEdit(c)}
                       className="press rounded p-1 text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-zinc-600"
@@ -241,6 +286,7 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
           </ul>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

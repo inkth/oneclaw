@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2, Video } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2, Video, WandSparkles } from "lucide-react";
 import { VideoDetailDrawer } from "@/components/VideoDetailDrawer";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ButtonLink } from "@/components/ui/Button";
 import { authFetch } from "@/lib/api-browser";
 
 type Processing = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
@@ -126,16 +128,44 @@ export function VideosClient({
 
   if (videos.length === 0) {
     return (
-      <EmptyState
-        icon={Video}
-        title="还没有生成的视频"
-        description="回到工作台选择「短视频创作」，添加商品并说明目标，Agent 会自动选择合适的内容角度。"
-      />
+      <div className="space-y-6">
+        <PageHeader
+          title="视频"
+          description="查看生成进度、播放成片并继续优化脚本。"
+          actions={
+            <ButtonLink href="/app?agent=DIRECTOR#agent-composer" variant="primary" size="sm">
+              <WandSparkles className="h-3.5 w-3.5" />
+              制作视频
+            </ButtonLink>
+          }
+        />
+        <EmptyState
+          icon={Video}
+          title="还没有生成的视频"
+          description="回到工作台选择「短视频创作」，添加商品并说明目标，Agent 会自动选择合适的内容角度。"
+          action={
+            <ButtonLink href="/app?agent=DIRECTOR#agent-composer" variant="secondary" size="sm">
+              开始第一条视频
+            </ButtonLink>
+          }
+        />
+      </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="space-y-6">
+      <PageHeader
+        title="视频"
+        description="查看生成进度、播放成片并继续优化脚本。"
+        actions={
+          <ButtonLink href="/app?agent=DIRECTOR#agent-composer" variant="primary" size="sm">
+            <WandSparkles className="h-3.5 w-3.5" />
+            制作视频
+          </ButtonLink>
+        }
+      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {videos.map((v) => {
         const style = styleMap[v.style] ?? styleMap.UNBOXING;
         const isGenerating = v.processing === "GENERATING";
@@ -280,6 +310,7 @@ export function VideosClient({
           </div>
         );
       })}
+      </div>
       {drawerVideoId && (
         <VideoDetailDrawer
           workspaceId={workspaceId}

@@ -186,7 +186,90 @@ export function DiscoverClient({
           />
         )
       ) : (
-        <TableWrap>
+        <>
+          <div className="space-y-3 md:hidden">
+            {products.map((p, idx) => (
+              <article key={p.productId} className="rounded-2xl border border-black/[0.065] bg-white p-4 shadow-[0_1px_2px_rgba(18,20,25,.025)]">
+                <div className="flex items-start gap-3">
+                  <div className="relative shrink-0">
+                    <Thumb src={p.coverUrl} name={p.productNameZh || p.productName} className="h-16 w-16 rounded-xl" />
+                    <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-ink px-1 text-[9px] font-bold text-white nums">
+                      {idx + 1}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/app/discover/products/${p.productId}?region=${p.region}`}
+                      className="line-clamp-2 text-sm font-semibold leading-5 text-ink"
+                    >
+                      {p.productNameZh || p.productName}
+                    </Link>
+                    {p.productNameZh && p.productNameZh !== p.productName && (
+                      <p className="mt-0.5 truncate text-2xs text-zinc-400">{p.productName}</p>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {p.importedProductId && <Badge tone="success" outline={false}>已收藏</Badge>}
+                      {p.analysis && (
+                        <Badge
+                          tone={VERDICT_TONE[p.analysis.verdict ?? ""] ?? "warning"}
+                          outline={false}
+                          icon={<Sparkles className="h-2.5 w-2.5" />}
+                        >
+                          {VERDICT_LABEL[p.analysis.verdict ?? ""] ?? "已分析"}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-4 divide-x divide-black/[0.055] rounded-xl bg-[var(--dk-surface-2)] px-1 py-2.5 text-center">
+                  <div>
+                    <div className="text-2xs text-zinc-400">均价</div>
+                    <div className="mt-0.5 text-xs font-semibold nums">${p.avgPrice.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-zinc-400">佣金</div>
+                    <div className="mt-0.5 text-xs font-semibold text-emerald-700 nums">{(p.commissionRate * 100).toFixed(0)}%</div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-zinc-400">销量</div>
+                    <div className="mt-0.5 text-xs font-semibold nums">{fmt(p.totalSaleCnt)}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xs text-zinc-400">GMV</div>
+                    <div className="mt-0.5 text-xs font-semibold nums">{fmtMoney(p.totalSaleGmvAmt)}</div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <Link
+                    href={`/app/discover/products/${p.productId}?region=${p.region}`}
+                    className="text-xs font-semibold text-brand-700"
+                  >
+                    查看机会详情
+                  </Link>
+                  {p.importedProductId ? (
+                    <ButtonLink href="/app/discover/favorites" size="sm" className="h-8 rounded-full bg-emerald-50 px-3 text-emerald-700 ring-0 hover:bg-emerald-100">
+                      <BookmarkCheck className="h-3 w-3" /> 已收藏
+                    </ButtonLink>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => importProduct(p)}
+                      disabled={importing.has(p.productId)}
+                      className="h-8 px-3"
+                    >
+                      {importing.has(p.productId) ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bookmark className="h-3 w-3" />}
+                      收藏
+                    </Button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <TableWrap className="hidden md:block">
           <THead>
             <tr>
               <Th>#</Th>
@@ -299,7 +382,8 @@ export function DiscoverClient({
               </Tr>
             ))}
           </tbody>
-        </TableWrap>
+          </TableWrap>
+        </>
       )}
 
       {!searching && <Pagination page={page} hasNext={hasNext} />}

@@ -179,7 +179,7 @@ export function BoardHeaderNav() {
   // 无二级 Tab 时，把板块名本身当作唯一一个激活 Tab（href 指回板块落地页）。
   const single = board.tabs.length < 2;
   return (
-    <div className="hidden md:block">
+    <div className="hidden min-w-0 md:block">
       {board.key === "discover" ? (
         <DiscoverTabsBoundary board={board} pathname={pathname} bare />
       ) : (
@@ -213,21 +213,21 @@ function RailItem({
       href={href}
       aria-current={active ? "page" : undefined}
       className={
-        "flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl " +
+        "flex h-[58px] w-14 shrink-0 flex-col items-center justify-center gap-1.5 rounded-[14px] " +
         "transition-colors hover:bg-[var(--dk-action-regular)] " +
         (active ? "dk-rail-item" : "")
       }
-      style={{ color: active ? "#fff" : "var(--dk-content-primary)" }}
+      style={{ color: active ? undefined : "var(--dk-content-secondary)" }}
     >
       {/* 激活项用实心图标：lucide 无 fill 变体，故以 currentColor 填充描边内区，
           视觉等价于 Designkit 的 icon-HomeV2 → icon-HomeV2Fill 切换。
           Board.icon 的类型只收 className，填充只能走工具类不能走 style。 */}
       <Icon
         className={
-          "h-[22px] w-[22px] " + (active ? "fill-current [fill-opacity:0.14]" : "")
+          "h-5 w-5 " + (active ? "fill-current [fill-opacity:0.12]" : "")
         }
       />
-      <span className="text-[11px] leading-[110%] font-normal">{label}</span>
+      <span className={`text-[10px] leading-[110%] ${active ? "font-semibold" : "font-medium"}`}>{label}</span>
     </Link>
   );
 }
@@ -284,6 +284,41 @@ export function SidebarNav({
           icon={settingsItem.icon}
           active={matchPath(settingsItem.href, pathname)}
         />
+      </div>
+    </nav>
+  );
+}
+
+/** 移动端一级导航：五个核心板块常驻底部，避免桌面侧栏隐藏后失去主导航。 */
+export function MobileBoardNav() {
+  const pathname = usePathname();
+  const active = activeBoard(pathname);
+
+  return (
+    <nav
+      aria-label="移动端主导航"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.07] bg-white/92 px-2 pb-[max(.35rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-14px_34px_-28px_rgba(18,20,25,.45)] backdrop-blur-2xl md:hidden"
+    >
+      <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
+        {BOARDS.map((board) => {
+          const isActive = active?.key === board.key;
+          const Icon = board.icon;
+          return (
+            <Link
+              key={board.key}
+              href={board.href}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-medium transition-colors ${
+                isActive
+                  ? "bg-brand-50 text-brand-700"
+                  : "text-[var(--dk-content-secondary)] active:bg-[var(--dk-action-regular)]"
+              }`}
+            >
+              <Icon className={`h-[19px] w-[19px] ${isActive ? "fill-current [fill-opacity:.1]" : ""}`} />
+              <span className="truncate">{board.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

@@ -71,7 +71,7 @@ export function AccountMenu({
       {!isTeam && (
         <Link
           href={upgradeHref}
-          className="pop-cta hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white transition-colors"
+          className="pop-cta hidden items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white transition-colors sm:inline-flex"
         >
           <Sparkles className="h-3.5 w-3.5" />
           升级会员

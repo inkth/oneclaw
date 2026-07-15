@@ -18,7 +18,7 @@ export function Tabs({
 }) {
   return (
     // 底部整条 hairline 用 divider 级描边（比 overlay 更淡，Tab 栏本身只是弱分界）
-    <div className={cn("flex items-center gap-1", !bare && "border-b border-[var(--dk-stroke-divider)]", className)}>
+    <div className={cn("flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", !bare && "border-b border-[var(--dk-stroke-divider)]", className)}>
       {items.map((tab) => {
         const isActive = tab.href === activeHref;
         return (
@@ -26,7 +26,7 @@ export function Tabs({
             key={tab.href}
             href={tab.href}
             className={cn(
-              "-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors",
+              "-mb-px shrink-0 border-b-2 px-3 py-2.5 text-sm transition-colors",
               // 激活态字重用 550（按钮/强调档），非 zinc 灰阶收敛到 secondary
               isActive
                 ? "border-brand-600 font-[550] text-ink"

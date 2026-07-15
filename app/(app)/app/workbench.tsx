@@ -265,7 +265,7 @@ export function Workbench({
           </div>
 
           {/* 底部常驻对话框：胶囊在上、超大输入卡在下；磨砂遮罩让会话流从下方滚过。 */}
-          <div className="sticky bottom-0 z-20 mt-3 bg-background/90 pb-2 pt-3 backdrop-blur-sm">
+          <div className="sticky bottom-[68px] z-20 mt-3 bg-background/92 pb-2 pt-3 backdrop-blur-md md:bottom-0">
             {pills}
             <div className="mt-3">{composer}</div>
           </div>

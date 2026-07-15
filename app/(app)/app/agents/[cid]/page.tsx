@@ -2,8 +2,6 @@ import { redirect } from "next/navigation";
 import { getMe, apiServer, ApiError } from "@/lib/api-client";
 import { Workbench } from "../../workbench";
 import { type StreamTask } from "../../task-stream";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { MessagesSquare } from "lucide-react";
 
 export const metadata = { title: "对话 · 发现猫" };
 
@@ -30,16 +28,7 @@ export default async function ConversationPage({
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={
-          <span className="inline-flex items-center gap-2">
-            <MessagesSquare className="h-5 w-5 text-brand-500" />
-            对话
-          </span>
-        }
-        description="这段对话会保留你的指令、Agent 进度和产出结果，方便随时回来继续。"
-      />
+    <div className="mx-auto max-w-5xl">
       <Workbench
         workspaceId={ws.id}
         conversationId={cid}
