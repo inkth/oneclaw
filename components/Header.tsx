@@ -14,19 +14,19 @@ const navItems: Array<{ label: string; href: string; badge?: string }> = [
 export function Header() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-black/[0.07] bg-[#f7f6f2]/90 backdrop-blur-xl">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-[72px] items-center justify-between">
-          <Link href="/intro" aria-label="发现猫首页">
-            <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
+    <header className="sticky top-0 z-50 w-full border-b border-black/[0.06] bg-[#f7f6f2]/88 backdrop-blur-2xl">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between sm:h-[68px]">
+          <Link href="/intro" aria-label="发现猫首页" className="rounded-xl">
+            <BrandLockup tileClassName="h-8 w-8 rounded-[10px]" />
           </Link>
 
-          <nav className="hidden items-center gap-1 rounded-full border border-black/[0.07] bg-white/70 p-1 md:flex">
+          <nav aria-label="主导航" className="hidden items-center gap-0.5 rounded-full border border-black/[0.06] bg-white/58 p-1 shadow-[0_1px_2px_rgba(18,20,25,.03)] md:flex">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
-                className="relative rounded-full px-4 py-2 text-[13px] font-semibold text-zinc-600 transition-all hover:bg-white hover:text-ink hover:shadow-sm"
+                className="relative rounded-full px-4 py-2 text-[13px] font-semibold text-zinc-600 transition-[background-color,color,box-shadow] hover:bg-white hover:text-ink hover:shadow-sm"
               >
                 {item.label}
                 {item.badge && (
@@ -34,20 +34,20 @@ export function Header() {
                     {item.badge}
                   </span>
                 )}
-              </a>
+              </Link>
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden items-center gap-1 md:flex">
             <Link
               href="/login"
-              className="px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:text-ink"
+              className="rounded-full px-3.5 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-black/[0.035] hover:text-ink"
             >
               登录
             </Link>
             <Link
               href="/app"
-              className="pop group relative inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-brand)] hover:bg-brand-600"
+              className="pop group relative inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-brand)] hover:bg-brand-700"
             >
               进入工作台
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -57,15 +57,17 @@ export function Header() {
           <div className="flex items-center gap-1.5 md:hidden">
             <Link
               href="/app"
-              className="rounded-full bg-brand-500 px-3.5 py-2 text-xs font-semibold text-white shadow-[var(--shadow-brand)]"
+              className="rounded-full bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-[var(--shadow-brand)]"
             >
               免费体验
             </Link>
             <button
-              className="p-2 text-zinc-700"
+              type="button"
+              className="rounded-full p-2 text-zinc-700 transition-colors hover:bg-black/[0.05]"
               onClick={() => setOpen(!open)}
               aria-label={open ? "关闭菜单" : "打开菜单"}
               aria-expanded={open}
+              aria-controls="mobile-nav"
             >
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -73,12 +75,13 @@ export function Header() {
         </div>
 
         {open && (
-          <div className="border-t border-black/[0.07] py-3 md:hidden">
+          <div id="mobile-nav" className="absolute inset-x-4 top-[62px] rounded-[22px] border border-black/[0.08] bg-white/96 p-2 shadow-[0_24px_60px_-24px_rgba(18,20,25,.3)] backdrop-blur-2xl sm:top-[66px] md:hidden">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
-                className="block px-3 py-2 text-sm font-medium text-zinc-700"
+                onClick={() => setOpen(false)}
+                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-ink"
               >
                 {item.label}
                 {item.badge && (
@@ -86,15 +89,15 @@ export function Header() {
                     {item.badge}
                   </span>
                 )}
-              </a>
+              </Link>
             ))}
-            <div className="flex gap-2 px-3 py-3 border-t border-zinc-200/60 mt-2">
-              <a href="/login" className="flex-1 text-center rounded-full border border-zinc-300 py-2 text-sm font-medium">
+            <div className="mt-2 flex gap-2 border-t border-zinc-200/70 px-2 pb-1 pt-3">
+              <Link href="/login" onClick={() => setOpen(false)} className="flex-1 rounded-full border border-zinc-200 py-2.5 text-center text-sm font-medium text-zinc-700">
                 登录
-              </a>
-              <a href="/app" className="flex-1 rounded-full bg-brand-500 py-2 text-center text-sm font-semibold text-white">
+              </Link>
+              <Link href="/app" onClick={() => setOpen(false)} className="flex-1 rounded-full bg-brand-600 py-2.5 text-center text-sm font-semibold text-white">
                 进入工作台
-              </a>
+              </Link>
             </div>
           </div>
         )}

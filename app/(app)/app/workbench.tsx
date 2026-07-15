@@ -276,7 +276,7 @@ export function Workbench({
 
   // Launcher 布局（首页）:居中 hero —— 胶囊 + 超大输入卡 + 快捷卡/品类预设；派活后进入「会话」看结果。
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {pills}
 
       <div>{composer}</div>

@@ -42,11 +42,12 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
   const hasReal = videos.length > 0;
   const anyPlayable = videos.some((v) => v.videoUrl);
   return (
-    <div>
-      <div className="mb-3 flex items-end justify-between">
+    <section className="rounded-[22px] border border-black/[0.065] bg-white/55 p-4 shadow-[0_1px_2px_rgba(18,20,25,.02)] sm:p-5">
+      <div className="mb-4 flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">热门带货视频参考</h2>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <div className="mb-1.5 text-2xs font-bold uppercase tracking-[0.14em] text-zinc-400">趋势灵感</div>
+          <h2 className="font-display text-base font-semibold text-ink">热门带货视频参考</h2>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-500">
             {!hasReal
               ? "即将上架的选题方向，先占个位"
               : anyPlayable
@@ -54,17 +55,17 @@ export function SampleVideos({ videos = [] }: { videos?: SampleVid[] }) {
                 : "TikTok 上正在爆的带货短视频 · 点开看 AI 拆解"}
           </p>
         </div>
-        <span className="shrink-0 text-xs text-zinc-400">
+        <span className="shrink-0 rounded-full border border-black/[0.06] bg-white px-2.5 py-1 text-2xs font-medium text-zinc-500">
           {hasReal ? "实时榜单" : "样片陆续上架"}
         </span>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {hasReal
           ? videos.map((v) => <RealCard key={v.videoId} v={v} />)
           : PLACEHOLDERS.map((s) => <PlaceholderCard key={s.id} s={s} />)}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -114,7 +115,7 @@ function RealCard({ v }: { v: SampleVid }) {
     </>
   );
 
-  const cardClass = "dk-card dk-lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40";
+  const cardClass = "group relative aspect-[9/16] w-36 shrink-0 overflow-hidden rounded-[18px] border border-black/10 bg-white text-left shadow-[0_1px_2px_rgba(18,20,25,.03)] transition-shadow hover:shadow-[0_12px_30px_-18px_rgba(18,20,25,.3)] sm:w-40";
 
   return (
     <>
@@ -132,7 +133,7 @@ function PlaceholderCard({ s }: { s: Placeholder }) {
     <button
       onClick={() => toast("样片即将上线，敬请期待")}
       title={`${s.title} · ${s.angle}`}
-      className="dk-card dk-lift group relative aspect-[9/16] w-36 shrink-0 overflow-hidden text-left sm:w-40"
+      className="group relative aspect-[9/16] w-36 shrink-0 overflow-hidden rounded-[18px] border border-black/10 bg-white text-left shadow-[0_1px_2px_rgba(18,20,25,.03)] transition-shadow hover:shadow-[0_12px_30px_-18px_rgba(18,20,25,.3)] sm:w-40"
     >
       <span
         aria-hidden

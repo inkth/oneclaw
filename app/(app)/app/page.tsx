@@ -56,11 +56,14 @@ export default async function DashboardPage({
     .catch((): SampleVid[] => []);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      {/* Designkit 的 Hero：标题距顶 120px，与输入框之间留 24px，别的什么都没有。 */}
-      <div className="pt-16 text-center sm:pt-[120px]">
+    <div className="mx-auto max-w-5xl space-y-9 sm:space-y-11">
+      <div className="pt-7 text-center sm:pt-12">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-black/[0.07] bg-white/65 px-3 py-1.5 text-2xs font-semibold text-[var(--dk-content-secondary)] shadow-[0_1px_2px_rgba(18,20,25,.025)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          5 位 Agent 随时待命
+        </div>
         <h1 className="text-hero">今天想推进哪件事？</h1>
-        <p className="mx-auto mt-6 max-w-xl text-sm text-[var(--dk-content-secondary)]">
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--dk-content-secondary)]">
           {!workspace
             ? "问策略、找商品、做视频、写 Listing 或复盘投放，选一个 Agent，说清目标就能开始。登录后会自动保存对话和结果。"
             : "问策略、找商品、做视频、写 Listing 或复盘投放，选一个 Agent，说清目标就能开始。对话会自动保存，成片可在「资产 · 视频」查看。"}

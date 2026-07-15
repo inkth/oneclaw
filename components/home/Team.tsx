@@ -35,7 +35,7 @@ export function Team() {
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-end gap-6 lg:grid-cols-[.72fr_1.28fr]">
-          <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-400">
+          <div className="section-kicker section-kicker-dark">
             02 / Agent 接力
           </div>
           <div>

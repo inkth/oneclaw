@@ -1,4 +1,5 @@
 import { ArrowRight, Languages, Sparkles, Wallet } from "lucide-react";
+import Link from "next/link";
 
 /* 收尾 CTA：深色舱体 + 三条新手保证。
    面向「第一次出海」的人，把门槛说清楚比喊口号更有说服力。 */
@@ -11,44 +12,51 @@ const PROMISES = [
 
 export function FinalCTA() {
   return (
-    <section className="relative py-20 sm:py-28">
+    <section className="relative py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-[32px] border border-black/10 bg-brand-500 px-6 py-16 text-center shadow-xl sm:px-12 sm:py-20">
-          <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-orange-200/35 blur-[110px]" />
-          <div aria-hidden className="pointer-events-none absolute -bottom-32 right-[10%] h-64 w-64 rounded-full bg-blue-700/35 blur-[100px]" />
-          <div className="relative">
-            <h2 className="text-display-sm text-white">
-              今天，推进你的下一门好生意
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base text-white/75 text-cjk-relaxed">
-              先免费逛榜单找机会，再把选品、内容或复盘交给 Agent。
-              每一次操作，都更接近可执行的下一步。
-            </p>
+        <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-brand-950 px-6 py-12 text-white shadow-[0_34px_90px_-46px_rgba(18,24,60,.95)] sm:px-10 sm:py-14 lg:px-14">
+          <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-ai-violet/25 blur-[110px]" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-40 left-[18%] h-72 w-72 rounded-full bg-brand-500/30 blur-[110px]" />
+          <div aria-hidden className="claw-stamp pointer-events-none absolute right-12 top-10 hidden text-white/10 sm:block" />
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a
+          <div className="relative grid items-end gap-10 lg:grid-cols-[1fr_auto]">
+            <div>
+              <div className="text-2xs font-bold uppercase tracking-[0.18em] text-brand-300">从一个清晰目标开始</div>
+              <h2 className="mt-4 max-w-3xl text-display-sm text-white">
+                今天，推进你的下一门好生意
+              </h2>
+              <p className="mt-4 max-w-xl text-base text-white/65 text-cjk-relaxed">
+                先免费逛榜单找机会，再把选品、内容或复盘交给 Agent。
+                每一次操作，都更接近可执行的下一步。
+              </p>
+            </div>
+
+            <div className="flex flex-col items-stretch gap-3 sm:flex-row lg:flex-col">
+              <Link
                 href="/app"
-                className="pop group inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-zinc-900 shadow-md"
+                className="pop group inline-flex min-w-40 items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-zinc-900 shadow-md"
               >
                 进入工作台
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/pricing"
-                className="inline-flex items-center gap-2 rounded-full border border-white/35 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white/60 hover:bg-white/10"
+                className="inline-flex min-w-40 items-center justify-center rounded-full border border-white/20 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/[0.07]"
               >
                 查看定价
-              </a>
+              </Link>
             </div>
+          </div>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 text-xs text-white/70 sm:flex-row sm:gap-8">
-              {PROMISES.map((p) => (
-                <span key={p.text} className="inline-flex items-center gap-2">
-                  <p.icon className="h-3.5 w-3.5 text-white" />
-                  {p.text}
+          <div className="relative mt-10 grid gap-3 border-t border-white/10 pt-6 text-xs text-white/60 sm:grid-cols-3 sm:gap-6">
+            {PROMISES.map((p) => (
+              <span key={p.text} className="inline-flex items-center gap-2.5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.07] text-brand-200">
+                  <p.icon className="h-3.5 w-3.5" />
                 </span>
-              ))}
-            </div>
+                {p.text}
+              </span>
+            ))}
           </div>
         </div>
       </div>

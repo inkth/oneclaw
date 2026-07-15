@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Check, Sparkles, Zap, Crown, Clock } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Clock, ChevronDown } from "lucide-react";
 import { PricingCTA } from "./pricing-cta";
 
 type PlanKey = "FREE" | "PRO" | "TEAM";
@@ -121,10 +121,9 @@ const toneClass: Record<string, { ring: string; icon: string; cta: string }> = {
     cta: "bg-[var(--dk-btn-black)] hover:bg-[var(--dk-btn-black-hover)] text-white",
   },
   brand: {
-    // Design Language §5：阴影最多一层极淡，去掉 shadow-xl 发光
-    ring: "gradient-border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]",
+    ring: "border border-brand-300 shadow-[0_24px_60px_-44px_rgba(48,70,184,.65)]",
     icon: "bg-vibrant",
-    cta: "bg-vibrant press text-white hover:brightness-110",
+    cta: "bg-brand-600 press text-white hover:bg-brand-700",
   },
   fuchsia: {
     ring: "ring-1 ring-zinc-200/80",
@@ -137,20 +136,20 @@ export default function PricingPage() {
   return (
     <>
       <Header />
-      <main className="flex-1">
-        <section className="gradient-bg relative overflow-hidden pb-14 pt-16 sm:pt-24">
-          <div className="app-grid pointer-events-none absolute inset-0 opacity-40" />
-          <div className="pointer-events-none absolute -right-24 top-8 h-72 w-72 rounded-full bg-brand-300/30 blur-3xl" />
-          <div className="pointer-events-none absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-blue-300/25 blur-3xl" />
-          <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">
+      <main className="flex-1 bg-[#f7f6f2]">
+        <section className="gradient-bg relative overflow-hidden pb-10 pt-14 sm:pb-12 sm:pt-20">
+          <div className="app-grid pointer-events-none absolute inset-0 opacity-35" />
+          <div className="pointer-events-none absolute -right-24 top-8 h-72 w-72 rounded-full bg-brand-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-ai-violet/10 blur-3xl" />
+          <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-200/80 bg-white/70 px-3.5 py-1.5 text-xs font-bold text-brand-700 shadow-[0_1px_2px_rgba(18,20,25,.03)] backdrop-blur-sm">
               <Sparkles className="h-3.5 w-3.5" />
               榜单数据免费 · 无需信用卡
             </div>
-            <h1 className="mt-7 text-display-sm">
+            <h1 className="mt-6 text-display-sm">
               先免费找机会，再按需使用 AI
             </h1>
-            <p className="mt-4 text-zinc-600 max-w-2xl mx-auto text-cjk-relaxed">
+            <p className="mx-auto mt-4 max-w-2xl text-sm text-zinc-600 text-cjk-relaxed sm:text-base">
               浏览榜单和市场数据永久免费；让 Agent 分析、出片或出图时才消耗积分。
               所有方案都包含选品、短视频、Listing 和复盘，
               主要区别是每月积分额度与协作能力。
@@ -158,58 +157,63 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="relative pb-20 pt-2">
+        <section className="relative pb-20 pt-4 sm:pt-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:gap-5">
               {tiers.map((t) => {
                 const c = toneClass[t.tone];
                 const Icon = t.icon;
                 return (
                   <div
                     key={t.name}
-                    className={`relative rounded-[24px] bg-white p-6 sm:p-8 ${c.ring} ${
-                      t.highlight ? "md:-translate-y-2" : ""
-                    } transition-transform hover:-translate-y-1`}
+                    className={`relative flex h-full flex-col overflow-hidden rounded-[24px] bg-white p-6 sm:p-7 ${c.ring}`}
                   >
                     {t.highlight && (
-                      <div className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand-600 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-white shadow-[0_8px_20px_rgba(48,70,184,.2)]">
-                        <Zap className="h-3 w-3" />
-                        最受欢迎
-                      </div>
+                      <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-600 via-brand-400 to-ai-violet" />
                     )}
 
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${c.icon} text-white`}>
-                      <Icon className="h-5 w-5" />
+                    <div className="flex items-start justify-between gap-4">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.icon} text-white`}>
+                        <Icon className="h-[18px] w-[18px]" />
+                      </div>
+                      {t.highlight && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
+                          <Zap className="h-3 w-3" />
+                          最受欢迎
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-5">
-                      <div className="text-2xs font-mono uppercase tracking-wider text-zinc-400">
+                      <div className="text-2xs font-mono uppercase tracking-[0.14em] text-zinc-400">
                         {t.name}
                       </div>
-                      <h3 className="mt-0.5 text-xl font-bold">{t.cn}</h3>
+                      <h3 className="font-display mt-1 text-xl font-semibold">{t.cn}</h3>
                     </div>
 
                     <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold tracking-tight nums">{t.price}</span>
+                      <span className="font-display text-4xl font-semibold tracking-[-0.035em] nums">{t.price}</span>
                       <span className="text-sm text-zinc-500">{t.priceSub}</span>
                     </div>
 
-                    <p className="mt-3 text-sm text-zinc-600 min-h-[40px]">{t.description}</p>
+                    <p className="mt-3 min-h-[40px] text-sm leading-6 text-zinc-600">{t.description}</p>
 
                     <PricingCTA
                       plan={t.name}
                       label={t.cta}
-                      className={`mt-6 inline-flex w-full items-center justify-center gap-1 rounded-full px-4 py-3 text-sm font-bold transition-all ${c.cta}`}
+                      className={`mt-6 inline-flex h-11 w-full items-center justify-center gap-1 rounded-full px-4 text-sm font-bold transition-colors ${c.cta}`}
                     />
 
-                    <div className="mt-6 border-t border-zinc-100 pt-5">
-                      <div className="text-2xs font-medium uppercase tracking-wider text-zinc-400">
+                    <div className="mt-6 flex-1 border-t border-zinc-100 pt-5">
+                      <div className="text-2xs font-bold uppercase tracking-[0.12em] text-zinc-400">
                         包含
                       </div>
-                      <ul className="mt-3 space-y-2">
+                      <ul className="mt-3 space-y-2.5">
                         {t.features.map((f) => (
-                          <li key={f} className="flex items-start gap-2 text-sm">
-                            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" strokeWidth={2.5} />
+                          <li key={f} className="flex items-start gap-2.5 text-sm leading-5">
+                            <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                              <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                            </span>
                             <span className="text-zinc-700">{f}</span>
                           </li>
                         ))}
@@ -251,29 +255,31 @@ export default function PricingPage() {
               })}
             </div>
 
-            <p className="mt-10 text-center text-xs text-zinc-500">
+            <p className="mx-auto mt-8 max-w-3xl rounded-2xl border border-black/[0.06] bg-white/60 px-5 py-2.5 text-center text-xs leading-5 text-zinc-500 sm:rounded-full">
               所有方案均不含模型实际推理成本，相关费用由发现猫在你的积分内代付；
               未来 BYOK 模式（规划中）下可走你自己的账户。
             </p>
           </div>
         </section>
 
-        <section className="border-t border-black/[0.05] bg-white/55 py-20">
+        <section className="border-t border-black/[0.05] bg-white/55 py-16 sm:py-20">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-display-sm text-center">
+            <div className="section-kicker">价格说明</div>
+            <h2 className="mt-4 text-display-sm">
               常见问题
             </h2>
-            <div className="mt-10 space-y-3">
+            <p className="mt-3 text-sm text-zinc-500">关于积分、升级与内容版权，先把重要问题说清楚。</p>
+            <div className="mt-8 space-y-3">
               {faqs.map((f) => (
                 <details
                   key={f.q}
-                  className="group rounded-[18px] border border-zinc-200/80 bg-white px-5 py-4 transition-colors open:border-brand-200 open:bg-brand-50/25 [&_summary::-webkit-details-marker]:hidden"
+                  className="group rounded-[18px] border border-zinc-200/80 bg-white px-5 py-4 transition-[background-color,border-color] open:border-brand-200 open:bg-brand-50/25 [&_summary::-webkit-details-marker]:hidden"
                 >
-                  <summary className="flex cursor-pointer items-center justify-between text-sm font-medium">
+                  <summary className="flex cursor-pointer items-center justify-between gap-4 text-sm font-semibold text-ink">
                     {f.q}
-                    <span className="text-zinc-400 transition-transform group-open:rotate-45">+</span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
                   </summary>
-                  <p className="mt-3 text-sm text-zinc-600 leading-relaxed">{f.a}</p>
+                  <p className="mt-3 pr-8 text-sm leading-6 text-zinc-600">{f.a}</p>
                 </details>
               ))}
             </div>

@@ -40,22 +40,22 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-black/[0.08] bg-[#efeee8]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
+    <footer className="relative border-t border-black/[0.07] bg-[#efeee8]">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-6 md:gap-8">
           <div className="col-span-2">
-            <BrandLockup tileClassName="h-8 w-8 rounded-lg" />
-            <p className="mt-4 text-sm text-zinc-600 leading-relaxed max-w-xs">
+            <BrandLockup tileClassName="h-9 w-9 rounded-[11px]" />
+            <p className="mt-5 max-w-xs text-sm leading-7 text-zinc-600">
               <span className="font-medium text-zinc-900">{BRAND_SLOGAN}</span>
               <br />
               用 AI Agent 团队，让每一个出海人都能像团队一样高效。
             </p>
-            <div className="mt-6 flex flex-col gap-2 text-sm text-zinc-600">
-              <a href="mailto:contact@faxianmao.com" className="inline-flex items-center gap-2 hover:text-brand-600">
+            <div className="mt-6 flex flex-col gap-2.5 text-sm text-zinc-600">
+              <a href="mailto:contact@faxianmao.com" className="inline-flex w-fit items-center gap-2 rounded-md transition-colors hover:text-brand-600">
                 <Mail className="h-4 w-4" />
                 contact@faxianmao.com
               </a>
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 text-zinc-500">
                 <MessageSquare className="h-4 w-4" />
                 微信公众号：发现猫出海
               </span>
@@ -64,11 +64,11 @@ export function Footer() {
 
           {sections.map((s) => (
             <div key={s.title}>
-              <div className="text-sm font-semibold text-zinc-900">{s.title}</div>
-              <ul className="mt-4 space-y-2.5">
+              <div className="text-2xs font-bold uppercase tracking-[0.14em] text-zinc-500">{s.title}</div>
+              <ul className="mt-4 space-y-3">
                 {s.links.map((l) => (
                   <li key={l.label}>
-                    <a href={l.href} className="text-sm text-zinc-600 hover:text-brand-600 transition-colors">
+                    <a href={l.href} className="rounded-sm text-sm text-zinc-600 transition-colors hover:text-brand-600">
                       {l.label}
                     </a>
                   </li>
@@ -78,18 +78,19 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-[22px] border border-black/10 bg-ink p-6 text-white sm:flex-row sm:items-center">
+        <div className="mt-12 flex flex-col items-start justify-between gap-5 overflow-hidden rounded-[24px] border border-white/10 bg-brand-950 p-6 text-white shadow-[0_24px_60px_-42px_rgba(18,24,60,.9)] sm:flex-row sm:items-center sm:px-7">
           <div>
-            <div className="text-sm font-semibold">订阅出海周报</div>
-            <div className="mt-0.5 text-xs text-zinc-400">
+            <div className="font-display text-sm font-semibold">订阅出海周报</div>
+            <div className="mt-1 text-xs leading-relaxed text-white/55">
               每周一封，AI 出海赛道动态 + 选品趋势 + 案例拆解。
             </div>
           </div>
           <SubscribeForm />
         </div>
 
-        <div className="mt-12 border-t border-zinc-200/80 pt-6 text-xs text-zinc-500">
-          © 2026 发现猫科技 · 保留所有权利
+        <div className="mt-10 flex flex-col gap-2 border-t border-black/[0.07] pt-6 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+          <span>© 2026 发现猫科技 · 保留所有权利</span>
+          <span>把复杂的出海流程，变成清晰的下一步。</span>
         </div>
       </div>
     </footer>

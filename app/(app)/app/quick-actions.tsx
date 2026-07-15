@@ -261,7 +261,7 @@ export function QuickActionCards({
   const actions = QUICK_ACTIONS_BY_AGENT[activeAgent] ?? [];
   if (actions.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       {actions.map((a) => {
         const soon = a.status === "soon";
         // 上身图卡是子模式开关：处于该模式时高亮，提示当前正在做上身图。
@@ -276,7 +276,7 @@ export function QuickActionCards({
               }
               onPick(a);
             }}
-            className={`dk-card dk-lift group relative flex min-h-[5.25rem] items-center justify-between gap-3 p-4 text-left ${
+            className={`dk-card dk-lift group relative flex min-h-[5.5rem] items-center justify-between gap-3 p-3.5 text-left sm:p-4 ${
               soon ? "opacity-70" : ""
             } ${active ? "dk-ring" : ""}`}
           >
@@ -293,7 +293,7 @@ export function QuickActionCards({
             </div>
             <span
               aria-hidden
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-[inset_0_1px_0_rgba(255,255,255,.18)] ${
                 AGENT_IDENTITY[(a.agent ?? activeAgent) as AgentKey].tile
               }`}
             >

@@ -84,8 +84,8 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
         <>
           <div>
             <label className="block text-xs font-semibold text-zinc-700">手机号</label>
-            <div className="mt-2 flex items-center gap-2 rounded-2xl border border-zinc-200/80 bg-zinc-50/70 px-4 py-3.5 transition-all focus-within:border-brand-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100">
-              <span className="text-sm text-zinc-500">+86</span>
+            <div className="mt-2.5 flex h-13 items-center gap-3 rounded-2xl border border-zinc-200/90 bg-zinc-50/65 px-4 transition-[background-color,border-color,box-shadow] focus-within:border-brand-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100/70">
+              <span className="border-r border-zinc-200 pr-3 text-sm font-medium text-zinc-500">+86</span>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -95,7 +95,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                 onKeyDown={(e) => e.key === "Enter" && sendCode()}
                 placeholder="138 0000 0000"
-                className="flex-1 text-sm outline-none placeholder-zinc-300 bg-transparent"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-300"
               />
             </div>
           </div>
@@ -109,7 +109,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
           <button
             onClick={sendCode}
             disabled={sending || !phone}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(48,70,184,.2)] transition-all hover:-translate-y-0.5 hover:bg-brand-700 disabled:translate-y-0 disabled:opacity-60"
+            className="press inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 text-sm font-bold text-white shadow-[0_14px_28px_-16px_rgba(48,70,184,.75)] transition-colors hover:bg-brand-700 disabled:pointer-events-none disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
           >
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
             发送验证码
@@ -145,7 +145,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               onKeyDown={(e) => e.key === "Enter" && verifyAndSignIn()}
               placeholder="000000"
-              className="mt-2 w-full rounded-2xl border border-zinc-200/80 bg-zinc-50/70 px-3 py-3.5 text-center font-mono text-lg tracking-[0.5em] outline-none transition-all focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
+              className="mt-2.5 h-13 w-full rounded-2xl border border-zinc-200/90 bg-zinc-50/65 px-3 text-center font-mono text-lg tracking-[0.5em] outline-none transition-[background-color,border-color,box-shadow] focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100/70"
               autoFocus
             />
           </div>
@@ -159,7 +159,7 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
           <button
             onClick={verifyAndSignIn}
             disabled={verifying || code.length !== 6}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(48,70,184,.2)] transition-all hover:-translate-y-0.5 hover:bg-brand-700 disabled:translate-y-0 disabled:opacity-60"
+            className="press inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 text-sm font-bold text-white shadow-[0_14px_28px_-16px_rgba(48,70,184,.75)] transition-colors hover:bg-brand-700 disabled:pointer-events-none disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
           >
             {verifying && <Loader2 className="h-4 w-4 animate-spin" />}
             登录

@@ -55,7 +55,7 @@ export function Chain() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-end gap-6 lg:grid-cols-[.72fr_1.28fr]">
           <div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">
+            <div className="section-kicker">
               01 / 全链路
             </div>
             <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-black/[0.07] bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm">
