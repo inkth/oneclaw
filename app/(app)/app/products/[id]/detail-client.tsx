@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 type Aplus = { heading: string; body: string; imagePrompt: string };
 
@@ -224,7 +227,7 @@ export function ProductDetail({
     <div className="space-y-6">
       <Link
         href="/app/assets/products"
-        className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-brand-700"
+        className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         返回我的商品
@@ -268,25 +271,25 @@ export function ProductDetail({
         }
         description="单个商品的工作台：组装 Listing、补主图、做视频，推到可上架。"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => router.push(`/app?agent=DIRECTOR&productId=${productId}`)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-tertiary)] px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)]"
-            >
-              <Clapperboard className="h-3.5 w-3.5" />
-              为它做视频
-            </button>
-          </div>
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={() => router.push(`/app?agent=DIRECTOR&productId=${productId}`)}
+          >
+            <Clapperboard className="h-3.5 w-3.5" />
+            为它做视频
+          </Button>
         }
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 左：主图画廊 + 基础信息 */}
         <div className="space-y-4">
-          <div className="dk-card p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-900">商品图</h3>
-              <div className="flex items-center gap-2">
+          <div className="dk-card p-5">
+            <SectionHeader
+              title="商品图"
+              actions={
+                <div className="flex items-center gap-2">
                 {gallery.length > 0 && (
                   <a
                     href={`${API_BASE}/api/v1/workspaces/${workspaceId}/products/${productId}/images.zip`}
@@ -312,8 +315,9 @@ export function ProductDetail({
                     {imaging ? "生成中…" : "补出主图"}
                   </button>
                 )}
-              </div>
-            </div>
+                </div>
+              }
+            />
             {gallery.length === 0 ? (
               <div className="flex h-32 items-center justify-center rounded-lg bg-[var(--dk-surface-2)] text-xs text-zinc-400">
                 还没有主图
@@ -323,7 +327,7 @@ export function ProductDetail({
                 {gallery.map((url) => {
                   const isCover = url === p.coverUrl;
                   return (
-                    <div key={url} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-50">
+                    <div key={url} className="group relative aspect-square overflow-hidden rounded-xl bg-zinc-50">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={url} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                       {isCover && (
@@ -336,7 +340,7 @@ export function ProductDetail({
                         <button
                           onClick={() => setCover(url)}
                           disabled={coverBusy === url}
-                          className="absolute inset-x-1.5 bottom-1.5 hidden group-hover:inline-flex items-center justify-center gap-1 rounded-full bg-black/70 px-2 py-1 text-2xs font-medium text-white hover:bg-black/85 disabled:opacity-60"
+                          className="absolute inset-x-1.5 bottom-1.5 inline-flex items-center justify-center gap-1 rounded-full bg-black/70 px-2 py-1 text-2xs font-medium text-white transition-opacity hover:bg-black/85 disabled:opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                         >
                           {coverBusy === url ? <Loader2 className="h-3 w-3 animate-spin" /> : <Star className="h-3 w-3" />}
                           设为主图
@@ -349,10 +353,10 @@ export function ProductDetail({
             )}
           </div>
 
-          <div className="dk-card p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-900">基础信息</h3>
-              {!editingInfo ? (
+          <div className="dk-card p-5">
+            <SectionHeader
+              title="基础信息"
+              actions={!editingInfo ? (
                 <button onClick={() => setEditingInfo(true)} className="text-2xs text-brand-600 hover:text-brand-700">
                   编辑
                 </button>
@@ -366,7 +370,7 @@ export function ProductDetail({
                   保存
                 </button>
               )}
-            </div>
+            />
             {editingInfo ? (
               <div className="space-y-2 text-xs">
                 <label className="flex items-center justify-between gap-2">
@@ -414,37 +418,44 @@ export function ProductDetail({
         {/* 右：Listing 内容 */}
         <div className="space-y-4 lg:col-span-2">
           {!listing ? (
-            <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center">
-              <Sparkles className="mx-auto h-6 w-6 text-zinc-300" />
-              <p className="mt-2 text-sm text-zinc-600">这个商品还没有 Listing</p>
-              <button
-                onClick={goListingChat}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                生成 Listing
-              </button>
-            </div>
+            <EmptyState
+              icon={Sparkles}
+              title="这个商品还没有 Listing"
+              description="让 Listing Agent 根据商品信息生成标题、卖点和图文详情结构。"
+              action={
+                <Button variant="primary" size="sm" onClick={goListingChat}>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  生成 Listing
+                </Button>
+              }
+            />
           ) : (
             <>
-              <div className="dk-card p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-zinc-900">Listing 文案</h3>
-                  <button
-                    onClick={goListingChat}
-                    title="回到对话重新生成，也可以说明要改哪段、强调什么"
-                    className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    去对话重写
-                  </button>
-                </div>
+              <div className="dk-card p-5">
+                <SectionHeader
+                  title="Listing 文案"
+                  className="mb-3"
+                  actions={
+                    <button
+                      onClick={goListingChat}
+                      title="回到对话重新生成，也可以说明要改哪段、强调什么"
+                      className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-2xs font-medium text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-brand-700"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      去对话重写
+                    </button>
+                  }
+                />
 
                 <div className="space-y-3">
                   <div>
                     <div className="mb-1 flex items-center justify-between">
                       <span className="text-2xs font-medium text-zinc-400">标题</span>
-                      <button onClick={() => copy(listing.title, "标题")} className="text-zinc-400 hover:text-brand-600">
+                      <button
+                        onClick={() => copy(listing.title, "标题")}
+                        aria-label="复制 Listing 标题"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-brand-600"
+                      >
                         <Copy className="h-3 w-3" />
                       </button>
                     </div>
@@ -456,7 +467,8 @@ export function ProductDetail({
                       <span className="text-2xs font-medium text-zinc-400">五点卖点</span>
                       <button
                         onClick={() => copy((listing.sellingPoints ?? []).map((s, i) => `${i + 1}. ${s}`).join("\n"), "五点")}
-                        className="text-zinc-400 hover:text-brand-600"
+                        aria-label="复制五点卖点"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-brand-600"
                       >
                         <Copy className="h-3 w-3" />
                       </button>
@@ -472,32 +484,44 @@ export function ProductDetail({
                     <div>
                       <div className="mb-1 flex items-center justify-between">
                         <span className="text-2xs font-medium text-zinc-400">标签</span>
-                        <button onClick={() => copy(listing.hashtags.join(" "), "标签")} className="text-zinc-400 hover:text-brand-600">
+                        <button
+                          onClick={() => copy(listing.hashtags.join(" "), "标签")}
+                          aria-label="复制标签"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-brand-600"
+                        >
                           <Copy className="h-3 w-3" />
                         </button>
                       </div>
-                      <p className="text-xs text-brand-600">{listing.hashtags.join(" ")}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {listing.hashtags.map((tag) => (
+                          <span key={tag} className="rounded-full bg-brand-50 px-2 py-1 text-2xs font-medium text-brand-700">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
               {listing.aplusSections && listing.aplusSections.length > 0 && (
-                <div className="dk-card p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-zinc-900">图文详情结构</h3>
-                    <button
-                      onClick={goListingChat}
-                      title="回到对话重新生成，也可以说明要改哪段、强调什么"
-                      className="inline-flex items-center gap-1 text-2xs text-zinc-500 hover:text-brand-700"
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      去对话重新生成
-                    </button>
-                  </div>
+                <div className="dk-card p-5">
+                  <SectionHeader
+                    title="图文详情结构"
+                    actions={
+                      <button
+                        onClick={goListingChat}
+                        title="回到对话重新生成，也可以说明要改哪段、强调什么"
+                        className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-2xs font-medium text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-brand-700"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        去对话重新生成
+                      </button>
+                    }
+                  />
                   <div className="space-y-3">
                     {listing.aplusSections.map((sec, i) => (
-                      <div key={i} className="rounded-lg bg-[var(--dk-surface-2)] p-3">
+                      <div key={i} className="rounded-xl border border-black/[0.045] bg-[var(--dk-surface-2)] p-3.5">
                         <div className="text-xs font-medium text-zinc-900">{sec.heading}</div>
                         <p className="mt-1 text-xs text-zinc-600">{sec.body}</p>
                         {sec.imagePrompt && (
@@ -512,11 +536,11 @@ export function ProductDetail({
           )}
 
           {videos.length > 0 && (
-            <div className="dk-card p-4">
-              <h3 className="mb-3 text-sm font-semibold text-zinc-900">成片</h3>
+            <div className="dk-card p-5">
+              <SectionHeader icon={Clapperboard} title="成片" meta={`${videos.length} 条`} />
               <div className="space-y-2">
                 {videos.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between gap-2 rounded-lg bg-[var(--dk-surface-2)] p-2 text-xs">
+                  <div key={v.id} className="flex items-center justify-between gap-2 rounded-xl bg-[var(--dk-surface-2)] px-3 py-2.5 text-xs">
                     <span className="truncate text-zinc-600">{v.title || "短视频"}</span>
                     {v.videoUrl && (
                       <a
