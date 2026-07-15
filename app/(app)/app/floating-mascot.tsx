@@ -95,6 +95,18 @@ const ACTIVE_POLL_MS = 10_000;
 const IDLE_POLL_MS = 45_000;
 const REVEAL_TTL_MS = 12_000;
 
+/** 空态引导：从未派过任务的新用户，静止态固定指向跨境顾问，替代按路由的情境动作。 */
+const ONBOARD_ACTION: ContextAction = {
+  label: "不知从哪开始？问问跨境顾问",
+  href: taskHref("ADVISOR", "我刚开始做 TikTok Shop 跨境电商，请根据我的情况告诉我第一步该做什么。"),
+  icon: Compass,
+};
+
+/** sessionStorage 缓存「是否派过任务」，避免每次导航重复请求。"1"=派过，"0"=从未。 */
+function everTaskedKey(workspaceId: string) {
+  return `faxianmao:ever-tasked:${workspaceId}`;
+}
+
 /**
  * 情境助手 + 运行态信标：静止时是当前页最相关的下一步入口（不漂浮、不弹菜单）;
  * 有任务在跑时变成跨页面的任务信标（呼吸光环 + 进行中文案，点击回到会话）,
@@ -104,6 +116,8 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
   const pathname = usePathname();
   const [active, setActive] = useState<LiteTask[]>([]);
   const [reveal, setReveal] = useState<Reveal | null>(null);
+  // 空态引导：确认「从未派过任务」前保持 false，避免情境动作先闪一下再切换。
+  const [neverTasked, setNeverTasked] = useState(false);
   // 上一轮的运行中任务:从 active 列表消失 = 到达终态,再取详情判定 DONE/FAILED。
   const knownRef = useRef<Map<string, LiteTask>>(new Map());
   const seededRef = useRef(false);
@@ -181,6 +195,57 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
       // 网络抖动：跳过本轮，下一轮再试
     }
   }, [workspaceId, resolveFinished]);
+
+  // 空态判定：首次挂载查一次全量任务列表；派出首个任务后（TASK_DISPATCHED_EVENT）永久回落。
+  useEffect(() => {
+    if (!workspaceId) return;
+    const key = everTaskedKey(workspaceId);
+    let disposed = false;
+
+    const markTasked = () => {
+      try {
+        sessionStorage.setItem(key, "1");
+      } catch {
+        // 隐私模式等场景写不进就算了，本次会话内 state 仍然生效
+      }
+      setNeverTasked(false);
+    };
+    window.addEventListener(TASK_DISPATCHED_EVENT, markTasked);
+
+    let cached: string | null = null;
+    try {
+      cached = sessionStorage.getItem(key);
+    } catch {
+      // 读不到就当没缓存，走一次请求
+    }
+    if (cached === "0") {
+      setNeverTasked(true);
+    } else if (cached !== "1") {
+      void (async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/workspaces/${workspaceId}/agent-tasks`, {
+            credentials: "include",
+          });
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json?.ok) return;
+          const empty = ((json.data?.tasks ?? []) as LiteTask[]).length === 0;
+          try {
+            sessionStorage.setItem(key, empty ? "0" : "1");
+          } catch {
+            // 同上，缓存失败不影响本次判定
+          }
+          if (!disposed && empty) setNeverTasked(true);
+        } catch {
+          // 判定失败保持情境动作模式，不打扰
+        }
+      })();
+    }
+
+    return () => {
+      disposed = true;
+      window.removeEventListener(TASK_DISPATCHED_EVENT, markTasked);
+    };
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -275,8 +340,8 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
     );
   }
 
-  // 静止态：当前页最相关的下一步任务入口（原始行为）。
-  const action = actionFor(pathname);
+  // 静止态：从未派过任务的新用户固定引导去问跨境顾问，其余按当前页给情境动作。
+  const action = neverTasked ? ONBOARD_ACTION : actionFor(pathname);
   const Icon = action.icon;
   return (
     <div className="fixed bottom-[76px] right-3 z-50 md:bottom-5 md:right-6">
@@ -289,7 +354,7 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
           <BrandMark className="h-5 w-5" />
         </span>
         <Icon className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-        <span className="max-w-36 truncate">{action.label}</span>
+        <span className={`truncate ${neverTasked ? "max-w-52" : "max-w-36"}`}>{action.label}</span>
       </Link>
     </div>
   );
