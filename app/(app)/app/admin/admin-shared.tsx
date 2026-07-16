@@ -45,6 +45,12 @@ export const WITHDRAWAL_META: Record<string, { label: string; tone: Tone }> = {
   REJECTED: { label: "已驳回", tone: "danger" },
 };
 
+// 用户反馈类型 → 中文 + 色调。
+export const FEEDBACK_TYPE_META: Record<string, { label: string; tone: Tone }> = {
+  issue: { label: "遇到问题", tone: "warning" },
+  idea: { label: "产品建议", tone: "brand" },
+};
+
 // 审计动作 → 中文。
 export const AUDIT_ACTION_LABEL: Record<string, string> = {
   USER_BAN: "封禁用户",
@@ -161,6 +167,19 @@ export type AuditLogRow = {
     createdAt: string;
   };
   adminPhone: string;
+};
+
+export type FeedbackRow = {
+  feedback: {
+    id: string;
+    userId: string;
+    workspaceId?: string | null;
+    type: string;
+    content: string;
+    pathname?: string;
+    createdAt: string;
+  };
+  userPhone: string;
 };
 
 // 代理商相关(沿用既有形状)。

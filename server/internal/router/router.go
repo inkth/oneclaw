@@ -27,6 +27,7 @@ type Deps struct {
 	Quota     *service.QuotaService
 	Agency    *service.AgencyService
 	Admin     *service.AdminService
+	Feedback  *service.FeedbackService
 	// Ready 就绪探针(如 DB ping);任一失败 /ready 返回 503。空则 /ready 恒 200。
 	Ready []func() error
 }
@@ -61,6 +62,7 @@ func New(d Deps) *gin.Engine {
 	billH := handler.NewBillingHandler(d.Billing, d.Quota, d.Workspace)
 	agencyH := handler.NewAgencyHandler(d.Agency)
 	adminH := handler.NewAdminHandler(d.Admin, d.Agency)
+	fbH := handler.NewFeedbackHandler(d.Feedback)
 
 	r.GET("/health", handler.Health)
 	r.GET("/ready", handler.Ready(d.Ready...))
@@ -168,6 +170,9 @@ func New(d Deps) *gin.Engine {
 		priv.PATCH("/workspaces/:wid/templates/:tid", tplH.Update)
 		priv.DELETE("/workspaces/:wid/templates/:tid", tplH.Delete)
 
+		// 用户反馈(身份挂 user,workspace 仅作上下文随附)。
+		priv.POST("/feedback", fbH.Create)
+
 		// 代理商本人视角(身份挂 user,非 workspace)。
 		priv.GET("/agency/summary", agencyH.Summary)
 		priv.GET("/agency/customers", agencyH.Customers)
@@ -199,6 +204,9 @@ func New(d Deps) *gin.Engine {
 
 			// 审计日志
 			adm.GET("/audit-logs", adminH.ListAuditLogs)
+
+			// 用户反馈(只读)
+			adm.GET("/feedback", fbH.AdminList)
 
 			// 代理商
 			adm.GET("/overview", adminH.Overview)
