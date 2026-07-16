@@ -15,6 +15,9 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Stat } from "@/components/ui/Stat";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
@@ -181,18 +184,20 @@ export function AgencyClient({
             <div className="mt-1.5 truncate font-mono text-sm text-[var(--dk-content-primary)]" title={inviteLink}>
               {inviteLink}
             </div>
-            <div className="mt-1 text-2xs text-[var(--dk-content-tertiary)]">
+            <div className="mt-1 text-xs text-[var(--dk-content-tertiary)]">
               邀请码 <span className="font-mono font-medium text-[var(--dk-content-secondary)]">{summary.code}</span>
               ·新用户经此注册永久绑定你，并获赠新人积分
             </div>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
             onClick={copyLink}
-            className="press inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)]"
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {copied ? "已复制" : "复制链接"}
-          </button>
+          </Button>
         </div>
       </Card>
 
@@ -211,46 +216,47 @@ export function AgencyClient({
 
       {/* 提现申请 */}
       <Card>
-        <div className="text-sm font-medium text-[var(--dk-content-primary)]">申请提现</div>
+        <SectionHeader icon={Wallet} title="申请提现" />
         <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">
           可提现余额 {fmtYuan(summary.balanceCents)}。提交后由管理员线下打款并标记结算。
         </p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 focus-within:ring-2 focus-within:ring-brand-200">
-            <span className="text-sm text-[var(--dk-content-secondary)]">¥</span>
-            <input
+          <div className="relative sm:w-40">
+            <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm text-[var(--dk-content-secondary)]">¥</span>
+            <Input
               type="number"
               min={0}
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="提现金额"
-              className="w-32 bg-transparent text-sm outline-none placeholder:text-[var(--dk-content-tertiary)]"
+              className="pl-7"
               disabled={disabled}
             />
           </div>
-          <input
+          <Input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="收款方式（如 微信 / 支付宝 / 银行卡）"
-            className="flex-1 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
+            className="flex-1"
             disabled={disabled}
           />
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={submitWithdrawal}
             disabled={submitting || disabled || summary.balanceCents <= 0}
-            className="press inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-60"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             提交申请
-          </button>
+          </Button>
         </div>
       </Card>
 
       {/* 客户列表 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">客户列表</div>
+        <SectionHeader icon={Users} title="客户列表" meta={`${customers.length} 位`} />
         {customers.length === 0 ? (
           <EmptyState icon={Users} title="还没有客户" description="把邀请链接分享出去，客户注册后会出现在这里。" />
         ) : (
@@ -279,7 +285,7 @@ export function AgencyClient({
 
       {/* 佣金流水 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">佣金流水</div>
+        <SectionHeader icon={Coins} title="佣金流水" meta={`${commissions.length} 条`} />
         {commissions.length === 0 ? (
           <EmptyState icon={Coins} title="暂无佣金" description="客户完成付费后，佣金会实时入账。" />
         ) : (
@@ -310,7 +316,7 @@ export function AgencyClient({
 
       {/* 提现记录 */}
       <section>
-        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">提现记录</div>
+        <SectionHeader icon={Wallet} title="提现记录" meta={`${withdrawals.length} 条`} />
         {withdrawals.length === 0 ? (
           <EmptyState icon={Wallet} title="暂无提现" description="佣金累积后可发起提现申请。" />
         ) : (

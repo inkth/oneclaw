@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { LogoutButton } from "@/components/LogoutButton";
 import type { Me } from "@/lib/api-client";
@@ -66,23 +68,21 @@ export function SettingsClient({
 
       {/* 账号 */}
       <section className="dk-card p-5">
-        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--dk-content-primary)]">
-          <User className="h-4 w-4 text-[var(--dk-content-tertiary)]" /> 账号
-        </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <SectionHeader icon={User} title="账号" />
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <div className="text-2xs text-[var(--dk-content-tertiary)]">昵称</div>
+            <div className="text-xs text-[var(--dk-content-tertiary)]">昵称</div>
             <div className="mt-0.5 text-sm font-medium text-[var(--dk-content-primary)]">{user.name || "未设置"}</div>
           </div>
           <div>
-            <div className="text-2xs text-[var(--dk-content-tertiary)]">手机号</div>
+            <div className="text-xs text-[var(--dk-content-tertiary)]">手机号</div>
             <div className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--dk-content-primary)]">
               <Phone className="h-3.5 w-3.5 text-[var(--dk-content-tertiary)]" />
               {user.phone || "—"}
             </div>
           </div>
           <div>
-            <div className="text-2xs text-[var(--dk-content-tertiary)]">工作台</div>
+            <div className="text-xs text-[var(--dk-content-tertiary)]">工作台</div>
             <div className="mt-0.5 text-sm font-medium text-[var(--dk-content-primary)]">{workspace.name}</div>
           </div>
         </div>
@@ -90,63 +90,69 @@ export function SettingsClient({
 
       {/* 订阅方案 */}
       <section className="dk-card p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--dk-content-primary)]">
-            <CreditCard className="h-4 w-4 text-[var(--dk-content-tertiary)]" /> 订阅方案
+        <SectionHeader
+          icon={CreditCard}
+          title={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              订阅方案
             <Badge tone={planMeta.tone}>{planMeta.label}</Badge>
             {usage?.planExpiresAt && (
-              <span className="inline-flex items-center gap-1 text-2xs text-[var(--dk-content-tertiary)]">
+              <span className="inline-flex items-center gap-1 text-xs font-normal text-[var(--dk-content-tertiary)]">
                 <CalendarClock className="h-3 w-3" />
                 {new Date(usage.planExpiresAt).toLocaleDateString("zh-CN")} 到期
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-2">
+            </span>
+          }
+          actions={
+            <>
             {plan !== "TEAM" && (
-              <button
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
                 onClick={() => setCheckout("TEAM")}
-                className="press rounded-full border border-[var(--dk-stroke-border)] bg-white px-4 py-1.5 text-xs font-semibold text-[var(--dk-content-primary)] hover:bg-[var(--dk-btn-tertiary)]"
               >
                 升级团队版
-              </button>
+              </Button>
             )}
             {plan === "FREE" && (
-              <button
+              <Button
+                type="button"
+                size="sm"
+                variant="primary"
                 onClick={() => setCheckout("PRO")}
-                className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[var(--dk-btn-black-hover)]"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 升级专业版 ¥199/月
-              </button>
+              </Button>
             )}
             {plan === "PRO" && (
-              <button
+              <Button
+                type="button"
+                size="sm"
+                variant="primary"
                 onClick={() => setCheckout("PRO")}
-                className="press inline-flex items-center gap-1.5 rounded-lg bg-[var(--dk-btn-black)] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[var(--dk-btn-black-hover)]"
               >
                 <BadgeCheck className="h-3.5 w-3.5" />
                 续费专业版
-              </button>
+              </Button>
             )}
-          </div>
-        </div>
+            </>
+          }
+        />
       </section>
 
       {/* 本周期积分 */}
       <section className="dk-card p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--dk-content-primary)]">
-            <Coins className="h-4 w-4 text-[var(--dk-content-tertiary)]" /> 本周期积分
-          </div>
-          {usage && usage.costCents > 0 && (
-            <div className="text-2xs text-[var(--dk-content-tertiary)]">
-              本周期生成成本约 ¥{(usage.costCents / 100).toFixed(2)}
-            </div>
-          )}
-        </div>
+        <SectionHeader
+          icon={Coins}
+          title="本周期积分"
+          meta={usage && usage.costCents > 0 ? `生成成本约 ¥${(usage.costCents / 100).toFixed(2)}` : undefined}
+        />
         {usage && (
-          <div className="mt-1 text-2xs text-[var(--dk-content-tertiary)]">
-            计费周期 {fmtMD(usage.periodStart)} 至 {fmtMD(usage.periodEnd)},到期自动重置额度
+          <div className="-mt-2 text-xs text-[var(--dk-content-tertiary)]">
+            计费周期 {fmtMD(usage.periodStart)} 至 {fmtMD(usage.periodEnd)}，到期自动重置额度
           </div>
         )}
         {usage ? (

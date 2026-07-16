@@ -14,3 +14,7 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
 export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={cn(control, "resize-none py-2.5 leading-relaxed", className)} {...props} />;
 }
+
+export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={cn(control, "h-10 pr-8", className)} {...props} />;
+}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
-import { cn } from "@/lib/utils";
+import { SegmentedTabs } from "@/components/ui/Tabs";
 import type { Dashboard } from "./admin-shared";
 import { DashboardTab } from "./admin-dashboard-tab";
 import { UsersTab } from "./admin-users-tab";
@@ -15,13 +15,13 @@ import { FeedbackTab } from "./admin-feedback-tab";
 
 type TabKey = "dashboard" | "users" | "orders" | "agency" | "feedback" | "audit";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "dashboard", label: "概览" },
-  { key: "users", label: "用户" },
-  { key: "orders", label: "订单账单" },
-  { key: "agency", label: "代理商" },
-  { key: "feedback", label: "反馈" },
-  { key: "audit", label: "审计" },
+const TABS: { value: TabKey; label: string }[] = [
+  { value: "dashboard", label: "概览" },
+  { value: "users", label: "用户" },
+  { value: "orders", label: "订单账单" },
+  { value: "agency", label: "代理商" },
+  { value: "feedback", label: "反馈" },
+  { value: "audit", label: "审计" },
 ];
 
 export function AdminShell({ dashboard }: { dashboard: Dashboard }) {
@@ -39,23 +39,12 @@ export function AdminShell({ dashboard }: { dashboard: Dashboard }) {
         description="平台运营:数据看板、用户管理、订单账单、代理分销、用户反馈与操作审计。"
       />
 
-      {/* 分区 Tab */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--dk-stroke-divider)]">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-sm transition-colors",
-              tab === t.key
-                ? "border-brand-600 font-[550] text-ink"
-                : "border-transparent text-[var(--dk-content-secondary)] hover:text-ink"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedTabs
+        items={TABS}
+        value={tab}
+        onValueChange={setTab}
+        ariaLabel="管理后台分区"
+      />
 
       {tab === "dashboard" && <DashboardTab initial={dashboard} />}
       {tab === "users" && <UsersTab />}

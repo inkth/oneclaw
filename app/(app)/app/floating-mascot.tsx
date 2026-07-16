@@ -262,7 +262,9 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
       // 读不到就当没缓存，走一次请求
     }
     if (cached === "0") {
-      setNeverTasked(true);
+      queueMicrotask(() => {
+        if (!disposed) setNeverTasked(true);
+      });
     } else if (cached !== "1") {
       void (async () => {
         try {

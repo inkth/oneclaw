@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Search, Ban, ShieldCheck, Loader2, X, Coins, ArrowUpCircle } from "lucide-react";
+import { Search, Ban, ShieldCheck, Loader2, Coins, ArrowUpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { DialogShell } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Input, Select } from "@/components/ui/Field";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { Toolbar } from "@/components/ui/Toolbar";
 import { apiBrowser } from "@/lib/api-browser";
 import {
   fmtDate,
@@ -58,39 +61,39 @@ export function UsersTab() {
   return (
     <div className="space-y-4">
       {/* 筛选栏 */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 focus-within:ring-2 focus-within:ring-brand-200">
-          <Search className="h-4 w-4 text-[var(--dk-content-tertiary)]" />
-          <input
+      <Toolbar>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[var(--dk-content-tertiary)]" />
+          <Input
             value={q}
             onChange={(e) => {
               setPage(1);
               setQ(e.target.value);
             }}
             placeholder="搜手机号"
-            className="w-40 bg-transparent text-sm outline-none"
+            className="w-44 pl-9"
           />
         </div>
-        <select
+        <Select
           value={plan}
           onChange={(e) => {
             setPage(1);
             setPlan(e.target.value);
           }}
-          className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
+          className="w-32"
         >
           {PLAN_FILTERS.map((f) => (
             <option key={f.value} value={f.value}>
               {f.label}
             </option>
           ))}
-        </select>
+        </Select>
         <button
           onClick={() => {
             setPage(1);
             setOnlyBanned((v) => !v);
           }}
-          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+          className={`inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors ${
             onlyBanned
               ? "border-rose-200 bg-rose-50 text-rose-600"
               : "border-[var(--dk-stroke-border)] text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)]"
@@ -98,7 +101,7 @@ export function UsersTab() {
         >
           <Ban className="h-3.5 w-3.5" /> 仅封禁
         </button>
-      </div>
+      </Toolbar>
 
       {loading && !data ? (
         <div className="flex justify-center py-16">
@@ -130,23 +133,27 @@ export function UsersTab() {
           <div className="flex items-center justify-between text-xs text-[var(--dk-content-tertiary)]">
             <span>共 {data.total} 人</span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-1 disabled:opacity-40 hover:bg-[var(--dk-action-regular)]"
               >
                 上一页
-              </button>
+              </Button>
               <span>
                 {page} / {totalPages}
               </span>
-              <button
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-1 disabled:opacity-40 hover:bg-[var(--dk-action-regular)]"
               >
                 下一页
-              </button>
+              </Button>
             </div>
           </div>
         </>
@@ -239,25 +246,23 @@ function UserDetailModal({
   const banned = !!d?.user.bannedAt;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4 sm:p-8" onClick={onClose}>
-      <div
-        className="dk-card w-full max-w-2xl p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between">
+    <DialogShell
+      onClose={onClose}
+      labelledBy="admin-user-detail-title"
+      describedBy="admin-user-detail-meta"
+      panelClassName="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto p-5 sm:max-h-[calc(100vh-4rem)]"
+    >
+        <div className="flex items-start justify-between pr-10">
           <div>
-            <div className="font-mono text-base font-medium text-[var(--dk-content-primary)]">
+            <div id="admin-user-detail-title" className="font-mono text-base font-medium text-[var(--dk-content-primary)]">
               {d?.user.phone || "用户"}
             </div>
-            <div className="mt-0.5 text-xs text-[var(--dk-content-tertiary)]">
+            <div id="admin-user-detail-meta" className="mt-0.5 text-xs text-[var(--dk-content-tertiary)]">
               注册 {fmtDate(d?.user.createdAt)}
               {d?.invitedByCode && ` · 邀请码 ${d.invitedByCode}`}
               {d?.isAgency && " · 代理商"}
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-[var(--dk-content-tertiary)] hover:bg-[var(--dk-action-regular)]">
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         {!d ? (
@@ -331,8 +336,7 @@ function UserDetailModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

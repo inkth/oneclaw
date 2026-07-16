@@ -4,8 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, MessageSquareText } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Select } from "@/components/ui/Field";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { Toolbar } from "@/components/ui/Toolbar";
 import { apiBrowser } from "@/lib/api-browser";
 import { fmtDateTime, FEEDBACK_TYPE_META, type FeedbackRow } from "./admin-shared";
 
@@ -41,20 +44,22 @@ export function FeedbackTab() {
 
   return (
     <div className="space-y-3">
-      <select
-        value={type}
-        onChange={(e) => {
-          setPage(1);
-          setType(e.target.value);
-        }}
-        className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
-      >
-        {TYPE_OPTS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <Toolbar>
+        <Select
+          value={type}
+          onChange={(e) => {
+            setPage(1);
+            setType(e.target.value);
+          }}
+          className="w-36"
+        >
+          {TYPE_OPTS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
+      </Toolbar>
 
       {loading && !data ? (
         <div className="flex justify-center py-16">
@@ -98,23 +103,27 @@ export function FeedbackTab() {
           <div className="flex items-center justify-between text-xs text-[var(--dk-content-tertiary)]">
             <span>共 {data.total} 条</span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-1 disabled:opacity-40 hover:bg-[var(--dk-action-regular)]"
               >
                 上一页
-              </button>
+              </Button>
               <span>
                 {page} / {totalPages}
               </span>
-              <button
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-1 disabled:opacity-40 hover:bg-[var(--dk-action-regular)]"
               >
                 下一页
-              </button>
+              </Button>
             </div>
           </div>
         </>
