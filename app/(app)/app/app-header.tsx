@@ -6,6 +6,7 @@ import { BrandTile } from "@/components/ui/BrandMark";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { BoardHeaderNav } from "./_nav";
 import { AccountMenu } from "./account-menu";
+import { FeedbackButton } from "./feedback-button";
 
 /**
  * 右侧主区的常驻顶栏：磨砂玻璃、无分界线，随页面一起下滑时贴顶。
@@ -21,6 +22,7 @@ export function AppHeader({
   creditsLimit,
   isAgency,
   isAdmin,
+  workspaceId,
 }: {
   loggedIn: boolean;
   display: string;
@@ -29,6 +31,7 @@ export function AppHeader({
   creditsLimit: number | null;
   isAgency?: boolean;
   isAdmin?: boolean;
+  workspaceId?: string | null;
 }) {
   const { open } = useAuthModal();
 
@@ -42,6 +45,8 @@ export function AppHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* 意见反馈:仅登录用户,游客走 Footer 邮箱兜底 */}
+        {loggedIn && <FeedbackButton workspaceId={workspaceId ?? null} />}
         {loggedIn ? (
           <AccountMenu
             display={display}

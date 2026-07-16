@@ -11,14 +11,16 @@ import { UsersTab } from "./admin-users-tab";
 import { OrdersTab } from "./admin-orders-tab";
 import { AgencyTab } from "./admin-agency-tab";
 import { AuditTab } from "./admin-audit-tab";
+import { FeedbackTab } from "./admin-feedback-tab";
 
-type TabKey = "dashboard" | "users" | "orders" | "agency" | "audit";
+type TabKey = "dashboard" | "users" | "orders" | "agency" | "feedback" | "audit";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "dashboard", label: "概览" },
   { key: "users", label: "用户" },
   { key: "orders", label: "订单账单" },
   { key: "agency", label: "代理商" },
+  { key: "feedback", label: "反馈" },
   { key: "audit", label: "审计" },
 ];
 
@@ -34,7 +36,7 @@ export function AdminShell({ dashboard }: { dashboard: Dashboard }) {
             仅管理员
           </Badge>
         }
-        description="平台运营:数据看板、用户管理、订单账单、代理分销与操作审计。"
+        description="平台运营:数据看板、用户管理、订单账单、代理分销、用户反馈与操作审计。"
       />
 
       {/* 分区 Tab */}
@@ -59,6 +61,7 @@ export function AdminShell({ dashboard }: { dashboard: Dashboard }) {
       {tab === "users" && <UsersTab />}
       {tab === "orders" && <OrdersTab />}
       {tab === "agency" && <AgencyTab />}
+      {tab === "feedback" && <FeedbackTab />}
       {tab === "audit" && <AuditTab />}
     </div>
   );

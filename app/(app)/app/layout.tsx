@@ -65,6 +65,7 @@ export default async function AppLayout({
           creditsLimit={usage?.credits.limit ?? null}
           isAgency={isAgency}
           isAdmin={isAdmin}
+          workspaceId={workspace?.id ?? null}
         />
         <main className="relative flex-1 px-4 pb-28 pt-5 sm:px-7 sm:pt-7 md:pb-12 lg:px-8">
           {/* 业务端画布保持平面中性灰，层级只由内容、留白和下一步操作建立。 */}
