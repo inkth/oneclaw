@@ -8,6 +8,7 @@ import { Stat } from "@/components/ui/Stat";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FavoriteButton } from "../_components/FavoriteButton";
+import { useReportPageEntity } from "../../page-entity";
 import { VideoAnalysisResult, type VideoAnalysisData } from "../../video-analysis-result";
 import { fmt, fmtMoney, fmtDuration, fmtUnixDate, initial, stringToGradient } from "../_components/format";
 import {
@@ -119,6 +120,8 @@ export function VideoDetailClient({
   fav: { workspaceId: string; isGuest: boolean; starred: boolean };
 }) {
   const tiktokUrl = v.uniqueId ? `https://www.tiktok.com/@${v.uniqueId}/video/${v.videoId}` : "";
+  // 上报当前视频给情境助手；文案可能为空，由消费方兜底用 ID 指代
+  useReportPageEntity({ kind: "discover-video", id: v.videoId, name: v.descZh || v.desc });
 
   return (
     <div className="space-y-6">

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TrendChart } from "../_components/TrendChart";
 import { FavoriteButton } from "../_components/FavoriteButton";
+import { useReportPageEntity } from "../../page-entity";
 import { fmt, fmtMoney, initial, stringToGradient } from "../_components/format";
 import {
   Store,
@@ -72,6 +73,8 @@ export function SellerDetailClient({
   seller: SellerDetail;
   fav: { workspaceId: string; isGuest: boolean; starred: boolean };
 }) {
+  // 上报当前店铺给情境助手，预填指令带上店铺名
+  useReportPageEntity({ kind: "discover-seller", id: s.sellerId, name: s.sellerName });
   return (
     <div className="space-y-6">
       <Link

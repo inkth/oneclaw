@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TrendChart, type TrendSeries } from "../_components/TrendChart";
 import { FavoriteButton } from "../_components/FavoriteButton";
+import { useReportPageEntity } from "../../page-entity";
 import { fmt, fmtMoney, initial, fmtUnixDate, stringToGradient } from "../_components/format";
 import {
   Award,
@@ -91,6 +92,8 @@ export function InfluencerDetailClient({
   fav: { workspaceId: string; isGuest: boolean; starred: boolean };
 }) {
   const profileUrl = i.uniqueId ? `https://www.tiktok.com/@${i.uniqueId}` : "";
+  // 上报当前达人给情境助手，预填指令带上达人名
+  useReportPageEntity({ kind: "discover-influencer", id: i.userId, name: i.nickName || i.uniqueId });
 
   return (
     <div className="space-y-6">

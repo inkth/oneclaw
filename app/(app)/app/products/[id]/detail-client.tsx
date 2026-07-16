@@ -17,6 +17,7 @@ import {
   Check,
 } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
+import { useReportPageEntity } from "../../page-entity";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 type Aplus = { heading: string; body: string; imagePrompt: string };
@@ -80,6 +81,8 @@ export function ProductDetail({
 }) {
   const router = useRouter();
   const [kit, setKit] = useState<Kit>(initialKit);
+  // 上报当前自建商品给情境助手：LISTING/DIRECTOR 派活可结构化注入该商品
+  useReportPageEntity({ kind: "my-product", id: productId, name: kit.product.title, productId });
   const [titleDraft, setTitleDraft] = useState(kit.product.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingInfo, setEditingInfo] = useState(false);

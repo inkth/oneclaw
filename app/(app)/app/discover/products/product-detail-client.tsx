@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { useReportPageEntity } from "../../page-entity";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Stat } from "@/components/ui/Stat";
@@ -150,6 +151,13 @@ export function ProductDetailClient({
   const [busy, setBusy] = useState<"" | "import" | "analyze">("");
   const [imported, setImported] = useState<string | null>(p.importedProductId);
   const { open: openAuthModal } = useAuthModal();
+  // 上报当前商品给情境助手；已导入的带自建商品 id，composer 可结构化消费
+  useReportPageEntity({
+    kind: "discover-product",
+    id: p.productId,
+    name: p.nameZh || p.name,
+    productId: imported ?? undefined,
+  });
 
   function gateGuest(): boolean {
     if (!isGuest) return false;

@@ -6,6 +6,7 @@ import { SidebarNav, BoardTabs, MobileBoardNav } from "./_nav";
 import { ConversationRail } from "./conversation-rail";
 import { AppHeader } from "./app-header";
 import { FloatingMascot } from "./floating-mascot";
+import { PageEntityProvider } from "./page-entity";
 import type { Usage } from "./settings/settings-client";
 
 export default async function AppLayout({
@@ -34,6 +35,7 @@ export default async function AppLayout({
 
   return (
     <AuthModalProvider>
+    <PageEntityProvider>
     <div className="app-skin flex min-h-screen overflow-x-clip bg-background">
       {/* 照搬 Designkit 导航轨：宽 80px，底色 --dk-rail 比画布深一档 —— 靠色阶划界，
           所以没有右边框。Logo 槽 64×64，图标 28px。 */}
@@ -78,6 +80,7 @@ export default async function AppLayout({
       <FloatingMascot />
       <MobileBoardNav />
     </div>
+    </PageEntityProvider>
     </AuthModalProvider>
   );
 }
