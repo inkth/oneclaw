@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { DialogShell } from "@/components/ui/Dialog";
 import { toast } from "sonner";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { BRAND_SLOGAN } from "@/lib/brand";
@@ -33,14 +32,6 @@ export function AuthModal({
 }) {
   const router = useRouter();
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   function handleSuccess() {
     toast.success("登录成功");
     onSuccess?.();
@@ -49,22 +40,13 @@ export function AuthModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={onClose}
+    <DialogShell
+      onClose={onClose}
+      labelledBy="auth-modal-title"
+      describedBy="auth-modal-description"
+      panelClassName="max-w-3xl"
     >
-      <div
-        className="relative grid w-full max-w-3xl overflow-hidden rounded-2xl dk-overlay md:grid-cols-[5fr_6fr]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          aria-label="关闭"
-          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)]"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
+      <div className="grid md:grid-cols-[5fr_6fr]">
         {/* 左：品牌面板（桌面端）。用 --accent-pop 而非硬编码色值，与全站电紫点睛通道同源 */}
         <div className="hidden flex-col justify-between bg-[var(--accent-pop)] p-8 text-white md:flex">
           <div>
@@ -116,10 +98,10 @@ export function AuthModal({
 
         {/* 右：登录表单 */}
         <div className="p-6 sm:p-8">
-          <h2 className="text-lg font-bold tracking-tight">
+          <h2 id="auth-modal-title" className="text-lg font-bold tracking-tight">
             {context?.title ?? "登录发现猫"}
           </h2>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+          <p id="auth-modal-description" className="mt-1 text-xs leading-relaxed text-zinc-500">
             {context?.desc ?? "使用中国大陆手机号验证码登录；首次登录会自动创建账号和工作台。"}
           </p>
           <div className="mt-6">
@@ -131,6 +113,6 @@ export function AuthModal({
           </p>
         </div>
       </div>
-    </div>
+    </DialogShell>
   );
 }

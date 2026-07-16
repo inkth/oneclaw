@@ -7,11 +7,12 @@ import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
 import {
   Loader2,
-  X,
   CheckCircle2,
   AlertTriangle,
   Wallet,
 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { DialogShell } from "@/components/ui/Dialog";
 
 type Plan = "PRO" | "TEAM";
 type Period = 1 | 3 | 12;
@@ -134,21 +135,11 @@ export function CheckoutModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={onClose}
+    <DialogShell
+      onClose={onClose}
+      labelledBy="checkout-modal-title"
+      panelClassName="max-w-md"
     >
-      <div
-        className="relative w-full max-w-md rounded-2xl dk-overlay overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-zinc-400 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
         {!order ? (
           // 选档 + 选支付方式
           <div className="p-6 space-y-6">
@@ -156,7 +147,7 @@ export function CheckoutModal({
               <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
                 升级到 {planLabel}
               </div>
-              <h2 className="mt-1 text-xl font-bold tracking-tight">选择订阅周期</h2>
+              <h2 id="checkout-modal-title" className="mt-1 text-xl font-bold tracking-tight">选择订阅周期</h2>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
@@ -164,10 +155,11 @@ export function CheckoutModal({
                 <button
                   key={p.months}
                   onClick={() => setPeriod(p.months)}
-                  className={`rounded-lg border px-3 py-3 text-center transition-all ${
+                  aria-pressed={period === p.months}
+                  className={`rounded-xl border px-3 py-3 text-center transition-all ${
                     period === p.months
-                      ? "border-brand-500 bg-brand-50/60 ring-2 ring-brand-200"
-                      : "border-zinc-200/80 hover:border-zinc-300"
+                      ? "border-brand-300 bg-brand-50/60 ring-2 ring-brand-100"
+                      : "border-zinc-200/80 bg-white hover:bg-[var(--dk-action-regular)]"
                   }`}
                 >
                   <div className="text-sm font-semibold">{p.label}</div>
@@ -180,7 +172,7 @@ export function CheckoutModal({
               ))}
             </div>
 
-            <div className="flex items-baseline justify-between rounded-lg bg-zinc-50/80 px-4 py-3">
+            <div className="flex items-baseline justify-between rounded-xl bg-zinc-50/80 px-4 py-3.5">
               <div className="text-xs text-zinc-500">应付金额</div>
               <div>
                 <span className="text-2xl font-bold tabular-nums">
@@ -200,10 +192,11 @@ export function CheckoutModal({
                     <button
                       key={pv}
                       onClick={() => setProvider(pv)}
-                      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                      aria-pressed={active}
+                      className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
                         active
-                          ? "border-brand-500 bg-brand-50/40 ring-2 ring-brand-200"
-                          : "border-zinc-200/80 hover:border-zinc-300"
+                          ? "border-brand-300 bg-brand-50/60 ring-2 ring-brand-100"
+                          : "border-zinc-200/80 bg-white hover:bg-[var(--dk-action-regular)]"
                       }`}
                     >
                       <Wallet className={`h-4 w-4 ${m.tint}`} strokeWidth={2.2} />
@@ -215,19 +208,20 @@ export function CheckoutModal({
             </div>
 
             {error && (
-              <div className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-100">
+              <div className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                 {error}
               </div>
             )}
 
-            <button
+            <Button
+              variant="primary"
               onClick={createOrder}
               disabled={creating}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-60 transition-colors"
+              className="w-full"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
               生成二维码
-            </button>
+            </Button>
 
             <p className="text-center text-2xs text-zinc-400">
               支付即视为同意《服务条款》，到期后自动降回免费版。
@@ -241,7 +235,7 @@ export function CheckoutModal({
                 <div className="text-2xs font-medium uppercase tracking-wider text-brand-600">
                   {PROVIDER_META[order.provider].cn} · {order.periodMonths} 个月
                 </div>
-                <h2 className="mt-1 text-xl font-bold tracking-tight">
+                <h2 id="checkout-modal-title" className="mt-1 text-xl font-bold tracking-tight">
                   ¥{(order.amountCents / 100).toFixed(2)}
                 </h2>
               </div>
@@ -264,16 +258,17 @@ export function CheckoutModal({
               <div className="flex flex-col items-center justify-center py-10 space-y-3">
                 <AlertTriangle className="h-10 w-10 text-amber-500" />
                 <div className="text-base font-semibold">二维码已过期</div>
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => setOrder(null)}
-                  className="rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--dk-btn-black-hover)]"
                 >
                   重新下单
-                </button>
+                </Button>
               </div>
             ) : (
               <>
-                <div className="flex justify-center rounded-lg bg-white border border-zinc-100 p-5">
+                <div className="flex justify-center rounded-2xl border border-zinc-100 bg-white p-5">
                   <QRCodeSVG
                     value={order.qrCodeUrl}
                     size={200}
@@ -291,7 +286,7 @@ export function CheckoutModal({
                 </div>
 
                 {isMock && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5">
                     <div className="flex items-start gap-2 text-xs text-amber-800">
                       <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                       <div>
@@ -316,7 +311,6 @@ export function CheckoutModal({
             )}
           </div>
         )}
-      </div>
-    </div>
+    </DialogShell>
   );
 }

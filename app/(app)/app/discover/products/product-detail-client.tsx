@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Stat } from "@/components/ui/Stat";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { type Tone } from "@/lib/ui/tokens";
 import { TrendChart } from "../_components/TrendChart";
 import { fmt, fmtMoney, initial, fmtUnixDate, stringToGradient } from "../_components/format";
@@ -238,9 +239,9 @@ export function ProductDetailClient({
     <div className="space-y-6">
       <Link
         href="/app/discover/products"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
+        className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
       >
-        <ArrowLeft className="h-4 w-4" /> 返回爆品榜
+        <ArrowLeft className="h-3.5 w-3.5" /> 返回爆品榜
       </Link>
 
       <PageHeader
@@ -277,12 +278,12 @@ export function ProductDetailClient({
       />
 
       {/* Hero:图廊 + 关键属性 */}
-      <Card className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <Card padded={false} className="grid gap-7 p-4 sm:p-5 lg:grid-cols-[340px_1fr] lg:gap-8">
         <div>
           <Img
             src={p.coverUrls[gallery] ?? ""}
             seed={p.name}
-            className="aspect-square w-full rounded-xl object-cover bg-zinc-100"
+            className="aspect-square w-full rounded-2xl bg-zinc-100 object-cover"
           />
           {p.coverUrls.length > 1 && (
             <div className="mt-2 flex gap-2 overflow-x-auto">
@@ -290,11 +291,15 @@ export function ProductDetailClient({
                 <button
                   key={i}
                   onClick={() => setGallery(i)}
-                  className={`h-12 w-12 flex-shrink-0 overflow-hidden rounded-md ring-2 ${
-                    i === gallery ? "ring-brand-500" : "ring-transparent"
+                  aria-label={`查看商品图 ${i + 1}`}
+                  aria-pressed={i === gallery}
+                  className={`h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border bg-[var(--dk-surface-2)] p-0.5 transition ${
+                    i === gallery
+                      ? "border-brand-400 ring-2 ring-brand-500/25"
+                      : "border-black/[0.07] hover:border-zinc-300"
                   }`}
                 >
-                  <Img src={u} seed={p.name + i} className="h-full w-full object-cover" />
+                  <Img src={u} seed={p.name + i} className="h-full w-full rounded-[9px] object-cover" />
                 </button>
               ))}
             </div>
@@ -305,7 +310,7 @@ export function ProductDetailClient({
           <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
             <div>
               <div className="text-xs text-zinc-500">售价区间</div>
-              <div className="mt-0.5 text-2xl font-semibold leading-7 tabular-nums">
+              <div className="nums mt-1 text-2xl font-semibold leading-7 tracking-tight">
                 ${p.minPrice.toFixed(2)}
                 {p.maxPrice > p.minPrice && (
                   <span className="text-zinc-400"> – ${p.maxPrice.toFixed(2)}</span>
@@ -315,14 +320,14 @@ export function ProductDetailClient({
             </div>
             <div>
               <div className="text-xs text-zinc-500">佣金率</div>
-              <div className="mt-0.5 text-2xl font-semibold leading-7 tabular-nums text-emerald-700">
+              <div className="nums mt-1 text-2xl font-semibold leading-7 tracking-tight text-emerald-700">
                 {(p.commissionRate * 100).toFixed(0)}%
               </div>
             </div>
             {p.rating > 0 && (
               <div>
                 <div className="text-xs text-zinc-500">评分</div>
-                <div className="mt-0.5 text-2xl font-semibold leading-7 tabular-nums">
+                <div className="nums mt-1 text-2xl font-semibold leading-7 tracking-tight">
                   {p.rating.toFixed(1)}
                   <span className="ml-1 text-xs font-normal text-zinc-400">
                     ({fmt(p.reviewCount)} 评价)
@@ -379,7 +384,7 @@ export function ProductDetailClient({
               <p className="text-sm leading-relaxed text-zinc-600">{score.verdict}</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {score.signals.map((s) => (
-                  <div key={s.key} className="rounded-lg border border-[var(--dk-stroke-border)] bg-white p-3">
+                  <div key={s.key} className="rounded-xl border border-black/[0.055] bg-[var(--dk-surface-2)] p-3">
                     <div className="text-xs text-zinc-500">{s.label}</div>
                     <div className="mt-1">
                       <Badge tone={asTone(s.tone)}>{s.value}</Badge>
@@ -395,10 +400,7 @@ export function ProductDetailClient({
 
       {/* 货源比价 · 搜同款（deep-link,无 API） */}
       <Card>
-        <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-brand-600" />
-          <span className="text-sm font-medium text-zinc-900">搜同款 · 比价拿真实货价</span>
-        </div>
+        <SectionHeader icon={Search} title="搜同款 · 比价拿真实货价" />
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
           评分里的成本/利润是按品类估算的。去货源平台搜「<span className="font-medium text-zinc-900">{sourcingKeyword(p.name)}</span>
           」找同款，拿到真实进货价后在收藏夹回填，毛利率就准了。
@@ -448,24 +450,21 @@ export function ProductDetailClient({
 
       {/* 趋势图 */}
       <Card>
-        <div className="mb-2 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-brand-600" />
-          <span className="text-sm font-medium text-zinc-900">销量 / GMV 趋势（近 14 天）</span>
-        </div>
+        <SectionHeader icon={TrendingUp} title="销量 / GMV 趋势" meta="近 14 天" className="mb-2" />
         <TrendChart data={p.trend} />
       </Card>
 
       {/* Top 带货达人 */}
       {p.influencers.length > 0 && (
         <Card>
-          <div className="mb-3 flex items-center gap-2">
-            <Users className="h-4 w-4 text-brand-600" />
-            <span className="text-sm font-medium text-zinc-900">Top 带货达人</span>
-            <span className="text-xs text-zinc-400">按单品 GMV 排序</span>
-          </div>
+          <SectionHeader icon={Users} title="Top 带货达人" meta="按单品 GMV 排序" />
           <div className="divide-y divide-[var(--dk-stroke-divider)]">
             {p.influencers.map((inf) => (
-              <div key={inf.userId} className="flex items-center gap-3 py-2.5">
+              <Link
+                key={inf.userId}
+                href={`/app/discover/influencers/${inf.userId}?region=${p.region}`}
+                className="group -mx-2 flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-[var(--dk-action-regular)]"
+              >
                 <Img src={inf.avatar} seed={inf.nickName} className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-zinc-900">{inf.nickName}</div>
@@ -477,7 +476,7 @@ export function ProductDetailClient({
                   <div className="text-sm font-semibold tabular-nums text-zinc-900">{fmtMoney(inf.perProductGmv)}</div>
                   <div className="text-2xs text-zinc-400">单品 GMV · {fmt(inf.perProductSaleCnt)} 件</div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </Card>
@@ -486,12 +485,8 @@ export function ProductDetailClient({
       {/* 关联热门视频 */}
       {p.videos.length > 0 && (
         <Card>
-          <div className="mb-3 flex items-center gap-2">
-            <Video className="h-4 w-4 text-brand-600" />
-            <span className="text-sm font-medium text-zinc-900">关联热门视频</span>
-            <span className="text-xs text-zinc-400">共 {p.videos.length} 条 · 按带货量排序</span>
-          </div>
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+          <SectionHeader icon={Video} title="关联热门视频" meta={`共 ${p.videos.length} 条 · 按带货量排序`} />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {[...p.videos]
               .sort((a, b) => b.saleCnt - a.saleCnt || b.views - a.views)
               .map((v) => {
@@ -542,7 +537,7 @@ export function ProductDetailClient({
                   </div>
                 </>
               );
-              const shell = "group block overflow-hidden dk-card dk-lift";
+              const shell = "group block overflow-hidden dk-card dk-lift focus-visible:ring-2 focus-visible:ring-ai-violet/30";
               return playable ? (
                 <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className={shell}>
                   {inner}

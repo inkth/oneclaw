@@ -163,6 +163,16 @@ func main() {
 			logger.Info("[backfill] 实体全量回填完成", zap.Int("fetched", ft), zap.Int("skippedCombos", sk))
 			return
 		}
+		// 一次性:回填存量空译文(商品标题 name_zh + 视频文案 desc_zh),批量调 LLM 后退出。
+		// 用法:docker compose run --rm go-api ./server --backfill-translations
+		if arg == "--backfill-translations" {
+			queued, err := discSvc.BackfillTranslations(context.Background())
+			if err != nil {
+				logger.Fatal("[backfill] 翻译回填失败", logger.Err(err))
+			}
+			logger.Info("[backfill] 翻译回填完成", zap.Int("queued", queued))
+			return
+		}
 	}
 
 	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)

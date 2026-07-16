@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Truck,
   Warehouse,
@@ -22,13 +22,13 @@ import {
   Copy,
   Check,
   ChevronRight,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { DialogShell } from "@/components/ui/Dialog";
 import {
   CATEGORIES,
   CONTACT,
@@ -96,7 +96,7 @@ export default function ServicesPage() {
             <a
               key={category.key}
               href={`#service-${category.key}`}
-              className="group flex items-center gap-3 rounded-2xl border border-black/[0.065] bg-white p-4 shadow-[0_1px_2px_rgba(18,20,25,.025)] transition-shadow hover:shadow-[0_10px_28px_-22px_rgba(18,20,25,.38)]"
+              className="dk-lift group flex items-center gap-3 rounded-2xl border border-black/[0.065] bg-white p-4 shadow-[0_1px_2px_rgba(18,20,25,.025)]"
             >
               <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${ACCENT[category.accent]}`}>
                 <Icon className="h-[18px] w-[18px]" />
@@ -117,37 +117,37 @@ export default function ServicesPage() {
           const liveCount = c.services.filter((s) => s.status !== "soon").length;
           return (
             <section key={c.key} id={`service-${c.key}`} className="scroll-mt-24">
-            <Card padded={false} className="overflow-hidden">
-              <header className="flex items-center gap-3 border-b border-[var(--dk-stroke-divider)] bg-[var(--dk-surface-2)] px-5 py-3.5">
-                <span
-                  className={
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 " + ACCENT[c.accent]
-                  }
-                >
-                  <CatIcon className="h-4.5 w-4.5" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-[15px] font-semibold leading-tight text-[var(--dk-content-primary)]">{c.label}</h2>
-                  <p className="mt-0.5 truncate text-xs text-[var(--dk-content-tertiary)]">{c.desc}</p>
-                </div>
-                <span className="ml-auto shrink-0 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-2.5 py-0.5 text-2xs text-[var(--dk-content-secondary)]">
-                  {liveCount}/{c.services.length} 可对接
-                </span>
-              </header>
+              <Card padded={false} className="overflow-hidden">
+                <header className="flex items-center gap-3 border-b border-[var(--dk-stroke-divider)] bg-[var(--dk-surface-2)] px-5 py-3.5">
+                  <span
+                    className={
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 " + ACCENT[c.accent]
+                    }
+                  >
+                    <CatIcon className="h-4.5 w-4.5" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-[15px] font-semibold leading-tight text-[var(--dk-content-primary)]">{c.label}</h2>
+                    <p className="mt-0.5 truncate text-xs text-[var(--dk-content-tertiary)]">{c.desc}</p>
+                  </div>
+                  <span className="ml-auto shrink-0 rounded-lg border border-[var(--dk-stroke-border)] bg-white px-2.5 py-0.5 text-2xs text-[var(--dk-content-secondary)]">
+                    {liveCount}/{c.services.length} 可对接
+                  </span>
+                </header>
 
-              <div className="divide-y divide-[var(--dk-stroke-divider)]">
-                {c.services.map((svc) => (
-                  <ServiceRow key={svc.label} service={svc} onContact={setContact} />
-                ))}
-              </div>
-            </Card>
+                <div className="divide-y divide-[var(--dk-stroke-divider)]">
+                  {c.services.map((svc) => (
+                    <ServiceRow key={svc.label} service={svc} onContact={setContact} />
+                  ))}
+                </div>
+              </Card>
             </section>
           );
         })}
       </div>
 
       <div className="space-y-3 pt-1">
-        <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-[var(--dk-stroke-border)] px-5 py-6 text-center">
+        <div className="flex flex-col items-center gap-1 rounded-2xl border border-dashed border-black/[0.09] bg-white/45 px-5 py-7 text-center">
           <p className="text-sm text-[var(--dk-content-secondary)]">没找到合适的服务？告诉我们你要解决什么。</p>
           <button
             onClick={() => setContact({ title: "其他服务需求" })}
@@ -269,7 +269,7 @@ function ContactRow({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-[var(--dk-surface-2)] px-3 py-2">
+    <div className="flex items-center gap-2 rounded-xl bg-[var(--dk-surface-2)] px-3 py-2.5">
       <Icon className="h-3.5 w-3.5 shrink-0 text-[var(--dk-content-tertiary)]" />
       <span className="w-8 shrink-0 text-2xs text-[var(--dk-content-tertiary)]">{label}</span>
       {href ? (
@@ -282,7 +282,7 @@ function ContactRow({
       <button
         onClick={copy}
         aria-label={`复制${label}`}
-        className="shrink-0 rounded p-1 text-[var(--dk-content-tertiary)] transition-colors hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-secondary)]"
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--dk-content-tertiary)] transition-colors hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-secondary)]"
       >
         {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
@@ -294,7 +294,7 @@ function ContactRow({
 function PartnerBlock({ partner }: { partner: Partner }) {
   const hasContact = Boolean(partner.phone || partner.wechat || partner.email);
   return (
-    <div className="rounded-lg border border-[var(--dk-stroke-border)] bg-white p-4">
+    <div className="rounded-xl border border-[var(--dk-stroke-border)] bg-white p-4">
       <div className="flex items-center gap-2">
         <Handshake className="h-3.5 w-3.5 shrink-0 text-brand-500" />
         <span className="text-sm font-semibold text-[var(--dk-content-primary)]">{partner.name}</span>
@@ -323,38 +323,24 @@ function PartnerBlock({ partner }: { partner: Partner }) {
 }
 
 function ContactModal({ target, onClose }: { target: ContactTarget | null; onClose: () => void }) {
-  // ESC 关闭（仅在打开时挂监听）。
-  useEffect(() => {
-    if (!target) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [target, onClose]);
-
   if (!target) return null;
 
   const partners = target.partners ?? [];
   const hasPartners = partners.length > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
+    <DialogShell
+      onClose={onClose}
+      labelledBy="service-contact-title"
+      panelClassName="max-w-sm"
     >
-      <div
-        className="relative w-full max-w-sm overflow-hidden rounded-2xl dk-overlay"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="flex items-center justify-between border-b border-[var(--dk-stroke-divider)] px-5 py-3.5">
+        <header className="flex items-center border-b border-[var(--dk-stroke-divider)] px-5 py-3.5 pr-14">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
               <Headset className="h-3.5 w-3.5" />
             </div>
-            <h2 className="text-sm font-bold text-[var(--dk-content-primary)]">预约咨询</h2>
+            <h2 id="service-contact-title" className="text-sm font-bold text-[var(--dk-content-primary)]">预约咨询</h2>
           </div>
-          <button onClick={onClose} aria-label="关闭预约咨询" className="rounded-full p-1.5 text-[var(--dk-content-tertiary)] hover:bg-[var(--dk-action-regular)]">
-            <X className="h-4 w-4" />
-          </button>
         </header>
 
         <div className="space-y-4 p-6">
@@ -374,7 +360,7 @@ function ContactModal({ target, onClose }: { target: ContactTarget | null; onClo
               </div>
             </>
           ) : (
-            <div className="space-y-2 rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] p-4">
+            <div className="space-y-2 rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] p-4">
               <p className="text-sm leading-relaxed text-[var(--dk-content-secondary)]">
                 这项暂未接入合作方。留下需求，我们帮你筛选对接：
               </p>
@@ -387,7 +373,6 @@ function ContactModal({ target, onClose }: { target: ContactTarget | null; onClo
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

@@ -83,7 +83,13 @@ export function Popover({
 
   return (
     <div ref={anchorRef} className={cn("relative", className)}>
-      <button type="button" onClick={() => setOpen((o) => !o)} className="block">
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="block rounded-xl"
+      >
         {trigger({ open })}
       </button>
       {open &&
@@ -91,6 +97,7 @@ export function Popover({
         createPortal(
           <div
             ref={panelRef}
+            role="dialog"
             style={{
               position: "fixed",
               top: pos?.top ?? -9999,
@@ -99,7 +106,7 @@ export function Popover({
             }}
             className={cn(
               // 弹层归「弹窗/大面板」档，圆角 16px;阴影仍走全局统一的极弱阴影，不因为悬浮就加重
-              "z-50 rounded-2xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface)] p-3 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]",
+              "dk-overlay z-50 rounded-2xl p-3",
               panelClassName,
             )}
           >
