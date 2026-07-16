@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { usePageEntity, type PageEntity } from "./page-entity";
+import { QuickDispatchSheet } from "./quick-dispatch";
 import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
 
 /** 派活成功后由各入口 window.dispatchEvent，信标立刻进入运行态（不等下一轮轮询）。 */
@@ -31,6 +32,11 @@ type ContextAction = {
   label: string;
   href: string;
   icon: LucideIcon;
+  /** 带 agent+prompt 的动作点击时打开原地派活浮层；缺省（发起新任务）仍走跳转 */
+  agent?: AgentKey;
+  prompt?: string;
+  /** 结构化商品：随浮层派活或 query 预填带给 composer */
+  productId?: string;
 };
 
 const NEW_TASK = "/app/agents/new#agent-composer";
@@ -41,6 +47,11 @@ function taskHref(agent: string, prompt: string, productId?: string) {
   return `/app/agents/new?${qs.toString()}#agent-composer`;
 }
 
+/** 可原地派活的情境动作：href 仍保留，作浮层里「展开完整对话」的出口。 */
+function dispatchAction(label: string, icon: LucideIcon, agent: AgentKey, prompt: string, productId?: string): ContextAction {
+  return { label, icon, agent, prompt, productId, href: taskHref(agent, prompt, productId) };
+}
+
 // 实体名进 prompt 前截断，避免超长视频文案把指令挤没
 function clip(s: string, max = 24) {
   return s.length > max ? `${s.slice(0, max)}…` : s;
@@ -49,53 +60,45 @@ function clip(s: string, max = 24) {
 function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
   if (pathname.startsWith("/app/discover/products")) {
     if (entity?.kind === "discover-product") {
-      return {
-        label: "判断这个商品",
-        // 已导入过的带 productId：切到 DIRECTOR/LISTING 时 composer 能注入真实商品数据
-        href: taskHref("ANALYST", `请帮我判断【${clip(entity.name)}】这个商品是否值得做，并给出下一步建议。`, entity.productId),
-        icon: PackageSearch,
-      };
+      // 已导入过的带 productId：切到 DIRECTOR/LISTING 时 composer 能注入真实商品数据
+      return dispatchAction("判断这个商品", PackageSearch, "ANALYST", `请帮我判断【${clip(entity.name)}】这个商品是否值得做，并给出下一步建议。`, entity.productId);
     }
-    return { label: "开始选品判断", href: taskHref("ANALYST", "我正在选品，请告诉我判断一个商品值不值得做要看哪些关键指标，我看中后发给你分析。"), icon: PackageSearch };
+    return dispatchAction("开始选品判断", PackageSearch, "ANALYST", "我正在选品，请告诉我判断一个商品值不值得做要看哪些关键指标，我看中后发给你分析。");
   }
   if (pathname.startsWith("/app/discover/influencers")) {
     if (entity?.kind === "discover-influencer") {
-      return { label: "评估这位达人", href: taskHref("ADVISOR", `请帮我评估达人「${clip(entity.name)}」是否值得合作，并给出合作建议。`), icon: UsersRound };
+      return dispatchAction("评估这位达人", UsersRound, "ADVISOR", `请帮我评估达人「${clip(entity.name)}」是否值得合作，并给出合作建议。`);
     }
-    return { label: "评估达人合作", href: taskHref("ADVISOR", "我想找达人带货，请告诉我筛选达人要看哪些指标、怎么开口谈合作。"), icon: UsersRound };
+    return dispatchAction("评估达人合作", UsersRound, "ADVISOR", "我想找达人带货，请告诉我筛选达人要看哪些指标、怎么开口谈合作。");
   }
   if (pathname.startsWith("/app/discover/sellers")) {
     if (entity?.kind === "discover-seller") {
-      return { label: "分析这家店铺", href: taskHref("ANALYST", `请帮我分析店铺「${clip(entity.name)}」的机会、风险和下一步动作。`), icon: Compass };
+      return dispatchAction("分析这家店铺", Compass, "ANALYST", `请帮我分析店铺「${clip(entity.name)}」的机会、风险和下一步动作。`);
     }
-    return { label: "分析店铺机会", href: taskHref("ANALYST", "我在研究同行店铺，请告诉我分析一家 TikTok Shop 店铺要看哪些维度。"), icon: Compass };
+    return dispatchAction("分析店铺机会", Compass, "ANALYST", "我在研究同行店铺，请告诉我分析一家 TikTok Shop 店铺要看哪些维度。");
   }
   if (pathname.startsWith("/app/discover/videos")) {
     if (entity?.kind === "discover-video") {
       // 视频文案可能为空，退回用 ID 指代
       const ref = entity.name ? `《${clip(entity.name)}》` : `（ID ${entity.id}）`;
-      return { label: "拆解这条视频", href: taskHref("DIRECTOR", `请帮我拆解视频${ref}的带货结构，并给出可复用的创作建议。`), icon: Clapperboard };
+      return dispatchAction("拆解这条视频", Clapperboard, "DIRECTOR", `请帮我拆解视频${ref}的带货结构，并给出可复用的创作建议。`);
     }
-    return { label: "拆解带货视频", href: taskHref("DIRECTOR", "我想学爆款带货视频，请告诉我拆解一条视频要看哪些结构和信号。"), icon: Clapperboard };
+    return dispatchAction("拆解带货视频", Clapperboard, "DIRECTOR", "我想学爆款带货视频，请告诉我拆解一条视频要看哪些结构和信号。");
   }
   if (pathname.startsWith("/app/products") && entity?.kind === "my-product") {
-    return {
-      label: "为它生成内容",
-      href: taskHref("LISTING", `请为我的商品【${clip(entity.name)}】生成 TikTok Shop Listing 内容。`, entity.productId),
-      icon: WandSparkles,
-    };
+    return dispatchAction("为它生成内容", WandSparkles, "LISTING", `请为我的商品【${clip(entity.name)}】生成 TikTok Shop Listing 内容。`, entity.productId);
   }
   if (pathname.startsWith("/app/assets/materials")) {
-    return { label: "用素材开始创作", href: taskHref("DIRECTOR", "请基于我的素材，帮我规划一条带货短视频。"), icon: ImagePlus };
+    return dispatchAction("用素材开始创作", ImagePlus, "DIRECTOR", "请基于我的素材，帮我规划一条带货短视频。");
   }
   if (pathname.startsWith("/app/assets/products")) {
-    return { label: "生成商品内容", href: taskHref("LISTING", "请为我的商品生成 TikTok Shop Listing 内容。"), icon: WandSparkles };
+    return dispatchAction("生成商品内容", WandSparkles, "LISTING", "请为我的商品生成 TikTok Shop Listing 内容。");
   }
   if (pathname.startsWith("/app/videos")) {
-    return { label: "优化视频脚本", href: taskHref("DIRECTOR", "请帮我优化当前视频的脚本与转化表达。"), icon: Clapperboard };
+    return dispatchAction("优化视频脚本", Clapperboard, "DIRECTOR", "请帮我优化当前视频的脚本与转化表达。");
   }
   if (pathname.startsWith("/app/services")) {
-    return { label: "规划经营下一步", href: taskHref("ADVISOR", "请根据我的跨境经营目标，建议下一步优先做什么。"), icon: BarChart3 };
+    return dispatchAction("规划经营下一步", BarChart3, "ADVISOR", "请根据我的跨境经营目标，建议下一步优先做什么。");
   }
   return { label: "发起新任务", href: NEW_TASK, icon: MessageSquarePlus };
 }
@@ -130,11 +133,12 @@ const IDLE_POLL_MS = 45_000;
 const REVEAL_TTL_MS = 12_000;
 
 /** 空态引导：从未派过任务的新用户，静止态固定指向跨境顾问，替代按路由的情境动作。 */
-const ONBOARD_ACTION: ContextAction = {
-  label: "不知从哪开始？问问跨境顾问",
-  href: taskHref("ADVISOR", "我刚开始做 TikTok Shop 跨境电商，请根据我的情况告诉我第一步该做什么。"),
-  icon: Compass,
-};
+const ONBOARD_ACTION: ContextAction = dispatchAction(
+  "不知从哪开始？问问跨境顾问",
+  Compass,
+  "ADVISOR",
+  "我刚开始做 TikTok Shop 跨境电商，请根据我的情况告诉我第一步该做什么。",
+);
 
 /** sessionStorage 缓存「是否派过任务」，避免每次导航重复请求。"1"=派过，"0"=从未。 */
 function everTaskedKey(workspaceId: string) {
@@ -150,6 +154,9 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
   const pathname = usePathname();
   // 详情页经 PageEntityContext 上报当前实体，静止态预填指令指名道姓
   const entity = usePageEntity();
+  // 原地派活浮层：记录打开时所在路由，路由一变（含浏览器后退）即自然失效收起
+  const [sheetPath, setSheetPath] = useState<string | null>(null);
+  const sheetOpen = sheetPath === pathname;
   const [active, setActive] = useState<LiteTask[]>([]);
   const [reveal, setReveal] = useState<Reveal | null>(null);
   // 空态引导：确认「从未派过任务」前保持 false，避免情境动作先闪一下再切换。
@@ -379,18 +386,45 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
   // 静止态：从未派过任务的新用户固定引导去问跨境顾问，其余按当前页给情境动作。
   const action = neverTasked ? ONBOARD_ACTION : actionFor(pathname, entity);
   const Icon = action.icon;
+  const pillIdle = `${pillBase} border-black/[0.09] bg-white text-ink hover:border-brand-200 hover:bg-brand-50`;
+  const pillBody = (
+    <>
+      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white">
+        <BrandMark className="h-5 w-5" />
+      </span>
+      <Icon className="h-3.5 w-3.5 text-brand-600" aria-hidden />
+      <span className={`truncate ${neverTasked ? "max-w-52" : "max-w-36"}`}>{action.label}</span>
+    </>
+  );
+
+  // 可原地派活的动作：点击展开派活浮层，上下文留在眼前；浮层打开时胶囊让位。
+  if (action.agent && action.prompt) {
+    if (sheetOpen) {
+      return (
+        <QuickDispatchSheet
+          workspaceId={workspaceId ?? ""}
+          agent={action.agent}
+          initialPrompt={action.prompt}
+          productId={action.productId}
+          fullHref={action.href}
+          entityName={entity?.name || undefined}
+          onClose={() => setSheetPath(null)}
+        />
+      );
+    }
+    return (
+      <div className="fixed bottom-[76px] right-3 z-50 md:bottom-5 md:right-6">
+        <button type="button" onClick={() => setSheetPath(pathname)} className={pillIdle} aria-label={action.label}>
+          {pillBody}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed bottom-[76px] right-3 z-50 md:bottom-5 md:right-6">
-      <Link
-        href={action.href}
-        className={`${pillBase} border-black/[0.09] bg-white text-ink hover:border-brand-200 hover:bg-brand-50`}
-        aria-label={action.label}
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white">
-          <BrandMark className="h-5 w-5" />
-        </span>
-        <Icon className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-        <span className={`truncate ${neverTasked ? "max-w-52" : "max-w-36"}`}>{action.label}</span>
+      <Link href={action.href} className={pillIdle} aria-label={action.label}>
+        {pillBody}
       </Link>
     </div>
   );
