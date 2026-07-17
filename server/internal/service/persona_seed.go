@@ -13,25 +13,20 @@ import (
 
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
-	"github.com/faxianmao/server/internal/service/fal"
+	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
 
 // ── 预置人设库种子(./server --seed-personas 一次性执行)──────────────────────
 //
-// 用 fal Seedream V4.5 生成全局预置数字人:每个人设 4 张参考图
-// (正脸 text-to-image 出底图,半身/侧脸/场景用 edit 以底图为参考锚定同一张脸),
+// 用 seedream(OpenRouter,国内直连)生成全局预置数字人:每个人设 4 张参考图
+// (正脸文生图出底图,半身/侧脸/场景以底图为参考图锚定同一张脸),
 // 全部传 COS 后写入 model_assets(is_preset=true,workspace_id 为空,所有工作台可见)。
 // 幂等:同名预置已存在则跳过;单个人设失败不影响整批。
 
-const (
-	personaT2IModel  = "fal-ai/bytedance/seedream/v4.5/text-to-image"
-	personaEditModel = "fal-ai/bytedance/seedream/v4.5/edit"
-
-	// UGC 实拍感:压住 stock photo 式的精修假人
-	personaStyleSuffix = "amateur smartphone photo, natural skin texture, candid expression, " +
-		"soft daylight, photorealistic, looking at camera, no text, no watermark"
-)
+// UGC 实拍感:压住 stock photo 式的精修假人
+const personaStyleSuffix = "amateur smartphone photo, natural skin texture, candid expression, " +
+	"soft daylight, photorealistic, looking at camera, no text, no watermark"
 
 type presetPersona struct {
 	Slug   string // COS 目录名
@@ -87,25 +82,25 @@ var personaShots = []struct {
 	Prompt string
 	Size   string
 }{
-	{"half", "the exact same person, waist-up half body shot facing the camera, same face and hairstyle, plain warm neutral background", "portrait_4_3"},
-	{"side", "the exact same person, 45 degree side angle portrait, same face and hairstyle, natural window light, plain neutral background", "portrait_4_3"},
-	{"scene", "the exact same person filming a casual selfie-style product video at home, holding a small unbranded box, cozy room background, vlog feel", "portrait_4_3"},
+	{"half", "the exact same person, waist-up half body shot facing the camera, same face and hairstyle, plain warm neutral background", "3:4"},
+	{"side", "the exact same person, 45 degree side angle portrait, same face and hairstyle, natural window light, plain neutral background", "3:4"},
+	{"scene", "the exact same person filming a casual selfie-style product video at home, holding a small unbranded box, cozy room background, vlog feel", "3:4"},
 }
 
 type PersonaSeeder struct {
 	db  *gorm.DB
-	fal *fal.Client
+	llm *llm.Client
 	st  *storage.Storage
 }
 
-func NewPersonaSeeder(db *gorm.DB, f *fal.Client, st *storage.Storage) *PersonaSeeder {
-	return &PersonaSeeder{db: db, fal: f, st: st}
+func NewPersonaSeeder(db *gorm.DB, l *llm.Client, st *storage.Storage) *PersonaSeeder {
+	return &PersonaSeeder{db: db, llm: l, st: st}
 }
 
 // Run 全量生成预置人设库。返回 (新建数, 错误)。
 func (s *PersonaSeeder) Run(ctx context.Context) (int, error) {
-	if !s.fal.Configured() {
-		return 0, fmt.Errorf("FALAI_API_KEY 未配置,无法生成人设图")
+	if !s.llm.Configured() {
+		return 0, fmt.Errorf("OPENROUTER_API_KEY 未配置,无法生成人设图")
 	}
 	if !s.st.Configured() {
 		return 0, fmt.Errorf("COS 未配置,无法存储人设图")
@@ -148,12 +143,13 @@ func (s *PersonaSeeder) Run(ctx context.Context) (int, error) {
 	return created, nil
 }
 
-// genWithRetry 走 fal 队列 API(短请求轮询,跨境不被长连接卡死),单图限时 10 分钟,最多 3 次尝试。
-func (s *PersonaSeeder) genWithRetry(ctx context.Context, modelPath, prompt, size string, refs []string) ([]byte, string, error) {
+// genWithRetry 调 seedream 出图(国内直连,单图限时 10 分钟),最多 3 次尝试。
+// aspect 传画幅比例("1:1"/"3:4" 等);refs 非空时作为参考图锚定同一张脸。
+func (s *PersonaSeeder) genWithRetry(ctx context.Context, prompt, aspect string, refs []string) ([]byte, string, error) {
 	gen := func() ([]byte, string, error) {
 		gctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 		defer cancel()
-		return s.fal.GenerateImageQueued(gctx, modelPath, prompt, size, refs)
+		return s.llm.GenerateImage(gctx, prompt, aspect, refs)
 	}
 	var lastErr error
 	for attempt := 1; attempt <= 3; attempt++ {
@@ -171,7 +167,7 @@ func (s *PersonaSeeder) genWithRetry(ctx context.Context, modelPath, prompt, siz
 // 返回 COS URL 列表,顺序固定 [face, half, side, scene]。
 func (s *PersonaSeeder) generateSet(ctx context.Context, p presetPersona) ([]string, error) {
 	facePrompt := fmt.Sprintf("close-up front portrait of %s, %s, plain warm neutral background", p.Look, personaStyleSuffix)
-	data, ct, err := s.genWithRetry(ctx, personaT2IModel, facePrompt, "square_hd", nil)
+	data, ct, err := s.genWithRetry(ctx, facePrompt, "1:1", nil)
 	if err != nil {
 		return nil, fmt.Errorf("正脸底图: %w", err)
 	}
@@ -182,7 +178,7 @@ func (s *PersonaSeeder) generateSet(ctx context.Context, p presetPersona) ([]str
 	urls := []string{faceURL}
 	for _, shot := range personaShots {
 		prompt := shot.Prompt + ", " + personaStyleSuffix
-		data, ct, err := s.genWithRetry(ctx, personaEditModel, prompt, shot.Size, []string{faceURL})
+		data, ct, err := s.genWithRetry(ctx, prompt, shot.Size, []string{faceURL})
 		if err != nil {
 			return nil, fmt.Errorf("%s 镜头: %w", shot.Key, err)
 		}

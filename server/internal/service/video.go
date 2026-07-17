@@ -14,7 +14,6 @@ import (
 	apperr "github.com/faxianmao/server/internal/errors"
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
-	"github.com/faxianmao/server/internal/service/fal"
 	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
@@ -25,12 +24,11 @@ type VideoService struct {
 	db      *gorm.DB
 	llm     *llm.Client
 	storage *storage.Storage
-	fal     *fal.Client
 	quota   *QuotaService
 }
 
-func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage, f *fal.Client, q *QuotaService) *VideoService {
-	return &VideoService{db: db, llm: l, storage: st, fal: f, quota: q}
+func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage, q *QuotaService) *VideoService {
+	return &VideoService{db: db, llm: l, storage: st, quota: q}
 }
 
 type VideoInput struct {
@@ -485,13 +483,16 @@ func (s *VideoService) applyJob(ctx context.Context, videoID uuid.UUID, job *llm
 	}
 }
 
-// GenerateCover 用 fal flux 生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
-// 用 fal 而非 OpenRouter 图像模型:后者(OpenAI/Google)对国内服务器区域屏蔽。
+// GenerateCover 用 seedream 生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
+// seedream 走字节自家 provider,国内直连可达,不受 Google/OpenAI 图像模型的区域屏蔽。
 func (s *VideoService) GenerateCover(ctx context.Context, videoID uuid.UUID, prompt, aspectRatio string) {
-	if !s.fal.Configured() || !s.storage.Configured() {
+	if !s.llm.Configured() || !s.storage.Configured() {
 		return
 	}
-	data, ct, err := s.fal.GenerateImage(ctx, "vertical short-video cover poster, no text, "+prompt, fal.ImageSizeForAspect(aspectRatio))
+	if aspectRatio == "" {
+		aspectRatio = "9:16" // 短视频封面默认竖版
+	}
+	data, ct, err := s.llm.GenerateImage(ctx, "vertical short-video cover poster, no text, "+prompt, aspectRatio, nil)
 	if err != nil {
 		logger.Warn("[video] 封面生成失败", logger.String("video", videoID.String()), logger.Err(err))
 		return

@@ -15,7 +15,6 @@ import (
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
 	"github.com/faxianmao/server/internal/service/echotik"
-	"github.com/faxianmao/server/internal/service/fal"
 	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
@@ -23,16 +22,15 @@ import (
 // AgentService 派发并异步执行 Agent 任务(QUEUED→RUNNING→DONE/FAILED)。
 type AgentService struct {
 	db       *gorm.DB
-	llm      *llm.Client
+	llm      *llm.Client      // 文案 + listing/试穿出主图(seedream)
 	videos   *VideoService    // director 用来下发视频
 	discover *DiscoverService // analyst 用来取真实榜单候选
-	fal      *fal.Client      // listing 用来出主图
 	storage  *storage.Storage // listing 主图传 COS
 	quota    *QuotaService    // 派活/出图前扣减月度配额
 }
 
-func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService, f *fal.Client, st *storage.Storage, q *QuotaService) *AgentService {
-	return &AgentService{db: db, llm: l, videos: videos, discover: discover, fal: f, storage: st, quota: q}
+func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService, st *storage.Storage, q *QuotaService) *AgentService {
+	return &AgentService{db: db, llm: l, videos: videos, discover: discover, storage: st, quota: q}
 }
 
 var validAgents = map[string]bool{
