@@ -46,7 +46,7 @@ func TestQuotaDecisionFreePro(t *testing.T) {
 	}
 }
 
-// TEAM 不限量(恒放行),但 used 达基线(30000)后本次标记 billable(待结算)。
+// TEAM 不限量(恒放行),但 used 达基线(12000)后本次标记 billable(待结算)。
 func TestQuotaDecisionTeamBaseline(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -54,9 +54,9 @@ func TestQuotaDecisionTeamBaseline(t *testing.T) {
 		wantBillable bool
 	}{
 		{"零用量不计费", 0, false},
-		{"基线内不计费", 29000, false},
-		{"恰好达基线即计费", model.TeamBaselineCredits, true}, // 30000>=30000
-		{"超基线计费", 35000, true},
+		{"基线内不计费", 11000, false},
+		{"恰好达基线即计费", model.TeamBaselineCredits, true}, // 12000>=12000
+		{"超基线计费", 15000, true},
 	}
 	for _, c := range cases {
 		allowed, billable := quotaDecision(model.PlanTeam, model.UsageVideo, 1, c.used, 0)
@@ -80,8 +80,8 @@ func TestPriceCents(t *testing.T) {
 		{model.PlanPro, 1, 19900, false},
 		{model.PlanPro, 3, 53730, false},   // 19900*2.7
 		{model.PlanPro, 12, 179100, false}, // 19900*9
-		{model.PlanTeam, 1, 89900, false},
-		{model.PlanTeam, 12, 809100, false},
+		{model.PlanTeam, 1, 39900, false},
+		{model.PlanTeam, 12, 359100, false},
 		{model.PlanFree, 1, 0, true}, // FREE 不可下单
 		{model.PlanPro, 6, 0, true},  // 不支持的周期
 	}
