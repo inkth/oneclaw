@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, ChevronDown, ChevronUp, Search, X, Sparkles } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
@@ -142,7 +142,7 @@ function SearchRow({
         e.preventDefault();
         onSubmit(value.trim());
       }}
-      className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3"
+      className="flex flex-col items-stretch gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3"
     >
       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:text-sm">
         <Search className="h-3.5 w-3.5" />
@@ -185,7 +185,7 @@ function SearchRow({
 
 function PillRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
+    <div className="flex flex-col items-stretch gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
         {label}
       </span>
@@ -194,7 +194,9 @@ function PillRow({ label, children }: { label: React.ReactNode; children: React.
   );
 }
 
-// 类目行：超过 11 个折叠，行尾给「展开/收起」。
+// 类目行：折叠态只留第一行（类目已按热门优先排序），行尾给「展开/收起」。
+// 一行装得下几个取决于容器宽度和类目名长度，所以用一份隐藏的全量副本实测：
+// 与第一个 pill 同 offsetTop 的即第一行，据此算 cutoff，容器宽度变化时重测。
 function CategoryRow({
   categories,
   active,
@@ -205,16 +207,40 @@ function CategoryRow({
   onSelect: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const COLLAPSED = 11;
-  const overflow = categories.length > COLLAPSED;
-  const visible = overflow && !expanded ? categories.slice(0, COLLAPSED) : categories;
+  const [cutoff, setCutoff] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+
+    const remeasure = () => {
+      const pills = Array.from(measure.children) as HTMLElement[];
+      if (pills.length === 0) return;
+      const firstRowTop = pills[0].offsetTop;
+      const firstRow = pills.filter((p) => p.offsetTop === firstRowTop).length;
+      // 第一个是「全部」，不算进类目配额；至少留一个类目，免得窄屏折成空行。
+      setCutoff(Math.max(1, firstRow - 1));
+    };
+
+    remeasure();
+    const ro = new ResizeObserver(remeasure);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [categories]);
+
+  // cutoff 未测出前先渲染全量，避免首帧闪一个错误的短列表。
+  const overflow = cutoff !== null && cutoff < categories.length;
+  const visible = overflow && !expanded ? categories.slice(0, cutoff) : categories;
 
   return (
-    <div className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
+    <div className="flex flex-col items-stretch gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
       <span className="shrink-0 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
         商品分类
       </span>
-      <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">
+      <div ref={containerRef} className="relative flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">
         <Pill active={active === ""} onClick={() => onSelect("")}>
           全部
         </Pill>
@@ -223,6 +249,16 @@ function CategoryRow({
             {c.name}
           </Pill>
         ))}
+        <div
+          ref={measureRef}
+          aria-hidden
+          className="pointer-events-none invisible absolute inset-x-0 top-0 flex flex-wrap items-center gap-x-1 gap-y-1.5"
+        >
+          <Pill>全部</Pill>
+          {categories.map((c) => (
+            <Pill key={c.id}>{c.name}</Pill>
+          ))}
+        </div>
       </div>
       {overflow && (
         <button
