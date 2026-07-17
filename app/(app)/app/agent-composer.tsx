@@ -21,6 +21,12 @@ import {
 import { type ReviewResult } from "@/lib/review/types";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import {
+  ComposerSendButton,
+  ComposerSurface,
+  ComposerTextarea,
+  ComposerToolbar,
+} from "@/components/ui/Composer";
 import { CreditCost } from "@/components/ui/CreditCost";
 import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
@@ -391,8 +397,8 @@ export function AgentComposer({
 
   return (
     <>
-    <div
-      className="dk-composer overflow-hidden"
+      <ComposerSurface
+        variant="console"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -471,7 +477,8 @@ export function AgentComposer({
             </p>
           </div>
         ) : (
-          <textarea
+          <ComposerTextarea
+            variant="console"
             id="agent-composer"
             ref={textareaRef}
             value={input}
@@ -481,12 +488,11 @@ export function AgentComposer({
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
             }}
-            className="min-h-40 w-full resize-none bg-transparent px-5 pb-4 pt-5 text-[15px] leading-relaxed outline-none placeholder:text-zinc-400 sm:px-6 sm:pt-6"
           />
         )}
 
         {/* 操作区与输入面融为一体，减少后台表单式的分割感。 */}
-        <div className="flex flex-wrap items-center gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
+        <ComposerToolbar variant="console">
           {/* 会话页没有快捷卡，用底栏分段开关切「文案/上身图」;首页该开关不渲染，改由快捷卡切换。 */}
           {activeAgent === "LISTING" && onListingModeChange && (
             <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
@@ -612,10 +618,11 @@ export function AgentComposer({
             {!isTryOn && (
               <span className="hidden text-2xs text-zinc-400 lg:inline">⌘/Ctrl + Enter</span>
             )}
-            <button
+            <ComposerSendButton
+              type="button"
               onClick={submit}
               disabled={submitting || !canSend}
-              className="press inline-flex h-11 items-center gap-1.5 rounded-full bg-[#1c1d1f] px-5 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-black disabled:pointer-events-none disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none"
+              className="h-11 text-[15px] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:opacity-100 disabled:shadow-none"
             >
               {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -643,24 +650,24 @@ export function AgentComposer({
                     : isAnalyze
                       ? "开始解析"
                       : "发送"}
-            </button>
+            </ComposerSendButton>
           </div>
-        </div>
-    </div>
-    {tryOnPickerOpen && (
-      <AssetPickerModal
-        workspaceId={workspaceId}
-        activeAgent={activeAgent}
-        tryOn={isTryOn}
-        productId={productId ?? null}
-        onProductChange={(id) => onProductChange?.(id)}
-        personaId={personaId ?? null}
-        onPersonaChange={(id) => onPersonaChange?.(id)}
-        materialId={materialId ?? null}
-        onMaterialChange={(id) => onMaterialChange?.(id)}
-        onClose={() => setTryOnPickerOpen(false)}
-      />
-    )}
+        </ComposerToolbar>
+      </ComposerSurface>
+      {tryOnPickerOpen && (
+        <AssetPickerModal
+          workspaceId={workspaceId}
+          activeAgent={activeAgent}
+          tryOn={isTryOn}
+          productId={productId ?? null}
+          onProductChange={(id) => onProductChange?.(id)}
+          personaId={personaId ?? null}
+          onPersonaChange={(id) => onPersonaChange?.(id)}
+          materialId={materialId ?? null}
+          onMaterialChange={(id) => onMaterialChange?.(id)}
+          onClose={() => setTryOnPickerOpen(false)}
+        />
+      )}
     </>
   );
 }

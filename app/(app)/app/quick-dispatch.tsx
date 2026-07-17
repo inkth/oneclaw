@@ -5,7 +5,12 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowUpRight, BadgeCheck, Loader2, Send, X } from "lucide-react";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
-import { Button } from "@/components/ui/Button";
+import {
+  ComposerSendButton,
+  ComposerSurface,
+  ComposerTextarea,
+  ComposerToolbar,
+} from "@/components/ui/Composer";
 import { CreditCost } from "@/components/ui/CreditCost";
 import { CREDIT_COST } from "@/lib/credits";
 import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
@@ -138,36 +143,50 @@ export function QuickDispatchSheet({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <textarea
-          ref={boxRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          rows={3}
-          className="w-full resize-none rounded-xl border border-black/[0.07] bg-[var(--dk-canvas,#fafafa)] px-3 py-2.5 text-sm leading-6 text-ink outline-none transition-colors focus:border-brand-300 focus:bg-white"
-          placeholder="想让它帮你做什么？"
-        />
-        <div className="flex items-center gap-3 pt-2">
-          <CreditCost credits={CREDIT_COST.agentTask} />
-          <Link
-            href={fullHref}
-            onClick={onClose}
-            className="inline-flex items-center gap-0.5 text-2xs font-medium text-[var(--dk-content-tertiary)] transition-colors hover:text-[var(--dk-content-primary)]"
-          >
-            展开完整对话
-            <ArrowUpRight className="h-3 w-3" />
-          </Link>
-          <span className="ml-auto hidden text-2xs text-[var(--dk-content-tertiary)] sm:block">⌘/Ctrl + Enter</span>
-          <Button size="sm" onClick={() => void send()} disabled={sending || !input.trim()}>
-            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-            发送
-          </Button>
-        </div>
+        <ComposerSurface variant="compact">
+          <ComposerTextarea
+            variant="compact"
+            ref={boxRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+            rows={3}
+            className="min-h-[72px] text-ink"
+            placeholder="想让它帮你做什么？"
+          />
+          <ComposerToolbar variant="compact" className="border-t border-black/[0.06]">
+            <CreditCost credits={CREDIT_COST.agentTask} />
+            <Link
+              href={fullHref}
+              onClick={onClose}
+              className="inline-flex items-center gap-0.5 text-2xs font-medium text-[var(--dk-content-tertiary)] transition-colors hover:text-[var(--dk-content-primary)]"
+            >
+              展开完整对话
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+            <span className="ml-auto hidden text-2xs text-[var(--dk-content-tertiary)] sm:block">
+              ⌘/Ctrl + Enter
+            </span>
+            <ComposerSendButton
+              type="button"
+              size="form"
+              onClick={() => void send()}
+              disabled={sending || !input.trim()}
+            >
+              {sending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
+              发送
+            </ComposerSendButton>
+          </ComposerToolbar>
+        </ComposerSurface>
       </div>
     </div>
   );
