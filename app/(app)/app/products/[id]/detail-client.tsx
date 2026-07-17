@@ -93,6 +93,7 @@ export function ProductDetail({
   const [costDraft, setCostDraft] = useState((kit.product.costCents / 100).toFixed(2));
   const [savingInfo, setSavingInfo] = useState(false);
   const [imaging, setImaging] = useState(false);
+  const [shotRetrying, setShotRetrying] = useState(false);
   const [coverBusy, setCoverBusy] = useState<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -187,6 +188,21 @@ export function ProductDetail({
       toast.error(e instanceof Error ? e.message : "设置失败，稍后再试");
     } finally {
       setCoverBusy(null);
+    }
+  }
+
+  // 重出展示图：批量做商品的出图失败后重试（消耗出图额度）。
+  // 标 RUNNING 后 imagingShots 变 true，交给上面的轮询把成品刷回来。
+  async function retryShots() {
+    setShotRetrying(true);
+    try {
+      await apiBrowser(`/workspaces/${workspaceId}/products/${productId}/images`, { method: "POST" });
+      setKit((k) => ({ ...k, product: { ...k.product, imagesStatus: "RUNNING" } }));
+      toast.success("已开始重新生成商品图，约 1-2 分钟");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "重试失败，稍后再试");
+    } finally {
+      setShotRetrying(false);
     }
   }
 
@@ -308,6 +324,16 @@ export function ProductDetail({
                     <Loader2 className="h-3 w-3 animate-spin" />
                     出图中…
                   </span>
+                ) : p.imagesStatus === "FAILED" && (p.sourceImages?.length ?? 0) > 0 ? (
+                  <button
+                    onClick={retryShots}
+                    disabled={shotRetrying}
+                    title="展示图生成失败，点击按原图重新生成（消耗出图积分）"
+                    className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-2xs font-medium text-rose-600 hover:bg-rose-100 disabled:opacity-60"
+                  >
+                    {shotRetrying ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {shotRetrying ? "提交中…" : "出图失败 · 重试"}
+                  </button>
                 ) : canAddImages && (
                   <button
                     onClick={addImages}

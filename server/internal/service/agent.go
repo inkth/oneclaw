@@ -53,7 +53,10 @@ type AgentCreateOpts struct {
 	Region         string     // 目标市场(DIRECTOR):定口播语言;空则跟随商品来源市场,兜底 US
 	DurationSec    int        // 视频时长秒(DIRECTOR):用户在「设置」显式锁的优先于 AI 自选,夹 4-15s;0=AI 自定
 	AspectRatio    string     // 画幅比例(DIRECTOR):9:16/16:9/1:1;空=默认 9:16
-	AutoImages     bool       // 批量 Listing:文案落库后自动接力出图,无需用户二次确认(单图链路恒 false)
+	// DiscoverProductID 发现页商品 externalId(ANALYST):用户对着详情页具体商品发问时注入
+	// 该商品的真实数据做单品判断,替代默认的榜单选品模式。配 DiscoverRegion 定位记录。
+	DiscoverProductID string
+	DiscoverRegion    string
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
@@ -80,8 +83,19 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 	// 关联商品的任务:派活时就把 productId 写进 metadata。否则 productId 要等任务完成
 	// (runListing 返回 meta)才落库,商品卡在 QUEUED/RUNNING 阶段按 productId 查不到状态,
 	// 既不显示「生成中」也不启动轮询,看起来像没在做。完成时 execute 会用完整 meta 覆盖。
+	// discover 引用同样落 metadata,失败重试(optsFromTask)才能还原单品判断模式。
+	metaKV := map[string]string{}
 	if opts.ProductID != nil {
-		if b, e := json.Marshal(map[string]string{"productId": opts.ProductID.String()}); e == nil {
+		metaKV["productId"] = opts.ProductID.String()
+	}
+	if opts.DiscoverProductID != "" {
+		metaKV["discoverProductId"] = opts.DiscoverProductID
+		if opts.DiscoverRegion != "" {
+			metaKV["discoverRegion"] = opts.DiscoverRegion
+		}
+	}
+	if len(metaKV) > 0 {
+		if b, e := json.Marshal(metaKV); e == nil {
 			t.Metadata = model.JSONB(b)
 		}
 	}
@@ -169,7 +183,7 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 	case model.AgentAdvisor:
 		output, meta, usage, err = s.runAdvisor(ctx, taskID, input)
 	case model.AgentAnalyst:
-		output, meta, usage, err = s.runAnalyst(ctx, wsID, input)
+		output, meta, usage, err = s.runAnalyst(ctx, wsID, input, opts)
 	case model.AgentDirector:
 		output, meta, usage, err = s.runDirector(ctx, wsID, input, opts)
 	case model.AgentListing:
@@ -196,16 +210,6 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 		}
 	}
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).Updates(updates)
-
-	// 批量「文案+出图一起」:文案落库后自动接力出图,无需用户回任务流二次点「生成主图」。
-	// 复用 GenerateListingImages 的原子认领 + 出图扣费/退款 + 主图回写;失败(如出图额度不足)
-	// 只记日志不影响已生成的文案 —— 该商品仍拿到 Listing,出图缺省可后续手动补。
-	if agent == model.AgentListing && opts.AutoImages {
-		if _, ierr := s.GenerateListingImages(ctx, wsID, taskID); ierr != nil {
-			logger.Info("[agent] 批量 Listing 自动出图未触发(文案已生成)",
-				logger.String("task", taskID.String()), logger.String("reason", ierr.Error()))
-		}
-	}
 }
 
 func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
@@ -232,6 +236,8 @@ type retryMeta struct {
 	Region             string `json:"region"`
 	DurationSec        int    `json:"durationSec"`
 	AspectRatio        string `json:"aspectRatio"`
+	DiscoverProductID  string `json:"discoverProductId"`
+	DiscoverRegion     string `json:"discoverRegion"`
 }
 
 // optsFromTask 从任务 metadata 还原 AgentCreateOpts,让重试沿用原商品/市场/人设/时长/比例。
@@ -253,6 +259,8 @@ func optsFromTask(t *model.AgentTask) AgentCreateOpts {
 	opts.Region = m.Region
 	opts.DurationSec = m.DurationSec
 	opts.AspectRatio = m.AspectRatio
+	opts.DiscoverProductID = m.DiscoverProductID
+	opts.DiscoverRegion = m.DiscoverRegion
 	return opts
 }
 
@@ -345,6 +353,19 @@ func (s *AgentService) RecoverStartup(ctx context.Context) {
 //
 // 选品分析基于 discover_products 真实榜单数据(EchoTik 定时同步/按需拉取落库),
 // LLM 只负责"从候选中筛选 + 给理由",指标(ROI/毛利/趋势)全部由既有换算函数得出,不让模型编数。
+
+// analystFocusSystem 单品判断模式:事实块来自 DB 里的 EchoTik 真实数据(discoverFacts),
+// 输出是会话里的自然段落,与榜单选品模式(analystSystem,JSON picks)分开。
+const analystFocusSystem = `你是 发现猫 的"选品分析 Agent"，正在帮用户判断他当前查看的一个 TikTok Shop 商品。
+
+**事实块里是该商品的真实数据（EchoTik）**，请直接基于这些数字推理，不要编造更多数字。
+
+要求：
+- 第一句先给结论：值得做 / 可小规模试 / 不建议做
+- 依据要点名具体数字：价格带与佣金算毛利空间，销量/达人数/视频数看竞争与切入时机
+- 给 2-3 条可执行的下一步建议（如带货角度、定价策略、找什么样的达人）
+- 用户问题里有具体关注点时优先回应
+- 用简洁中文段落输出，不要 JSON，不要 markdown 标题，全文不超过 300 字`
 
 const analystSystem = `你是 发现猫 的"选品分析 Agent"。
 下面会给你一份 TikTok Shop 真实热销榜单（EchoTik 数据），请结合用户需求从中筛选 3-5 个最值得做的商品。
@@ -479,9 +500,41 @@ func (s *AgentService) ensureCandidates(ctx context.Context, regions []string, l
 	return s.analystCandidates(ctx, regions, limit)
 }
 
-func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input string) (string, any, llm.Usage, error) {
+// runAnalystFocus 单品判断:事实块复用 discoverFacts(与深度分析同一数据口径),回答落在会话里。
+func (s *AgentService) runAnalystFocus(ctx context.Context, input string, dp model.DiscoverProduct) (string, any, llm.Usage, error) {
+	user := fmt.Sprintf("用户问题：%s\n\n商品真实数据（TikTok Shop · EchoTik）：\n%s", input, discoverFacts(dp))
+	res, err := s.llm.Chat(ctx, analystFocusSystem, user, false, 1200)
+	if err != nil {
+		return "", nil, llm.Usage{}, err
+	}
+	meta := map[string]any{
+		"source": "discover.entity", "discoverProductId": dp.ExternalID, "discoverRegion": dp.Region,
+	}
+	return strings.TrimSpace(res.Content), meta, res.Usage, nil
+}
+
+func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请在服务端 .env 设置 OPENROUTER_API_KEY")
+	}
+
+	// 单品判断模式:用户对着详情页具体商品发问(情境派活带 discover 引用),
+	// 注入该商品的真实数据直接回答,而不是拉榜单让模型重新选品。
+	if opts.DiscoverProductID != "" {
+		region := strings.ToUpper(strings.TrimSpace(opts.DiscoverRegion))
+		if region == "" {
+			region = "US"
+		}
+		var dp model.DiscoverProduct
+		err := s.db.WithContext(ctx).
+			Where("provider = ? AND external_id = ? AND region = ?", "echotik", opts.DiscoverProductID, region).
+			First(&dp).Error
+		if err == nil {
+			return s.runAnalystFocus(ctx, input, dp)
+		}
+		// 商品记录缺失(可能被清理):退回榜单模式,用户仍能得到答案而不是报错。
+		logger.Warn("[agent] analyst 单品事实缺失,退回榜单模式",
+			logger.String("externalId", opts.DiscoverProductID), logger.String("region", region))
 	}
 
 	regions := detectRegions(input)

@@ -382,13 +382,32 @@ html { scroll-behavior: smooth; }
 }
 .dk-composer:focus-within {
   border-color: var(--brand-200);
-  box-shadow: 0 22px 54px -34px rgba(48, 70, 184, 0.28),
+  box-shadow: -20px 18px 48px -38px rgba(255, 132, 92, 0.34),
+    20px 16px 48px -38px rgba(74, 175, 145, 0.28),
+    0 22px 54px -34px rgba(48, 70, 184, 0.3),
     0 3px 10px -7px rgba(18, 20, 25, 0.18);
 }
 
 /* 业务端不使用动态极光。保留组件供营销页使用，应用内依靠内容和操作层级引导注意力。 */
 .app-skin .dk-aura {
   display: none;
+}
+
+/* 工作台首屏环境光：只承托标题与主输入区，静态、低饱和，不进入列表和数据页。 */
+.workspace-aurora {
+  background:
+    radial-gradient(ellipse 36% 38% at 22% 34%, rgba(255, 132, 92, 0.07), transparent 72%),
+    radial-gradient(ellipse 42% 42% at 53% 25%, rgba(77, 95, 212, 0.065), transparent 74%),
+    radial-gradient(ellipse 34% 38% at 82% 38%, rgba(74, 175, 145, 0.055), transparent 72%);
+  filter: blur(34px);
+  mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.82) 64%, transparent 100%);
+}
+
+@media (max-width: 640px) {
+  .workspace-aurora {
+    opacity: 0.62;
+    filter: blur(42px);
+  }
 }
 
 /* 浮层面板（弹窗 / 抽屉 / 下拉）：这是全站唯一允许「离地」的表面。
@@ -706,6 +725,15 @@ html { scroll-behavior: smooth; }
 :focus-visible {
   outline: 2px solid rgba(124, 92, 252, 0.62);
   outline-offset: 3px;
+}
+
+/* 文本输入类元素聚焦即命中 :focus-visible，全局 outline 会被容器裁成一条线；
+   它们有光标 + 各自的 focus 边框/容器 focus-within 样式，无需这圈 outline。 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable="true"]:focus-visible {
+  outline: none;
 }
 
 input,

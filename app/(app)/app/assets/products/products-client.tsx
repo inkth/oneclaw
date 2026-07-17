@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Archive, ArrowRight, RotateCcw, Trash2, Loader2, Package, MoreHorizontal, Pencil, Check, Sparkles } from "lucide-react";
+import { Archive, RotateCcw, Trash2, Loader2, Package, MoreHorizontal, Pencil, Check, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -62,13 +62,6 @@ function Thumb({ src, seed }: { src?: string; seed: string }) {
   }
   return <MediaPlaceholder seed={seed} rounded="rounded-lg" className="h-9 w-9 shrink-0" />;
 }
-
-const statusMap: Record<Status, { label: string; cls: string }> = {
-  CANDIDATE: { label: "候选", cls: "bg-sky-50 text-sky-700" },
-  EVALUATING: { label: "评估中", cls: "bg-amber-50 text-amber-700" },
-  RECOMMENDED: { label: "推荐", cls: "bg-emerald-50 text-emerald-700" },
-  ARCHIVED: { label: "已归档", cls: "bg-[var(--dk-surface-2)] text-zinc-500" },
-};
 
 // 成本来源角标：估算（系统按品类/市场）↔ 真实（用户回填）↔ 比价（货源，预留）。
 const costSourceMap: Record<CostSource, { label: string; cls: string; title: string }> = {
@@ -220,6 +213,23 @@ export function ProductsClient({
     }
   }
 
+  // 展示图失败重试：后端认领 FAILED→RUNNING 并重占出图额度；本地即刻标 RUNNING，
+  // 交给上面的 hasActive 轮询把成品填回来。
+  async function retryImages(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      await apiBrowser(`/workspaces/${workspaceId}/products/${id}/images`, { method: "POST" });
+      setProducts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, imagesStatus: "RUNNING" as ImagesStatus } : p)),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "重试失败，稍后再试");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function deleteProduct(id: string) {
     if (!confirm("删除该商品？删除后不可恢复。")) return;
     setBusyId(id);
@@ -291,15 +301,10 @@ export function ProductsClient({
                 <div className="flex items-start gap-3">
                   <Thumb src={p.coverUrl} seed={p.id} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <Link href={`/app/products/${p.id}`} className="line-clamp-2 text-sm font-semibold leading-5 text-ink">
-                        {p.title}
-                      </Link>
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-medium ${statusMap[p.status].cls}`}>
-                        {statusMap[p.status].label}
-                      </span>
-                    </div>
-                    {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING" || p.imagesStatus === "DONE") && (
+                    <Link href={`/app/products/${p.id}`} className="line-clamp-2 text-sm font-semibold leading-5 text-ink">
+                      {p.title}
+                    </Link>
+                    {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING" || p.imagesStatus === "DONE" || p.imagesStatus === "FAILED") && (
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-zinc-500">
                         {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING") && (
                           <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 ${imagesStatusMap.RUNNING.cls}`}>
@@ -310,6 +315,16 @@ export function ProductsClient({
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">
                             <Sparkles className="h-2.5 w-2.5" /> 已出图
                           </span>
+                        )}
+                        {p.imagesStatus === "FAILED" && (
+                          <button
+                            type="button"
+                            onClick={() => retryImages(p.id)}
+                            disabled={busyId === p.id}
+                            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium ${imagesStatusMap.FAILED.cls} hover:bg-rose-100 disabled:opacity-50`}
+                          >
+                            <RotateCcw className="h-2.5 w-2.5" /> 出图失败 · 重试
+                          </button>
                         )}
                       </div>
                     )}
@@ -377,10 +392,7 @@ export function ProductsClient({
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-black/[0.055] pt-3">
-                  <Link href={`/app/products/${p.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700">
-                    打开详情 <ArrowRight className="h-3 w-3" />
-                  </Link>
+                <div className="mt-3 flex items-center justify-end gap-3 border-t border-black/[0.055] pt-3">
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -414,7 +426,6 @@ export function ProductsClient({
                 <Th align="right">毛利率</Th>
                 <Th align="right">月销</Th>
                 <Th align="right">近 14 天</Th>
-                <Th align="center">状态</Th>
                 <Th align="right">操作</Th>
               </tr>
             </THead>
@@ -440,9 +451,16 @@ export function ProductsClient({
                             </span>
                           )}
                           {p.imagesStatus === "FAILED" && (
-                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${imagesStatusMap.FAILED.cls}`}>
-                              {imagesStatusMap.FAILED.label}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => retryImages(p.id)}
+                              disabled={busyId === p.id}
+                              title="展示图生成失败，点击重新生成（消耗出图积分）"
+                              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${imagesStatusMap.FAILED.cls} hover:bg-rose-100 disabled:opacity-50`}
+                            >
+                              <RotateCcw className="h-2.5 w-2.5" />
+                              {imagesStatusMap.FAILED.label} · 重试
+                            </button>
                           )}
                           {p.imagesStatus === "DONE" && (
                             <span
@@ -530,25 +548,8 @@ export function ProductsClient({
                   <Td align="right" className="nums">
                     <Delta value={p.trendDelta} title="近 14 天变化" className="text-xs" />
                   </Td>
-                  <Td align="center">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-medium ${statusMap[p.status].cls}`}
-                    >
-                      {statusMap[p.status].label}
-                    </span>
-                  </Td>
                   <Td>
                     <div className="flex items-center justify-end gap-1.5">
-                      {p.status !== "ARCHIVED" && (
-                        <Link
-                          href={`/app/products/${p.id}`}
-                          className="inline-flex items-center gap-1 rounded-full bg-[var(--dk-btn-tertiary)] px-2.5 py-1 text-2xs font-medium text-zinc-900 hover:bg-[var(--dk-btn-tertiary-hover)]"
-                          title="进入商品详情：做 Listing / 补主图 / 为它做视频"
-                        >
-                          打开详情
-                          <ArrowRight className="h-2.5 w-2.5" />
-                        </Link>
-                      )}
                       <Popover
                         align="end"
                         trigger={({ open }) => (

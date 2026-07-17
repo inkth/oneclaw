@@ -59,6 +59,10 @@ type agentCreateReq struct {
 	DurationSec int `json:"durationSec"`
 	// AspectRatio 画幅比例(可选,DIRECTOR):9:16 / 16:9 / 1:1;空=默认 9:16。
 	AspectRatio string `json:"aspectRatio"`
+	// DiscoverProductID 发现页商品 externalId(可选,ANALYST):情境派活附带当前查看的商品,
+	// 后端注入真实数据走单品判断;配 DiscoverRegion 定位记录。
+	DiscoverProductID string `json:"discoverProductId"`
+	DiscoverRegion    string `json:"discoverRegion"`
 }
 
 func (h *AgentHandler) Create(c *gin.Context) {
@@ -100,6 +104,9 @@ func (h *AgentHandler) Create(c *gin.Context) {
 	// 时长/比例非法值不报错:由 service 的 clampDuration/normalizeAspect 静默回退,和 region 一致。
 	opts.DurationSec = in.DurationSec
 	opts.AspectRatio = in.AspectRatio
+	// discover 引用非 uuid(EchoTik externalId),原样透传;记录缺失时 service 退回榜单模式。
+	opts.DiscoverProductID = strings.TrimSpace(in.DiscoverProductID)
+	opts.DiscoverRegion = in.DiscoverRegion
 	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input, opts)
 	if err != nil {
 		_ = c.Error(err)
@@ -145,6 +152,24 @@ func (h *AgentHandler) ProductBatch(c *gin.Context) {
 		return
 	}
 	Created(c, gin.H{"batch": res})
+}
+
+// RetryProductImages 重试自建商品的展示图生成(images_status=FAILED 时可用,重占出图额度)。
+func (h *AgentHandler) RetryProductImages(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	pid, err := uuid.Parse(c.Param("pid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("商品 ID 无效"))
+		return
+	}
+	if err := h.agents.RetryProductImages(c.Request.Context(), wid, pid); err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"imagesStatus": "RUNNING"})
 }
 
 type confirmVideoReq struct {
