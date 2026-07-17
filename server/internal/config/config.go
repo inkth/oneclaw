@@ -135,8 +135,8 @@ type DiscoverVideoPipelineConfig struct {
 	Interval      time.Duration
 	Region        string // 只处理该站点(先只跑美国站)
 	SaleThreshold int    // 带货销量门槛,超过才处理
-	PerRun        int    // 每轮每支路认领上限(成本闸门:直接封顶 EchoTik 实时调用 + gemini 调用数)
-	Concurrency   int    // 并发处理数(gemini 多模态 + ffmpeg 均重,宜小)
+	PerRun        int    // 每轮每支路认领上限(成本闸门:直接封顶 EchoTik 实时调用 + 多模态调用数)
+	Concurrency   int    // 并发处理数(多模态解析 + ffmpeg 均重,宜小)
 	MaxAttempts   int    // 单条失败退避上限
 }
 
@@ -163,14 +163,24 @@ func (s StorageConfig) Configured() bool {
 // OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
 type OpenRouterConfig struct {
 	APIKey         string
-	Model          string // 文本默认 deepseek/deepseek-chat
+	Model          string // 文本默认 deepseek/deepseek-v4-pro(直连可达;推理轻量,现有 800+ 预算即可出全文)
 	TranslateModel string // 选品外文字段翻译默认 deepseek/deepseek-v4-flash(快且便宜)
-	ReviewModel    string // 投放复盘深挖默认 google/gemini-3.5-flash(长上下文+便宜)
-	ReviewProxy    string // 复盘模型出网代理(绕国内 IP 的 OpenRouter 地区限制);空=直连。如 http://1.2.3.4:8888
-	VideoModel     string // 视频默认 bytedance/seedance-2.0-fast
-	ImageModel     string // 图像默认 google/gemini-3.1-flash-image-preview
-	Referer        string // HTTP-Referer 头
+	// ReviewModel 复盘深挖 + 看图(Listing/判品类)。须选国内直连可达的多模态模型:
+	// Google 全系在国内 IP 一律 403(地区限制),且经正向代理绕行会被 OpenRouter 判
+	// 「违反供应商服务条款」直接封禁 —— 2026-07-17 实测两条路都不通,故已弃用 gemini。
+	// minimax-m3 直连可用、支持看图、且不带推理(不会烧光 max_tokens 返回空正文)。
+	ReviewModel string
+	// AudioModel 视频解析第一段「听音频转录」专用。ReviewModel(minimax)不吃 input_audio
+	// (会 404 No endpoints found that support input audio),故转录另用支持音频的模型。
+	// voxtral-small-24b 国内直连可达、实测 ~20s 出准确逐句转录+翻译;第二段拆解仍走 ReviewModel。
+	AudioModel string
+	VideoModel string // 视频默认 bytedance/seedance-2.0-fast
+	ImageModel string // 图像默认 google/gemini-3.1-flash-image-preview
+	Referer    string // HTTP-Referer 头
 }
+
+// 注:OpenRouter 侧已无代理配置 —— 经代理调 OpenRouter 会被判 ToS 违规封禁。
+// 出网代理仅剩 fal 结果图下载在用(见 FalConfig.DownloadProxy),那条路不经 OpenRouter,不受影响。
 
 func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
 
@@ -182,7 +192,8 @@ type FalConfig struct {
 	TryOnModel string // 虚拟试穿:默认 fal-ai/fashn/tryon/v1.6
 	// DownloadProxy 结果图下载代理:生成 API(queue.fal.run)国内直连可达,但结果图托管在
 	// fal.media CDN,跨境 TLS 间歇挂死(实测直连 90s 下不完、经代理 6s)。仅下载结果图走此代理;
-	// 空=直连。默认复用 OPENROUTER_REVIEW_PROXY,生产已配则零额外配置。
+	// 空=直连。这是全站唯一还在用代理的地方 —— 不经 OpenRouter,不受其 ToS 限制。
+	// 旧的 OPENROUTER_REVIEW_PROXY 仍作为回退读入,仅为兼容尚未改 env 的环境。
 	DownloadProxy string
 }
 
@@ -277,10 +288,10 @@ func Load() *Config {
 		},
 		OpenRouter: OpenRouterConfig{
 			APIKey:         getEnv("OPENROUTER_API_KEY", ""),
-			Model:          getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
+			Model:          getEnv("OPENROUTER_MODEL", "deepseek/deepseek-v4-pro"),
 			TranslateModel: getEnv("OPENROUTER_TRANSLATE_MODEL", "deepseek/deepseek-v4-flash"),
-			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "google/gemini-3.5-flash"),
-			ReviewProxy:    getEnv("OPENROUTER_REVIEW_PROXY", ""),
+			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "minimax/minimax-m3"),
+			AudioModel:     getEnv("OPENROUTER_AUDIO_MODEL", "mistralai/voxtral-small-24b-2507"),
 			VideoModel:     getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
 			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
 			Referer:        getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
