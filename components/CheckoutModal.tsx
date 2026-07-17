@@ -65,7 +65,7 @@ export function CheckoutModal({
 
   // 价目（与 Go 端 service/billing.go 保持一致）
   const priceCents = useMemo(() => {
-    const monthly = plan === "PRO" ? 19900 : 89900;
+    const monthly = plan === "PRO" ? 19900 : 39900;
     const mult = period === 1 ? 1 : period === 3 ? 2.7 : 9;
     return Math.round(monthly * mult);
   }, [plan, period]);
