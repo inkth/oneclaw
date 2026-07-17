@@ -382,7 +382,9 @@ html { scroll-behavior: smooth; }
 }
 .dk-composer:focus-within {
   border-color: var(--brand-200);
-  box-shadow: 0 22px 54px -34px rgba(48, 70, 184, 0.28),
+  box-shadow: -20px 18px 48px -38px rgba(255, 132, 92, 0.34),
+    20px 16px 48px -38px rgba(74, 175, 145, 0.28),
+    0 22px 54px -34px rgba(48, 70, 184, 0.3),
     0 3px 10px -7px rgba(18, 20, 25, 0.18);
 }
 

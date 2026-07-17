@@ -85,13 +85,20 @@ export function AgentPills({
           <button
             key={a.kind}
             onClick={() => onChange(a.kind)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 focus-visible:ring-offset-2 ${
+            className={`group inline-flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 focus-visible:ring-offset-2 ${
               isActive
                 ? "dk-ring text-ink shadow-[0_5px_16px_-12px_rgba(18,20,25,0.55)]"
                 : "border border-black/[0.08] bg-white/75 text-zinc-500 hover:border-black/[0.15] hover:bg-white hover:text-ink"
             }`}
           >
-            <a.icon className={`h-4 w-4 ${isActive ? "text-brand-500" : "text-zinc-400"}`} />
+            <span
+              aria-hidden
+              className={`flex h-6 w-6 items-center justify-center rounded-lg border transition-[opacity,filter] ${a.iconSurface} ${
+                isActive ? "opacity-100" : "opacity-65 saturate-75 group-hover:opacity-90 group-hover:saturate-100"
+              }`}
+            >
+              <a.icon className="h-3.5 w-3.5" />
+            </span>
             {a.label}
           </button>
         );

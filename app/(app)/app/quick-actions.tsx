@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
 import type { ComposerKind, ListingMode } from "./agent-composer";
 
 export type QuickAction = {
@@ -288,7 +289,9 @@ export function QuickActionCards({
             )}
             <span
               aria-hidden
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-black/[0.055] bg-[#f4f4f0] text-zinc-600 transition-colors group-hover:bg-[#f0efea] group-hover:text-ink"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border transition-[filter,transform] group-hover:-translate-y-0.5 group-hover:saturate-125 ${
+                AGENT_IDENTITY[(a.agent ?? activeAgent) as AgentKey].iconSurface
+              }`}
             >
               <a.icon className="h-5 w-5" />
             </span>
