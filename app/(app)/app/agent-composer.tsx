@@ -76,7 +76,7 @@ export function AgentPills({
   return (
     <div
       className={`flex items-center gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible ${
-        align === "center" ? "justify-center" : "justify-start"
+        align === "center" ? "justify-start sm:justify-center" : "justify-start"
       }`}
     >
       {pills.map((a) => {
@@ -85,22 +85,13 @@ export function AgentPills({
           <button
             key={a.kind}
             onClick={() => onChange(a.kind)}
-            className={`group inline-flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 focus-visible:ring-offset-2 ${
               isActive
-                ? "dk-ring text-ink"
-                : "border border-black/10 bg-white text-zinc-600 hover:border-black/20 hover:text-ink"
+                ? "dk-ring text-ink shadow-[0_5px_16px_-12px_rgba(18,20,25,0.55)]"
+                : "border border-black/[0.08] bg-white/75 text-zinc-500 hover:border-black/[0.15] hover:bg-white hover:text-ink"
             }`}
           >
-            {/* 彩色 app-icon 块：色相承载 Agent 身份（Design Language §4 的具名例外）。
-                未选中时降饱和，让当前 Agent 的颜色跳出来。 */}
-            <span
-              aria-hidden
-              className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br transition-[filter] ${a.tile} ${
-                isActive ? "" : "saturate-50 group-hover:saturate-100"
-              }`}
-            >
-              <a.icon className="h-3.5 w-3.5 text-white" />
-            </span>
+            <a.icon className={`h-4 w-4 ${isActive ? "text-brand-500" : "text-zinc-400"}`} />
             {a.label}
           </button>
         );
@@ -467,7 +458,7 @@ export function AgentComposer({
 
         {isTryOn ? (
           // 与非试穿的 textarea(rows=4)等高，切换 Agent 时输入卡不跳变
-          <div className="flex min-h-[118px] items-center px-4 py-3.5">
+          <div className="flex min-h-40 items-center px-5 py-5 sm:px-6 sm:py-6">
             <p className="text-sm leading-relaxed text-zinc-500">
               选一位模特 + 一张服饰图（上传图，或收藏里带主图的商品）,AI 生成模特上身效果图。
             </p>
@@ -483,12 +474,12 @@ export function AgentComposer({
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
             }}
-            className="w-full resize-none bg-transparent px-4 py-3.5 text-sm leading-relaxed outline-none placeholder:text-zinc-400"
+            className="min-h-40 w-full resize-none bg-transparent px-5 pb-4 pt-5 text-[15px] leading-relaxed outline-none placeholder:text-zinc-400 sm:px-6 sm:pt-6"
           />
         )}
 
-        {/* 底栏：左「+ 添加」附件（仅含复盘的页面），右黑色发送 */}
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+        {/* 操作区与输入面融为一体，减少后台表单式的分割感。 */}
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
           {/* 会话页没有快捷卡，用底栏分段开关切「文案/上身图」;首页该开关不渲染，改由快捷卡切换。 */}
           {activeAgent === "LISTING" && onListingModeChange && (
             <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
@@ -612,7 +603,7 @@ export function AgentComposer({
             )}
             {isTryOn && !attachedFile && <CreditCost credits={CREDIT_COST.image} />}
             {!isTryOn && (
-              <span className="hidden sm:inline text-2xs text-zinc-400">⌘/Ctrl + Enter 发送</span>
+              <span className="hidden text-2xs text-zinc-400 lg:inline">⌘/Ctrl + Enter</span>
             )}
             <button
               onClick={submit}
