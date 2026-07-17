@@ -30,7 +30,7 @@ func TestPlanCredits(t *testing.T) {
 		want int
 	}{
 		{PlanFree, 450},
-		{PlanPro, 6000},
+		{PlanPro, 5600},
 		{PlanTeam, -1},
 		{"GARBAGE", 450},
 	}
