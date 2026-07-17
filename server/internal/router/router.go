@@ -81,6 +81,7 @@ func New(d Deps) *gin.Engine {
 	// 公共:落地页表单
 	api.POST("/subscribe", mktH.Subscribe)
 	api.POST("/demo", mktH.Demo)
+	api.POST("/partner-applications", mktH.RegisterPartner)
 
 	// 公共:游客可逛的爆品榜 + 商品详情(无个性化浮层)
 	api.GET("/discover/ranklist", discH.RanklistPublic)

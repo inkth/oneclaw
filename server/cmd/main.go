@@ -70,6 +70,7 @@ func main() {
 		&model.WorkspaceDiscoverFavorite{},
 		&model.NewsletterSubscription{},
 		&model.DemoRequest{},
+		&model.PartnerApplication{},
 		&model.Shop{},
 		&model.ModelAsset{},
 		&model.Material{},
