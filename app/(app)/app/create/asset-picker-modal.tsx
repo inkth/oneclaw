@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   Check,
+  Clapperboard,
   ImagePlus,
   Loader2,
   Package,
@@ -60,6 +61,8 @@ export function AssetPickerModal({
   // 模特 tab:短视频出镜人设 + 虚拟试穿模特都用它。
   const isTryOn = tryOn ?? activeAgent === "TRYON";
   const showModel = activeAgent === "DIRECTOR" || isTryOn;
+  // 短视频(非试穿)可选/可传实拍视频片段:作成片真货开场,AI 只生成承接镜头。
+  const allowVideo = activeAgent === "DIRECTOR" && !isTryOn;
   const tabs: { key: TabKey; label: string; icon: typeof Upload }[] = [
     { key: "upload", label: "上传资产", icon: Upload },
     { key: "product", label: "商品", icon: Package },
@@ -80,12 +83,19 @@ export function AssetPickerModal({
       .then((d) => alive && setProducts(d.products ?? []))
       .catch(() => alive && setProducts([]));
     apiBrowser<{ materials: MaterialOption[] }>(`/workspaces/${workspaceId}/materials`)
-      .then((d) => alive && setMaterials((d.materials ?? []).filter((m) => m.type === "IMAGE")))
+      .then((d) =>
+        alive &&
+        setMaterials(
+          (d.materials ?? []).filter(
+            (m) => m.type === "IMAGE" || (allowVideo && m.type === "VIDEO"),
+          ),
+        ),
+      )
       .catch(() => alive && setMaterials([]));
     return () => {
       alive = false;
     };
-  }, [workspaceId]);
+  }, [workspaceId, allowVideo]);
 
   // ── 上传资产 ──
   const [uploading, setUploading] = useState(false);
@@ -93,8 +103,14 @@ export function AssetPickerModal({
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast.error("请上传图片文件");
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    if (!isImage && !(allowVideo && isVideo)) {
+      toast.error(allowVideo ? "请上传图片或视频文件" : "请上传图片文件");
+      return;
+    }
+    if (isVideo && file.size > 50 << 20) {
+      toast.error("视频超过 50MB 上限,请先压缩");
       return;
     }
     setUploading(true);
@@ -145,7 +161,9 @@ export function AssetPickerModal({
               <div className="text-2xs text-zinc-500">
                 {isTryOn
                   ? "选一位模特 + 一张服饰图（上传图 / 商品主图），生成上身效果图"
-                  : "选商品、模特，或上传一张参考图"}
+                  : allowVideo
+                    ? "选商品、模特，上传参考图；也可传一段实拍视频作成片开场（真货镜头）"
+                    : "选商品、模特，或上传一张参考图"}
               </div>
             </div>
           </div>
@@ -172,8 +190,9 @@ export function AssetPickerModal({
             )}
             {selectedMaterial && (
               <SelectedChip
-                thumb={selectedMaterial.url}
-                label="参考图"
+                thumb={selectedMaterial.type === "VIDEO" ? undefined : selectedMaterial.url}
+                icon={selectedMaterial.type === "VIDEO" ? Clapperboard : undefined}
+                label={selectedMaterial.type === "VIDEO" ? "实拍片段" : "参考图"}
                 onRemove={() => onMaterialChange(null)}
               />
             )}
@@ -215,7 +234,7 @@ export function AssetPickerModal({
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                accept={allowVideo ? "image/*,video/*" : "image/*"}
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -244,7 +263,22 @@ export function AssetPickerModal({
                           sel ? "border-brand-500 ring-2 ring-brand-200" : "border-[var(--dk-stroke-border)]"
                         }`}
                       >
-                        <Image src={m.url} alt={m.originalName} fill sizes="96px" unoptimized className="object-cover" />
+                        {m.type === "VIDEO" ? (
+                          <>
+                            <video
+                              src={m.url}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                            <span className="absolute bottom-1 left-1 inline-flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white">
+                              <Clapperboard className="h-2.5 w-2.5" /> 实拍
+                            </span>
+                          </>
+                        ) : (
+                          <Image src={m.url} alt={m.originalName} fill sizes="96px" unoptimized className="object-cover" />
+                        )}
                         {sel && (
                           <span className="absolute inset-0 flex items-center justify-center bg-brand-500/40">
                             <Check className="h-4 w-4 text-white" strokeWidth={3} />

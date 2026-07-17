@@ -182,6 +182,8 @@ type directorContext struct {
 	productID     *uuid.UUID
 	facts         string // 商品档案事实块,空表示无商品
 	firstFrameURL string
+	realClipURL   string // 用户实拍片段(素材库 VIDEO):成片开场原样拼接,AI 只生成承接镜头
+	realClipSec   int    // 实拍片段取用秒数(1-5s);realClipURL 非空时 >0
 	persona       *model.ModelAsset
 	region        string // 已归一的目标市场 code(voiceFor 处理过)
 	instruction   string // 可选:一句话重写指令(空表示直接换一版)
@@ -194,9 +196,13 @@ type directorContext struct {
 func (s *AgentService) runDirector(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
 	dc := directorContext{productID: opts.ProductID}
 
-	// 首帧优先级:用户指定素材 > 商品实拍主图(都没有则 ConfirmVideo 时人设场景照兜底)。
+	// 素材:图片作首帧(优先于商品主图),视频作实拍开场片段(真货镜头,AI 只生成承接部分)。
 	if opts.MaterialID != nil {
-		dc.firstFrameURL = s.materialImageURL(ctx, wsID, *opts.MaterialID)
+		if u, isClip, sec := s.materialDirectorAsset(ctx, wsID, *opts.MaterialID); isClip {
+			dc.realClipURL, dc.realClipSec = u, sec
+		} else {
+			dc.firstFrameURL = u
+		}
 	}
 	prodRegion := ""
 	if dc.productID != nil {
@@ -245,6 +251,14 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	}
 	if dc.firstFrameURL != "" {
 		user += "\n注:已指定一张实拍图作为视频首帧,videoPrompt 请以该画面为起点设计运镜,自然展开。"
+	}
+	if dc.realClipURL != "" {
+		user += fmt.Sprintf(
+			"\n开场素材:用户提供了一段 %d 秒实拍视频,会被原样拼在成片最前面作真货开场(保留实拍原声,这段不配口播)。"+
+				"你的分镜和 videoPrompt 只负责实拍之后的 AI 镜头:第一句口播要自然承接实拍画面(像刚看完实物后开口),"+
+				"script 第一行固定写「镜头0(实拍开场 0-%d秒)|你的实拍片段,原声|—」,后续镜头从第 %d 秒起连续编号计时;"+
+				"videoPrompt 里不要出现实拍段,其时间轴按 AI 部分自身从 0 秒起算。",
+			dc.realClipSec, dc.realClipSec, dc.realClipSec)
 	}
 	if dc.persona != nil {
 		tone := ""
@@ -318,6 +332,10 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	if dc.firstFrameURL != "" {
 		meta["firstFrameUrl"] = dc.firstFrameURL
 	}
+	if dc.realClipURL != "" {
+		meta["realClipUrl"] = dc.realClipURL
+		meta["realClipSec"] = dc.realClipSec
+	}
 	if dc.persona != nil {
 		meta["preferredPersonaId"] = dc.persona.ID.String()
 		meta["personaName"] = dc.persona.Name
@@ -327,6 +345,9 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	fmt.Fprintf(&b, "\n🌍 目标市场:%s · 口播:%s(确认卡上可改市场)", voice.MarketCN, voice.LangCN)
 	if dc.hotVideoCount > 0 {
 		fmt.Fprintf(&b, "\n📈 已参考该商品 %d 条真实带货爆款的钩子套路。", dc.hotVideoCount)
+	}
+	if dc.realClipURL != "" {
+		fmt.Fprintf(&b, "\n🎞 你的实拍片段将原样作开场(%d 秒,原声),AI 镜头从其后自然承接。", dc.realClipSec)
 	}
 	if dc.firstFrameURL != "" {
 		b.WriteString("\n🖼 已取实拍图作为视频首帧,出镜的就是你的真货。")
@@ -349,6 +370,35 @@ func (s *AgentService) materialImageURL(ctx context.Context, wsID, materialID uu
 	return strings.TrimSpace(m.URL)
 }
 
+// realClipMaxSec 实拍开场片段最长取用秒数:开场钩子要短,超长实拍只取前 5 秒。
+const realClipMaxSec = 5
+
+// materialDirectorAsset 解析 DIRECTOR 素材:图片返回 (url, false, 0) 作首帧;
+// 视频返回 (url, true, 取用秒数) 作实拍开场片段(真货镜头)。其他类型/越权返回空。
+func (s *AgentService) materialDirectorAsset(ctx context.Context, wsID, materialID uuid.UUID) (url string, isClip bool, clipSec int) {
+	var m model.Material
+	if err := s.db.WithContext(ctx).
+		Where("id = ? AND workspace_id = ? AND type IN ?", materialID, wsID, []string{"IMAGE", "VIDEO"}).
+		First(&m).Error; err != nil {
+		return "", false, 0
+	}
+	u := strings.TrimSpace(m.URL)
+	if u == "" {
+		return "", false, 0
+	}
+	if m.Type != "VIDEO" {
+		return u, false, 0
+	}
+	sec := realClipMaxSec - 2 // 时长未知时按 3s 保守取用
+	if m.DurationSec != nil && *m.DurationSec > 0 {
+		sec = *m.DurationSec
+		if sec > realClipMaxSec {
+			sec = realClipMaxSec
+		}
+	}
+	return u, true, sec
+}
+
 // directorDraft 是 DIRECTOR 任务 metadata 里的脚本草稿(runDirector 写入,ConfirmVideo 消费)。
 type directorDraft struct {
 	Title              string `json:"title"`
@@ -359,6 +409,8 @@ type directorDraft struct {
 	AspectRatio        string `json:"aspectRatio"`
 	ProductID          string `json:"productId"`
 	FirstFrameURL      string `json:"firstFrameUrl"`
+	RealClipURL        string `json:"realClipUrl"` // 实拍开场片段;非空时出片后拼在最前(真货镜头)
+	RealClipSec        int    `json:"realClipSec"`
 	PreferredPersonaID string `json:"preferredPersonaId"` // 派活时预选的人设,ConfirmVideo 未指定时沿用
 	Region             string `json:"region"`             // 目标市场 code(决定口播语言;旧任务无此字段视同 US)
 	VoiceLang          string `json:"voiceLang"`          // 口播语言中文名(前端展示用)
@@ -442,6 +494,8 @@ func (s *AgentService) redraftExecute(taskID, wsID uuid.UUID, input string, d di
 
 	dc := directorContext{
 		firstFrameURL: d.FirstFrameURL,
+		realClipURL:   d.RealClipURL, // 实拍开场随重写沿用
+		realClipSec:   d.RealClipSec,
 		instruction:   instruction,
 		durationSec:   d.DurationSec, // 改市场/重写时沿用用户原先锁的时长比例,不被 AI 重置
 		aspectRatio:   d.AspectRatio,
@@ -572,6 +626,7 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID,
 		Title: d.Title, Prompt: d.VideoPrompt, Style: normalizeStyle(d.Style),
 		DurationSec: d.DurationSec, AspectRatio: d.AspectRatio,
 		FirstFrameURL: d.FirstFrameURL,
+		RealClipURL:   d.RealClipURL, RealClipSec: d.RealClipSec,
 	}
 	if d.ProductID != "" {
 		vi.ProductID = &d.ProductID

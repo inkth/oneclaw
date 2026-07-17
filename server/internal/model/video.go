@@ -24,6 +24,10 @@ type Video struct {
 	FirstFrameURL *string    `gorm:"column:first_frame_url;type:text" json:"firstFrameUrl,omitempty"` // 图生视频首帧(如商品实拍图);留存供重试复用
 	// ReferenceImageURLs input_references:跨整片保持商品/人脸一致的参考图(JSON 字符串数组);留存供 Retry/Rerender 复用。
 	ReferenceImageURLs JSONB `gorm:"column:reference_image_urls;type:jsonb" json:"referenceImageUrls,omitempty"`
+	// RealClipURL 用户实拍片段(素材库 VIDEO):成片开场原样拼接该片段前 RealClipSec 秒(真货镜头),
+	// AI 只生成承接部分;拼接在出片后处理阶段完成,失败降级为纯 AI 成片。
+	RealClipURL *string `gorm:"column:real_clip_url;type:text" json:"realClipUrl,omitempty"`
+	RealClipSec int     `gorm:"column:real_clip_sec;default:0" json:"realClipSec,omitempty"`
 
 	ThumbnailURL  *string    `gorm:"column:thumbnail_url" json:"thumbnailUrl,omitempty"`
 	VideoURL      *string    `gorm:"column:video_url" json:"videoUrl,omitempty"`

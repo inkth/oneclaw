@@ -17,6 +17,8 @@ type Video = {
   title: string;
   style: string;
   durationSec: number;
+  realClipSec?: number;
+  aspectRatio?: string | null;
   thumbnailUrl: string | null;
   videoUrl: string | null;
   script: string | null;
@@ -25,6 +27,9 @@ type Video = {
   productTitle: string | null;
   createdAt: string;
 };
+
+// 与后端 videoPageSize 对齐:一页拿满说明可能还有下一页,露出「加载更多」。
+const PAGE_SIZE = 60;
 
 const styleMap: Record<string, { label: string }> = {
   UNBOXING: { label: "Unboxing" },
@@ -45,6 +50,9 @@ export function VideosClient({
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [drawerVideoId, setDrawerVideoId] = useState<string | null>(null);
+  // 首屏拿满一页才可能有下一页;点「加载更多」按 offset 续拉。
+  const [hasMore, setHasMore] = useState(initialVideos.length >= PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // 自动轮询所有 GENERATING 视频
   useEffect(() => {
@@ -106,12 +114,36 @@ export function VideosClient({
     }
   }
 
-  // 重出后重新拉全量列表：新片（GENERATING）即时上墙，既有轮询接管后续状态。
+  // 重出后重新拉首页列表：新片（GENERATING）即时上墙，既有轮询接管后续状态。
   async function reload() {
     const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos`);
     const json = await res.json().catch(() => null);
     if (res.ok && json?.ok && Array.isArray(json.data?.videos)) {
-      setVideos(json.data.videos as Video[]);
+      const page = json.data.videos as Video[];
+      setVideos(page);
+      setHasMore(page.length >= PAGE_SIZE);
+    }
+  }
+
+  // 加载下一页并追加（按当前已有条数作 offset，删除/重出后也不会跳页错位太多）。
+  async function loadMore() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await authFetch(
+        `/api/v1/workspaces/${workspaceId}/videos?offset=${videos.length}`,
+      );
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.ok && Array.isArray(json.data?.videos)) {
+        const page = json.data.videos as Video[];
+        setVideos((prev) => {
+          const seen = new Set(prev.map((v) => v.id));
+          return [...prev, ...page.filter((v) => !seen.has(v.id))];
+        });
+        setHasMore(page.length >= PAGE_SIZE);
+      }
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -175,7 +207,10 @@ export function VideosClient({
               key={v.id}
               className="dk-card dk-lift group flex flex-col overflow-hidden"
             >
-            <div className={`relative aspect-[9/14]`}>
+            <div
+              className="relative"
+              style={{ aspectRatio: (v.aspectRatio ?? "9:16").replace(":", " / ") }}
+            >
               {v.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -222,7 +257,8 @@ export function VideosClient({
               )}
 
               <div className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-2xs font-medium text-zinc-900">
-                9:16 · {v.durationSec}s
+                {/* durationSec 是 AI 生成秒数（计费口径），成片总长要加实拍开场 */}
+                {v.aspectRatio ?? "9:16"} · {v.durationSec + (v.realClipSec ?? 0)}s
               </div>
               {v.processing === "COMPLETED" && v.videoUrl && (
                 <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-2xs font-medium text-white">
@@ -255,7 +291,7 @@ export function VideosClient({
                     rel="noopener noreferrer"
                     download={`${v.title}.mp4`}
                     className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700 hover:bg-emerald-100"
-                    title="下载视频（在线链接 48 小时后失效，建议尽快保存）"
+                    title="下载视频保存到本地"
                   >
                     <Download className="h-2.5 w-2.5" />
                   </a>
@@ -311,6 +347,18 @@ export function VideosClient({
           );
         })}
       </div>
+      {hasMore && (
+        <div className="text-center">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="press inline-flex items-center gap-1.5 rounded-full border border-[var(--dk-stroke-border)] bg-white px-4 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {loadingMore && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {loadingMore ? "加载中…" : "加载更多"}
+          </button>
+        </div>
+      )}
       {drawerVideoId && (
         <VideoDetailDrawer
           workspaceId={workspaceId}

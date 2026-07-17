@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -63,10 +65,19 @@ func parseVOCues(prompt string, durationSec int) []voCue {
 		for i, t := range texts {
 			cues = append(cues, voCue{StartSec: times[i][0], EndSec: times[i][1], Text: t})
 		}
-	} else { // 否则按台词数均分总时长
-		per := total / float64(len(texts))
-		for i, t := range texts {
-			cues = append(cues, voCue{StartSec: float64(i) * per, EndSec: float64(i+1) * per, Text: t})
+	} else { // 否则按台词长度加权分配总时长(长句占更久,比均分更贴近实际语速)
+		totalLen := 0
+		for _, t := range texts {
+			totalLen += len([]rune(t))
+		}
+		at := 0.0
+		for _, t := range texts {
+			span := total / float64(len(texts))
+			if totalLen > 0 {
+				span = total * float64(len([]rune(t))) / float64(totalLen)
+			}
+			cues = append(cues, voCue{StartSec: at, EndSec: at + span, Text: t})
+			at += span
 		}
 	}
 	for i := range cues { // clamp 进 [0,total],保证 end>start
@@ -172,10 +183,10 @@ func (s *VideoService) probeDuration(ctx context.Context, path string, fallbackS
 	return 5
 }
 
-// postProcessVideo 给成片烧录口播字幕 + 价格 CTA 尾帧,返回 (处理后字节, 是否改动)。
-// best-effort:无字幕也无价格、或 ffmpeg 缺失/失败/超时,都返回 (raw, false)。
+// postProcessVideo 出片后处理:①实拍开场拼接(真货镜头)②口播硬字幕 ③价格 CTA 尾帧,
+// 返回 (处理后字节, 是否改动)。全程 best-effort:任一步失败只损失该步,绝不让整条视频失败。
 //
-// 先试一次同时烧字幕 + CTA(只编码一次,质量/耗时最优);若失败 —— 例如某条 filter 字体
+// 字幕/CTA 先试一次同时烧(只编码一次,质量/耗时最优);若失败 —— 例如某条 filter 字体
 // 解析挂掉 —— 且两段都在,则降级为「字幕」「CTA」两段独立 pass:一段失败不再连累另一段
 // (旧实现把两者塞进同一条 ffmpeg,drawtext 一炸连字幕都没了)。代价是降级路径会二次编码。
 func (s *VideoService) postProcessVideo(ctx context.Context, v model.Video, raw []byte) ([]byte, bool) {
@@ -183,26 +194,42 @@ func (s *VideoService) postProcessVideo(ctx context.Context, v model.Video, raw 
 	if v.Prompt != nil {
 		prompt = *v.Prompt
 	}
+	// 实拍开场:把用户片段拼在最前;成功后字幕整体后移片段秒数。
+	// 注意不回写 duration_sec:该列语义固定为「AI 生成秒数=计费秒数」,Retry/Rerender 按它
+	// 重新扣费和提交;成片总时长由前端用 durationSec+realClipSec 计算展示。
+	changed, offset := false, 0
+	if v.RealClipURL != nil && strings.TrimSpace(*v.RealClipURL) != "" && v.RealClipSec > 0 {
+		if merged, ok := s.prependRealClip(ctx, v, raw); ok {
+			raw, changed, offset = merged, true, v.RealClipSec
+		} else {
+			logger.Warn("[video] 实拍开场拼接失败,退回纯 AI 成片", logger.String("video", v.ID.String()))
+		}
+	}
+	totalSec := v.DurationSec + offset
 	cues := parseVOCues(prompt, v.DurationSec)
+	for i := range cues { // videoPrompt 的时间轴是 AI 部分自身计时,整体平移到实拍段之后
+		cues[i].StartSec += float64(offset)
+		cues[i].EndSec += float64(offset)
+	}
 	ctaPrice := s.ctaPriceText(ctx, v)
 	if len(cues) == 0 && ctaPrice == "" {
-		return raw, false // 没字幕也没价格,无需处理
+		return raw, changed // 没字幕也没价格,只保留(可能的)拼接结果
 	}
 
 	// happy path:一次过同时烧字幕 + CTA。
-	if out, ok := s.renderPost(ctx, v, raw, cues, ctaPrice, "字幕+CTA"); ok {
+	if out, ok := s.renderPost(ctx, v, raw, cues, ctaPrice, totalSec, "字幕+CTA"); ok {
 		return out, true
 	}
-	// 只有「字幕 + CTA」都在时,拆段才有意义(单一组件没什么可拆);否则直接用原片。
+	// 只有「字幕 + CTA」都在时,拆段才有意义(单一组件没什么可拆);否则直接用当前片。
 	if len(cues) == 0 || ctaPrice == "" {
-		return raw, false
+		return raw, changed
 	}
 	// 降级:两段互不拖累 —— 字幕(libass)、CTA(drawtext)各自成败,任一字体/filter 故障只损失自己那段。
-	cur, changed := raw, false
-	if out, ok := s.renderPost(ctx, v, cur, cues, "", "字幕"); ok {
+	cur := raw
+	if out, ok := s.renderPost(ctx, v, cur, cues, "", totalSec, "字幕"); ok {
 		cur, changed = out, true
 	}
-	if out, ok := s.renderPost(ctx, v, cur, nil, ctaPrice, "CTA"); ok {
+	if out, ok := s.renderPost(ctx, v, cur, nil, ctaPrice, totalSec, "CTA"); ok {
 		cur, changed = out, true
 	}
 	return cur, changed
@@ -210,8 +237,9 @@ func (s *VideoService) postProcessVideo(ctx context.Context, v model.Video, raw 
 
 // renderPost 跑一次 ffmpeg,按传入的 cues / ctaPrice 烧字幕和/或价格 CTA 尾帧,
 // 返回 (处理后字节, 是否成功)。两者都空、或 ffmpeg 缺失/失败/超时都返回 (raw, false)。
+// fallbackDurSec 是 ffprobe 失败时的成片总时长兜底(实拍拼接后 ≠ v.DurationSec);
 // stage 仅用于日志区分是哪一段(字幕+CTA / 字幕 / CTA)。
-func (s *VideoService) renderPost(ctx context.Context, v model.Video, raw []byte, cues []voCue, ctaPrice, stage string) ([]byte, bool) {
+func (s *VideoService) renderPost(ctx context.Context, v model.Video, raw []byte, cues []voCue, ctaPrice string, fallbackDurSec int, stage string) ([]byte, bool) {
 	if len(cues) == 0 && ctaPrice == "" {
 		return raw, false
 	}
@@ -239,7 +267,7 @@ func (s *VideoService) renderPost(ctx context.Context, v model.Video, raw []byte
 		vf = append(vf, "ass="+assPath)
 	}
 	if withCTA {
-		dur := s.probeDuration(ctx, inPath, v.DurationSec)
+		dur := s.probeDuration(ctx, inPath, fallbackDurSec)
 		en := fmt.Sprintf("enable='gte(t,%.2f)'", dur)
 		vf = append(vf,
 			fmt.Sprintf("drawbox=x=0:y=0:w=iw:h=ih:color=black@0.45:t=fill:%s", en),
@@ -276,4 +304,131 @@ func (s *VideoService) renderPost(ctx context.Context, v model.Video, raw []byte
 		return raw, false
 	}
 	return processed, true
+}
+
+// ── 实拍开场拼接(真货镜头) ────────────────────────────────────────────────
+
+const realClipMaxBytes = 100 << 20 // 实拍片段下载上限(素材上传限 50MB,这里放宽一倍兜底)
+
+// fetchBytes 拉取一个公网 URL(实拍片段在 COS 上),带大小上限。
+func fetchBytes(ctx context.Context, rawURL string, maxBytes int64) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("下载实拍片段失败: HTTP %d", res.StatusCode)
+	}
+	data, err := io.ReadAll(io.LimitReader(res.Body, maxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("实拍片段超过 %dMB", maxBytes>>20)
+	}
+	return data, nil
+}
+
+// probeVideoMeta 取视频首条视频流的宽/高/帧率(如 1080,1920,30/1);失败返回 ok=false。
+func (s *VideoService) probeVideoMeta(ctx context.Context, path string) (w, h int, fps string, ok bool) {
+	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(cctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+		"-show_entries", "stream=width,height,r_frame_rate", "-of", "csv=p=0", path).Output()
+	if err != nil {
+		return 0, 0, "", false
+	}
+	parts := strings.Split(strings.TrimSpace(string(out)), ",")
+	if len(parts) < 3 {
+		return 0, 0, "", false
+	}
+	w, _ = strconv.Atoi(parts[0])
+	h, _ = strconv.Atoi(parts[1])
+	fps = strings.TrimSpace(parts[2])
+	if w <= 0 || h <= 0 {
+		return 0, 0, "", false
+	}
+	if fps == "" || fps == "0/0" {
+		fps = "24"
+	}
+	return w, h, fps, true
+}
+
+// prependRealClip 把实拍片段的前 RealClipSec 秒原样拼在 AI 成片前(真货开场,保留原声)。
+// 实拍归一到 AI 成片的分辨率/帧率(等比缩放+黑边),音频统一 44.1k 立体声;
+// 实拍无音轨时降级用静音轨重试一次。任何失败返回 (raw,false),成片退回纯 AI 版。
+func (s *VideoService) prependRealClip(ctx context.Context, v model.Video, raw []byte) ([]byte, bool) {
+	clipSec := v.RealClipSec
+	dctx, dcancel := context.WithTimeout(ctx, 90*time.Second)
+	clip, err := fetchBytes(dctx, strings.TrimSpace(*v.RealClipURL), realClipMaxBytes)
+	dcancel()
+	if err != nil {
+		logger.Warn("[video] 实拍片段下载失败", logger.String("video", v.ID.String()), logger.Err(err))
+		return raw, false
+	}
+
+	dir, err := os.MkdirTemp("", "vclip-*")
+	if err != nil {
+		return raw, false
+	}
+	defer os.RemoveAll(dir)
+	clipPath, aiPath, outPath := dir+"/clip.bin", dir+"/ai.mp4", dir+"/out.mp4"
+	if os.WriteFile(clipPath, clip, 0o600) != nil || os.WriteFile(aiPath, raw, 0o600) != nil {
+		return raw, false
+	}
+	w, h, fps, ok := s.probeVideoMeta(ctx, aiPath)
+	if !ok {
+		return raw, false
+	}
+
+	// 实拍段视频链:截取→等比缩放进 AI 画幅(不裁切,差比例补黑边)→对齐帧率/像素格式。
+	vChain := fmt.Sprintf(
+		"[0:v]trim=0:%d,setpts=PTS-STARTPTS,scale=%d:%d:force_original_aspect_ratio=decrease,"+
+			"pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black,fps=%s,setsar=1,format=yuv420p[v0];"+
+			"[1:v]setsar=1,format=yuv420p[v1]",
+		clipSec, w, h, w, h, fps)
+	aiAudio := "[1:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a1]"
+	run := func(clipAudio, tail string, extraInputs ...string) bool {
+		args := []string{"-y", "-i", clipPath, "-i", aiPath}
+		args = append(args, extraInputs...)
+		args = append(args,
+			"-filter_complex", vChain+";"+clipAudio+";"+aiAudio+";"+tail,
+			"-map", "[v]", "-map", "[a]",
+			"-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
+			"-c:a", "aac", "-movflags", "+faststart", outPath)
+		cctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+		defer cancel()
+		if out, err := exec.CommandContext(cctx, "ffmpeg", args...).CombinedOutput(); err != nil {
+			tailLog := string(out)
+			if len(tailLog) > 400 {
+				tailLog = tailLog[len(tailLog)-400:]
+			}
+			logger.Warn("[video] 实拍拼接 ffmpeg 失败",
+				logger.String("video", v.ID.String()), logger.String("ffmpeg", tailLog))
+			return false
+		}
+		return true
+	}
+	concatTail := "[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]"
+	// 先按「实拍自带音轨」拼;实拍无声(手机静音拍摄常见)时用静音轨重试。
+	okRun := run(fmt.Sprintf(
+		"[0:a]atrim=0:%d,asetpts=PTS-STARTPTS,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a0]",
+		clipSec), concatTail)
+	if !okRun {
+		okRun = run("[2:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a0]", concatTail,
+			"-f", "lavfi", "-t", strconv.Itoa(clipSec), "-i", "anullsrc=r=44100:cl=stereo")
+	}
+	if !okRun {
+		return raw, false
+	}
+	merged, err := os.ReadFile(outPath)
+	if err != nil || len(merged) == 0 {
+		return raw, false
+	}
+	return merged, true
 }

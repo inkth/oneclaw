@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -22,7 +24,8 @@ func (h *VideoHandler) List(c *gin.Context) {
 	if !ok {
 		return
 	}
-	items, err := h.videos.List(c.Request.Context(), wid)
+	offset, _ := strconv.Atoi(c.Query("offset")) // 缺省/非法按 0(首页)
+	items, err := h.videos.List(c.Request.Context(), wid, offset)
 	if err != nil {
 		_ = c.Error(err)
 		return

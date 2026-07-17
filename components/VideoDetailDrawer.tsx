@@ -39,6 +39,7 @@ type VideoFull = {
   thumbnailUrl: string | null;
   videoUrl: string | null;
   costCents: number;
+  realClipSec?: number;
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
@@ -475,7 +476,14 @@ export function VideoDetailDrawer({
                 <dl className="grid grid-cols-2 gap-2 text-2xs">
                   <KV label="引擎 key" value={video.engine ?? "—"} mono />
                   <KV label="比例" value={video.aspectRatio ?? "—"} />
-                  <KV label="时长" value={`${video.durationSec}s`} />
+                  <KV
+                    label="时长"
+                    value={
+                      video.realClipSec
+                        ? `${video.durationSec + video.realClipSec}s（含实拍开场 ${video.realClipSec}s）`
+                        : `${video.durationSec}s`
+                    }
+                  />
                   <KV
                     label="估算成本"
                     value={video.costCents > 0 ? `¢${video.costCents}` : "—"}
