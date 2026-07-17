@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
@@ -16,13 +15,22 @@ import {
   UserRoundCheck,
   WalletCards,
 } from "lucide-react";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { BrandLockup } from "@/components/ui/BrandMark";
 import { CommissionCalculator, PartnerApplicationForm } from "./partner-tools";
 
 export const metadata: Metadata = {
   title: "合作伙伴计划 · 发现猫",
   description: "加入发现猫合作伙伴计划，获得专属邀请码、客户数据与 20% 订阅分成。",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
 };
 
 const partnerTypes = [
@@ -54,13 +62,19 @@ const faqs = [
 
 export default function PartnersPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-1 bg-[#f7f6f2]">
+    <main className="min-h-screen flex-1 bg-[#f7f6f2]">
+        <div className="absolute inset-x-0 top-0 z-20">
+          <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <BrandLockup tileClassName="h-9 w-9 rounded-[11px]" />
+            <span className="rounded-full border border-black/[0.07] bg-white/70 px-3 py-1.5 text-xs font-semibold text-zinc-500 backdrop-blur">
+              受邀合作伙伴通道
+            </span>
+          </div>
+        </div>
         <section className="gradient-bg relative overflow-hidden border-b border-black/[0.06]">
           <div className="app-grid pointer-events-none absolute inset-0 opacity-35" />
           <div className="pointer-events-none absolute left-1/2 top-0 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-brand-300/20 blur-3xl" />
-          <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.08fr_.92fr] lg:px-8 lg:py-32">
+          <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 pb-20 pt-32 sm:px-6 sm:pb-28 sm:pt-36 lg:grid-cols-[1.08fr_.92fr] lg:px-8 lg:pb-32 lg:pt-40">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white/75 px-3.5 py-1.5 text-xs font-bold text-brand-700 shadow-sm backdrop-blur">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -79,9 +93,6 @@ export default function PartnersPage() {
                   申请成为代理商
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </a>
-                <Link href="/login" className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-200 bg-white/80 px-7 text-sm font-semibold text-zinc-700 transition hover:border-brand-200 hover:text-brand-700">
-                  已是代理商，去登录
-                </Link>
               </div>
               <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-500">
                 {["专属邀请码", "邀请数据面板", "佣金流水可追溯"].map((item) => (
@@ -217,8 +228,6 @@ export default function PartnersPage() {
             ))}
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }
