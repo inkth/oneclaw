@@ -708,6 +708,15 @@ html { scroll-behavior: smooth; }
   outline-offset: 3px;
 }
 
+/* 文本输入类元素聚焦即命中 :focus-visible，全局 outline 会被容器裁成一条线；
+   它们有光标 + 各自的 focus 边框/容器 focus-within 样式，无需这圈 outline。 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable="true"]:focus-visible {
+  outline: none;
+}
+
 input,
 textarea,
 select {
