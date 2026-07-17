@@ -9,6 +9,7 @@ const navItems: Array<{ label: string; href: string; badge?: string }> = [
   { label: "怎么用", href: "/intro#chain" },
   { label: "认识 Agent", href: "/intro#team" },
   { label: "定价", href: "/pricing" },
+  { label: "合作伙伴", href: "/partners", badge: "招募中" },
 ];
 
 export function Header() {

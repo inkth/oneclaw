@@ -179,7 +179,7 @@ func (s *BillingService) markPaid(ctx context.Context, o *model.PaymentOrder) er
 		}
 		// 代理商归因计佣(同事务,佣金与订单状态原子一致;无归因/mock 不计佣时静默跳过)。
 		if s.agency != nil && s.shouldCommission(o.IsMock) {
-			if err := s.agency.RecordCommissionTx(tx, model.CommissionSourceOrder, o.ID, o.UserID, o.AmountCents); err != nil {
+			if err := s.agency.RecordCommissionTx(tx, model.CommissionSourceOrder, o.ID, o.UserID, o.AmountCents, now); err != nil {
 				return apperr.Wrap(apperr.CodeInternal, "计佣失败", err)
 			}
 		}
@@ -425,7 +425,7 @@ func (s *BillingService) MarkOverflowPaid(ctx context.Context, wsID, billID uuid
 			if err := tx.Select("owner_id").First(&ws, "id = ?", wsID).Error; err != nil {
 				return apperr.Wrap(apperr.CodeInternal, "查询工作台失败", err)
 			}
-			if err := s.agency.RecordCommissionTx(tx, model.CommissionSourceOverflow, bill.ID, ws.OwnerID, bill.AmountCents); err != nil {
+			if err := s.agency.RecordCommissionTx(tx, model.CommissionSourceOverflow, bill.ID, ws.OwnerID, bill.AmountCents, now); err != nil {
 				return apperr.Wrap(apperr.CodeInternal, "计佣失败", err)
 			}
 		}
