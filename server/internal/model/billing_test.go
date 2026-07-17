@@ -2,15 +2,15 @@ package model
 
 import "testing"
 
-// 各动作积分单价:出片 175、出图 6/张、派活 3;未知 kind 与 qty=0 记 0。
+// 各动作积分单价:出片 35/秒(qty=AI 生成秒数)、出图 6/张、派活 3;未知 kind 与 qty=0 记 0。
 func TestCreditsFor(t *testing.T) {
 	cases := []struct {
 		kind string
 		qty  int
 		want int
 	}{
-		{UsageVideo, 1, 175},
-		{UsageVideo, 2, 350},
+		{UsageVideo, 1, 35},
+		{UsageVideo, 8, 280}, // 默认 8s 出片
 		{UsageImage, 3, 18},
 		{UsageAgentTask, 2, 6},
 		{UsageVideo, 0, 0},

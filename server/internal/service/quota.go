@@ -74,24 +74,28 @@ func billingAnchor(plan string, ws *model.Workspace) time.Time {
 
 // cycleCredits 汇总周期窗口 [start,end) 的用量:返回按 kind 原始次数与折算总积分。
 // 校验(CheckAndRecord)与汇总(Usage)共用,避免两处折算口径漂移。db 可传事务 tx。
-func cycleCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID, start, end time.Time) (total int, counts map[string]int, err error) {
+// counts=SUM(qty)(积分折算/张数口径);records=记录条数(「N 条出片」这类次数口径 ——
+// 出片按秒计费后 qty 是秒数,不能再当条数用)。
+func cycleCredits(ctx context.Context, db *gorm.DB, wsID uuid.UUID, start, end time.Time) (total int, counts, records map[string]int, err error) {
 	type row struct {
 		Kind string
 		Cnt  int
+		Recs int
 	}
 	var rows []row
 	if err = db.WithContext(ctx).Model(&model.UsageRecord{}).
-		Select("kind, COALESCE(SUM(qty),0) AS cnt").
+		Select("kind, COALESCE(SUM(qty),0) AS cnt, COUNT(*) AS recs").
 		Where("workspace_id = ? AND created_at >= ? AND created_at < ?", wsID, start, end).
 		Group("kind").Scan(&rows).Error; err != nil {
-		return 0, nil, apperr.Wrap(apperr.CodeInternal, "查询用量失败", err)
+		return 0, nil, nil, apperr.Wrap(apperr.CodeInternal, "查询用量失败", err)
 	}
-	counts = map[string]int{}
+	counts, records = map[string]int{}, map[string]int{}
 	for _, r := range rows {
 		counts[r.Kind] = r.Cnt
+		records[r.Kind] = r.Recs
 		total += model.CreditsFor(r.Kind, r.Cnt)
 	}
-	return total, counts, nil
+	return total, counts, records, nil
 }
 
 // bonusCredits 汇总该 workspace 当前有效的赠送积分(ExpiresAt 未过);抬高本周期额度上限。
@@ -155,7 +159,7 @@ func (s *QuotaService) CheckAndRecord(ctx context.Context, wsID uuid.UUID, kind 
 		}
 		now := time.Now()
 		start, end := cycleBounds(billingAnchor(plan, &ws), now)
-		used, _, err := cycleCredits(ctx, tx, wsID, start, end)
+		used, _, _, err := cycleCredits(ctx, tx, wsID, start, end)
 		if err != nil {
 			return err
 		}
@@ -192,7 +196,7 @@ func (s *QuotaService) EnsureBudget(ctx context.Context, wsID uuid.UUID, need in
 	}
 	now := time.Now()
 	start, end := cycleBounds(billingAnchor(plan, &ws), now)
-	used, _, err := cycleCredits(ctx, s.db, wsID, start, end)
+	used, _, _, err := cycleCredits(ctx, s.db, wsID, start, end)
 	if err != nil {
 		return err
 	}
@@ -267,7 +271,7 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 	plan := s.EffectivePlan(ctx, &ws)
 	start, end := cycleBounds(billingAnchor(plan, &ws), now)
 
-	usedCredits, counts, err := cycleCredits(ctx, s.db, wsID, start, end)
+	usedCredits, counts, records, err := cycleCredits(ctx, s.db, wsID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -310,9 +314,9 @@ func (s *QuotaService) Usage(ctx context.Context, wsID uuid.UUID) (*UsageSummary
 		PeriodEnd:     end,
 		Credits:       CreditItem{Used: usedCredits, Limit: planLimit},
 		Breakdown: UsageBreakdown{
-			AgentTasks: counts[model.UsageAgentTask],
-			Videos:     counts[model.UsageVideo],
-			Images:     counts[model.UsageImage],
+			AgentTasks: records[model.UsageAgentTask],
+			Videos:     records[model.UsageVideo], // 条数(qty 现在是秒数,SUM(qty) 是总秒)
+			Images:     counts[model.UsageImage],  // 张数(qty=张,SUM 正确)
 		},
 		CreditCosts:     model.CreditCosts(),
 		CostCents:       int(taskCost + videoCost),
