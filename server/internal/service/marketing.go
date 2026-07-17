@@ -15,11 +15,12 @@ import (
 
 // MarketingService 处理落地页的公开表单:邮件订阅 + 预约演示 + 代理商注册。
 type MarketingService struct {
-	db *gorm.DB
+	db  *gorm.DB
+	sms *SMSService
 }
 
-func NewMarketingService(db *gorm.DB) *MarketingService {
-	return &MarketingService{db: db}
+func NewMarketingService(db *gorm.DB, sms *SMSService) *MarketingService {
+	return &MarketingService{db: db, sms: sms}
 }
 
 // Subscribe 新增一条邮件订阅。email 已存在时返回 Conflict。
@@ -52,11 +53,19 @@ func (s *MarketingService) CreateDemo(ctx context.Context, in model.DemoRequest)
 	return &in, nil
 }
 
-// RegisterPartner 仅用代理商名称和手机号登记注册申请。
+// SendPartnerCode 发送代理商注册专用短信验证码。
+func (s *MarketingService) SendPartnerCode(ctx context.Context, phone string) (string, error) {
+	return s.sms.sendForPurpose(ctx, strings.TrimSpace(phone), smsPurposePartnerRegistration)
+}
+
+// RegisterPartner 校验手机号后，用代理商名称和手机号登记注册申请。
 // 同一手机号重复提交为幂等操作，更新名称但保留审核状态。
-func (s *MarketingService) RegisterPartner(ctx context.Context, name, phone string) (*model.PartnerApplication, error) {
+func (s *MarketingService) RegisterPartner(ctx context.Context, name, phone, code string) (*model.PartnerApplication, error) {
 	name = strings.TrimSpace(name)
 	phone = strings.TrimSpace(phone)
+	if err := s.sms.verifyForPurpose(ctx, phone, strings.TrimSpace(code), smsPurposePartnerRegistration); err != nil {
+		return nil, err
+	}
 	application := model.PartnerApplication{
 		Name:   name,
 		Phone:  phone,

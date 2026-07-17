@@ -28,11 +28,13 @@ func (u *User) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
-// PhoneVerificationCode 短信验证码记录。CodeHash 存哈希,不存明文。
+// PhoneVerificationCode 短信验证码记录。CodeHash 存哈希,不存明文;
+// Purpose 隔离登录与代理商注册等验证场景。
 // Phase 1 无 Redis,验证码落 Postgres(对齐原 Prisma 设计)。
 type PhoneVerificationCode struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	Phone     string     `gorm:"index;not null" json:"phone"`
+	Purpose   string     `gorm:"not null;default:'LOGIN';index" json:"-"`
 	CodeHash  string     `gorm:"not null" json:"-"`
 	Attempts  int        `gorm:"default:0" json:"-"`
 	Expires   time.Time  `gorm:"index" json:"-"`

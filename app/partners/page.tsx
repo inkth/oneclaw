@@ -47,7 +47,7 @@ const benefits = [
 ];
 
 const steps = [
-  { no: "01", title: "提交注册", text: "填写代理商名称和手机号即可提交。" },
+  { no: "01", title: "提交注册", text: "填写代理商名称、手机号并完成短信验证。" },
   { no: "02", title: "完成审核", text: "通过后，你的发现猫账号会开通代理身份。" },
   { no: "03", title: "分享邀请码", text: "在推广中心复制链接，分享给你的用户和客户。" },
   { no: "04", title: "查看数据与提现", text: "邀请、付费、佣金和提现状态都在产品内可查。" },
@@ -201,7 +201,7 @@ export default function PartnersPage() {
             <div className="lg:pt-8">
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-white shadow-[var(--shadow-brand)]"><UserRoundCheck className="h-5 w-5" /></div>
               <h2 className="mt-6 font-display text-4xl font-semibold tracking-tight text-zinc-950">准备好一起增长了吗？</h2>
-              <p className="mt-4 max-w-md text-base leading-7 text-zinc-600">只需填写代理商名称和手机号。审核通过后，我们会为该手机号开通代理身份与推广中心。</p>
+              <p className="mt-4 max-w-md text-base leading-7 text-zinc-600">填写代理商名称和手机号，完成短信验证即可提交。审核通过后，我们会为该手机号开通代理身份与推广中心。</p>
               <div className="mt-8 space-y-3 text-sm text-zinc-700">
                 {["实名的专属代理身份", "一键复制邀请链接", "客户与佣金数据自动统计"].map((item) => (
                   <div key={item} className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" />{item}</div>

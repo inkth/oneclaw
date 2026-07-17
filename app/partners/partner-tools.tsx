@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, Calculator, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
 
 const PRO_PRICE = 199;
@@ -81,18 +82,57 @@ export function CommissionCalculator() {
 type FormState = {
   name: string;
   phone: string;
+  code: string;
 };
 
-const initialForm: FormState = { name: "", phone: "" };
+const initialForm: FormState = { name: "", phone: "", code: "" };
 
 export function PartnerApplicationForm() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const timer = window.setInterval(() => setSecondsLeft((seconds) => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [secondsLeft]);
+
   function update(key: keyof FormState, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function sendCode() {
+    if (!/^1[3-9]\d{9}$/.test(form.phone)) {
+      setError("请输入合法的中国大陆 11 位手机号");
+      return;
+    }
+    setSendingCode(true);
+    setError("");
+    try {
+      const data = await apiBrowser<{ devCode?: string }>("/partner-applications/send-code", {
+        method: "POST",
+        body: JSON.stringify({ phone: form.phone }),
+      });
+      setCodeSent(true);
+      setSecondsLeft(60);
+      if (data.devCode) {
+        toast.message("dev 模式验证码", {
+          description: `${data.devCode}（也已打印到服务端日志）`,
+          duration: 8000,
+        });
+      } else {
+        toast.success("验证码已发送");
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "验证码发送失败，请稍后再试");
+    } finally {
+      setSendingCode(false);
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -105,10 +145,13 @@ export function PartnerApplicationForm() {
         body: JSON.stringify({
           name: form.name,
           phone: form.phone,
+          code: form.code,
         }),
       });
       setDone(true);
       setForm(initialForm);
+      setCodeSent(false);
+      setSecondsLeft(0);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "提交失败，请稍后再试");
     } finally {
@@ -131,18 +174,59 @@ export function PartnerApplicationForm() {
     );
   }
 
-  const fieldClass = "mt-2 h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-950 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100";
+  const fieldClass = "h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-950 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100";
 
   return (
     <form onSubmit={submit} className="rounded-[28px] border border-black/[0.07] bg-white p-6 shadow-[0_24px_70px_-48px_rgba(18,20,25,.45)] sm:p-8">
       <div className="grid gap-5">
         <label className="text-sm font-medium text-zinc-700">
           代理商名称 <span className="text-rose-500">*</span>
-          <input required maxLength={100} autoComplete="organization" value={form.name} onChange={(event) => update("name", event.target.value)} className={fieldClass} placeholder="请填写代理商名称" />
+          <input required maxLength={100} autoComplete="organization" value={form.name} onChange={(event) => update("name", event.target.value)} className={`mt-2 ${fieldClass}`} placeholder="请填写代理商名称" />
         </label>
         <label className="text-sm font-medium text-zinc-700">
           手机号 <span className="text-rose-500">*</span>
-          <input required type="tel" inputMode="numeric" autoComplete="tel" pattern="[0-9]{11}" maxLength={11} value={form.phone} onChange={(event) => update("phone", event.target.value.replace(/\D/g, "").slice(0, 11))} className={fieldClass} placeholder="11 位手机号" />
+          <input
+            required
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            pattern="1[3-9][0-9]{9}"
+            maxLength={11}
+            value={form.phone}
+            onChange={(event) => {
+              const phone = event.target.value.replace(/\D/g, "").slice(0, 11);
+              setForm((current) => ({ ...current, phone, code: "" }));
+              setCodeSent(false);
+              setSecondsLeft(0);
+            }}
+            className={`mt-2 ${fieldClass}`}
+            placeholder="11 位手机号"
+          />
+        </label>
+        <label className="text-sm font-medium text-zinc-700">
+          短信验证码 <span className="text-rose-500">*</span>
+          <div className="mt-2 flex gap-2">
+            <input
+              required
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={form.code}
+              onChange={(event) => update("code", event.target.value.replace(/\D/g, "").slice(0, 6))}
+              className={`${fieldClass} min-w-0 flex-1 font-mono tracking-[0.24em]`}
+              placeholder="6 位验证码"
+            />
+            <button
+              type="button"
+              onClick={sendCode}
+              disabled={sendingCode || secondsLeft > 0 || !/^1[3-9]\d{9}$/.test(form.phone)}
+              className="inline-flex h-12 w-28 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-xs font-bold text-brand-700 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+            >
+              {sendingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : secondsLeft > 0 ? `${secondsLeft}s` : "获取验证码"}
+            </button>
+          </div>
+          {codeSent && <span className="mt-2 block text-xs font-normal text-emerald-600">验证码已发送，5 分钟内有效</span>}
         </label>
       </div>
 
@@ -150,7 +234,7 @@ export function PartnerApplicationForm() {
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || !codeSent || form.code.length !== 6}
         className="group mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-6 text-sm font-bold text-white shadow-[var(--shadow-brand)] transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}

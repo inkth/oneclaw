@@ -65,15 +65,38 @@ func (h *MarketingHandler) Demo(c *gin.Context) {
 type partnerApplicationReq struct {
 	Name  string `json:"name" binding:"required,max=100"`
 	Phone string `json:"phone" binding:"required,len=11,numeric"`
+	Code  string `json:"code" binding:"required,len=6,numeric"`
+}
+
+type partnerSendCodeReq struct {
+	Phone string `json:"phone" binding:"required,len=11,numeric"`
+}
+
+func (h *MarketingHandler) SendPartnerCode(c *gin.Context) {
+	var in partnerSendCodeReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("请填写 11 位手机号"))
+		return
+	}
+	devCode, err := h.mk.SendPartnerCode(c.Request.Context(), in.Phone)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	data := gin.H{"expiresInSec": 300}
+	if devCode != "" {
+		data["devCode"] = devCode
+	}
+	OK(c, data)
 }
 
 func (h *MarketingHandler) RegisterPartner(c *gin.Context) {
 	var in partnerApplicationReq
 	if err := c.ShouldBindJSON(&in); err != nil {
-		_ = c.Error(apperr.BadRequest("请填写代理商名称和 11 位手机号"))
+		_ = c.Error(apperr.BadRequest("请填写代理商名称、11 位手机号和 6 位验证码"))
 		return
 	}
-	application, err := h.mk.RegisterPartner(c.Request.Context(), in.Name, in.Phone)
+	application, err := h.mk.RegisterPartner(c.Request.Context(), in.Name, in.Phone, in.Code)
 	if err != nil {
 		_ = c.Error(err)
 		return
