@@ -18,6 +18,7 @@ export type Seller = {
   coverUrl: string | null;
   rating: number;
   categories: string[];
+  // EchoTik 榜单接口此字段几乎恒为 0(非真实店铺商品总数),真实值仅 detail 接口有,故列表不展示。
   totalProductCnt: number;
   totalSaleCnt: number;
   totalSaleGmvAmt: number;

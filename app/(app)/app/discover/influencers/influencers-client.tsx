@@ -21,6 +21,7 @@ export type Influencer = {
   ecScore: number;
   totalFollowersCnt: number;
   totalDiggCnt: number;
+  // 同店铺榜:EchoTik 榜单接口此字段几乎恒为 0(非真实数量),故列表不展示。
   totalProductCnt: number;
   totalPostVideoCnt: number;
   totalLiveCnt: number;
@@ -96,7 +97,6 @@ export function InfluencersClient({
               <Th align="right">粉丝</Th>
               <Th align="right">带货销量</Th>
               <Th align="right">带货 GMV</Th>
-              <Th align="right">商品</Th>
               <Th align="right">视频</Th>
               <Th align="right">直播</Th>
             </tr>
@@ -138,7 +138,6 @@ export function InfluencersClient({
                 <Td align="right">{fmt(i.totalFollowersCnt)}</Td>
                 <Td align="right" className="font-semibold text-zinc-900">{fmt(i.totalSaleCnt)}</Td>
                 <Td align="right">{fmtMoney(i.totalSaleGmvAmt)}</Td>
-                <Td align="right">{fmt(i.totalProductCnt)}</Td>
                 <Td align="right">{fmt(i.totalPostVideoCnt)}</Td>
                 <Td align="right">{fmt(i.totalLiveCnt)}</Td>
               </Tr>

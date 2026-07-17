@@ -12,6 +12,12 @@ import {
   Video,
 } from "lucide-react";
 import { DkAura } from "@/components/ui/GradientBackground";
+import {
+  ComposerForm,
+  ComposerSendButton,
+  ComposerTextarea,
+  ComposerToolbar,
+} from "@/components/ui/Composer";
 import { BRAND_SLOGAN_FOCUS, BRAND_SLOGAN_LEAD } from "@/lib/brand";
 
 /* 首屏即产品：复刻工作台 composer 的「一句话派活」交互。
@@ -143,9 +149,14 @@ export function HomeHero() {
         <div className="relative isolate mx-auto mt-7 max-w-5xl sm:mt-9">
           <DkAura className="absolute left-1/2 top-[58px] z-0 w-[78%] -translate-x-1/2 -translate-y-1/2" />
 
-          <form onSubmit={dispatch} className="dk-composer relative z-10 overflow-hidden text-left">
+          <ComposerForm
+            variant="hero"
+            onSubmit={dispatch}
+            className="relative z-10 text-left"
+          >
             <div className="relative">
-              <textarea
+              <ComposerTextarea
+                variant="hero"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onFocus={() => {
@@ -155,7 +166,7 @@ export function HomeHero() {
                 onBlur={() => setFocused(false)}
                 rows={2}
                 aria-label="告诉 Agent 你想做什么"
-                className="min-h-20 w-full resize-none bg-transparent px-4 py-4 text-[15px] leading-relaxed outline-none sm:min-h-24 sm:px-6"
+                className="min-h-20 px-4 py-4 sm:min-h-24 sm:px-6"
               />
               {showDemo && (
                 <div
@@ -168,7 +179,7 @@ export function HomeHero() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2.5">
+            <ComposerToolbar variant="hero" className="gap-1.5 pb-2.5">
               {PROMPTS.map((p) => {
                 const active = showDemo && p.agent === prompt.agent;
                 return (
@@ -191,15 +202,16 @@ export function HomeHero() {
                 );
               })}
 
-              <button
+              <ComposerSendButton
                 type="submit"
-                className="bg-vibrant pop ml-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm sm:px-4 sm:py-2 sm:text-sm"
+                size="hero"
+                className="ml-auto px-3.5 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm"
               >
                 <Send className="h-4 w-4" />
                 派给 Agent
-              </button>
-            </div>
-          </form>
+              </ComposerSendButton>
+            </ComposerToolbar>
+          </ComposerForm>
 
           <RunDemo />
 
