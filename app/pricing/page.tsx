@@ -73,7 +73,7 @@ const tiers: Array<{
     icon: Crown,
     tone: "fuchsia",
     highlight: false,
-    description: "适合多账号、多品牌协作团队",
+    description: "适合多店铺、高频出片，用量超额也不想断供的卖家",
     features: [
       "含 11200 积分/月（≈ 40 条 8 秒出片），超出按量计费",
       "超基线按 ¥45/千积分结算（8 秒出片约 ¥12.6）",
