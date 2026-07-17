@@ -56,16 +56,15 @@ export default async function DashboardPage({
     .catch((): SampleVid[] => []);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-7 sm:space-y-9">
+    <div className="relative isolate mx-auto max-w-5xl space-y-7 sm:space-y-9">
+      <div aria-hidden className="workspace-aurora pointer-events-none absolute -inset-x-16 -top-8 -z-10 h-[31rem]" />
+
       <div className="pt-5 text-center sm:pt-10">
-        <h1 className="font-display text-[clamp(2rem,4.4vw,3.45rem)] font-semibold leading-[1.08] tracking-[-0.04em] text-ink">
-          <span className="block sm:inline">把一个机会，</span>
-          <span className="block sm:inline">推进到结果。</span>
+        <h1 className="font-display text-[clamp(2rem,3.8vw,3.05rem)] font-semibold leading-[1.14] tracking-[-0.022em] text-ink">
+          把机会，推进到结果。
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--dk-content-secondary)]">
-          {!workspace
-            ? "选一个 Agent，说清目标就能开始。登录后会自动保存对话和结果。"
-            : "选一个 Agent，说清目标就能开始。对话会自动保存，结果会沉淀在工作台。"}
+          选一个 Agent，说清目标就能开始。
         </p>
       </div>
 
