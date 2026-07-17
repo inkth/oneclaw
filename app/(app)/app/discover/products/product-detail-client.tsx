@@ -152,12 +152,14 @@ export function ProductDetailClient({
   const [busy, setBusy] = useState<"" | "import" | "analyze">("");
   const [imported, setImported] = useState<string | null>(p.importedProductId);
   const { open: openAuthModal } = useAuthModal();
-  // 上报当前商品给情境助手；已导入的带自建商品 id，composer 可结构化消费
+  // 上报当前商品给情境助手；已导入的带自建商品 id，composer 可结构化消费；
+  // region 与 id 一起构成后端定位键，派活时注入该商品真实数据做单品判断
   useReportPageEntity({
     kind: "discover-product",
     id: p.productId,
     name: p.nameZh || p.name,
     productId: imported ?? undefined,
+    region: p.region,
   });
 
   function gateGuest(): boolean {

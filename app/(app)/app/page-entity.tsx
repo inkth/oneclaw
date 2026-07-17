@@ -14,6 +14,8 @@ export type PageEntity = {
   name: string;
   /** 自建商品 id：composer 结构化消费（DIRECTOR/LISTING 注入真实商品数据） */
   productId?: string;
+  /** discover 实体所属市场（如 US）：与 id 一起构成后端定位键，单品判断注入真实数据用 */
+  region?: string;
   /** 上报时所在路由；消费方以 pathname 匹配判定是否仍有效 */
   path: string;
 };
@@ -49,8 +51,8 @@ export function usePageEntity(): PageEntity | null {
 export function useReportPageEntity(entity: Omit<PageEntity, "path">) {
   const { setEntity } = useContext(PageEntityContext);
   const pathname = usePathname();
-  const { kind, id, name, productId } = entity;
+  const { kind, id, name, productId, region } = entity;
   useEffect(() => {
-    setEntity({ kind, id, name, productId, path: pathname });
-  }, [setEntity, kind, id, name, productId, pathname]);
+    setEntity({ kind, id, name, productId, region, path: pathname });
+  }, [setEntity, kind, id, name, productId, region, pathname]);
 }

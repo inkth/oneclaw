@@ -37,6 +37,8 @@ type ContextAction = {
   prompt?: string;
   /** 结构化商品：随浮层派活或 query 预填带给 composer */
   productId?: string;
+  /** discover 商品引用：派活时后端注入该商品真实数据做单品判断（ANALYST） */
+  discoverRef?: { productId: string; region: string };
 };
 
 const NEW_TASK = "/app/agents/new#agent-composer";
@@ -61,7 +63,10 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
   if (pathname.startsWith("/app/discover/products")) {
     if (entity?.kind === "discover-product") {
       // 已导入过的带 productId：切到 DIRECTOR/LISTING 时 composer 能注入真实商品数据
-      return dispatchAction("判断这个商品", PackageSearch, "ANALYST", `请帮我判断【${clip(entity.name)}】这个商品是否值得做，并给出下一步建议。`, entity.productId);
+      const action = dispatchAction("判断这个商品", PackageSearch, "ANALYST", `请帮我判断【${clip(entity.name)}】这个商品是否值得做，并给出下一步建议。`, entity.productId);
+      // discover 引用：派活时后端据此注入销量/佣金/达人等真实数据，走单品判断而非榜单选品
+      action.discoverRef = { productId: entity.id, region: entity.region ?? "US" };
+      return action;
     }
     return dispatchAction("开始选品判断", PackageSearch, "ANALYST", "我正在选品，请告诉我判断一个商品值不值得做要看哪些关键指标，我看中后发给你分析。");
   }
@@ -408,6 +413,7 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
           productId={action.productId}
           fullHref={action.href}
           entityName={entity?.name || undefined}
+          discoverRef={action.discoverRef}
           onClose={() => setSheetPath(null)}
         />
       );

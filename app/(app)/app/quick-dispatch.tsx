@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowUpRight, Loader2, Send, X } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Loader2, Send, X } from "lucide-react";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { Button } from "@/components/ui/Button";
 import { CreditCost } from "@/components/ui/CreditCost";
@@ -27,6 +27,7 @@ export function QuickDispatchSheet({
   productId,
   fullHref,
   entityName,
+  discoverRef,
   onClose,
 }: {
   workspaceId: string;
@@ -38,6 +39,8 @@ export function QuickDispatchSheet({
   fullHref: string;
   /** 当前页实体名，仅作上下文提示展示 */
   entityName?: string;
+  /** discover 商品引用：随任务下发，后端注入销量/佣金/达人等真实数据做单品判断 */
+  discoverRef?: { productId: string; region: string };
   onClose: () => void;
 }) {
   const identity = AGENT_IDENTITY[agent];
@@ -81,6 +84,10 @@ export function QuickDispatchSheet({
           input: text,
           // 与 agent-composer 同规则：结构化商品只对创作类任务生效
           ...((agent === "DIRECTOR" || agent === "LISTING") && productId ? { productId } : {}),
+          // discover 商品引用（ANALYST）：后端注入真实数据走单品判断，替代榜单选品
+          ...(agent === "ANALYST" && discoverRef
+            ? { discoverProductId: discoverRef.productId, discoverRegion: discoverRef.region }
+            : {}),
         }),
       });
       const json = await res.json().catch(() => null);
@@ -112,8 +119,14 @@ export function QuickDispatchSheet({
           <span className={`h-2 w-2 rounded-full ${identity.dot}`} aria-hidden />
           <span className="text-sm font-semibold text-ink">{identity.label}</span>
           {entityName && (
-            <span className="min-w-0 flex-1 truncate rounded-full bg-[var(--dk-btn-tertiary)] px-2.5 py-1 text-2xs font-medium text-[var(--dk-content-secondary)]">
-              正在看 · {entityName}
+            <span
+              title={discoverRef ? "已附带该商品的真实销量 / 佣金 / 达人数据，Agent 会基于真实数字判断" : undefined}
+              className="inline-flex min-w-0 flex-1 items-center gap-1 truncate rounded-full bg-[var(--dk-btn-tertiary)] px-2.5 py-1 text-2xs font-medium text-[var(--dk-content-secondary)]"
+            >
+              {discoverRef && <BadgeCheck className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />}
+              <span className="truncate">
+                {discoverRef ? "已附商品数据" : "正在看"} · {entityName}
+              </span>
             </span>
           )}
           <button
