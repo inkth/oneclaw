@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	apperr "github.com/faxianmao/server/internal/errors"
 	"github.com/faxianmao/server/internal/logger"
@@ -211,6 +213,48 @@ func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, g
 		return nil, apperr.BadRequest("没有可处理的商品图,请确认已上传图片素材")
 	}
 	return res, nil
+}
+
+// RetryProductImages 重跑自建商品的展示图(images_status=FAILED 的重试入口):
+// 原子认领 FAILED→RUNNING 防双击,重占一笔出图额度(失败时已退回)后按原图重出,
+// 成功/失败回写与退款复用 runProductImages 的口径。
+func (s *AgentService) RetryProductImages(ctx context.Context, wsID, productID uuid.UUID) error {
+	if !s.fal.Configured() || !s.storage.Configured() {
+		return apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
+	}
+	var p model.Product
+	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", productID, wsID).First(&p).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return apperr.NotFound("商品不存在")
+	}
+	if err != nil {
+		return apperr.Wrap(apperr.CodeInternal, "查询商品失败", err)
+	}
+	var urls []string
+	if len(p.SourceImages) > 0 {
+		_ = json.Unmarshal(p.SourceImages, &urls)
+	}
+	if len(urls) == 0 {
+		return apperr.BadRequest("该商品没有原图,无法重出展示图")
+	}
+	// 原子认领:FAILED → RUNNING,并发/双击时只有一个请求生效。
+	claim := s.db.WithContext(ctx).Model(&model.Product{}).
+		Where("id = ? AND workspace_id = ? AND images_status = ?", productID, wsID, listingImagesFailed).
+		Update("images_status", listingImagesRunning)
+	if claim.Error != nil {
+		return apperr.Wrap(apperr.CodeInternal, "重试失败", claim.Error)
+	}
+	if claim.RowsAffected == 0 {
+		return apperr.BadRequest("该商品没有待重试的出图任务")
+	}
+	// 出图失败时额度已退回,这里重占一笔(refID=商品,与首次同口径);超额把认领还回 FAILED。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageImage, productShotCount, &productID); err != nil {
+		s.db.WithContext(ctx).Model(&model.Product{}).Where("id = ?", productID).
+			Update("images_status", listingImagesFailed)
+		return err
+	}
+	go s.runProductImages(productID, wsID, urls)
+	return nil
 }
 
 // runProductImages 后台据原图并发出 N 张展示图 → 写 Product.Images + 封面(白底图)+ ImagesStatus。

@@ -220,6 +220,23 @@ export function ProductsClient({
     }
   }
 
+  // 展示图失败重试：后端认领 FAILED→RUNNING 并重占出图额度；本地即刻标 RUNNING，
+  // 交给上面的 hasActive 轮询把成品填回来。
+  async function retryImages(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      await apiBrowser(`/workspaces/${workspaceId}/products/${id}/images`, { method: "POST" });
+      setProducts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, imagesStatus: "RUNNING" as ImagesStatus } : p)),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "重试失败，稍后再试");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function deleteProduct(id: string) {
     if (!confirm("删除该商品？删除后不可恢复。")) return;
     setBusyId(id);
@@ -299,7 +316,7 @@ export function ProductsClient({
                         {statusMap[p.status].label}
                       </span>
                     </div>
-                    {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING" || p.imagesStatus === "DONE") && (
+                    {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING" || p.imagesStatus === "DONE" || p.imagesStatus === "FAILED") && (
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-zinc-500">
                         {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING") && (
                           <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 ${imagesStatusMap.RUNNING.cls}`}>
@@ -310,6 +327,16 @@ export function ProductsClient({
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">
                             <Sparkles className="h-2.5 w-2.5" /> 已出图
                           </span>
+                        )}
+                        {p.imagesStatus === "FAILED" && (
+                          <button
+                            type="button"
+                            onClick={() => retryImages(p.id)}
+                            disabled={busyId === p.id}
+                            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium ${imagesStatusMap.FAILED.cls} hover:bg-rose-100 disabled:opacity-50`}
+                          >
+                            <RotateCcw className="h-2.5 w-2.5" /> 出图失败 · 重试
+                          </button>
                         )}
                       </div>
                     )}
@@ -440,9 +467,16 @@ export function ProductsClient({
                             </span>
                           )}
                           {p.imagesStatus === "FAILED" && (
-                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${imagesStatusMap.FAILED.cls}`}>
-                              {imagesStatusMap.FAILED.label}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => retryImages(p.id)}
+                              disabled={busyId === p.id}
+                              title="展示图生成失败，点击重新生成（消耗出图积分）"
+                              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium leading-none ${imagesStatusMap.FAILED.cls} hover:bg-rose-100 disabled:opacity-50`}
+                            >
+                              <RotateCcw className="h-2.5 w-2.5" />
+                              {imagesStatusMap.FAILED.label} · 重试
+                            </button>
                           )}
                           {p.imagesStatus === "DONE" && (
                             <span
