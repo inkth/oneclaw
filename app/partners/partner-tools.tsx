@@ -81,12 +81,9 @@ export function CommissionCalculator() {
 type FormState = {
   name: string;
   phone: string;
-  email: string;
-  company: string;
-  channel: string;
 };
 
-const initialForm: FormState = { name: "", phone: "", email: "", company: "", channel: "" };
+const initialForm: FormState = { name: "", phone: "" };
 
 export function PartnerApplicationForm() {
   const [form, setForm] = useState<FormState>(initialForm);
@@ -103,17 +100,11 @@ export function PartnerApplicationForm() {
     setSubmitting(true);
     setError("");
     try {
-      await apiBrowser("/demo", {
+      await apiBrowser("/partner-applications", {
         method: "POST",
         body: JSON.stringify({
           name: form.name,
-          email: form.email,
-          company: form.company || undefined,
-          message: [
-            "[代理商申请]",
-            `手机：${form.phone}`,
-            `主要渠道：${form.channel || "未填写"}`,
-          ].join("\n"),
+          phone: form.phone,
         }),
       });
       setDone(true);
@@ -127,11 +118,11 @@ export function PartnerApplicationForm() {
 
   if (done) {
     return (
-      <div className="flex min-h-[440px] flex-col items-center justify-center rounded-[28px] border border-emerald-200 bg-emerald-50/70 px-6 text-center">
+      <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[28px] border border-emerald-200 bg-emerald-50/70 px-6 text-center">
         <CheckCircle2 className="h-12 w-12 text-emerald-600" />
-        <h3 className="mt-5 font-display text-2xl font-semibold text-zinc-950">申请已收到</h3>
+        <h3 className="mt-5 font-display text-2xl font-semibold text-zinc-950">注册信息已收到</h3>
         <p className="mt-3 max-w-sm text-sm leading-6 text-zinc-600">
-          我们会尽快核对你的渠道与合作方向，通过邮件或手机与你联系。
+          我们会尽快审核注册信息，并通过该手机号与你联系。
         </p>
         <button type="button" onClick={() => setDone(false)} className="mt-6 text-sm font-semibold text-brand-700 hover:text-brand-800">
           再提交一份申请
@@ -144,28 +135,16 @@ export function PartnerApplicationForm() {
 
   return (
     <form onSubmit={submit} className="rounded-[28px] border border-black/[0.07] bg-white p-6 shadow-[0_24px_70px_-48px_rgba(18,20,25,.45)] sm:p-8">
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5">
         <label className="text-sm font-medium text-zinc-700">
-          姓名 <span className="text-rose-500">*</span>
-          <input required value={form.name} onChange={(event) => update("name", event.target.value)} className={fieldClass} placeholder="怎么称呼你" />
+          代理商名称 <span className="text-rose-500">*</span>
+          <input required maxLength={100} autoComplete="organization" value={form.name} onChange={(event) => update("name", event.target.value)} className={fieldClass} placeholder="请填写代理商名称" />
         </label>
         <label className="text-sm font-medium text-zinc-700">
           手机号 <span className="text-rose-500">*</span>
-          <input required inputMode="tel" value={form.phone} onChange={(event) => update("phone", event.target.value)} className={fieldClass} placeholder="用于开通代理账号" />
-        </label>
-        <label className="text-sm font-medium text-zinc-700">
-          邮箱 <span className="text-rose-500">*</span>
-          <input required type="email" value={form.email} onChange={(event) => update("email", event.target.value)} className={fieldClass} placeholder="name@example.com" />
-        </label>
-        <label className="text-sm font-medium text-zinc-700">
-          公司 / 团队
-          <input value={form.company} onChange={(event) => update("company", event.target.value)} className={fieldClass} placeholder="选填" />
+          <input required type="tel" inputMode="numeric" autoComplete="tel" pattern="[0-9]{11}" maxLength={11} value={form.phone} onChange={(event) => update("phone", event.target.value.replace(/\D/g, "").slice(0, 11))} className={fieldClass} placeholder="11 位手机号" />
         </label>
       </div>
-      <label className="mt-5 block text-sm font-medium text-zinc-700">
-        你的主要渠道
-        <input value={form.channel} onChange={(event) => update("channel", event.target.value)} className={fieldClass} placeholder="例如：私域社群、自媒体、MCN 客户、服务商客户" />
-      </label>
 
       {error && <p role="alert" className="mt-4 text-sm text-rose-600">{error}</p>}
 
@@ -175,9 +154,9 @@ export function PartnerApplicationForm() {
         className="group mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-6 text-sm font-bold text-white shadow-[var(--shadow-brand)] transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
-        {submitting ? "正在提交" : "申请成为代理商"}
+        {submitting ? "正在提交" : "注册成为代理商"}
       </button>
-      <p className="mt-4 text-center text-xs leading-5 text-zinc-400">提交即表示你同意我们为本次合作申请联系你。</p>
+      <p className="mt-4 text-center text-xs leading-5 text-zinc-400">注册信息审核通过后，我们会为该手机号开通代理身份。</p>
     </form>
   );
 }

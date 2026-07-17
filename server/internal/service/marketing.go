@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	apperr "github.com/faxianmao/server/internal/errors"
 	"github.com/faxianmao/server/internal/model"
 )
 
-// MarketingService 处理落地页的公开表单:邮件订阅 + 预约演示。
+// MarketingService 处理落地页的公开表单:邮件订阅 + 预约演示 + 代理商注册。
 type MarketingService struct {
 	db *gorm.DB
 }
@@ -48,4 +50,29 @@ func (s *MarketingService) CreateDemo(ctx context.Context, in model.DemoRequest)
 		return nil, apperr.Wrap(apperr.CodeInternal, "提交预约失败", err)
 	}
 	return &in, nil
+}
+
+// RegisterPartner 仅用代理商名称和手机号登记注册申请。
+// 同一手机号重复提交为幂等操作，更新名称但保留审核状态。
+func (s *MarketingService) RegisterPartner(ctx context.Context, name, phone string) (*model.PartnerApplication, error) {
+	name = strings.TrimSpace(name)
+	phone = strings.TrimSpace(phone)
+	application := model.PartnerApplication{
+		Name:   name,
+		Phone:  phone,
+		Status: "PENDING",
+	}
+	if err := s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "phone"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"name":       name,
+			"updated_at": time.Now(),
+		}),
+	}).Create(&application).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "代理商注册失败", err)
+	}
+	if err := s.db.WithContext(ctx).Where("phone = ?", phone).First(&application).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询代理商注册信息失败", err)
+	}
+	return &application, nil
 }
