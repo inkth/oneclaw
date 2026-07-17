@@ -412,17 +412,35 @@ func (c *Client) videoCall(ctx context.Context, method, url string, body any) (*
 // VideoCostCents 把 usage.cost(美元)换成美分。
 func VideoCostCents(usd float64) int { return int(usd*100 + 0.5) }
 
-// GenerateImage 用图像模型生成一张图(chat/completions + modalities)。
+// GenerateImage 用图像模型(seedream)生成一张图(chat/completions + modalities:image)。
+// refImageURLs 非空时作为参考图输入(编辑锚定/多图合成/虚拟试穿):OpenRouter 把这些 URL
+// 交给上游,由上游服务端自行下载,故必须是公网可达地址(我们的 COS public-read 满足)。
+// aspectRatio 传 "1:1"/"9:16"/"16:9"/"3:4"/"4:3" 等;空则用模型默认(约 2048 见方)。
+// seedream 走字节自家 provider,国内直连可达、直接返回 JPEG,无需代理或队列轮询。
 // 返回解码后的字节 + content-type。响应里图为 base64 data URL。
-func (c *Client) GenerateImage(ctx context.Context, prompt, aspectRatio string) ([]byte, string, error) {
+func (c *Client) GenerateImage(ctx context.Context, prompt, aspectRatio string, refImageURLs []string) ([]byte, string, error) {
 	if !c.Configured() {
 		return nil, "", fmt.Errorf("llm/image: OPENROUTER_API_KEY 未配置")
 	}
-	model := c.cfg.ImageModel
+	// user 消息体:无参考图时纯文本 prompt;带参考图时构造为 content-parts 数组
+	// (文本 + 逐张 image_url,照搬 ChatVision 的写法)。
+	var content any = prompt
+	if len(refImageURLs) > 0 {
+		parts := []map[string]any{{"type": "text", "text": prompt}}
+		for _, u := range refImageURLs {
+			if u = strings.TrimSpace(u); u != "" {
+				parts = append(parts, map[string]any{
+					"type":      "image_url",
+					"image_url": map[string]string{"url": u},
+				})
+			}
+		}
+		content = parts
+	}
 	body := map[string]any{
-		"model":      model,
-		"messages":   []chatMsg{{Role: "user", Content: prompt}},
-		"modalities": []string{"image", "text"},
+		"model":      c.cfg.ImageModel,
+		"messages":   []chatMsg{{Role: "user", Content: content}},
+		"modalities": []string{"image"}, // seedream 只出图不出文,带 "text" 会 404
 	}
 	if aspectRatio != "" {
 		body["image_config"] = map[string]any{"aspect_ratio": aspectRatio}

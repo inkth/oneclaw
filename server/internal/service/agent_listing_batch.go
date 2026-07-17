@@ -133,8 +133,8 @@ type ProductBatchResult struct {
 // 自建商品卡(DiscoverProductID 为空,SourceImages 存这组原图)→ 据这组图多参考出 N 张展示图
 // (白底/场景/细节/俯拍,fal edit,不调 LLM)。「各做1个」= 每组一张图;「合并为1个」= 一组多张。
 func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, groups [][]uuid.UUID) (*ProductBatchResult, error) {
-	if !s.fal.Configured() || !s.storage.Configured() {
-		return nil, apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
+	if !s.llm.Configured() || !s.storage.Configured() {
+		return nil, apperr.BadRequest("出图服务未配置(需要 OPENROUTER_API_KEY 与 COS)")
 	}
 	// 整理分组:组内去重、解析为有效图片 URL、参考图封顶;丢掉空组。
 	type grp struct {
@@ -219,8 +219,8 @@ func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, g
 // 原子认领 FAILED→RUNNING 防双击,重占一笔出图额度(失败时已退回)后按原图重出,
 // 成功/失败回写与退款复用 runProductImages 的口径。
 func (s *AgentService) RetryProductImages(ctx context.Context, wsID, productID uuid.UUID) error {
-	if !s.fal.Configured() || !s.storage.Configured() {
-		return apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
+	if !s.llm.Configured() || !s.storage.Configured() {
+		return apperr.BadRequest("出图服务未配置(需要 OPENROUTER_API_KEY 与 COS)")
 	}
 	var p model.Product
 	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", productID, wsID).First(&p).Error

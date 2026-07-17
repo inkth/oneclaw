@@ -672,7 +672,7 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID,
 				fmt.Sprintf(`{"personaId":%q,"personaName":%q}`, persona.ID.String(), persona.Name)))
 	}
 
-	// 封面:有商品实拍图(即首帧)直接用,和成片首帧一致还省一次生图;否则 fal flux 兜底。
+	// 封面:有商品实拍图(即首帧)直接用,和成片首帧一致还省一次生图;否则 seedream 兜底。
 	if d.FirstFrameURL != "" {
 		s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", v.ID).
 			Update("thumbnail_url", d.FirstFrameURL)

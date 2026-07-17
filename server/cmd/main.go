@@ -20,7 +20,6 @@ import (
 	"github.com/faxianmao/server/internal/router"
 	"github.com/faxianmao/server/internal/service"
 	"github.com/faxianmao/server/internal/service/echotik"
-	"github.com/faxianmao/server/internal/service/fal"
 	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
@@ -104,23 +103,22 @@ func main() {
 	modelSvc := service.NewModelAssetService(db)
 	llmClient := llm.New(cfg.OpenRouter)
 	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient)
-	falClient := fal.New(cfg.Fal)
 	quotaSvc := service.NewQuotaService(db)
-	matSvc := service.NewMaterialService(db, store, falClient, quotaSvc)
+	matSvc := service.NewMaterialService(db, store, llmClient, quotaSvc)
 	billingSvc := service.NewBillingService(db, cfg.IsDev(), agencySvc, cfg.Agency.CommissionOnMock)
 	adminSvc := service.NewAdminService(db, billingSvc, quotaSvc, agencySvc)
 	feedbackSvc := service.NewFeedbackService(db)
-	videoSvc := service.NewVideoService(db, llmClient, store, falClient, quotaSvc)
-	if falClient.Configured() {
-		logger.Info("[fal] 已配置(封面图)")
+	videoSvc := service.NewVideoService(db, llmClient, store, quotaSvc)
+	if llmClient.Configured() {
+		logger.Info("[image] 出图已配置(OpenRouter seedream)")
 	} else {
-		logger.Warn("[fal] FALAI_API_KEY 未配置,封面图不可用")
+		logger.Warn("[image] OPENROUTER_API_KEY 未配置,出图/封面不可用")
 	}
-	// 一次性任务:生成预置人设库(Seedream 出图 → COS → model_assets)后退出。
+	// 一次性任务:生成预置人设库(seedream 出图 → COS → model_assets)后退出。
 	// 用法:docker compose run --rm go-api ./server --seed-personas
 	for _, arg := range os.Args[1:] {
 		if arg == "--seed-personas" {
-			created, err := service.NewPersonaSeeder(db, falClient, store).Run(context.Background())
+			created, err := service.NewPersonaSeeder(db, llmClient, store).Run(context.Background())
 			if err != nil {
 				logger.Fatal("[persona] 种子任务失败", logger.Err(err))
 			}
@@ -177,7 +175,7 @@ func main() {
 		}
 	}
 
-	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, falClient, store, quotaSvc)
+	agentSvc := service.NewAgentService(db, llmClient, videoSvc, discSvc, store, quotaSvc)
 	tplSvc := service.NewTemplateService(db, llmClient)
 
 	// 重启恢复:续上生成中视频的轮询,清掉随进程消失的悬挂任务(额度退回)。

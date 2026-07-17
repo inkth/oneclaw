@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	_ "image/png" // 注册 PNG 解码器:Seedream 出 PNG,toJPEG 需能解码
+	_ "image/png" // 注册 PNG 解码器:出图若返回 PNG,toJPEG 也能解码
 	"strings"
 	"sync"
 	"time"
@@ -137,7 +137,7 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	}
 
 	// 出图能力就绪才进入确认流程,否则只给 prompt(前端不出按钮)。
-	canImage := s.fal.Configured() && s.storage.Configured() && len(out.ImagePrompts) > 0
+	canImage := s.llm.Configured() && s.storage.Configured() && len(out.ImagePrompts) > 0
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "🖼️ Listing 标题\n%s\n\n", out.Title)
@@ -216,8 +216,8 @@ func (s *AgentService) GenerateListingImages(ctx context.Context, wsID, taskID u
 	if t.Agent != model.AgentListing || t.Status != model.TaskDone {
 		return nil, apperr.BadRequest("该任务没有可生成的主图方案")
 	}
-	if !s.fal.Configured() || !s.storage.Configured() {
-		return nil, apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
+	if !s.llm.Configured() || !s.storage.Configured() {
+		return nil, apperr.BadRequest("出图服务未配置(需要 OPENROUTER_API_KEY 与 COS)")
 	}
 	var d listingDraft
 	if len(t.Metadata) > 0 {
@@ -323,26 +323,24 @@ func (s *AgentService) runListingImages(taskID, wsID uuid.UUID, prompts []string
 	}
 }
 
-// listingImage 生成并上传单张主图(走 fal 队列 API,短请求轮询,跨境不被长连接卡死)。
-// 有商品实拍图时用 Seedream edit 以真货为参考锚定外观,否则 text-to-image;每张最多 2 次尝试。
+// listingImage 生成并上传单张主图(seedream,国内直连)。有商品实拍图时作为参考图锚定真货外观;
+// 每张最多 2 次尝试。
 func (s *AgentService) listingImage(ctx context.Context, taskID uuid.UUID, idx int, prompt string, refURLs []string) (string, error) {
 	const suffix = ", professional e-commerce product photo, clean composition, photorealistic, no text, no watermark"
-	modelPath, refs := personaT2IModel, []string(nil)
 	if len(refURLs) > 0 {
-		modelPath, refs = personaEditModel, refURLs
 		prompt = "the exact same product from the reference photo(s), " + prompt
 	}
 	var lastErr error
 	for attempt := 1; attempt <= 2; attempt++ {
 		gctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-		data, ct, err := s.fal.GenerateImageQueued(gctx, modelPath, prompt+suffix, "square_hd", refs)
+		data, ct, err := s.llm.GenerateImage(gctx, prompt+suffix, "1:1", refURLs)
 		cancel()
 		if err != nil {
 			lastErr = err
 			continue
 		}
-		// Seedream 出的是无压缩 PNG(数 MB),商品图不需要这么大:转 JPEG(分辨率不变、肉眼无损)
-		// 再传 COS,省存储/带宽、加载更快。转码失败则保留原图,不影响出图。
+		// seedream 返回 2K JPEG,统一重编码到 q85 JPEG(分辨率不变、肉眼无损)再传 COS,省存储/带宽。
+		// 转码失败则保留原图,不影响出图。
 		data, ct = toJPEG(data, ct)
 		return s.storage.Put(ctx, fmt.Sprintf("listing/%s/main-%d.jpg", taskID, idx+1), data, ct)
 	}

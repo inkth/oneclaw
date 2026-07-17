@@ -27,7 +27,6 @@ type Config struct {
 	OverflowSettle OverflowSettleConfig
 	Storage        StorageConfig
 	OpenRouter     OpenRouterConfig
-	Fal            FalConfig
 	Agency         AgencyConfig
 	CORS           CORSConfig
 	Log            LogConfig
@@ -168,25 +167,13 @@ type OpenRouterConfig struct {
 	ReviewModel    string // 投放复盘深挖默认 google/gemini-3.5-flash(长上下文+便宜)
 	ReviewProxy    string // 复盘模型出网代理(绕国内 IP 的 OpenRouter 地区限制);空=直连。如 http://1.2.3.4:8888
 	VideoModel     string // 视频默认 bytedance/seedance-2.0-fast
-	ImageModel     string // 图像默认 google/gemini-3.1-flash-image-preview
-	Referer        string // HTTP-Referer 头
+	// ImageModel 图像默认 bytedance-seed/seedream-4.5:字节自家 provider,国内直连可达
+	// (不像 Google/OpenAI 系对国内 IP 屏蔽),支持参考图编辑/多图合成/虚拟试穿,直接返回 JPEG。
+	ImageModel string
+	Referer    string // HTTP-Referer 头
 }
 
 func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
-
-// FalConfig fal.ai(图像生成,国内可达,区域不受限)。
-type FalConfig struct {
-	APIKey     string
-	BaseURL    string // 默认 https://fal.run
-	ImageModel string // 默认 fal-ai/flux/schnell
-	TryOnModel string // 虚拟试穿:默认 fal-ai/fashn/tryon/v1.6
-	// DownloadProxy 结果图下载代理:生成 API(queue.fal.run)国内直连可达,但结果图托管在
-	// fal.media CDN,跨境 TLS 间歇挂死(实测直连 90s 下不完、经代理 6s)。仅下载结果图走此代理;
-	// 空=直连。默认复用 OPENROUTER_REVIEW_PROXY,生产已配则零额外配置。
-	DownloadProxy string
-}
-
-func (f FalConfig) Configured() bool { return f.APIKey != "" }
 
 // CORSConfig 带凭证跨域:本地开发 Next(:3000)调 Go(:8082)需显式白名单(不能用 *)。
 type CORSConfig struct {
@@ -282,16 +269,8 @@ func Load() *Config {
 			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "google/gemini-3.5-flash"),
 			ReviewProxy:    getEnv("OPENROUTER_REVIEW_PROXY", ""),
 			VideoModel:     getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
-			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
+			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "bytedance-seed/seedream-4.5"),
 			Referer:        getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
-		},
-		Fal: FalConfig{
-			APIKey:     getEnv("FALAI_API_KEY", ""),
-			BaseURL:    getEnv("FALAI_BASE_URL", "https://fal.run"),
-			ImageModel: getEnv("FALAI_DEFAULT_IMAGE_MODEL", "fal-ai/flux/schnell"),
-			TryOnModel: getEnv("FALAI_TRYON_MODEL", "fal-ai/fashn/tryon/v1.6"),
-			// 默认复用复盘代理:生产已配 OPENROUTER_REVIEW_PROXY,无需新增 env。
-			DownloadProxy: getEnv("FALAI_DOWNLOAD_PROXY", getEnv("OPENROUTER_REVIEW_PROXY", "")),
 		},
 		Agency: AgencyConfig{
 			BonusCredits:        getEnvInt("AGENCY_BONUS_CREDITS", 300),

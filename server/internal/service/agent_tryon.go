@@ -16,16 +16,16 @@ import (
 	"github.com/faxianmao/server/internal/service/llm"
 )
 
-// ── 虚拟试穿(TRYON):模特图 + 服饰图 → fal 试穿模型出上身图 ───────────────────
+// ── 虚拟试穿(TRYON):模特图 + 服饰图 → seedream 多图合成出上身图 ───────────────
 //
-// 与 Listing/Director 不同,试穿不经 LLM:派活时即解析两张输入图、扣出图额度、
+// 与 Listing/Director 不同,试穿不经文案 LLM:派活时即解析两张输入图、扣出图额度、
 // 后台异步出图,前端按 imagesStatus 轮询。模特取自模特资产(opts.PersonaID),
 // 服饰图取自上传素材(opts.MaterialID)或选品库商品主图(opts.ProductID)。
 
 // runTryOn 解析模特/服饰输入图 → 扣出图额度 → 起后台出图。立即返回 PENDING 态。
 func (s *AgentService) runTryOn(ctx context.Context, taskID, wsID uuid.UUID, opts AgentCreateOpts) (string, any, llm.Usage, error) {
-	if !s.fal.Configured() || !s.storage.Configured() {
-		return "", nil, llm.Usage{}, apperr.BadRequest("试穿服务未配置(需要 FALAI_API_KEY 与 COS)")
+	if !s.llm.Configured() || !s.storage.Configured() {
+		return "", nil, llm.Usage{}, apperr.BadRequest("试穿服务未配置(需要 OPENROUTER_API_KEY 与 COS)")
 	}
 	if opts.PersonaID == nil {
 		return "", nil, llm.Usage{}, apperr.BadRequest("请先选择一位模特")
@@ -65,7 +65,7 @@ func (s *AgentService) runTryOn(ctx context.Context, taskID, wsID uuid.UUID, opt
 	return out, meta, llm.Usage{}, nil
 }
 
-// runTryOnImage 后台调 fal 试穿模型 → 传 COS → 回写 metadata(images + imagesStatus)→ 登记素材库。
+// runTryOnImage 后台调 seedream 多图合成 → 传 COS → 回写 metadata(images + imagesStatus)→ 登记素材库。
 func (s *AgentService) runTryOnImage(taskID, wsID uuid.UUID, modelURL, garmentURL string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -84,18 +84,23 @@ func (s *AgentService) runTryOnImage(taskID, wsID uuid.UUID, modelURL, garmentUR
 		})(taskID)
 	}
 
-	// 服饰图永久化到自有 COS 再喂 fal:选品库商品主图常是 EchoTik 带签名的临时 URL
-	// (约 3 天过期),隔天发起试穿 fal 会拉不到图。复用发现页封面转存(命中缓存免重复
-	// 下载、失败回退原 URL);非自有 COS 才转。best-effort,不阻断出图。
+	// 服饰图永久化到自有 COS 再喂上游:选品库商品主图常是 EchoTik 带签名的临时 URL
+	// (约 3 天过期),且 seedream 的上游 provider 是服务端自行下载参考图 URL,隔天发起试穿会拉不到图。
+	// 复用发现页封面转存(命中缓存免重复下载、失败回退原 URL);非自有 COS 才转。best-effort,不阻断出图。
 	if s.discover != nil && garmentURL != "" && !strings.Contains(garmentURL, "myqcloud.com") {
 		if m := s.discover.rehostCovers(ctx, []string{garmentURL}); m[garmentURL] != "" {
 			garmentURL = m[garmentURL]
 		}
 	}
 
-	data, ct, err := s.fal.TryOn(ctx, modelURL, garmentURL)
+	// 试穿=多图合成:第一张模特图 + 第二张服饰图,提示词要求保持模特脸/身形/背景不变,只换上装。
+	const tryOnPrompt = "Put the garment shown in the second image onto the person in the first image. " +
+		"Keep the person's face, body shape, pose and background exactly the same. " +
+		"Photorealistic virtual try-on, the garment must fit naturally with correct drape and lighting. " +
+		"No text, no watermark."
+	data, ct, err := s.llm.GenerateImage(ctx, tryOnPrompt, "", []string{modelURL, garmentURL})
 	if err != nil {
-		fail("fal 出图失败", err)
+		fail("seedream 出图失败", err)
 		return
 	}
 	ext := ".jpg"
@@ -142,9 +147,9 @@ func (s *AgentService) writeTryOnMeta(patch map[string]any) func(uuid.UUID) {
 	}
 }
 
-// tryOnModelURL 取模特用于试穿的形象图。fashn 试穿要先在图里识别人体姿态,正脸大头照
-// (AvatarURL)会被判 "Failed to detect body pose" 而 422 失败,故优先用半身图
-// (PreviewURL,预置人设的 waist-up 镜头);自有模特没半身图时再退回 AvatarURL。
+// tryOnModelURL 取模特用于试穿的形象图。合成上身效果需要看到躯干,正脸大头照(AvatarURL)
+// 露不出上半身、试穿效果差,故优先用半身图(PreviewURL,预置人设的 waist-up 镜头);
+// 自有模特没半身图时再退回 AvatarURL。
 func (s *AgentService) tryOnModelURL(ctx context.Context, wsID, modelID uuid.UUID) string {
 	var m model.ModelAsset
 	err := s.db.WithContext(ctx).
@@ -162,7 +167,7 @@ func (s *AgentService) tryOnModelURL(ctx context.Context, wsID, modelID uuid.UUI
 	return ""
 }
 
-// tryOnFailHint 把 fal 的技术报错翻成给用户的可操作提示(展示在失败卡片下方)。
+// tryOnFailHint 把出图的技术报错翻成给用户的可操作提示(展示在失败卡片下方)。
 func tryOnFailHint(err error) string {
 	msg := ""
 	if err != nil {
