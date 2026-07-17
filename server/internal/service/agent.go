@@ -53,7 +53,6 @@ type AgentCreateOpts struct {
 	Region         string     // 目标市场(DIRECTOR):定口播语言;空则跟随商品来源市场,兜底 US
 	DurationSec    int        // 视频时长秒(DIRECTOR):用户在「设置」显式锁的优先于 AI 自选,夹 4-15s;0=AI 自定
 	AspectRatio    string     // 画幅比例(DIRECTOR):9:16/16:9/1:1;空=默认 9:16
-	AutoImages     bool       // 批量 Listing:文案落库后自动接力出图,无需用户二次确认(单图链路恒 false)
 	// DiscoverProductID 发现页商品 externalId(ANALYST):用户对着详情页具体商品发问时注入
 	// 该商品的真实数据做单品判断,替代默认的榜单选品模式。配 DiscoverRegion 定位记录。
 	DiscoverProductID string
@@ -211,16 +210,6 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 		}
 	}
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).Updates(updates)
-
-	// 批量「文案+出图一起」:文案落库后自动接力出图,无需用户回任务流二次点「生成主图」。
-	// 复用 GenerateListingImages 的原子认领 + 出图扣费/退款 + 主图回写;失败(如出图额度不足)
-	// 只记日志不影响已生成的文案 —— 该商品仍拿到 Listing,出图缺省可后续手动补。
-	if agent == model.AgentListing && opts.AutoImages {
-		if _, ierr := s.GenerateListingImages(ctx, wsID, taskID); ierr != nil {
-			logger.Info("[agent] 批量 Listing 自动出图未触发(文案已生成)",
-				logger.String("task", taskID.String()), logger.String("reason", ierr.Error()))
-		}
-	}
 }
 
 func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {

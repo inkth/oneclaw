@@ -154,6 +154,24 @@ func (h *AgentHandler) ProductBatch(c *gin.Context) {
 	Created(c, gin.H{"batch": res})
 }
 
+// RetryProductImages 重试自建商品的展示图生成(images_status=FAILED 时可用,重占出图额度)。
+func (h *AgentHandler) RetryProductImages(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	pid, err := uuid.Parse(c.Param("pid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("商品 ID 无效"))
+		return
+	}
+	if err := h.agents.RetryProductImages(c.Request.Context(), wid, pid); err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"imagesStatus": "RUNNING"})
+}
+
 type confirmVideoReq struct {
 	// ModelAssetID 出镜人设(可选):预置数字人或工作台自有模特。
 	ModelAssetID string `json:"modelAssetId"`

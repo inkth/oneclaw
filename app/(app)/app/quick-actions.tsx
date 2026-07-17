@@ -246,7 +246,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
 };
 
 /**
- * 对标竞品的快捷功能卡行：跟随当前 Agent 切换卡组。
+ * 快捷功能卡行：跟随当前 Agent 切换卡组。
  * 点 live 卡选中对应 Agent 并预填模板;soon 卡提示打磨中。
  */
 export function QuickActionCards({
@@ -276,9 +276,9 @@ export function QuickActionCards({
               }
               onPick(a);
             }}
-            className={`dk-card dk-lift group relative flex min-h-[5.5rem] items-center justify-between gap-3 p-3.5 text-left sm:p-4 ${
+            className={`group relative flex min-h-28 flex-col items-start gap-3 rounded-[18px] border border-black/[0.07] bg-white/72 p-4 text-left shadow-[0_8px_24px_-24px_rgba(18,20,25,0.55)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 focus-visible:ring-offset-2 sm:min-h-24 sm:flex-row sm:items-center sm:gap-3.5 ${
               soon ? "opacity-70" : ""
-            } ${active ? "dk-ring" : ""}`}
+            } ${active ? "dk-ring" : "hover:-translate-y-0.5 hover:border-black/[0.13] hover:bg-white hover:shadow-[0_14px_30px_-24px_rgba(18,20,25,0.55)]"}`}
           >
             {soon && (
               <span className="absolute -top-2 right-2">
@@ -287,18 +287,18 @@ export function QuickActionCards({
                 </Badge>
               </span>
             )}
-            <div className="min-w-0">
+            <span
+              aria-hidden
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border transition-[filter,transform] group-hover:-translate-y-0.5 group-hover:saturate-125 ${
+                AGENT_IDENTITY[(a.agent ?? activeAgent) as AgentKey].iconSurface
+              }`}
+            >
+              <a.icon className="h-5 w-5" />
+            </span>
+            <div className="w-full min-w-0 flex-1">
               <div className="text-sm font-semibold text-ink">{a.title}</div>
               <div className="mt-1 text-xs leading-snug text-zinc-500">{a.desc}</div>
             </div>
-            <span
-              aria-hidden
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-[inset_0_1px_0_rgba(255,255,255,.18)] ${
-                AGENT_IDENTITY[(a.agent ?? activeAgent) as AgentKey].tile
-              }`}
-            >
-              <a.icon className="h-5 w-5 text-white" />
-            </span>
           </button>
         );
       })}

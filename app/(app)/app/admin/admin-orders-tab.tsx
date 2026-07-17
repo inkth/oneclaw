@@ -4,8 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Check, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Select } from "@/components/ui/Field";
+import { SegmentedTabs } from "@/components/ui/Tabs";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
+import { Toolbar } from "@/components/ui/Toolbar";
 import { apiBrowser } from "@/lib/api-browser";
 import {
   fmtDateTime,
@@ -23,29 +27,17 @@ export function OrdersTab() {
   const [view, setView] = useState<"orders" | "bills">("orders");
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 rounded-lg bg-[var(--dk-surface-2)] p-1 text-sm w-fit">
-        <SubTab active={view === "orders"} onClick={() => setView("orders")}>
-          订阅订单
-        </SubTab>
-        <SubTab active={view === "bills"} onClick={() => setView("bills")}>
-          超额账单
-        </SubTab>
-      </div>
+      <SegmentedTabs
+        items={[
+          { value: "orders", label: "订阅订单" },
+          { value: "bills", label: "超额账单" },
+        ]}
+        value={view}
+        onValueChange={setView}
+        ariaLabel="账单类型"
+      />
       {view === "orders" ? <OrdersList /> : <BillsList />}
     </div>
-  );
-}
-
-function SubTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
-        active ? "bg-white text-[var(--dk-content-primary)] shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]" : "text-[var(--dk-content-secondary)]"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -277,17 +269,15 @@ function StatusFilter({
   options: { value: string; label: string }[];
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded-lg border border-[var(--dk-stroke-border)] bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+    <Toolbar>
+      <Select value={value} onChange={(e) => onChange(e.target.value)} className="w-36">
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </Select>
+    </Toolbar>
   );
 }
 
@@ -306,23 +296,27 @@ function Pager({
     <div className="flex items-center justify-between text-xs text-[var(--dk-content-tertiary)]">
       <span>共 {total} 条</span>
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
           disabled={page <= 1}
           onClick={() => onPage((p) => p - 1)}
-          className="rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-1 disabled:opacity-40 hover:bg-[var(--dk-action-regular)]"
         >
           上一页
-        </button>
+        </Button>
         <span>
           {page} / {totalPages}
         </span>
-        <button
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
           disabled={page >= totalPages}
           onClick={() => onPage((p) => p + 1)}
-          className="rounded-lg border border-[var(--dk-stroke-border)] px-2.5 py-1 disabled:opacity-40 hover:bg-[var(--dk-action-regular)]"
         >
           下一页
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -56,17 +56,15 @@ export default async function DashboardPage({
     .catch((): SampleVid[] => []);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-9 sm:space-y-11">
-      <div className="pt-7 text-center sm:pt-12">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-black/[0.07] bg-white/65 px-3 py-1.5 text-2xs font-semibold text-[var(--dk-content-secondary)] shadow-[0_1px_2px_rgba(18,20,25,.025)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          5 位 Agent 随时待命
-        </div>
-        <h1 className="text-hero">今天想推进哪件事？</h1>
+    <div className="relative isolate mx-auto max-w-5xl space-y-7 sm:space-y-9">
+      <div aria-hidden className="workspace-aurora pointer-events-none absolute -inset-x-16 -top-8 -z-10 h-[31rem]" />
+
+      <div className="pt-5 text-center sm:pt-10">
+        <h1 className="font-display text-[clamp(2rem,3.8vw,3.05rem)] font-semibold leading-[1.14] tracking-[-0.022em] text-ink">
+          把机会，推进到结果。
+        </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--dk-content-secondary)]">
-          {!workspace
-            ? "问策略、找商品、做视频、写 Listing 或复盘投放，选一个 Agent，说清目标就能开始。登录后会自动保存对话和结果。"
-            : "问策略、找商品、做视频、写 Listing 或复盘投放，选一个 Agent，说清目标就能开始。对话会自动保存，成片可在「资产 · 视频」查看。"}
+          选一个 Agent，说清目标就能开始。
         </p>
       </div>
 

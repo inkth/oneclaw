@@ -67,9 +67,9 @@ export default async function AppLayout({
           isAdmin={isAdmin}
           workspaceId={workspace?.id ?? null}
         />
-        <main className="relative flex-1 px-4 pb-28 pt-5 sm:px-7 sm:pt-7 md:pb-12 lg:px-8">
+        <main className="relative flex-1 px-4 pb-28 pt-5 sm:px-7 sm:pt-7 md:pb-12 lg:px-8 xl:px-10">
           {/* 业务端画布保持平面中性灰，层级只由内容、留白和下一步操作建立。 */}
-          <div className="relative">
+          <div className="relative mx-auto w-full max-w-[1440px]">
             {/* 桌面端二级 Tab 已融进顶栏 AppHeader；这里只在移动端兜底显示 Tab 行 */}
             <div className="md:hidden">
               <BoardTabs />

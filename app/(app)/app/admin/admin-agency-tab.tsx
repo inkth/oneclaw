@@ -4,9 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { ShieldCheck, Users, Coins, Wallet, Loader2, Plus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { Stat } from "@/components/ui/Stat";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/Field";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { apiBrowser } from "@/lib/api-browser";
 import type { Tone } from "@/lib/ui/tokens";
@@ -116,20 +119,20 @@ export function AgencyTab() {
       )}
 
       <Card>
-        <div className="text-sm font-medium text-[var(--dk-content-primary)]">开通代理商</div>
+        <SectionHeader icon={ShieldCheck} title="开通代理商" />
         <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">按手机号开通。该手机号需已注册（登录过一次）。</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
+          <Input
             type="tel"
             inputMode="numeric"
             maxLength={11}
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
             placeholder="手机号"
-            className="rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 sm:w-44"
+            className="sm:w-44"
           />
-          <div className="flex items-center gap-2 rounded-lg border border-[var(--dk-stroke-border)] px-3 py-2 focus-within:ring-2 focus-within:ring-brand-200">
-            <input
+          <div className="relative sm:w-32">
+            <Input
               type="number"
               min={0}
               max={100}
@@ -137,23 +140,24 @@ export function AgencyTab() {
               value={percent}
               onChange={(e) => setPercent(e.target.value)}
               placeholder="佣金比例"
-              className="w-20 bg-transparent text-sm outline-none"
+              className="pr-8"
             />
-            <span className="text-sm text-[var(--dk-content-secondary)]">%</span>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--dk-content-secondary)]">%</span>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={createAgency}
             disabled={creating}
-            className="press inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--dk-btn-black)] px-4 py-2 text-sm font-medium text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-colors hover:bg-[var(--dk-btn-black-hover)] disabled:opacity-60"
           >
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             开通
-          </button>
+          </Button>
         </div>
       </Card>
 
       <section>
-        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">代理商</div>
+        <SectionHeader icon={Users} title="代理商" meta={`${agencies.length} 位`} />
         {agencies.length === 0 ? (
           <EmptyState icon={ShieldCheck} title="还没有代理商" description="用上方表单按手机号开通第一个代理商。" />
         ) : (
@@ -179,7 +183,7 @@ export function AgencyTab() {
       </section>
 
       <section>
-        <div className="mb-2 text-sm font-medium text-[var(--dk-content-primary)]">提现申请</div>
+        <SectionHeader icon={Wallet} title="提现申请" meta={`${withdrawals.length} 条`} />
         {withdrawals.length === 0 ? (
           <EmptyState icon={Wallet} title="暂无提现申请" description="代理商发起提现后会出现在这里等待审核。" />
         ) : (

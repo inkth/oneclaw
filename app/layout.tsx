@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
-import { Poppins, Open_Sans } from "next/font/google";
 import "./globals.css";
+// 拉丁字体通过 Fontsource 自托管，避免构建期依赖 Google Fonts 网络。
+import "@fontsource/poppins/latin-400.css";
+import "@fontsource/poppins/latin-500.css";
+import "@fontsource/poppins/latin-600.css";
+import "@fontsource/poppins/latin-700.css";
+import "@fontsource/open-sans/latin-300.css";
+import "@fontsource/open-sans/latin-400.css";
+import "@fontsource/open-sans/latin-500.css";
+import "@fontsource/open-sans/latin-600.css";
+import "@fontsource/open-sans/latin-700.css";
+import "@fontsource/open-sans/latin-800.css";
 // 专业中文字体（思源黑体 Noto Sans SC，SIL OFL）：标题优先 —— 仅 600/700 两字重，
 // 且仅「中文简体」子集（西文/数字走 Poppins，不拉 latin/日韩/西里尔等无关字符集）。
 // font-family "Noto Sans SC" 经 globals.css 的 --font-cjk 接入标题链；fontsource 默认 display:swap。
@@ -8,18 +18,6 @@ import "@fontsource/noto-sans-sc/chinese-simplified-600.css";
 import "@fontsource/noto-sans-sc/chinese-simplified-700.css";
 import { Toaster } from "sonner";
 import { BRAND_NAME, BRAND_SLOGAN } from "@/lib/brand";
-
-// 照搬 Designkit：标题 Poppins，正文 Open Sans。
-const poppins = Poppins({
-  variable: "--font-poppins",
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-});
-
-const openSans = Open_Sans({
-  variable: "--font-open-sans",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   // 没有 metadataBase 时 og:image 会回退成 localhost:3000 的绝对 URL,
@@ -45,7 +43,7 @@ export default function RootLayout({
     <html
       lang="zh-CN"
       data-scroll-behavior="smooth"
-      className={`${poppins.variable} ${openSans.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}

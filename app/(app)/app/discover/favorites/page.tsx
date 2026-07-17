@@ -85,7 +85,6 @@ export default async function FavoritesPage() {
         images: p.images,
         imagesStatus: p.imagesStatus,
         discoverProductId: p.discoverProductId,
-        shop: null,
       }))}
       favorites={items}
     />

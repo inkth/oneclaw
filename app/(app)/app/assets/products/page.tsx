@@ -46,7 +46,6 @@ function mapProduct(p: GoProduct): Product {
     images: p.images,
     imagesStatus: p.imagesStatus,
     discoverProductId: p.discoverProductId,
-    shop: null,
   };
 }
 
