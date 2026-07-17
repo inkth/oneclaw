@@ -90,6 +90,12 @@ func main() {
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
 	}
+	// 存量归因在新字段上线后以原绑定时间回填一年计佣截止时间。
+	if err := db.Model(&model.AgencyReferral{}).
+		Where("commission_eligible_until IS NULL").
+		UpdateColumn("commission_eligible_until", gorm.Expr("created_at + INTERVAL '1 year'")).Error; err != nil {
+		logger.Fatal("代理商计佣窗口回填失败", logger.Err(err))
+	}
 
 	// Services
 	agencySvc := service.NewAgencyService(db, cfg.Agency)

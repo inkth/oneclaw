@@ -17,7 +17,7 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
     links: [
       { label: "独立站团队", href: "/pricing" },
       { label: "TikTok 卖家", href: "/pricing" },
-      { label: "MCN / 服务商", href: "/pricing" },
+      { label: "MCN / 服务商", href: "/partners" },
     ],
   },
   {
@@ -31,6 +31,7 @@ const sections: Array<{ title: string; links: Array<{ label: string; href: strin
   {
     title: "公司",
     links: [
+      { label: "合作伙伴", href: "/partners" },
       { label: "联系我们", href: "mailto:contact@faxianmao.com" },
       { label: "服务条款", href: "/legal/terms" },
       { label: "隐私政策", href: "/legal/privacy" },

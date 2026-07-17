@@ -157,7 +157,7 @@ func TestAgencyCommissionOnOrder(t *testing.T) {
 	}
 	// 唯一索引兜底:同 source 再插入空转。
 	_ = db.Transaction(func(tx *gorm.DB) error {
-		return agencySvc.RecordCommissionTx(tx, model.CommissionSourceOrder, o.ID, payer, 19900)
+		return agencySvc.RecordCommissionTx(tx, model.CommissionSourceOrder, o.ID, payer, 19900, time.Now())
 	})
 	if n := commissionCount(t, db, o.ID); n != 1 {
 		t.Errorf("重复计佣后行数=%d, want 1", n)
