@@ -106,7 +106,7 @@ func main() {
 	prodSvc := service.NewProductService(db)
 	echoClient := echotik.New(cfg.EchoTik)
 	store := storage.New(cfg.Storage)
-	mktSvc := service.NewMarketingService(db)
+	mktSvc := service.NewMarketingService(db, smsSvc)
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
 	llmClient := llm.New(cfg.OpenRouter)
