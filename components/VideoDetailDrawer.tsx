@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   X,
   Loader2,
@@ -110,6 +111,7 @@ export function VideoDetailDrawer({
   onRerendered?: () => void;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [video, setVideo] = useState<VideoFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +176,13 @@ export function VideoDetailDrawer({
 
   async function del() {
     if (!video) return;
-    if (!confirm(`删除视频「${video.title}」？`)) return;
+    const ok = await confirm({
+      title: `删除视频「${video.title}」？`,
+      description: "删除后无法恢复，已消耗的积分不退回。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusy(true);
     const r = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, {
       method: "DELETE",

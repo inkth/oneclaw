@@ -17,6 +17,7 @@ import { DialogShell } from "@/components/ui/Dialog";
 import { FieldLabel, Input, Textarea } from "@/components/ui/Field";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Kind = "DIGITAL_HUMAN" | "REAL_PERSON";
 type Gender = "FEMALE" | "MALE" | "NEUTRAL";
@@ -71,6 +72,7 @@ export function ModelsClient({
   const [models, setModels] = useState(initialModels);
   const [modalOpen, setModalOpen] = useState(false);
   const { open: openAuthModal } = useAuthModal();
+  const confirm = useConfirm();
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
@@ -119,7 +121,13 @@ export function ModelsClient({
   }
 
   async function deleteModel(id: string) {
-    if (!confirm("确定删除该模特？")) return;
+    const ok = await confirm({
+      title: "删除该模特？",
+      description: "删除后不可恢复，已用它生成的视频和商品图不受影响。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/v1/workspaces/${workspaceId}/models/${id}`, {
       method: "DELETE",
     });

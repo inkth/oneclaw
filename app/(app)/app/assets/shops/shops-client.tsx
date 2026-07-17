@@ -20,6 +20,7 @@ import { DialogShell } from "@/components/ui/Dialog";
 import { FieldLabel, Input } from "@/components/ui/Field";
 import { EmptyState as EmptyStatePrimitive } from "@/components/ui/EmptyState";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Platform =
   | "TIKTOK_SHOP"
@@ -79,6 +80,7 @@ export function ShopsClient({
   const [shops, setShops] = useState(initialShops);
   const [modalOpen, setModalOpen] = useState(false);
   const { open: openAuthModal } = useAuthModal();
+  const confirm = useConfirm();
 
   // 营收/订单/转化看板只在真有店铺 OAuth 连上（CONNECTED）时显示;
   // 当前无真实平台对接，一律 PENDING → 看板隐藏，避免永远 0 的伪 dashboard。
@@ -94,7 +96,13 @@ export function ShopsClient({
   }
 
   async function deleteShop(id: string) {
-    if (!confirm("删除该店铺？相关商品会保留但解绑。")) return;
+    const ok = await confirm({
+      title: "删除该店铺？",
+      description: "相关商品会保留但解绑。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/v1/workspaces/${workspaceId}/shops/${id}`, {
       method: "DELETE",
     });

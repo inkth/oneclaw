@@ -17,11 +17,16 @@ import {
   Check,
 } from "lucide-react";
 import { apiBrowser } from "@/lib/api-browser";
+import { CREDIT_COST } from "@/lib/credits";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useReportPageEntity } from "../../page-entity";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+
+// 与后端 listingMaxImages 对齐（server/internal/service/agent_listing.go）
+const LISTING_MAX_SHOTS = 3;
 
 type Aplus = { heading: string; body: string; imagePrompt: string };
 
@@ -93,6 +98,7 @@ export function ProductDetail({
   const [costDraft, setCostDraft] = useState((kit.product.costCents / 100).toFixed(2));
   const [savingInfo, setSavingInfo] = useState(false);
   const [imaging, setImaging] = useState(false);
+  const confirm = useConfirm();
   const [shotRetrying, setShotRetrying] = useState(false);
   const [coverBusy, setCoverBusy] = useState<string | null>(null);
   const mounted = useRef(true);
@@ -209,7 +215,13 @@ export function ProductDetail({
   // 补出主图：对当前 Listing 任务触发出图（消耗额度），轮询至完成后刷新画廊。
   async function addImages() {
     if (!listing) return;
-    if (!confirm("将为这套 Listing 生成主图（每张约 6 积分，最多 3 张）。继续？")) return;
+    const ok = await confirm({
+      title: "为这套 Listing 生成主图",
+      description: `按 Listing 文案出图，最多 ${LISTING_MAX_SHOTS} 张，约 1-2 分钟。`,
+      confirmLabel: "开始生成",
+      credits: CREDIT_COST.image * LISTING_MAX_SHOTS,
+    });
+    if (!ok) return;
     setImaging(true);
     try {
       await apiBrowser(`/workspaces/${workspaceId}/agent-tasks/${listing.taskId}/images`, { method: "POST" });

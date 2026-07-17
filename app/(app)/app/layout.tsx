@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getMe, apiServer } from "@/lib/api-client";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { BrandTile } from "@/components/ui/BrandMark";
 import { SidebarNav, BoardTabs, MobileBoardNav } from "./_nav";
 import { ConversationRail } from "./conversation-rail";
@@ -35,6 +36,7 @@ export default async function AppLayout({
 
   return (
     <AuthModalProvider>
+    <ConfirmProvider>
     <PageEntityProvider>
     <div className="app-skin flex min-h-screen overflow-x-clip bg-background">
       {/* 照搬 Designkit 导航轨：宽 80px，底色 --dk-rail 比画布深一档 —— 靠色阶划界，
@@ -82,6 +84,7 @@ export default async function AppLayout({
       <MobileBoardNav />
     </div>
     </PageEntityProvider>
+    </ConfirmProvider>
     </AuthModalProvider>
   );
 }

@@ -9,6 +9,7 @@ import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { authFetch } from "@/lib/api-browser";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Processing = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
 
@@ -46,6 +47,7 @@ export function VideosClient({
   initialVideos: Video[];
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
@@ -148,7 +150,13 @@ export function VideosClient({
   }
 
   async function deleteVideo(id: string) {
-    if (!confirm("确定删除这条视频？删除后无法恢复。")) return;
+    const ok = await confirm({
+      title: "删除这条视频？",
+      description: "删除后无法恢复，已消耗的积分不退回。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     const res = await authFetch(`/api/v1/workspaces/${workspaceId}/videos/${id}`, {
       method: "DELETE",
     });

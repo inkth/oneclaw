@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Plus, MessagesSquare, Pencil, Trash2, Check, X, ChevronDown } from "lucide-react";
 import { authFetch } from "@/lib/api-browser";
 import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 // 会话列表面板只在「会话」板块出现（/app/agents 及其子路由）。
 // 其它板块（工作台/选品/资产/服务）返回 null,侧栏布局不变。
@@ -45,6 +46,7 @@ function activeCid(pathname: string): string | null {
 export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const confirm = useConfirm();
   const visible = pathname.startsWith(VISIBLE_PREFIX);
   const current = activeCid(pathname);
 
@@ -107,8 +109,13 @@ export function ConversationRail({ workspaceId }: { workspaceId: string }) {
   }
 
   async function remove(c: Conversation) {
-    if (!window.confirm(`删除对话「${c.title}」？这段对话记录会一并清除，已生成的视频和选品结果不受影响。`))
-      return;
+    const ok = await confirm({
+      title: `删除对话「${c.title}」？`,
+      description: "这段对话记录会一并清除，已生成的视频和选品结果不受影响。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusyId(c.id);
     try {
       const res = await authFetch(`/api/v1/workspaces/${workspaceId}/conversations/${c.id}`, {

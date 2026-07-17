@@ -18,6 +18,7 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { apiBrowser } from "@/lib/api-browser";
 import { CREDIT_COST } from "@/lib/credits";
 
@@ -73,6 +74,7 @@ export function MaterialsClient({
 }) {
   const router = useRouter();
   const { open: openAuthModal } = useAuthModal();
+  const confirm = useConfirm();
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
@@ -116,15 +118,15 @@ export function MaterialsClient({
     if (valid.length === 0) return;
     const total = valid.reduce((n, g) => n + g.length, 0);
     const desc = merged
-      ? `把选中的 ${total} 张图合并成 1 个商品（同款多角度）,`
-      : `为 ${valid.length} 张图各做 1 个商品,`;
-    if (
-      !confirm(
-        `${desc}每个商品据原图生成 ${SHOTS_PER_PRODUCT} 张商品图（白底/场景/细节/俯拍）。\n` +
-          `预计消耗约 ${valid.length * PER_IMAGE_CREDITS} 积分。继续？`,
-      )
-    )
-      return;
+      ? `把选中的 ${total} 张图合并成 1 个商品（同款多角度），`
+      : `为 ${valid.length} 张图各做 1 个商品，`;
+    const ok = await confirm({
+      title: merged ? "合并成 1 个商品" : `为 ${valid.length} 张图各做商品`,
+      description: `${desc}每个商品据原图生成 ${SHOTS_PER_PRODUCT} 张商品图（白底/场景/细节/俯拍）。`,
+      confirmLabel: "开始生成",
+      credits: valid.length * PER_IMAGE_CREDITS,
+    });
+    if (!ok) return;
     setBatchBusy(true);
     try {
       await apiBrowser(`/workspaces/${workspaceId}/product-batches`, {
@@ -176,7 +178,13 @@ export function MaterialsClient({
 
 
   async function deleteMaterial(id: string) {
-    if (!confirm("确定删除该素材？")) return;
+    const ok = await confirm({
+      title: "删除该素材？",
+      description: "删除后不可恢复，已用它生成的商品和视频不受影响。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials/${id}`, {
       method: "DELETE",
     });

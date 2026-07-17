@@ -11,6 +11,7 @@ import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { Delta } from "@/components/ui/Delta";
 import { Popover } from "@/components/ui/Popover";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Status = "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 type CostSource = "ESTIMATE" | "MANUAL" | "SOURCED";
@@ -114,6 +115,7 @@ export function ProductsClient({
   scope?: ProductScope;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [products, setProducts] = useState(initialProducts);
   const [filter, setFilter] = useState<"ALL" | Status>("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -231,7 +233,13 @@ export function ProductsClient({
   }
 
   async function deleteProduct(id: string) {
-    if (!confirm("删除该商品？删除后不可恢复。")) return;
+    const ok = await confirm({
+      title: "删除该商品？",
+      description: "删除后不可恢复，已用它做的视频不受影响。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusyId(id);
     try {
       await apiBrowser(`/workspaces/${workspaceId}/products/${id}`, { method: "DELETE" });
