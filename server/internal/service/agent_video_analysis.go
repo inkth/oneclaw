@@ -51,26 +51,40 @@ type videoAnalysisOut struct {
 	Adaptations    []string `json:"adaptations"`    // 改编到自己商品的建议
 }
 
-const videoAnalysisSystem = `你是 发现猫 的"带货视频解析 Agent",服务 TikTok Shop 跨境卖家。
-输入是一条带货短视频的音轨(口播)和若干帧画面。请完成:
+// 视频解析分两段(ReviewModel=minimax 不吃 input_audio,故转录另用 AudioModel=voxtral):
+//   ① videoTranscribeSystem  → AudioModel 听音轨,产出 lang + 逐句 lines(原文+中文)
+//   ② videoBreakdownSystem   → ReviewModel 拿①的转录文本 + 关键帧,产出 title/summary/structure/... 拆解
+// 两段结果合并成同一个 videoAnalysisOut,对上层与前端契约不变。
+
+const videoTranscribeSystem = `你是带货短视频的口播转录员。输入是一段视频的音轨。请完成:
 1. 逐句转录口播原文(保留原始语言,不要翻译),按出现顺序切句并标注大致时间码(如 0:00-0:03)。
-2. 把每句口播翻译成自然流畅的中文(地道表达,不要直译腔)。
-3. 用中文拆解这条视频的带货结构:钩子(开头怎么抓注意力)、痛点(戳了什么需求/焦虑)、卖点(核心卖点怎么呈现)、CTA(结尾怎么促单)。
+2. 把每句翻译成自然流畅的中文(地道表达,不要直译腔)。
+3. 判断原始口播语言,用中文写语言名(如 英语 / 印尼语 / 泰语 / 越南语)。
+
+严格要求:
+- 只输出合法 JSON,结构严格如下,不要任何额外文字、解释或 markdown 围栏。
+- 纯音乐 / 无口播时 lines 返回空数组,lang 填 "无口播"。
+
+JSON 结构:
+{"lang": "原始口播语言中文名", "lines": [{"t": "0:00-0:03", "original": "原文口播", "zh": "中文翻译"}]}`
+
+const videoBreakdownSystem = `你是 发现猫 的"带货视频解析 Agent",服务 TikTok Shop 跨境卖家。
+输入是这条带货短视频的口播转录(已附原文与中文翻译)和若干帧画面。请用中文完成:
+1. 给视频起一个中文小标题(title)。
+2. 一句话说清:卖什么、靠什么打动人(summary)。
+3. 拆解带货结构:钩子(开头怎么抓注意力)、痛点(戳了什么需求/焦虑)、卖点(核心卖点怎么呈现)、CTA(结尾怎么促单)。
 4. 提炼这条视频值得复用的套路要点(reusablePoints)。
 5. 给出把它改编成中国卖家自己商品的具体建议(adaptations)。
 
 严格要求:
 - 只输出合法 JSON,结构严格如下,不要任何额外文字、解释或 markdown 围栏。
-- 没有口播 / 纯音乐时 lines 返回空数组,summary 注明"无口播,以下基于画面",仍尽量给出 structure 与 adaptations。
-- lang 用中文写原始语言名(如 英语 / 印尼语 / 泰语 / 越南语)。
+- 转录为空(无口播 / 纯音乐)时,summary 注明"无口播,以下基于画面",仍尽量基于画面给出 structure 与 adaptations。
 - reusablePoints 与 adaptations 各给 3-5 条,具体可落地,不要空话。
 
 JSON 结构:
 {
-  "lang": "原始口播语言中文名",
   "title": "给视频起的中文小标题",
   "summary": "一句话:卖什么、靠什么打动人",
-  "lines": [{"t": "0:00-0:03", "original": "原文口播", "zh": "中文翻译"}],
   "structure": {"hook": "...", "pain": "...", "selling": "...", "cta": "..."},
   "reusablePoints": ["..."],
   "adaptations": ["..."]
@@ -105,20 +119,14 @@ func (s *AgentService) runVideoAnalysis(ctx context.Context, wsID uuid.UUID, inp
 		return "", nil, llm.Usage{}, fmt.Errorf("无法从视频提取音轨或画面,请确认文件可正常播放")
 	}
 
-	user := "请解析这条带货视频。"
+	focus := ""
 	if f := strings.TrimSpace(input); f != "" && f != "解析视频脚本" {
-		user += "用户特别想关注:" + f
+		focus = f
 	}
 
-	// 用 ReviewModel(gemini-3.5-flash,支持 audio 输入)做多模态解析;prod 经代理出网。
-	res, err := s.llm.ChatAV(ctx, s.llm.ReviewModel(), videoAnalysisSystem, user, audio, frames, true, 4000)
+	out, usage, err := analyzeVideoTwoStage(ctx, s.llm, focus, audio, frames)
 	if err != nil {
 		return "", nil, llm.Usage{}, fmt.Errorf("视频解析失败:%w", err)
-	}
-
-	var out videoAnalysisOut
-	if err := json.Unmarshal([]byte(llm.ExtractJSON(res.Content)), &out); err != nil {
-		return "", nil, llm.Usage{}, fmt.Errorf("解析结果格式异常:%w", err)
 	}
 
 	title := strings.TrimSpace(out.Title)
@@ -150,7 +158,99 @@ func (s *AgentService) runVideoAnalysis(ctx context.Context, wsID uuid.UUID, inp
 	}
 	fmt.Fprintf(&b, "\n\n已提取逐句脚本(%d 句)与中文翻译、带货结构拆解和改编建议,展开查看。", len(out.Lines))
 
-	return b.String(), meta, res.Usage, nil
+	return b.String(), meta, usage, nil
+}
+
+// analyzeVideoTwoStage 两段式解析:
+//
+//	① AudioModel(voxtral)听音轨 → lang + 逐句 lines(原文+中文);
+//	② ReviewModel(minimax)拿①的转录文本 + 关键帧 → title/summary/structure/reusablePoints/adaptations。
+//
+// audio 为 nil(无口播)时跳过①,②仅凭画面。①失败不致命(降级为看帧解析);②失败才返回错误。
+// usage 汇总两段的 token 与成本。仅依赖 llm.Client,交互解析与后台管线两处共用。
+func analyzeVideoTwoStage(ctx context.Context, l *llm.Client, focus string, audio *llm.AudioPart, frames []string) (*videoAnalysisOut, llm.Usage, error) {
+	var out videoAnalysisOut
+	var usage llm.Usage
+	usage.Model = l.ReviewModel()
+
+	// ── ① 转录段(仅当有音轨)──
+	if audio != nil && strings.TrimSpace(audio.Data) != "" {
+		tr, err := l.ChatAV(ctx, l.AudioModel(), videoTranscribeSystem,
+			"请转录并翻译这段音轨。", audio, nil, true, 3000)
+		if err != nil {
+			logger.Warn("[video-analysis] 转录段失败,降级为看帧解析",
+				logger.String("model", l.AudioModel()), logger.Err(err))
+		} else {
+			addUsage(&usage, tr.Usage)
+			var t struct {
+				Lang  string `json:"lang"`
+				Lines []struct {
+					T        string `json:"t"`
+					Original string `json:"original"`
+					Zh       string `json:"zh"`
+				} `json:"lines"`
+			}
+			if e := json.Unmarshal([]byte(llm.ExtractJSON(tr.Content)), &t); e != nil {
+				logger.Warn("[video-analysis] 转录结果解析失败,降级为看帧解析", logger.Err(e))
+			} else {
+				out.Lang = t.Lang
+				out.Lines = t.Lines // 匿名结构体类型一致,可直接赋值
+			}
+		}
+	}
+
+	// ── ② 拆解段 ──
+	var ub strings.Builder
+	if len(out.Lines) > 0 {
+		if out.Lang != "" {
+			fmt.Fprintf(&ub, "口播语言:%s\n", out.Lang)
+		}
+		ub.WriteString("口播转录(逐句,含中文翻译):\n")
+		for _, l := range out.Lines {
+			fmt.Fprintf(&ub, "[%s] %s | 中文:%s\n", l.T, l.Original, l.Zh)
+		}
+	} else {
+		ub.WriteString("(该视频无口播或转录为空,请基于画面解析)\n")
+	}
+	if focus != "" {
+		fmt.Fprintf(&ub, "\n用户特别想关注:%s\n", focus)
+	}
+	ub.WriteString("\n请基于以上转录与画面完成拆解。")
+
+	res, err := l.ChatVision(ctx, l.ReviewModel(), videoBreakdownSystem, ub.String(), frames, true, 4000)
+	if err != nil {
+		return nil, usage, err
+	}
+	addUsage(&usage, res.Usage)
+
+	var bd struct {
+		Title     string `json:"title"`
+		Summary   string `json:"summary"`
+		Structure struct {
+			Hook    string `json:"hook"`
+			Pain    string `json:"pain"`
+			Selling string `json:"selling"`
+			Cta     string `json:"cta"`
+		} `json:"structure"`
+		ReusablePoints []string `json:"reusablePoints"`
+		Adaptations    []string `json:"adaptations"`
+	}
+	if e := json.Unmarshal([]byte(llm.ExtractJSON(res.Content)), &bd); e != nil {
+		return nil, usage, fmt.Errorf("拆解结果格式异常:%w", e)
+	}
+	out.Title = bd.Title
+	out.Summary = bd.Summary
+	out.Structure = bd.Structure // 匿名结构体类型一致
+	out.ReusablePoints = bd.ReusablePoints
+	out.Adaptations = bd.Adaptations
+	return &out, usage, nil
+}
+
+// addUsage 把一次调用的 usage 累加进汇总(两段式合并 token 与成本)。
+func addUsage(dst *llm.Usage, src llm.Usage) {
+	dst.TokensIn += src.TokensIn
+	dst.TokensOut += src.TokensOut
+	dst.CostCents += src.CostCents
 }
 
 // materialVideoURL 校验素材属于该工作台且为视频,返回其 URL;不合法返回空串。
