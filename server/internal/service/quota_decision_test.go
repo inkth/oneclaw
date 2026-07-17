@@ -22,10 +22,10 @@ func TestQuotaDecisionFreePro(t *testing.T) {
 		{"FREE 恰好用满-边界放行", model.PlanFree, model.UsageVideo, 5, 275, 0, true}, // 275+175=450
 		{"FREE 超一积分即拒", model.PlanFree, model.UsageVideo, 5, 276, 0, false},   // 451>450
 		{"FREE 余量不足整条", model.PlanFree, model.UsageVideo, 5, 350, 0, false},   // 525>450
-		// PRO=6000
+		// PRO=5600
 		{"PRO 余量充足", model.PlanPro, model.UsageVideo, 5, 5000, 0, true},
-		{"PRO 恰好用满", model.PlanPro, model.UsageVideo, 5, 5825, 0, true},  // 5825+175=6000
-		{"PRO 超一即拒", model.PlanPro, model.UsageVideo, 5, 5826, 0, false}, // 6001>6000
+		{"PRO 恰好用满", model.PlanPro, model.UsageVideo, 5, 5425, 0, true},  // 5425+175=5600
+		{"PRO 超一即拒", model.PlanPro, model.UsageVideo, 5, 5426, 0, false}, // 5601>5600
 		// 未知方案按 FREE 处理
 		{"未知方案按 FREE 限额", "GARBAGE", model.UsageVideo, 5, 350, 0, false},
 		// 出图便宜(6/张),批量仍按总额判
@@ -46,7 +46,7 @@ func TestQuotaDecisionFreePro(t *testing.T) {
 	}
 }
 
-// TEAM 不限量(恒放行),但 used 达基线(12000)后本次标记 billable(待结算)。
+// TEAM 不限量(恒放行),但 used 达基线(11200)后本次标记 billable(待结算)。
 func TestQuotaDecisionTeamBaseline(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -55,7 +55,7 @@ func TestQuotaDecisionTeamBaseline(t *testing.T) {
 	}{
 		{"零用量不计费", 0, false},
 		{"基线内不计费", 11000, false},
-		{"恰好达基线即计费", model.TeamBaselineCredits, true}, // 12000>=12000
+		{"恰好达基线即计费", model.TeamBaselineCredits, true}, // 11200>=11200
 		{"超基线计费", 15000, true},
 	}
 	for _, c := range cases {
