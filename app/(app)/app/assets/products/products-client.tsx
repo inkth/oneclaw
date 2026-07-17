@@ -35,7 +35,6 @@ export type Product = {
   images?: string[];
   imagesStatus?: ImagesStatus;
   discoverProductId?: string | null; // 非空=EchoTik 收藏；空=用户自建（素材图生成）
-  shop: { id: string; name: string; platform: string } | null;
 };
 
 // 商品范围：all=全部 · self=自建（资产/商品）· discover=EchoTik 收藏（收藏/商品）。
@@ -139,9 +138,8 @@ export function ProductsClient({
   const visible =
     filter === "ALL" ? scoped : scoped.filter((p) => p.status === filter);
 
-  // 把 Go 商品列表项归一成本组件的 Product(补 shop 兜底)。
   function mapGo(p: Partial<Product> & { id: string }): Product {
-    return { shop: null, ...p } as Product;
+    return p as Product;
   }
 
   // 本范围内任一商品仍在生成（文案/主图）时轮询商品列表，卡片「生成中 → 成品」自填充。
@@ -301,20 +299,20 @@ export function ProductsClient({
                         {statusMap[p.status].label}
                       </span>
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-zinc-500">
-                      <span>{p.category}</span>
-                      {p.shop && <span>· {p.shop.name}</span>}
-                      {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING") && (
-                        <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 ${imagesStatusMap.RUNNING.cls}`}>
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" /> 出图中
-                        </span>
-                      )}
-                      {p.imagesStatus === "DONE" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">
-                          <Sparkles className="h-2.5 w-2.5" /> 已出图
-                        </span>
-                      )}
-                    </div>
+                    {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING" || p.imagesStatus === "DONE") && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-zinc-500">
+                        {(p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING") && (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 ${imagesStatusMap.RUNNING.cls}`}>
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" /> 出图中
+                          </span>
+                        )}
+                        {p.imagesStatus === "DONE" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-700">
+                            <Sparkles className="h-2.5 w-2.5" /> 已出图
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -408,12 +406,10 @@ export function ProductsClient({
             ))}
           </div>
 
-          <TableWrap minWidth={760} className="hidden md:block">
+          <TableWrap minWidth={640} className="hidden md:block">
             <THead>
               <tr>
                 <Th>商品</Th>
-                <Th>店铺</Th>
-                <Th>品类</Th>
                 <Th align="right">ROI</Th>
                 <Th align="right">毛利率</Th>
                 <Th align="right">月销</Th>
@@ -512,16 +508,6 @@ export function ProductsClient({
                       </div>
                     </div>
                   </Td>
-                  <Td className="text-zinc-600">
-                    {p.shop ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-[var(--dk-surface-2)] px-1.5 py-0.5 text-2xs">
-                        {p.shop.name}
-                      </span>
-                    ) : (
-                      <span className="text-zinc-300">—</span>
-                    )}
-                  </Td>
-                  <Td className="text-zinc-600">{p.category}</Td>
                   <Td align="right" className="font-semibold nums">
                     {p.roiScore}
                   </Td>
