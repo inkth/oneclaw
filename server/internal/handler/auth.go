@@ -107,6 +107,34 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	OK(c, gin.H{"user": u, "workspace": ws, "role": role, "agency": agencyInfo})
 }
 
+type updateMeReq struct {
+	Name *string `json:"name"`
+}
+
+// UpdateMe 目前只开放昵称。其它字段(手机号等)不走这里。
+func (h *AuthHandler) UpdateMe(c *gin.Context) {
+	uid, ok := middleware.UserID(c)
+	if !ok {
+		_ = c.Error(apperr.Unauthorized("未登录"))
+		return
+	}
+	var in updateMeReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数不合法:" + err.Error()))
+		return
+	}
+	if in.Name == nil {
+		_ = c.Error(apperr.BadRequest("参数缺失"))
+		return
+	}
+	u, err := h.auth.UpdateNickname(c.Request.Context(), uid, *in.Name)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"user": u})
+}
+
 func (h *AuthHandler) setSession(c *gin.Context, token string, maxAge int) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(h.cookie.Name, token, maxAge, "/", h.cookie.Domain, h.cookie.Secure, true)

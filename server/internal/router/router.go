@@ -104,6 +104,7 @@ func New(d Deps) *gin.Engine {
 	priv.Use(middleware.Auth(d.Auth, d.Cfg.Cookie.Name))
 	{
 		priv.GET("/me", authH.Me)
+		priv.PATCH("/me", authH.UpdateMe)
 		priv.GET("/workspaces/default", wsH.GetDefault)
 
 		priv.GET("/workspaces/:wid/products", prodH.List)

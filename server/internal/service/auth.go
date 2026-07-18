@@ -3,7 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -171,6 +174,31 @@ func (s *AuthService) GetUser(ctx context.Context, userID uuid.UUID) (*model.Use
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询用户失败", err)
 	}
 	return &u, nil
+}
+
+// nicknameMaxRunes 昵称上限(按字符数,不是字节:中文一字算一)。
+const nicknameMaxRunes = 20
+
+// UpdateNickname 改当前用户昵称。空白与控制字符先剪掉再校验,避免存进不可见字符。
+func (s *AuthService) UpdateNickname(ctx context.Context, userID uuid.UUID, name string) (*model.User, error) {
+	name = strings.TrimSpace(name)
+	if strings.ContainsFunc(name, func(r rune) bool { return unicode.IsControl(r) }) {
+		return nil, apperr.BadRequest("昵称不能包含控制字符")
+	}
+	if name == "" {
+		return nil, apperr.BadRequest("昵称不能为空")
+	}
+	if utf8.RuneCountInString(name) > nicknameMaxRunes {
+		return nil, apperr.BadRequest("昵称最多 20 个字")
+	}
+	res := s.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", userID).Update("name", name)
+	if res.Error != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "更新昵称失败", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return nil, apperr.NotFound("用户不存在")
+	}
+	return s.GetUser(ctx, userID)
 }
 
 // TokenTTLSeconds 暴露给 handler 设置 Cookie Max-Age。

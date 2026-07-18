@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   CalendarClock,
@@ -8,6 +9,7 @@ import {
   Coins,
   CreditCard,
   Image as ImageIcon,
+  Pencil,
   Phone,
   Sparkles,
   User,
@@ -16,6 +18,8 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
+import { apiBrowser } from "@/lib/api-browser";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -70,10 +74,7 @@ export function SettingsClient({
       <section className="dk-card p-5">
         <SectionHeader icon={User} title="账号" />
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <div className="text-xs text-[var(--dk-content-tertiary)]">昵称</div>
-            <div className="mt-0.5 text-sm font-medium text-[var(--dk-content-primary)]">{user.name || "未设置"}</div>
-          </div>
+          <NicknameField name={user.name} />
           <div>
             <div className="text-xs text-[var(--dk-content-tertiary)]">手机号</div>
             <div className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--dk-content-primary)]">
@@ -170,6 +171,94 @@ export function SettingsClient({
           workspaceId={workspace.id}
           onClose={() => setCheckout(null)}
         />
+      )}
+    </div>
+  );
+}
+
+const NICKNAME_MAX = 20;
+
+/** 昵称就地编辑：读态一行字 + 铅笔，写态输入框 + 保存/取消。保存后 refresh() 让头像菜单同步。 */
+function NicknameField({ name }: { name?: string | null }) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function open() {
+    setDraft(name ?? "");
+    setError(null);
+    setEditing(true);
+  }
+
+  async function save() {
+    const next = draft.trim();
+    if (!next) {
+      setError("昵称不能为空");
+      return;
+    }
+    if (next.length > NICKNAME_MAX) {
+      setError(`昵称最多 ${NICKNAME_MAX} 个字`);
+      return;
+    }
+    if (next === (name ?? "")) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await apiBrowser("/me", { method: "PATCH", body: JSON.stringify({ name: next }) });
+      setEditing(false);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "保存失败，请重试");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="text-xs text-[var(--dk-content-tertiary)]">昵称</div>
+      {editing ? (
+        <div className="mt-1">
+          <div className="flex items-center gap-2">
+            <Input
+              autoFocus
+              value={draft}
+              maxLength={NICKNAME_MAX}
+              disabled={saving}
+              placeholder="给自己起个名字"
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void save();
+                if (e.key === "Escape") setEditing(false);
+              }}
+              className="h-9 max-w-[14rem]"
+            />
+            <Button type="button" size="sm" variant="primary" disabled={saving} onClick={() => void save()}>
+              {saving ? "保存中" : "保存"}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" disabled={saving} onClick={() => setEditing(false)}>
+              取消
+            </Button>
+          </div>
+          {error && <div className="mt-1.5 text-2xs font-medium text-rose-500">{error}</div>}
+        </div>
+      ) : (
+        <div className="mt-0.5 flex items-center gap-1.5">
+          <span className="text-sm font-medium text-[var(--dk-content-primary)]">{name || "未设置"}</span>
+          <button
+            type="button"
+            onClick={open}
+            aria-label="修改昵称"
+            className="rounded-md p-1 text-[var(--dk-content-tertiary)] transition-colors hover:bg-[var(--dk-surface-2)] hover:text-[var(--dk-content-primary)]"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        </div>
       )}
     </div>
   );
