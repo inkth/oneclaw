@@ -183,9 +183,10 @@ func (s *DiscoverService) BackfillTranslations(ctx context.Context) (queued int,
 		Name string
 	}
 	var prods []prow
+	// 与入库门槛同口径:低销存量行不值得花 LLM(涨过门槛后同步路径会补空即译)。
 	if e := s.db.WithContext(ctx).Table("discover_products").
 		Select("id", "name").
-		Where("name_zh = '' AND name <> ''").
+		Where("name_zh = '' AND name <> '' AND total_sale_cnt >= ?", s.enrichMinSale).
 		Find(&prods).Error; e != nil {
 		return queued, e
 	}
