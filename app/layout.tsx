@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   ),
   title: `${BRAND_NAME} · ${BRAND_SLOGAN}`,
   description:
-    `${BRAND_SLOGAN}。${BRAND_NAME} 用 AI Agent 帮你完成跨境电商从选品分析、短视频创作、Listing 内容到投放复盘的全链路，榜单数据免费逛，一句话就能派活。`,
+    `${BRAND_SLOGAN}。${BRAND_NAME} 用 AI Agent 帮你完成跨境电商从选品分析、短视频创作、Listing 内容到投放复盘的全链路，选品数据永久免费，一句话就能派活。`,
 };
 
 export default function RootLayout({

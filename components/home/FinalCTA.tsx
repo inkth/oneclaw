@@ -26,7 +26,7 @@ export function FinalCTA() {
                 今天，推进你的下一门好生意
               </h2>
               <p className="mt-4 max-w-xl text-base text-white/65 text-cjk-relaxed">
-                先免费逛榜单找机会，再把选品、内容或复盘交给 Agent。
+                先免费浏览选品数据找机会，再把分析、内容或复盘交给 Agent。
                 每一次操作，都更接近可执行的下一步。
               </p>
             </div>

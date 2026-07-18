@@ -70,10 +70,10 @@ const PLAN_META = {
       { icon: Workflow, value: "全链路", label: "选品到投放复盘" },
       { icon: ShieldCheck, value: "24h", label: "邮件客服响应" },
     ],
-    highlights: ["榜单与市场数据永久免费查看", "每次操作前透明展示预计消耗", "积分按你的计费周期自动重置"],
+    highlights: ["选品榜单与市场数据永久免费", "每次操作前透明展示预计消耗", "积分按你的计费周期自动重置"],
   },
   TEAM: {
-    label: "团队版",
+    label: "旗舰版",
     eyebrow: "为高频选品与内容生产而生",
     headline: "让高频选品和内容生产稳定不断档",
     summary: "双倍月度积分，超出基线后按实际用量结算，适合多店铺和高频出片。",
@@ -84,7 +84,7 @@ const PLAN_META = {
       { icon: Bot, value: "不断供", label: "超额按量计费" },
       { icon: Crown, value: "专属", label: "客户成功经理" },
     ],
-    highlights: ["超基线按 ¥45 / 千积分结算", "选品、短视频、Listing、复盘全功能", "每次操作前透明展示预计消耗"],
+    highlights: ["选品榜单与市场数据永久免费", "超基线按 ¥45 / 千积分结算", "每次操作前透明展示预计消耗"],
   },
 } as const;
 
@@ -268,7 +268,7 @@ export function CheckoutModal({
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-md bg-brand-50 px-2 py-1 text-[10px] font-bold tracking-wider text-brand-700">
-                  {plan}
+                  {plan === "TEAM" ? "FLAGSHIP" : plan}
                 </span>
                 <span className="text-xs font-medium text-zinc-500">升级到{planLabel}</span>
               </div>

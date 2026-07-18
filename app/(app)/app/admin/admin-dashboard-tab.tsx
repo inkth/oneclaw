@@ -67,7 +67,7 @@ export function DashboardTab({ initial }: { initial: Dashboard }) {
           <div className="bg-[var(--dk-stroke-border)]" style={{ width: `${pct(d.planDist.free)}%` }} />
         </div>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs">
-          <LegendDot className="bg-emerald-500" label="团队版" value={d.planDist.team} />
+          <LegendDot className="bg-emerald-500" label="旗舰版" value={d.planDist.team} />
           <LegendDot className="bg-brand-500" label="专业版" value={d.planDist.pro} />
           <LegendDot className="bg-[var(--dk-stroke-border)]" label="免费版" value={d.planDist.free} />
         </div>

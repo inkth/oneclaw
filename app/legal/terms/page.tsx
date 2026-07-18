@@ -29,7 +29,7 @@ export default function TermsPage() {
       <h2>3. 积分与计费</h2>
       <ul>
         <li>服务采用积分制：选品、出片、出图等动作按对应积分单价扣费，单价以购买页与工作台展示为准。</li>
-        <li>各订阅方案按<strong>订阅周期</strong>(自购买日起按月计)发放积分额度并到期重置；免费版 / 专业版为硬上限，团队版超出基线部分按量结算。</li>
+        <li>各订阅方案按<strong>订阅周期</strong>(自购买日起按月计)发放积分额度并到期重置；免费版 / 专业版为硬上限，旗舰版超出基线部分按量结算。</li>
         <li>积分与订阅为虚拟商品。<strong>已消耗的积分不予退还</strong>；未消耗部分的退款以购买时公示的退款政策为准。如有疑问请联系
           <a href="mailto:contact@faxianmao.com">contact@faxianmao.com</a>。</li>
       </ul>

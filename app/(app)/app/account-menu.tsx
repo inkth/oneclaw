@@ -6,12 +6,12 @@ import { Coins, Settings, LogOut, Sparkles, Megaphone, ShieldCheck } from "lucid
 import { Popover } from "@/components/ui/Popover";
 import { apiBrowser } from "@/lib/api-browser";
 
-const PLAN_LABEL: Record<string, string> = { FREE: "免费版", PRO: "专业版", TEAM: "团队版" };
+const PLAN_LABEL: Record<string, string> = { FREE: "免费版", PRO: "专业版", TEAM: "旗舰版" };
 
 /**
  * 顶栏右侧账户区：积分余额 + 升级会员 + 头像下拉菜单（替代原来的独立退出图标）。
  * 桌面端把积分/升级平铺在头像左侧；移动端收进菜单，只留头像。
- * 团队版（limit<0=不限积分）不显示升级入口、积分显示 ∞。
+ * 旗舰版（limit<0=不限积分）不显示升级入口、积分显示 ∞。
  */
 export function AccountMenu({
   display,
@@ -67,7 +67,7 @@ export function AccountMenu({
         </Link>
       )}
 
-      {/* 升级会员（非团队版才显示）*/}
+      {/* 升级会员（非旗舰版才显示）*/}
       {!isTeam && (
         <Link
           href={upgradeHref}

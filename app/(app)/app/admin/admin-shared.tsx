@@ -23,7 +23,7 @@ export function fmtDateTime(iso?: string | null) {
   });
 }
 
-export const PLAN_LABEL: Record<string, string> = { FREE: "免费版", PRO: "专业版", TEAM: "团队版" };
+export const PLAN_LABEL: Record<string, string> = { FREE: "免费版", PRO: "专业版", TEAM: "旗舰版" };
 export const PLAN_TONE: Record<string, Tone> = { FREE: "neutral", PRO: "brand", TEAM: "success" };
 
 export const ORDER_META: Record<string, { label: string; tone: Tone }> = {

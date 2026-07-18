@@ -29,7 +29,7 @@
 - **数据库**:Postgres(Go 自建 schema,uuid 主键)。
 - **鉴权**:Go 侧 JWT cookie(`oc_session`)+ 手机验证码,**非** Auth.js。
 - **外部集成**:EchoTik(选品数据)· OpenRouter(LLM + 视频)· fal(图 / 封面 / 试穿)· 腾讯云 COS(对象存储)· SMS(验证码)。
-- **计费**:积分制 —— 扣费 / 额度(按订阅周期重置)/ 下单 / 订单 / TEAM 超额结算均已落库生效。
+- **计费**:积分制 —— 扣费 / 额度(按订阅周期重置)/ 下单 / 订单 / 旗舰版（内部标识 `TEAM`）超额结算均已落库生效。
 
 前端经 [`lib/api-client.ts`](lib/api-client.ts) 调后端:`GO_API_INTERNAL_URL`(默认 `http://localhost:8082`)拼 `/api/v1`。**路由全集以 [`server/internal/router/router.go`](server/internal/router/router.go) 为准**(不在此枚举,免得过时)。
 

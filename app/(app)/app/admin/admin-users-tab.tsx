@@ -26,7 +26,7 @@ const PLAN_FILTERS = [
   { value: "", label: "全部" },
   { value: "FREE", label: "免费版" },
   { value: "PRO", label: "专业版" },
-  { value: "TEAM", label: "团队版" },
+  { value: "TEAM", label: "旗舰版" },
 ];
 
 export function UsersTab() {
@@ -414,7 +414,7 @@ function WorkspaceBlock({
         >
           <option value="FREE">免费版</option>
           <option value="PRO">专业版</option>
-          <option value="TEAM">团队版</option>
+          <option value="TEAM">旗舰版</option>
         </select>
         {planSel !== "FREE" && (
           <div className="flex items-center gap-1">

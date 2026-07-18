@@ -35,7 +35,7 @@ export type Usage = {
 const PLAN_META: Record<string, { label: string; tone: "neutral" | "brand" | "success" }> = {
   FREE: { label: "免费版", tone: "neutral" },
   PRO: { label: "专业版", tone: "brand" },
-  TEAM: { label: "团队版", tone: "success" },
+  TEAM: { label: "旗舰版", tone: "success" },
 };
 
 /** 计费周期日期只显示「月/日」。 */
@@ -113,7 +113,7 @@ export function SettingsClient({
                 variant="secondary"
                 onClick={() => setCheckout("TEAM")}
               >
-                升级团队版
+                升级旗舰版
               </Button>
             )}
             {plan === "FREE" && (
@@ -189,7 +189,7 @@ function CreditBalance({ usage }: { usage: Usage }) {
           <span className="text-sm text-[var(--dk-content-tertiary)]"> / {unlimited ? "∞" : limit} 积分</span>
         </div>
         <div className="text-2xs text-[var(--dk-content-tertiary)]">
-          {unlimited ? "团队版不限积分" : `本周期剩余 ${remaining} 积分`}
+          {unlimited ? "旗舰版不限积分" : `本周期剩余 ${remaining} 积分`}
         </div>
       </div>
       <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[var(--dk-surface-3)]">

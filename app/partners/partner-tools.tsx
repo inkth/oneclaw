@@ -51,7 +51,7 @@ export function CommissionCalculator() {
         </label>
         <label className="block">
           <span className="flex items-center justify-between text-sm">
-            <span className="text-white/65">Team 客户占比</span>
+            <span className="text-white/65">旗舰版客户占比</span>
             <strong className="nums text-white">{teamRatio}%</strong>
           </span>
           <input
@@ -72,7 +72,7 @@ export function CommissionCalculator() {
           <span className="mr-1 text-xl text-brand-200">¥</span>{money(result)}
         </div>
         <p className="mt-3 text-xs leading-5 text-white/45">
-          以 Pro ¥199/月、Team ¥399/月起和 20% 分成估算，实际以客户有效付费与结算数据为准。
+          以专业版 ¥199/月、旗舰版 ¥399/月起和 20% 分成估算，实际以客户有效付费与结算数据为准。
         </p>
       </div>
     </div>

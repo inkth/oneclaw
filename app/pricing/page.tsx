@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Check, Sparkles, Zap, Crown, Clock, ChevronDown } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, ChevronDown } from "lucide-react";
 import { PricingCTA } from "./pricing-cta";
 
 type PlanKey = "FREE" | "PRO" | "TEAM";
@@ -17,7 +17,6 @@ const tiers: Array<{
   highlight: boolean;
   description: string;
   features: string[];
-  planned: string[];
   notIncluded: string[];
   cta: string;
 }> = [
@@ -31,13 +30,13 @@ const tiers: Array<{
     highlight: false,
     description: "适合先看数据、验证方向",
     features: [
-      "每月 450 积分（≈ 1 条 8 秒出片 / 150 次选品）",
-      "选品 3 / 出片 35 积分每秒 / 出图 6 积分",
+      "商品 / 店铺 / 达人 / 视频选品数据永久免费",
+      "每月 450 AI 积分（≈ 1 条 8 秒出片）",
+      "Agent 选品分析 3 / 出片 35 积分每秒 / 出图 6 积分",
       "1 个工作台",
       "选品 / 短视频 / Listing / 复盘全功能",
       "社区 Discord 支持",
     ],
-    planned: [],
     notIncluded: ["团队协作", "API 访问", "数据导出", "优先客服"],
     cta: "免费使用",
   },
@@ -56,18 +55,12 @@ const tiers: Array<{
       "选品 / 短视频 / Listing / 复盘全功能",
       "邮件客服 24h 响应",
     ],
-    planned: [
-      "多工作台 + 团队协作",
-      "选品 CSV 导出 / 视频批量下载",
-      "Webhook + REST API",
-      "邮件 + 站内通知",
-    ],
     notIncluded: ["私有部署", "SLA"],
     cta: "升级专业版",
   },
   {
     name: "TEAM",
-    cn: "团队版",
+    cn: "旗舰版",
     price: "¥399",
     priceSub: "/ 月起",
     icon: Crown,
@@ -80,12 +73,6 @@ const tiers: Array<{
       "选品 / 短视频 / Listing / 复盘全功能",
       "专属客户成功经理",
     ],
-    planned: [
-      "无限工作台 + 多成员协作",
-      "细粒度角色权限 + 审计日志",
-      "自定义 LLM Provider Key（BYOK）",
-      "99.9% SLA",
-    ],
     notIncluded: [],
     cta: "联系销售",
   },
@@ -94,19 +81,15 @@ const tiers: Array<{
 const faqs = [
   {
     q: "积分怎么算？",
-    a: "所有用量统一计入积分池：选品分析 / Listing 内容 / 短视频脚本各 3 积分，确认出片按时长 35 积分/秒（默认 8 秒 ≈ 280 积分，实拍开场片段不计秒），Listing 主图 6 积分/张。投放复盘不消耗积分。动手前按钮旁都会标出本次约消耗。",
+    a: "浏览商品、店铺、达人和视频等选品数据永久免费，不消耗积分。调用 Agent 做选品分析 / Listing 内容 / 短视频脚本各 3 积分，确认出片按时长 35 积分/秒（默认 8 秒 ≈ 280 积分，实拍开场片段不计秒），Listing 主图 6 积分/张。投放复盘不消耗积分，动手前按钮旁都会标出本次约消耗。",
   },
   {
     q: "积分用完了怎么办？",
-    a: "Free / Pro 用完会暂停出片 / 出图等消耗积分的动作，投放复盘仍可正常使用，到期按你的计费周期（开通 / 续费日对应，非自然月）自动重置；随时可升级方案立即恢复。Team 含 11200 积分/月（≈ 40 条 8 秒出片），超出部分按 ¥45/千积分结算（8 秒出片约 ¥12.6）。",
+    a: "免费版 / 专业版用完会暂停出片 / 出图等消耗积分的动作，投放复盘仍可正常使用，到期按你的计费周期（开通 / 续费日对应，非自然月）自动重置；随时可升级方案立即恢复。旗舰版含 11200 积分/月（≈ 40 条 8 秒出片），超出部分按 ¥45/千积分结算（8 秒出片约 ¥12.6）。",
   },
   {
     q: "可以中途升级 / 降级吗？",
     a: "可以。升级即时生效，未消耗积分按比例转入新方案；降级在下个计费周期生效。",
-  },
-  {
-    q: "支持 BYOK（自带模型 key）吗？",
-    a: "BYOK 在路线图上（规划中），将面向 Team 开放；届时发现猫只对编排和数据存储收费，模型成本走你自己的账户。",
   },
   {
     q: "用了 Agent 写出来的视频版权归谁？",
@@ -144,15 +127,15 @@ export default function PricingPage() {
           <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-200/80 bg-white/70 px-3.5 py-1.5 text-xs font-bold text-brand-700 shadow-[0_1px_2px_rgba(18,20,25,.03)] backdrop-blur-sm">
               <Sparkles className="h-3.5 w-3.5" />
-              榜单数据免费 · 无需信用卡
+              选品数据永久免费 · 无需信用卡
             </div>
             <h1 className="mt-6 text-display-sm">
-              先免费找机会，再按需使用 AI
+              选品数据永久免费，AI 按需付费
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm text-zinc-600 text-cjk-relaxed sm:text-base">
-              浏览榜单和市场数据永久免费；让 Agent 分析、出片或出图时才消耗积分。
-              所有方案都包含选品、短视频、Listing 和复盘，
-              主要区别是每月积分额度与协作能力。
+              商品、店铺、达人、视频榜单与市场数据均可免费浏览；
+              只有调用 Agent 分析、出片或出图时才消耗积分。
+              套餐区别仅在 AI 积分额度、用量结算和服务支持。
             </p>
           </div>
         </section>
@@ -186,7 +169,7 @@ export default function PricingPage() {
 
                     <div className="mt-5">
                       <div className="text-2xs font-mono uppercase tracking-[0.14em] text-zinc-400">
-                        {t.name}
+                        {t.name === "TEAM" ? "FLAGSHIP" : t.name}
                       </div>
                       <h3 className="font-display mt-1 text-xl font-semibold">{t.cn}</h3>
                     </div>
@@ -218,22 +201,6 @@ export default function PricingPage() {
                           </li>
                         ))}
                       </ul>
-                      {t.planned.length > 0 && (
-                        <>
-                          <div className="mt-4 flex items-center gap-1.5 text-2xs font-medium uppercase tracking-wider text-amber-500">
-                            <Clock className="h-3 w-3" />
-                            规划中
-                          </div>
-                          <ul className="mt-3 space-y-2">
-                            {t.planned.map((f) => (
-                              <li key={f} className="flex items-start gap-2 text-sm">
-                                <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400" strokeWidth={2} />
-                                <span className="text-zinc-500">{f}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
                       {t.notIncluded.length > 0 && (
                         <>
                           <div className="mt-4 text-2xs font-medium uppercase tracking-wider text-zinc-400">
@@ -256,8 +223,8 @@ export default function PricingPage() {
             </div>
 
             <p className="mx-auto mt-8 max-w-3xl rounded-2xl border border-black/[0.06] bg-white/60 px-5 py-2.5 text-center text-xs leading-5 text-zinc-500 sm:rounded-full">
-              所有方案均不含模型实际推理成本，相关费用由发现猫在你的积分内代付；
-              未来 BYOK 模式（规划中）下可走你自己的账户。
+              浏览选品榜单与市场数据不消耗积分；使用 AI 时按页面标示扣除积分，
+              无需另行支付模型费用。
             </p>
           </div>
         </section>

@@ -197,7 +197,7 @@ function BillsList() {
       {loading && !data ? (
         <Spinner />
       ) : !data || data.bills.length === 0 ? (
-        <EmptyState icon={RotateCcw} title="暂无超额账单" description="TEAM 超基线用量周期结算后在此核销。" />
+        <EmptyState icon={RotateCcw} title="暂无超额账单" description="旗舰版超基线用量周期结算后在此核销。" />
       ) : (
         <>
           <TableWrap minWidth={680}>

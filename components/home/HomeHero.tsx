@@ -218,7 +218,7 @@ export function HomeHero() {
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-xs text-zinc-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-              榜单数据免费浏览 · 使用 AI 才消耗积分
+              选品数据永久免费 · 使用 AI 才消耗积分
             </span>
             <span className="hidden h-3 w-px bg-zinc-200 sm:block" />
             <span>手机号登录即用 · 无需信用卡</span>

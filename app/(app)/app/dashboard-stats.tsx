@@ -53,7 +53,7 @@ export function DashboardStats({
   const remaining = unlimited ? "∞" : Math.max(0, limit - used);
   const pct = unlimited ? 0 : Math.round((used / Math.max(1, limit)) * 100);
   const creditHint = unlimited
-    ? "团队版不限积分"
+    ? "旗舰版不限积分"
     : pct >= 90
       ? "积分告急，去设置升级"
       : `本周期已用 ${used} 积分`;
