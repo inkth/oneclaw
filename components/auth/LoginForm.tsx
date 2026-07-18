@@ -8,8 +8,8 @@ import { apiBrowser } from "@/lib/api-browser";
 const PHONE_RE = /^1[3-9]\d{9}$/;
 
 /** 手机号 + 验证码两步登录表单。成功后只调 onSuccess，导航/刷新交给调用方（/login 页跳 callbackUrl，弹窗原地 refresh）。
- *  inviteCode：代理商邀请码。/login 页由 ?invite= 传入；弹窗登录无 prop，回退读 localStorage("oc_invite")
- *  （落地页 /r/[code] 已写入），两条登录路径都能带上归因码。仅首次注册时后端用于绑定。 */
+ *  inviteCode：/login 页用来展示已验证的邀请码；权威归因来自 /r/[code] 写入的 HttpOnly Cookie。
+ *  localStorage 只兼容旧版邀请落地页的存量浏览器。仅首次注册时后端用于绑定。 */
 export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; inviteCode?: string }) {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
@@ -80,6 +80,11 @@ export function LoginForm({ onSuccess, inviteCode }: { onSuccess: () => void; in
 
   return (
     <div className="space-y-4">
+      {inviteCode && (
+        <div className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-xs leading-relaxed text-brand-800">
+          已识别代理商邀请码 <span className="font-mono font-bold">{inviteCode}</span>，新用户完成注册后会自动建立归因。
+        </div>
+      )}
       {step === "phone" ? (
         <>
           <div>

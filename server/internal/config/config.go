@@ -39,6 +39,8 @@ type AgencyConfig struct {
 	BonusCredits        int
 	DefaultCommissionBP int
 	CommissionOnMock    bool
+	ReferralSecret      string
+	ReferralTTLDays     int
 }
 
 type ServerConfig struct {
@@ -79,9 +81,10 @@ func (j JWTConfig) AccessTTL() time.Duration { return time.Duration(j.ExpireHour
 
 // CookieConfig 控制 oc_session 会话 Cookie。Next 与 Go 同域(nginx),用首方 httpOnly Cookie。
 type CookieConfig struct {
-	Name   string
-	Domain string // 生产为公网域名;本地留空(host-only)
-	Secure bool   // 生产 true(HTTPS)
+	Name         string
+	ReferralName string
+	Domain       string // 生产为公网域名;本地留空(host-only)
+	Secure       bool   // 生产 true(HTTPS)
 }
 
 type RateLimitConfig struct {
@@ -228,9 +231,10 @@ func Load() *Config {
 			ExpireHour: getEnvInt("JWT_EXPIRE_HOUR", 720), // 30d(网页会话)
 		},
 		Cookie: CookieConfig{
-			Name:   getEnv("COOKIE_NAME", "oc_session"),
-			Domain: getEnv("COOKIE_DOMAIN", ""),
-			Secure: getEnvBool("COOKIE_SECURE", false),
+			Name:         getEnv("COOKIE_NAME", "oc_session"),
+			ReferralName: getEnv("REFERRAL_COOKIE_NAME", "oc_ref"),
+			Domain:       getEnv("COOKIE_DOMAIN", ""),
+			Secure:       getEnvBool("COOKIE_SECURE", false),
 		},
 		RateLimit: RateLimitConfig{
 			Enabled:        getEnvBool("RATE_LIMIT_ENABLED", true),
@@ -298,6 +302,8 @@ func Load() *Config {
 			BonusCredits:        getEnvInt("AGENCY_BONUS_CREDITS", 300),
 			DefaultCommissionBP: getEnvInt("AGENCY_DEFAULT_COMMISSION_BP", 2000),
 			CommissionOnMock:    getEnvBool("AGENCY_COMMISSION_ON_MOCK", false),
+			ReferralSecret:      getEnv("JWT_SECRET", "change-me"),
+			ReferralTTLDays:     getEnvInt("AGENCY_REFERRAL_TTL_DAYS", 30),
 		},
 		CORS: CORSConfig{
 			Origins: splitCSV(getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")),
@@ -341,6 +347,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Database.Host == "" || c.Database.User == "" || c.Database.DBName == "" {
 		return fmt.Errorf("数据库连接配置不完整")
+	}
+	if c.Cookie.ReferralName == "" || c.Agency.ReferralTTLDays <= 0 {
+		return fmt.Errorf("代理归因 Cookie 配置不正确")
 	}
 	return nil
 }

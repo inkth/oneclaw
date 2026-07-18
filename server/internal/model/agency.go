@@ -30,6 +30,8 @@ const (
 const (
 	BonusSourceAgencyInvite = "AGENCY_INVITE"
 	BonusSourceAdminGrant   = "ADMIN_GRANT" // 管理员手动补积分(客服补偿)
+	ReferralSourceLink      = "LINK"
+	ReferralSourceLegacy    = "LEGACY_LINK"
 )
 
 // DefaultCommissionBP 佣金比例默认值(万分比,2000=20%);config 未设时兜底。
@@ -41,7 +43,7 @@ const DefaultCommissionBP = 2000
 type Agency struct {
 	ID           uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID       uuid.UUID `gorm:"column:user_id;type:uuid;uniqueIndex;not null" json:"userId"`
-	Code         string    `gorm:"uniqueIndex;not null" json:"code"`                               // 8 位大写 base32 邀请码
+	Code         string    `gorm:"uniqueIndex;not null" json:"code"`                               // 新代理为 1112-9999 四位数字;历史码继续有效
 	CommissionBP int       `gorm:"column:commission_bp;not null;default:2000" json:"commissionBp"` // 佣金比例(万分比)
 	Status       string    `gorm:"not null;default:'ACTIVE';index" json:"status"`
 	Note         string    `gorm:"type:text" json:"note,omitempty"` // 管理员备注
@@ -63,9 +65,36 @@ type AgencyReferral struct {
 	ID                      uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID                  uuid.UUID  `gorm:"column:user_id;type:uuid;uniqueIndex;not null" json:"userId"`
 	AgencyID                uuid.UUID  `gorm:"column:agency_id;type:uuid;index;not null" json:"agencyId"`
+	ClickID                 *uuid.UUID `gorm:"column:click_id;type:uuid;uniqueIndex" json:"clickId,omitempty"`
+	AttributionSource       string     `gorm:"column:attribution_source;not null;default:'LEGACY_LINK'" json:"attributionSource"`
 	BonusCredits            int        `gorm:"column:bonus_credits;not null" json:"bonusCredits"` // 赠送积分快照(便于日后调默认值不影响历史)
 	CommissionEligibleUntil *time.Time `gorm:"column:commission_eligible_until;index" json:"-"`
 	CreatedAt               time.Time  `json:"createdAt"`
+}
+
+// AgencyReferralClick 是有效代理链接的一次访问。IP 只保存加盐哈希，
+// ConvertedUserID 指向最终使用首触 Cookie 完成注册的用户。
+type AgencyReferralClick struct {
+	ID              uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	AgencyID        uuid.UUID  `gorm:"column:agency_id;type:uuid;not null;index:idx_agency_click_created" json:"agencyId"`
+	InviteCode      string     `gorm:"column:invite_code;not null;index" json:"inviteCode"`
+	LandingPath     string     `gorm:"column:landing_path;not null" json:"landingPath"`
+	UTMSource       string     `gorm:"column:utm_source" json:"utmSource,omitempty"`
+	UTMMedium       string     `gorm:"column:utm_medium" json:"utmMedium,omitempty"`
+	UTMCampaign     string     `gorm:"column:utm_campaign" json:"utmCampaign,omitempty"`
+	Referer         string     `gorm:"column:referer" json:"-"`
+	UserAgent       string     `gorm:"column:user_agent" json:"-"`
+	IPHash          string     `gorm:"column:ip_hash;size:64" json:"-"`
+	ConvertedUserID *uuid.UUID `gorm:"column:converted_user_id;type:uuid;index" json:"convertedUserId,omitempty"`
+	ConvertedAt     *time.Time `gorm:"column:converted_at" json:"convertedAt,omitempty"`
+	CreatedAt       time.Time  `gorm:"index:idx_agency_click_created" json:"createdAt"`
+}
+
+func (c *AgencyReferralClick) BeforeCreate(*gorm.DB) error {
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+	return nil
 }
 
 func (r *AgencyReferral) BeforeCreate(*gorm.DB) error {

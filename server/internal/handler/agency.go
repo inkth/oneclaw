@@ -17,6 +17,47 @@ func NewAgencyHandler(a *service.AgencyService) *AgencyHandler {
 	return &AgencyHandler{agency: a}
 }
 
+type agencyVisitReq struct {
+	InviteCode    string `json:"inviteCode" binding:"required,max=32"`
+	ExistingToken string `json:"existingToken" binding:"omitempty,max=2048"`
+	LandingPath   string `json:"landingPath" binding:"omitempty,max=4096"`
+	UTMSource     string `json:"utmSource" binding:"omitempty,max=4096"`
+	UTMMedium     string `json:"utmMedium" binding:"omitempty,max=4096"`
+	UTMCampaign   string `json:"utmCampaign" binding:"omitempty,max=4096"`
+	Referer       string `json:"referer" binding:"omitempty,max=4096"`
+	UserAgent     string `json:"userAgent" binding:"omitempty,max=4096"`
+	ClientIP      string `json:"clientIp" binding:"omitempty,max=100"`
+}
+
+// RecordVisit 供 Next /r/:code 调用：校验代理、记点击并签发首触 Cookie 凭证。
+func (h *AgencyHandler) RecordVisit(c *gin.Context) {
+	var in agencyVisitReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("邀请链接参数不正确"))
+		return
+	}
+	clientIP := in.ClientIP
+	if clientIP == "" {
+		clientIP = c.ClientIP()
+	}
+	result, err := h.agency.RecordVisit(c.Request.Context(), service.AgencyVisitInput{
+		InviteCode:    in.InviteCode,
+		ExistingToken: in.ExistingToken,
+		LandingPath:   in.LandingPath,
+		UTMSource:     in.UTMSource,
+		UTMMedium:     in.UTMMedium,
+		UTMCampaign:   in.UTMCampaign,
+		Referer:       in.Referer,
+		UserAgent:     in.UserAgent,
+		ClientIP:      clientIP,
+	})
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, result)
+}
+
 // Summary 代理面板概览:邀请码 / 业绩 / 余额。
 func (h *AgencyHandler) Summary(c *gin.Context) {
 	uid, has := middleware.UserID(c)

@@ -40,7 +40,7 @@ type LoginResult struct {
 
 // LoginByCode 手机号 + 验证码登录,首次自动注册并建默认工作台。
 // inviteCode 仅在首次注册时用于代理商归因绑定(老用户忽略);无效码静默跳过,不阻断登录。
-func (s *AuthService) LoginByCode(ctx context.Context, phone, code, inviteCode string) (*LoginResult, error) {
+func (s *AuthService) LoginByCode(ctx context.Context, phone, code, inviteCode, referralToken string) (*LoginResult, error) {
 	if err := s.sms.Verify(ctx, phone, code); err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *AuthService) LoginByCode(ctx context.Context, phone, code, inviteCode s
 			ws = w
 			// 首次注册:代理商归因绑定 + 赠送积分(同事务;无效码/停用静默 nil)。
 			if s.agency != nil {
-				if e := s.agency.BindReferralTx(tx, user.ID, w.ID, inviteCode, now); e != nil {
+				if e := s.agency.BindTrackedReferralTx(tx, user.ID, w.ID, inviteCode, referralToken, now); e != nil {
 					return e
 				}
 			}

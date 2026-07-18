@@ -44,7 +44,7 @@ export default function PrivacyPage() {
 
       <h2>4. Cookie 与本地存储</h2>
       <p>
-        我们仅使用一个用于维持登录状态的会话 Cookie(<code>oc_session</code>)，以及少量浏览器本地存储（如发现页筛选偏好）。
+        我们使用维持登录状态的会话 Cookie(<code>oc_session</code>)、最长保留 30 天的代理邀请归因 Cookie(<code>oc_ref</code>)，以及少量浏览器本地存储（如发现页筛选偏好）。
         我们<strong>不使用第三方广告追踪 Cookie</strong>。
       </p>
 

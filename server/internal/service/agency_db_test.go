@@ -21,8 +21,46 @@ import (
 var agencyTestTables = []any{
 	&model.User{}, &model.Workspace{}, &model.Membership{},
 	&model.PaymentOrder{}, &model.OverflowBill{}, &model.UsageRecord{},
-	&model.Agency{}, &model.AgencyReferral{}, &model.CommissionRecord{},
+	&model.Agency{}, &model.AgencyReferral{}, &model.AgencyReferralClick{}, &model.CommissionRecord{},
 	&model.AgencyWithdrawal{}, &model.BonusCreditGrant{},
+}
+
+func TestAgencyTrackedReferralFlow(t *testing.T) {
+	db := openAgencyTestDB(t)
+	svc := NewAgencyService(db, config.AgencyConfig{
+		BonusCredits: 300, DefaultCommissionBP: 2000,
+		ReferralSecret: "tracked-referral-test", ReferralTTLDays: 30,
+	})
+	ag := mkAgency(t, db, mkUser(t, db, "13800000005"), 2000, model.AgencyActive)
+	result, err := svc.RecordVisit(context.Background(), AgencyVisitInput{
+		InviteCode: ag.Code, LandingPath: "/r/" + ag.Code, UTMSource: "wechat",
+	})
+	if err != nil || !result.Valid || result.Token == "" {
+		t.Fatalf("RecordVisit() = %#v, %v", result, err)
+	}
+
+	newUser := mkUser(t, db, "13800000006")
+	ws := mkWorkspace(t, db, newUser, model.PlanFree)
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		return svc.BindTrackedReferralTx(tx, newUser, ws.ID, "WRONG", result.Token, time.Now())
+	}); err != nil {
+		t.Fatalf("BindTrackedReferralTx() error = %v", err)
+	}
+
+	var ref model.AgencyReferral
+	if err := db.Where("user_id = ?", newUser).First(&ref).Error; err != nil {
+		t.Fatalf("查询归因失败: %v", err)
+	}
+	if ref.ClickID == nil || ref.AttributionSource != model.ReferralSourceLink || ref.AgencyID != ag.ID {
+		t.Fatalf("归因记录 = %#v", ref)
+	}
+	var click model.AgencyReferralClick
+	if err := db.First(&click, "id = ?", *ref.ClickID).Error; err != nil {
+		t.Fatalf("查询点击失败: %v", err)
+	}
+	if click.ConvertedUserID == nil || *click.ConvertedUserID != newUser || click.ConvertedAt == nil {
+		t.Fatalf("点击转化未回写: %#v", click)
+	}
 }
 
 func openAgencyTestDB(t *testing.T) *gorm.DB {

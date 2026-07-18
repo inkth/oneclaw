@@ -28,6 +28,9 @@ func NewAgencyService(db *gorm.DB, cfg config.AgencyConfig) *AgencyService {
 	if cfg.DefaultCommissionBP <= 0 {
 		cfg.DefaultCommissionBP = model.DefaultCommissionBP
 	}
+	if cfg.ReferralTTLDays <= 0 {
+		cfg.ReferralTTLDays = 30
+	}
 	return &AgencyService{db: db, cfg: cfg}
 }
 
@@ -61,16 +64,75 @@ func maskPhone(p string) string {
 // BindReferralTx 在既有事务 tx 内为新注册用户绑定推荐代理商并发放赠送积分。
 // inviteCode 无效 / 代理停用 / 用户已绑定 → 静默返回 nil,绝不阻断注册主流程。
 func (s *AgencyService) BindReferralTx(tx *gorm.DB, userID, wsID uuid.UUID, inviteCode string, now time.Time) error {
-	code := strings.ToUpper(strings.TrimSpace(inviteCode))
+	return s.bindTrackedReferralTx(tx, userID, wsID, inviteCode, "", now)
+}
+
+// BindTrackedReferralTx 优先使用服务端签名 Cookie 固化首触点击；inviteCode 仅作旧链接兼容。
+func (s *AgencyService) BindTrackedReferralTx(tx *gorm.DB, userID, wsID uuid.UUID, inviteCode, referralToken string, now time.Time) error {
+	return s.bindTrackedReferralTx(tx, userID, wsID, inviteCode, referralToken, now)
+}
+
+func (s *AgencyService) bindTrackedReferralTx(tx *gorm.DB, userID, wsID uuid.UUID, inviteCode, referralToken string, now time.Time) error {
+	code := normalizeAgencyCode(inviteCode)
+	var clickID *uuid.UUID
+	source := model.ReferralSourceLegacy
+	var ag *model.Agency
+
+	if claims, err := parseAgencyReferralToken(s.cfg.ReferralSecret, referralToken); err == nil {
+		agencyID, agencyErr := uuid.Parse(claims.AgencyID)
+		parsedClickID, clickErr := uuid.Parse(claims.ClickID)
+		if agencyErr == nil && clickErr == nil {
+			var signedAgency model.Agency
+			if err := tx.Where("id = ? AND code = ? AND status = ?", agencyID, claims.InviteCode, model.AgencyActive).
+				First(&signedAgency).Error; err == nil {
+				ag = &signedAgency
+				code = claims.InviteCode
+				clickID = &parsedClickID
+				source = model.ReferralSourceLink
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		}
+	}
 	if code == "" {
 		return nil
 	}
-	var ag model.Agency
-	if err := tx.Where("code = ? AND status = ?", code, model.AgencyActive).First(&ag).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil // 无效码 / 已停用:忽略
+	if ag == nil {
+		resolved, err := s.findActiveAgencyByCode(tx, code)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil // 无效码 / 已停用:忽略
+			}
+			return err
 		}
-		return err
+		ag = resolved
+	}
+	if ag == nil {
+		return nil
+	}
+	return s.bindReferralToAgencyTx(tx, userID, wsID, *ag, code, clickID, source, now)
+}
+
+func (s *AgencyService) findActiveAgencyByCode(db *gorm.DB, code string) (*model.Agency, error) {
+	var ag model.Agency
+	if err := db.Where("code = ? AND status = ?", code, model.AgencyActive).First(&ag).Error; err != nil {
+		return nil, err
+	}
+	return &ag, nil
+}
+
+func (s *AgencyService) bindReferralToAgencyTx(tx *gorm.DB, userID, wsID uuid.UUID, ag model.Agency, code string, clickID *uuid.UUID, source string, now time.Time) error {
+	if ag.Status != model.AgencyActive {
+		return nil
+	}
+	if ag.UserID == userID {
+		return nil
+	}
+	if code == "" {
+		return nil
+	}
+	if ag.ID == uuid.Nil {
+		return nil
 	}
 	// 代理商用自己的码注册新号无意义,但新用户 ID 必然不等于代理 user_id,无需额外判重。
 	bonus := s.cfg.BonusCredits
@@ -78,6 +140,8 @@ func (s *AgencyService) BindReferralTx(tx *gorm.DB, userID, wsID uuid.UUID, invi
 	ref := model.AgencyReferral{
 		UserID:                  userID,
 		AgencyID:                ag.ID,
+		ClickID:                 clickID,
+		AttributionSource:       source,
 		BonusCredits:            bonus,
 		CommissionEligibleUntil: &eligibleUntil,
 		CreatedAt:               now,
@@ -89,6 +153,13 @@ func (s *AgencyService) BindReferralTx(tx *gorm.DB, userID, wsID uuid.UUID, invi
 	}
 	if res.RowsAffected == 0 {
 		return nil // 已绑定过
+	}
+	if clickID != nil {
+		if err := tx.Model(&model.AgencyReferralClick{}).
+			Where("id = ? AND agency_id = ?", *clickID, ag.ID).
+			Updates(map[string]any{"converted_user_id": userID, "converted_at": now}).Error; err != nil {
+			return err
+		}
 	}
 	if bonus > 0 {
 		_, end := cycleBounds(now, now) // 首个订阅周期末:新人首周期内额度 +bonus
@@ -196,6 +267,8 @@ type AgencySummary struct {
 	Code                   string `json:"code"`
 	Status                 string `json:"status"`
 	CommissionBP           int    `json:"commissionBp"`
+	ClickCount             int    `json:"clickCount"`
+	SignupRate             int    `json:"signupRate"`
 	CustomerCount          int    `json:"customerCount"`
 	TotalPaidCents         int    `json:"totalPaidCents"`         // 客户累计付费(计佣基数)
 	TotalCommissionCents   int    `json:"totalCommissionCents"`   // 累计佣金
@@ -210,6 +283,11 @@ func (s *AgencyService) Summary(ctx context.Context, userID uuid.UUID) (*AgencyS
 	}
 	var customerCount int64
 	s.db.WithContext(ctx).Model(&model.AgencyReferral{}).Where("agency_id = ?", ag.ID).Count(&customerCount)
+	var trackedCustomerCount int64
+	s.db.WithContext(ctx).Model(&model.AgencyReferral{}).
+		Where("agency_id = ? AND click_id IS NOT NULL", ag.ID).Count(&trackedCustomerCount)
+	var clickCount int64
+	s.db.WithContext(ctx).Model(&model.AgencyReferralClick{}).Where("agency_id = ?", ag.ID).Count(&clickCount)
 	var totalPaid, totalCommission int64
 	s.db.WithContext(ctx).Model(&model.CommissionRecord{}).Where("agency_id = ?", ag.ID).
 		Select("COALESCE(SUM(base_amount_cents),0)").Scan(&totalPaid)
@@ -219,10 +297,16 @@ func (s *AgencyService) Summary(ctx context.Context, userID uuid.UUID) (*AgencyS
 	s.db.WithContext(ctx).Model(&model.AgencyWithdrawal{}).
 		Where("agency_id = ? AND status = ?", ag.ID, model.WithdrawalPending).
 		Select("COALESCE(SUM(amount_cents),0)").Scan(&pending)
+	signupRate := 0
+	if clickCount > 0 {
+		signupRate = int(trackedCustomerCount * 100 / clickCount)
+	}
 	return &AgencySummary{
 		Code:                   ag.Code,
 		Status:                 ag.Status,
 		CommissionBP:           ag.CommissionBP,
+		ClickCount:             int(clickCount),
+		SignupRate:             signupRate,
 		CustomerCount:          int(customerCount),
 		TotalPaidCents:         int(totalPaid),
 		TotalCommissionCents:   int(totalCommission),
@@ -402,20 +486,18 @@ func (s *AgencyService) AdminCreate(ctx context.Context, phone string, commissio
 		Status:       model.AgencyActive,
 		Note:         note,
 	}
-	// 生成唯一邀请码:随机 8 位,冲突重试。
+	// 四位数字邀请码由数据库 sequence 从 1112 开始并发安全分配。
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for i := 0; i < 8; i++ {
-			ag.ID = uuid.Nil
-			ag.Code = randomCode(8)
-			res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&ag)
-			if res.Error != nil {
-				return res.Error
-			}
-			if res.RowsAffected > 0 {
-				return nil
-			}
+		var nextCode int64
+		if err := tx.Raw("SELECT nextval('agency_invite_code_seq')").Scan(&nextCode).Error; err != nil {
+			return err
 		}
-		return apperr.Wrap(apperr.CodeInternal, "邀请码生成失败", errors.New("code collision"))
+		code, err := formatAgencyInviteCode(nextCode)
+		if err != nil {
+			return err
+		}
+		ag.Code = code
+		return tx.Create(&ag).Error
 	})
 	if err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "开通代理失败", err)

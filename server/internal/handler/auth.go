@@ -56,13 +56,23 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		_ = c.Error(apperr.BadRequest("参数缺失"))
 		return
 	}
-	res, err := h.auth.LoginByCode(c.Request.Context(), in.Phone, in.Code, in.InviteCode)
+	referralToken, _ := c.Cookie(h.cookie.ReferralName)
+	res, err := h.auth.LoginByCode(c.Request.Context(), in.Phone, in.Code, in.InviteCode, referralToken)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 	h.setSession(c, res.Token, h.auth.TokenTTLSeconds())
+	h.clearReferral(c)
 	OK(c, gin.H{"user": res.User, "workspace": res.Workspace})
+}
+
+func (h *AuthHandler) clearReferral(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(h.cookie.ReferralName, "", -1, "/", "", h.cookie.Secure, true)
+	if h.cookie.Domain != "" {
+		c.SetCookie(h.cookie.ReferralName, "", -1, "/", h.cookie.Domain, h.cookie.Secure, true)
+	}
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {

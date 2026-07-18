@@ -83,6 +83,7 @@ func New(d Deps) *gin.Engine {
 	api.POST("/demo", mktH.Demo)
 	api.POST("/partner-applications/send-code", mktH.SendPartnerCode)
 	api.POST("/partner-applications", mktH.RegisterPartner)
+	api.POST("/agency/referral/visit", agencyH.RecordVisit)
 
 	// 公共:游客可逛的爆品榜 + 商品详情(无个性化浮层)
 	api.GET("/discover/ranklist", discH.RanklistPublic)

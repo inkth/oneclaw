@@ -22,7 +22,7 @@ import (
 var adminTestTables = []any{
 	&model.User{}, &model.Workspace{}, &model.Membership{},
 	&model.PaymentOrder{}, &model.OverflowBill{}, &model.UsageRecord{},
-	&model.Agency{}, &model.AgencyReferral{}, &model.CommissionRecord{},
+	&model.Agency{}, &model.AgencyReferral{}, &model.AgencyReferralClick{}, &model.CommissionRecord{},
 	&model.AgencyWithdrawal{}, &model.BonusCreditGrant{}, &model.AdminAuditLog{},
 }
 

@@ -82,6 +82,7 @@ func main() {
 		&model.OverflowBill{},
 		&model.Agency{},
 		&model.AgencyReferral{},
+		&model.AgencyReferralClick{},
 		&model.CommissionRecord{},
 		&model.AgencyWithdrawal{},
 		&model.BonusCreditGrant{},
@@ -89,6 +90,27 @@ func main() {
 		&model.Feedback{},
 	); err != nil {
 		logger.Fatal("表结构迁移失败", logger.Err(err))
+	}
+	// 新代理邀请码使用 1112-9999 四位数字；历史 8 位码继续有效。
+	if err := db.Exec(`CREATE SEQUENCE IF NOT EXISTS agency_invite_code_seq
+		START WITH 1112 MINVALUE 1112 MAXVALUE 9999 NO CYCLE`).Error; err != nil {
+		logger.Fatal("初始化代理邀请码序列失败", logger.Err(err))
+	}
+	if err := db.Exec(`
+		WITH existing_codes AS (
+			SELECT MAX(CASE WHEN code ~ '^[0-9]{4}$' THEN code::bigint END) AS max_code
+			FROM agencies
+		), sequence_state AS (
+			SELECT last_value, is_called FROM agency_invite_code_seq
+		)
+		SELECT setval(
+			'agency_invite_code_seq',
+			GREATEST(COALESCE(max_code, 1112), last_value, 1112),
+			COALESCE(max_code, 0) >= 1112 OR is_called
+		)
+		FROM existing_codes, sequence_state
+	`).Error; err != nil {
+		logger.Fatal("同步代理邀请码序列失败", logger.Err(err))
 	}
 	// 存量归因在新字段上线后以原绑定时间回填一年计佣截止时间。
 	if err := db.Model(&model.AgencyReferral{}).

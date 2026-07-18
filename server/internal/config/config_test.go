@@ -16,3 +16,10 @@ func TestLoadMergesBuiltInAndConfiguredAdminPhones(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadAgencyReferralDefaults(t *testing.T) {
+	cfg := Load()
+	if cfg.Cookie.ReferralName != "oc_ref" || cfg.Agency.ReferralTTLDays != 30 {
+		t.Fatalf("agency referral defaults = %q/%d, want oc_ref/30", cfg.Cookie.ReferralName, cfg.Agency.ReferralTTLDays)
+	}
+}

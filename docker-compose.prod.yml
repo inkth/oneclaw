@@ -38,6 +38,8 @@ services:
     environment:
       NODE_ENV: production
       GO_API_INTERNAL_URL: http://go-api:8080 # SSR 走容器内网
+      COOKIE_NAME: ${COOKIE_NAME:-oc_session}
+      REFERRAL_COOKIE_NAME: ${REFERRAL_COOKIE_NAME:-oc_ref}
     depends_on:
       - go-api
     networks: [faxianmao-net]

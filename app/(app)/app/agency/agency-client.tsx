@@ -10,6 +10,8 @@ import {
   Copy,
   Loader2,
   BadgeCheck,
+  MousePointerClick,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -28,6 +30,8 @@ export type AgencySummary = {
   code: string;
   status: string;
   commissionBp: number;
+  clickCount: number;
+  signupRate: number;
   customerCount: number;
   totalPaidCents: number;
   totalCommissionCents: number;
@@ -186,7 +190,7 @@ export function AgencyClient({
             </div>
             <div className="mt-1 text-xs text-[var(--dk-content-tertiary)]">
               邀请码 <span className="font-mono font-medium text-[var(--dk-content-secondary)]">{summary.code}</span>
-              ·新用户经此注册永久绑定你，并获赠新人积分
+              ·客户首次打开后保留 30 天，首个有效代理商优先；新用户注册后永久绑定你并获赠新人积分
             </div>
           </div>
           <Button
@@ -202,7 +206,9 @@ export function AgencyClient({
       </Card>
 
       {/* 业绩卡 */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <Stat icon={MousePointerClick} label="链接访问" value={summary.clickCount} />
+        <Stat icon={Percent} label="注册转化率" value={`${summary.signupRate}%`} />
         <Stat icon={Users} label="累计客户" value={summary.customerCount} />
         <Stat icon={Coins} label="客户累计付费" value={fmtYuan(summary.totalPaidCents)} />
         <Stat icon={BadgeCheck} label="累计佣金" value={fmtYuan(summary.totalCommissionCents)} />
