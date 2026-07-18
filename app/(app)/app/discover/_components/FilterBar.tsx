@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, ChevronDown, ChevronUp, Search, X, Sparkles } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
+import { SegmentedTabs } from "@/components/ui/Tabs";
 import { REGIONS, type Region } from "./regions";
 import { useDiscoverFilterMemory } from "./filter-memory";
 
@@ -88,18 +89,6 @@ export function FilterBar({
         onSubmit={(kw) => navigate({ q: kw || null, category_id: null })}
       />
 
-      {/* AI 视频筛选：仅视频榜开启；搜索态下隐藏（搜索接口不支持 created_by_ai）。 */}
-      {showAiFilter && !searching && (
-        <PillRow label={<><Sparkles className="h-3.5 w-3.5" />视频类型</>}>
-          <Pill active={!ai} onClick={() => navigate({ ai: false })}>
-            全部
-          </Pill>
-          <Pill active={ai} onClick={() => navigate({ ai: true })}>
-            AI 视频
-          </Pill>
-        </PillRow>
-      )}
-
       <CollapsibleRow
         label={<><Globe className="h-3.5 w-3.5" />国家/地区</>}
         items={REGIONS.map((r) => ({
@@ -128,6 +117,22 @@ export function FilterBar({
             onClick: () => navigate({ category_id: c.id }),
           }))}
         />
+      )}
+
+      {/* 视频类型：AI/全部 二选一，作为对榜单的精修放在最末；搜索态隐藏（接口不支持 created_by_ai）。
+       *  二选一用分段切换器而非两颗独立 pill，互斥语义更清楚。 */}
+      {showAiFilter && !searching && (
+        <PillRow label={<><Sparkles className="h-3.5 w-3.5" />视频类型</>}>
+          <SegmentedTabs
+            ariaLabel="视频类型"
+            value={ai ? "ai" : "all"}
+            onValueChange={(v) => navigate({ ai: v === "ai" })}
+            items={[
+              { label: "全部", value: "all" },
+              { label: "AI 视频", value: "ai" },
+            ]}
+          />
+        </PillRow>
       )}
     </div>
   );
