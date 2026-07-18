@@ -11,6 +11,7 @@ import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { Delta } from "@/components/ui/Delta";
 import { Popover } from "@/components/ui/Popover";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Status = "CANDIDATE" | "RECOMMENDED" | "EVALUATING" | "ARCHIVED";
 type CostSource = "ESTIMATE" | "MANUAL" | "SOURCED";
@@ -94,14 +95,6 @@ function CostBadge({ source }: { source: CostSource }) {
   );
 }
 
-const filters: Array<{ key: "ALL" | Status; label: string }> = [
-  { key: "ALL", label: "全部" },
-  { key: "CANDIDATE", label: "候选" },
-  { key: "EVALUATING", label: "评估中" },
-  { key: "RECOMMENDED", label: "推荐" },
-  { key: "ARCHIVED", label: "归档" },
-];
-
 export function ProductsClient({
   workspaceId,
   initialProducts,
@@ -114,8 +107,8 @@ export function ProductsClient({
   scope?: ProductScope;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [products, setProducts] = useState(initialProducts);
-  const [filter, setFilter] = useState<"ALL" | Status>("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editCostId, setEditCostId] = useState<string | null>(null);
@@ -124,19 +117,16 @@ export function ProductsClient({
 
   // 按范围切分：self=自建（无 discoverProductId）· discover=EchoTik 收藏 · all=全部。
   // 列表接口返回全部商品，这里据来源过滤，轮询刷新后过滤口径不变。
-  const scoped = products.filter((p) =>
+  const visible = products.filter((p) =>
     scope === "self" ? !p.discoverProductId : scope === "discover" ? !!p.discoverProductId : true,
   );
-
-  const visible =
-    filter === "ALL" ? scoped : scoped.filter((p) => p.status === filter);
 
   function mapGo(p: Partial<Product> & { id: string }): Product {
     return p as Product;
   }
 
   // 本范围内任一商品仍在生成（文案/主图）时轮询商品列表，卡片「生成中 → 成品」自填充。
-  const hasActive = scoped.some(
+  const hasActive = visible.some(
     (p) => p.imagesStatus === "PENDING" || p.imagesStatus === "RUNNING",
   );
   useEffect(() => {
@@ -153,30 +143,6 @@ export function ProductsClient({
     }, 5000);
     return () => clearInterval(timer);
   }, [hasActive, workspaceId]);
-
-  const filterBar = (
-    <div className="flex items-center gap-1.5 bg-[var(--dk-surface-2)] rounded-full p-0.5 self-start">
-      {filters.map((f) => (
-        <button
-          key={f.key}
-          onClick={() => setFilter(f.key)}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-            // 选中态近黑实底，与 Pill 一致（品牌紫只留给成交 CTA 与焦点环）
-            filter === f.key
-              ? "bg-[var(--dk-btn-black)] text-white"
-              : "text-zinc-500 hover:bg-[var(--dk-action-regular)] hover:text-zinc-900"
-          }`}
-        >
-          {f.label}
-          <span className={`ml-1 text-2xs ${filter === f.key ? "text-white/70" : "text-zinc-400"}`}>
-            {f.key === "ALL"
-              ? scoped.length
-              : scoped.filter((p) => p.status === f.key).length}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
 
   function startEditCost(p: Product) {
     committedRef.current = null;
@@ -231,7 +197,13 @@ export function ProductsClient({
   }
 
   async function deleteProduct(id: string) {
-    if (!confirm("删除该商品？删除后不可恢复。")) return;
+    const ok = await confirm({
+      title: "删除该商品？",
+      description: "删除后不可恢复，已用它做的视频不受影响。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusyId(id);
     try {
       await apiBrowser(`/workspaces/${workspaceId}/products/${id}`, { method: "DELETE" });
@@ -246,19 +218,15 @@ export function ProductsClient({
 
   return (
     <div className="space-y-6">
-      {embedded ? (
-        <div className="flex justify-end">{filterBar}</div>
-      ) : scope === "self" ? (
+      {embedded ? null : scope === "self" ? (
         <PageHeader
           title="我的商品"
           description="管理从素材创建的商品，继续补主图、写 Listing 或做视频。"
-          actions={filterBar}
         />
       ) : (
         <PageHeader
           title="收藏 · 商品"
           description="管理从爆品榜收藏的商品，跟进成本、利润和创作进度。"
-          actions={filterBar}
         />
       )}
 
@@ -271,13 +239,7 @@ export function ProductsClient({
       {visible.length === 0 ? (
         <EmptyState
           icon={Package}
-          title={
-            filter !== "ALL"
-              ? "这个分类下还没有商品"
-              : scope === "self"
-                ? "还没有自建商品"
-                : "还没有收藏的商品"
-          }
+          title={scope === "self" ? "还没有自建商品" : "还没有收藏的商品"}
           description={
             scope === "self" ? (
               <>

@@ -41,7 +41,7 @@ const DefaultCommissionBP = 2000
 type Agency struct {
 	ID           uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID       uuid.UUID `gorm:"column:user_id;type:uuid;uniqueIndex;not null" json:"userId"`
-	Code         string    `gorm:"uniqueIndex;not null" json:"code"`                                // 8 位大写 base32 邀请码
+	Code         string    `gorm:"uniqueIndex;not null" json:"code"`                               // 8 位大写 base32 邀请码
 	CommissionBP int       `gorm:"column:commission_bp;not null;default:2000" json:"commissionBp"` // 佣金比例(万分比)
 	Status       string    `gorm:"not null;default:'ACTIVE';index" json:"status"`
 	Note         string    `gorm:"type:text" json:"note,omitempty"` // 管理员备注
@@ -58,19 +58,41 @@ func (a *Agency) BeforeCreate(*gorm.DB) error {
 
 // AgencyReferral 归因绑定:新用户经邀请码注册即永久绑定该代理商。
 // user_id 唯一索引 = 数据库级「一个用户只绑一次」保证;绑定不可改。
+// 归因关系永久保留，但仅注册后一年内的付费可计佣。
 type AgencyReferral struct {
-	ID           uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID       uuid.UUID `gorm:"column:user_id;type:uuid;uniqueIndex;not null" json:"userId"`
-	AgencyID     uuid.UUID `gorm:"column:agency_id;type:uuid;index;not null" json:"agencyId"`
-	BonusCredits int       `gorm:"column:bonus_credits;not null" json:"bonusCredits"` // 赠送积分快照(便于日后调默认值不影响历史)
-	CreatedAt    time.Time `json:"createdAt"`
+	ID                      uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID                  uuid.UUID  `gorm:"column:user_id;type:uuid;uniqueIndex;not null" json:"userId"`
+	AgencyID                uuid.UUID  `gorm:"column:agency_id;type:uuid;index;not null" json:"agencyId"`
+	BonusCredits            int        `gorm:"column:bonus_credits;not null" json:"bonusCredits"` // 赠送积分快照(便于日后调默认值不影响历史)
+	CommissionEligibleUntil *time.Time `gorm:"column:commission_eligible_until;index" json:"-"`
+	CreatedAt               time.Time  `json:"createdAt"`
 }
 
 func (r *AgencyReferral) BeforeCreate(*gorm.DB) error {
 	if r.ID == uuid.Nil {
 		r.ID = uuid.New()
 	}
+	if r.CreatedAt.IsZero() {
+		r.CreatedAt = time.Now()
+	}
+	if r.CommissionEligibleUntil == nil {
+		until := r.CreatedAt.AddDate(1, 0, 0)
+		r.CommissionEligibleUntil = &until
+	}
 	return nil
+}
+
+// CommissionEligibleAt 判断付费发生时间是否仍在注册后一年的计佣窗口内。
+// 截止时间采用左闭右开边界：[created_at, commission_eligible_until)。
+func (r AgencyReferral) CommissionEligibleAt(at time.Time) bool {
+	if at.Before(r.CreatedAt) {
+		return false
+	}
+	until := r.CreatedAt.AddDate(1, 0, 0)
+	if r.CommissionEligibleUntil != nil {
+		until = *r.CommissionEligibleUntil
+	}
+	return at.Before(until)
 }
 
 // CommissionRecord 佣金流水:被绑定用户每笔真实付费(订阅/超额)按落账时比例计一条。
@@ -82,8 +104,8 @@ type CommissionRecord struct {
 	SourceType      string    `gorm:"column:source_type;not null;uniqueIndex:uq_commission_source,priority:1" json:"sourceType"`
 	SourceID        uuid.UUID `gorm:"column:source_id;type:uuid;not null;uniqueIndex:uq_commission_source,priority:2" json:"sourceId"`
 	BaseAmountCents int       `gorm:"column:base_amount_cents;not null" json:"baseAmountCents"` // 原单金额
-	CommissionBP    int       `gorm:"column:commission_bp;not null" json:"commissionBp"`       // 入账时比例快照(调比例不重算历史)
-	AmountCents     int       `gorm:"column:amount_cents;not null" json:"amountCents"`         // 佣金 = base*bp/10000
+	CommissionBP    int       `gorm:"column:commission_bp;not null" json:"commissionBp"`        // 入账时比例快照(调比例不重算历史)
+	AmountCents     int       `gorm:"column:amount_cents;not null" json:"amountCents"`          // 佣金 = base*bp/10000
 	CreatedAt       time.Time `json:"createdAt"`
 }
 
@@ -101,7 +123,7 @@ type AgencyWithdrawal struct {
 	AgencyID    uuid.UUID  `gorm:"column:agency_id;type:uuid;index;not null" json:"agencyId"`
 	AmountCents int        `gorm:"column:amount_cents;not null" json:"amountCents"`
 	Status      string     `gorm:"not null;default:'PENDING';index" json:"status"`
-	Note        string     `gorm:"type:text" json:"note,omitempty"`                       // 申请时填收款方式;审核时填打款凭证/驳回原因
+	Note        string     `gorm:"type:text" json:"note,omitempty"`                          // 申请时填收款方式;审核时填打款凭证/驳回原因
 	ReviewedBy  *uuid.UUID `gorm:"column:reviewed_by;type:uuid" json:"reviewedBy,omitempty"` // 审核管理员
 	ReviewedAt  *time.Time `json:"reviewedAt,omitempty"`
 	CreatedAt   time.Time  `json:"createdAt"`
@@ -123,9 +145,9 @@ type BonusCreditGrant struct {
 	WorkspaceID uuid.UUID  `gorm:"column:workspace_id;type:uuid;index;not null" json:"workspaceId"`
 	UserID      uuid.UUID  `gorm:"column:user_id;type:uuid;not null" json:"userId"`
 	Credits     int        `gorm:"not null" json:"credits"`
-	Source      string     `gorm:"not null" json:"source"`                             // AGENCY_INVITE(留扩展:运营活动等)
+	Source      string     `gorm:"not null" json:"source"`                                     // AGENCY_INVITE(留扩展:运营活动等)
 	RefID       *uuid.UUID `gorm:"column:ref_id;type:uuid;uniqueIndex" json:"refId,omitempty"` // 指向 AgencyReferral.ID
-	ExpiresAt   time.Time  `gorm:"column:expires_at;not null;index" json:"expiresAt"`  // = 注册时首个订阅周期末
+	ExpiresAt   time.Time  `gorm:"column:expires_at;not null;index" json:"expiresAt"`          // = 注册时首个订阅周期末
 	CreatedAt   time.Time  `json:"createdAt"`
 }
 

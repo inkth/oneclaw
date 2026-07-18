@@ -215,15 +215,15 @@ func TestAdminDashboardRevenue(t *testing.T) {
 	now := time.Now()
 	// 两笔已支付订单 + 一笔待支付(不计收入)。
 	mustCreate(t, db, &model.PaymentOrder{WorkspaceID: ws.ID, UserID: owner, OutTradeNo: "O1" + randomCode(6), Plan: model.PlanPro, PeriodMonths: 1, AmountCents: 19900, Provider: model.PayWechat, Status: model.OrderPaid, PaidAt: &now, ExpiresAt: now})
-	mustCreate(t, db, &model.PaymentOrder{WorkspaceID: ws.ID, UserID: owner, OutTradeNo: "O2" + randomCode(6), Plan: model.PlanTeam, PeriodMonths: 1, AmountCents: 89900, Provider: model.PayAlipay, Status: model.OrderPaid, PaidAt: &now, ExpiresAt: now})
+	mustCreate(t, db, &model.PaymentOrder{WorkspaceID: ws.ID, UserID: owner, OutTradeNo: "O2" + randomCode(6), Plan: model.PlanTeam, PeriodMonths: 1, AmountCents: 39900, Provider: model.PayAlipay, Status: model.OrderPaid, PaidAt: &now, ExpiresAt: now})
 	mustCreate(t, db, &model.PaymentOrder{WorkspaceID: ws.ID, UserID: owner, OutTradeNo: "O3" + randomCode(6), Plan: model.PlanPro, PeriodMonths: 1, AmountCents: 19900, Provider: model.PayWechat, Status: model.OrderPending, ExpiresAt: now})
 
 	d, err := admin.Dashboard(context.Background())
 	if err != nil {
 		t.Fatalf("看板失败: %v", err)
 	}
-	if d.RevenueTotalCents != 19900+89900 {
-		t.Fatalf("累计收入应为 %d(仅 PAID),得 %d", 19900+89900, d.RevenueTotalCents)
+	if d.RevenueTotalCents != 19900+39900 {
+		t.Fatalf("累计收入应为 %d(仅 PAID),得 %d", 19900+39900, d.RevenueTotalCents)
 	}
 	if d.PaidOrderCount != 2 {
 		t.Fatalf("已付款订单应 2,得 %d", d.PaidOrderCount)

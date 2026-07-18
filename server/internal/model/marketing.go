@@ -39,3 +39,20 @@ func (d *DemoRequest) BeforeCreate(*gorm.DB) error {
 	}
 	return nil
 }
+
+// PartnerApplication 代理商注册申请。手机号唯一，重复提交只更新代理商名称。
+type PartnerApplication struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Name      string    `gorm:"not null" json:"name"`
+	Phone     string    `gorm:"uniqueIndex;not null" json:"phone"`
+	Status    string    `gorm:"not null;default:'PENDING';index" json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (p *PartnerApplication) BeforeCreate(*gorm.DB) error {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+	return nil
+}

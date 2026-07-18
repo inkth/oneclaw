@@ -17,23 +17,23 @@ func TestQuotaDecisionFreePro(t *testing.T) {
 		bonus       int
 		wantAllowed bool
 	}{
-		// FREE=450,出片(VIDEO)=175
-		{"FREE 首条出片", model.PlanFree, model.UsageVideo, 1, 0, 0, true},
-		{"FREE 恰好用满-边界放行", model.PlanFree, model.UsageVideo, 1, 275, 0, true}, // 275+175=450
-		{"FREE 超一积分即拒", model.PlanFree, model.UsageVideo, 1, 276, 0, false},   // 451>450
-		{"FREE 余量不足整条", model.PlanFree, model.UsageVideo, 1, 350, 0, false},   // 525>450
-		// PRO=6000
-		{"PRO 余量充足", model.PlanPro, model.UsageVideo, 1, 5000, 0, true},
-		{"PRO 恰好用满", model.PlanPro, model.UsageVideo, 1, 5825, 0, true},  // 5825+175=6000
-		{"PRO 超一即拒", model.PlanPro, model.UsageVideo, 1, 5826, 0, false}, // 6001>6000
+		// FREE=450;出片(VIDEO)=35 积分/秒,用 5s 出片(=175 积分)当测试单元
+		{"FREE 首条出片", model.PlanFree, model.UsageVideo, 5, 0, 0, true},
+		{"FREE 恰好用满-边界放行", model.PlanFree, model.UsageVideo, 5, 275, 0, true}, // 275+175=450
+		{"FREE 超一积分即拒", model.PlanFree, model.UsageVideo, 5, 276, 0, false},   // 451>450
+		{"FREE 余量不足整条", model.PlanFree, model.UsageVideo, 5, 350, 0, false},   // 525>450
+		// PRO=5600
+		{"PRO 余量充足", model.PlanPro, model.UsageVideo, 5, 5000, 0, true},
+		{"PRO 恰好用满", model.PlanPro, model.UsageVideo, 5, 5425, 0, true},  // 5425+175=5600
+		{"PRO 超一即拒", model.PlanPro, model.UsageVideo, 5, 5426, 0, false}, // 5601>5600
 		// 未知方案按 FREE 处理
-		{"未知方案按 FREE 限额", "GARBAGE", model.UsageVideo, 1, 350, 0, false},
+		{"未知方案按 FREE 限额", "GARBAGE", model.UsageVideo, 5, 350, 0, false},
 		// 出图便宜(6/张),批量仍按总额判
 		{"FREE 出图十张够", model.PlanFree, model.UsageImage, 10, 0, 0, true}, // 60<=450
 		// 赠送积分抬高上限:FREE 450+300=750
-		{"FREE+bonus 原超限转放行", model.PlanFree, model.UsageVideo, 1, 350, 300, true}, // 525<=750
-		{"FREE+bonus 恰好用满", model.PlanFree, model.UsageVideo, 1, 575, 300, true},   // 575+175=750
-		{"FREE+bonus 超一即拒", model.PlanFree, model.UsageVideo, 1, 576, 300, false},  // 751>750
+		{"FREE+bonus 原超限转放行", model.PlanFree, model.UsageVideo, 5, 350, 300, true}, // 525<=750
+		{"FREE+bonus 恰好用满", model.PlanFree, model.UsageVideo, 5, 575, 300, true},   // 575+175=750
+		{"FREE+bonus 超一即拒", model.PlanFree, model.UsageVideo, 5, 576, 300, false},  // 751>750
 	}
 	for _, c := range cases {
 		gotAllowed, gotBillable := quotaDecision(c.plan, c.kind, c.qty, c.used, c.bonus)
@@ -46,7 +46,7 @@ func TestQuotaDecisionFreePro(t *testing.T) {
 	}
 }
 
-// TEAM 不限量(恒放行),但 used 达基线(30000)后本次标记 billable(待结算)。
+// TEAM 不限量(恒放行),但 used 达基线(11200)后本次标记 billable(待结算)。
 func TestQuotaDecisionTeamBaseline(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -54,9 +54,9 @@ func TestQuotaDecisionTeamBaseline(t *testing.T) {
 		wantBillable bool
 	}{
 		{"零用量不计费", 0, false},
-		{"基线内不计费", 29000, false},
-		{"恰好达基线即计费", model.TeamBaselineCredits, true}, // 30000>=30000
-		{"超基线计费", 35000, true},
+		{"基线内不计费", 11000, false},
+		{"恰好达基线即计费", model.TeamBaselineCredits, true}, // 11200>=11200
+		{"超基线计费", 15000, true},
 	}
 	for _, c := range cases {
 		allowed, billable := quotaDecision(model.PlanTeam, model.UsageVideo, 1, c.used, 0)
@@ -80,8 +80,8 @@ func TestPriceCents(t *testing.T) {
 		{model.PlanPro, 1, 19900, false},
 		{model.PlanPro, 3, 53730, false},   // 19900*2.7
 		{model.PlanPro, 12, 179100, false}, // 19900*9
-		{model.PlanTeam, 1, 89900, false},
-		{model.PlanTeam, 12, 809100, false},
+		{model.PlanTeam, 1, 39900, false},
+		{model.PlanTeam, 12, 359100, false},
 		{model.PlanFree, 1, 0, true}, // FREE 不可下单
 		{model.PlanPro, 6, 0, true},  // 不支持的周期
 	}

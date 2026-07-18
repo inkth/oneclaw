@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	apperr "github.com/faxianmao/server/internal/errors"
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
-	"github.com/faxianmao/server/internal/service/fal"
 	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
@@ -24,12 +24,11 @@ type VideoService struct {
 	db      *gorm.DB
 	llm     *llm.Client
 	storage *storage.Storage
-	fal     *fal.Client
 	quota   *QuotaService
 }
 
-func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage, f *fal.Client, q *QuotaService) *VideoService {
-	return &VideoService{db: db, llm: l, storage: st, fal: f, quota: q}
+func NewVideoService(db *gorm.DB, l *llm.Client, st *storage.Storage, q *QuotaService) *VideoService {
+	return &VideoService{db: db, llm: l, storage: st, quota: q}
 }
 
 type VideoInput struct {
@@ -44,6 +43,9 @@ type VideoInput struct {
 	FirstFrameURL string `json:"firstFrameUrl"`
 	// ReferenceImageURLs input_references:跨整片保持商品/人脸一致的参考图(可多张),与首帧互补。
 	ReferenceImageURLs []string `json:"referenceImageUrls"`
+	// RealClipURL 用户实拍片段:出片后处理时把前 RealClipSec 秒原样拼在成片开头(真货镜头)。
+	RealClipURL string `json:"realClipUrl"`
+	RealClipSec int    `json:"realClipSec"`
 	// ModelAssetID 出镜人设(数字人),仅作关联记录;prompt 注入由 ConfirmVideo 完成。
 	ModelAssetID *uuid.UUID `json:"-"`
 }
@@ -54,11 +56,17 @@ type VideoListItem struct {
 	ProductTitle *string `json:"productTitle,omitempty"`
 }
 
-func (s *VideoService) List(ctx context.Context, wsID uuid.UUID) ([]VideoListItem, error) {
+// videoPageSize 视频墙单页条数;List 按 offset 翻页,前端「加载更多」逐页取。
+const videoPageSize = 60
+
+func (s *VideoService) List(ctx context.Context, wsID uuid.UUID, offset int) ([]VideoListItem, error) {
+	if offset < 0 {
+		offset = 0
+	}
 	var vids []model.Video
 	if err := s.db.WithContext(ctx).
 		Where("workspace_id = ?", wsID).
-		Order("created_at DESC").Limit(60).
+		Order("created_at DESC").Limit(videoPageSize).Offset(offset).
 		Find(&vids).Error; err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询视频失败", err)
 	}
@@ -91,14 +99,48 @@ func (s *VideoService) List(ctx context.Context, wsID uuid.UUID) ([]VideoListIte
 }
 
 func (s *VideoService) Delete(ctx context.Context, wsID, vid uuid.UUID) error {
-	res := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", vid, wsID).Delete(&model.Video{})
-	if res.Error != nil {
-		return apperr.Wrap(apperr.CodeInternal, "删除视频失败", res.Error)
+	var v model.Video
+	if err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", vid, wsID).First(&v).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperr.NotFound("视频不存在")
+		}
+		return apperr.Wrap(apperr.CodeInternal, "查询视频失败", err)
 	}
-	if res.RowsAffected == 0 {
-		return apperr.NotFound("视频不存在")
+	if err := s.db.WithContext(ctx).Delete(&model.Video{}, "id = ?", vid).Error; err != nil {
+		return apperr.Wrap(apperr.CodeInternal, "删除视频失败", err)
+	}
+	// 顺手清 COS 上归属这条视频的对象(成片/封面),避免存量只增不减。
+	// 只删本视频 ID 命名空间下的 key;封面可能是商品实拍图(不归我们),靠前缀判据天然跳过。
+	if s.storage.Configured() {
+		for _, u := range []*string{v.VideoURL, v.ThumbnailURL} {
+			if key := ownedStorageKey(u, vid); key != "" {
+				if err := s.storage.Delete(ctx, key); err != nil {
+					logger.Warn("[video] 清理 COS 对象失败", logger.String("key", key), logger.Err(err))
+				}
+			}
+		}
 	}
 	return nil
+}
+
+// ownedStorageKey 从 URL 提取本服务生成的存储 key:仅认 videos/{id}.* 与 thumbnails/{id}.*
+// 两个自有命名空间且文件名含该视频 ID 的路径;其他(商品图/素材/外链)一律返回空串不碰。
+func ownedStorageKey(u *string, vid uuid.UUID) string {
+	if u == nil || *u == "" {
+		return ""
+	}
+	parsed, err := url.Parse(*u)
+	if err != nil {
+		return ""
+	}
+	key := strings.TrimPrefix(parsed.Path, "/")
+	if !strings.Contains(key, vid.String()) {
+		return ""
+	}
+	if strings.HasPrefix(key, "videos/") || strings.HasPrefix(key, "thumbnails/") {
+		return key
+	}
+	return ""
 }
 
 func (s *VideoService) Get(ctx context.Context, wsID, vid uuid.UUID) (*model.Video, error) {
@@ -198,6 +240,10 @@ func (s *VideoService) Rerender(ctx context.Context, wsID, vid uuid.UUID) (*mode
 	if src.FirstFrameURL != nil {
 		in.FirstFrameURL = *src.FirstFrameURL
 	}
+	if src.RealClipURL != nil {
+		in.RealClipURL = *src.RealClipURL
+		in.RealClipSec = src.RealClipSec
+	}
 	if len(src.ReferenceImageURLs) > 0 {
 		var refs []string
 		if json.Unmarshal(src.ReferenceImageURLs, &refs) == nil {
@@ -236,6 +282,10 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 	if ff := strings.TrimSpace(in.FirstFrameURL); ff != "" {
 		v.FirstFrameURL = &ff
 	}
+	if rc := strings.TrimSpace(in.RealClipURL); rc != "" && in.RealClipSec > 0 {
+		v.RealClipURL = &rc
+		v.RealClipSec = in.RealClipSec
+	}
 	if len(in.ReferenceImageURLs) > 0 {
 		if b, err := json.Marshal(in.ReferenceImageURLs); err == nil {
 			v.ReferenceImageURLs = model.JSONB(b)
@@ -250,7 +300,8 @@ func (s *VideoService) Create(ctx context.Context, wsID uuid.UUID, in VideoInput
 		v.ModelAssetID = in.ModelAssetID
 	}
 	// 配额前置:视频是最贵的消耗,超额直接拒绝;生成失败时 markVideoFailed 退回。
-	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageVideo, 1, &v.ID); err != nil {
+	// 按秒计费(qty=AI 生成秒数);实拍开场拼接不耗模型,不计秒。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageVideo, dur, &v.ID); err != nil {
 		return nil, err
 	}
 	if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
@@ -276,8 +327,8 @@ func (s *VideoService) Retry(ctx context.Context, wsID, vid uuid.UUID) (*model.V
 	if v.Prompt == nil || strings.TrimSpace(*v.Prompt) == "" {
 		return nil, apperr.BadRequest("缺少原始提示词,无法重试")
 	}
-	// 失败时额度已退回,重试重新占一笔。
-	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageVideo, 1, &v.ID); err != nil {
+	// 失败时额度已退回,重试重新占一笔(按秒,与 Create 同口径)。
+	if err := s.quota.CheckAndRecord(ctx, wsID, model.UsageVideo, v.DurationSec, &v.ID); err != nil {
 		return nil, err
 	}
 	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", v.ID).
@@ -363,7 +414,7 @@ func (s *VideoService) Refresh(ctx context.Context, wsID, vid uuid.UUID) (*model
 }
 
 func (s *VideoService) pollLoop(videoID uuid.UUID, pollingURL string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	defer func() {
 		if r := recover(); r != nil {
@@ -373,7 +424,17 @@ func (s *VideoService) pollLoop(videoID uuid.UUID, pollingURL string) {
 	for {
 		select {
 		case <-ctx.Done():
-			s.markVideoFailed(ctx, videoID, "生成超时")
+			// 超时前用新 context 最终确认一次:供应商恰好在窗口边缘完成时不丢片
+			// (标 FAILED 即退款且状态不再收敛,那条片就永远丢了)。
+			// 注意不能复用已过期的 ctx:带取消态的 context 会让 DB 更新静默失败,
+			// 视频将永远卡在 GENERATING(存量 bug,一并修掉)。
+			// 预算给足 5 分钟:applyJob 的完成路径要下载成片 + ffmpeg 后处理 + 转存 COS。
+			fctx, fcancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer fcancel()
+			if job, err := s.llm.PollVideo(fctx, pollingURL); err == nil && s.applyJob(fctx, videoID, job) {
+				return
+			}
+			s.markVideoFailed(fctx, videoID, "生成超时")
 			return
 		case <-time.After(6 * time.Second):
 		}
@@ -422,13 +483,16 @@ func (s *VideoService) applyJob(ctx context.Context, videoID uuid.UUID, job *llm
 	}
 }
 
-// GenerateCover 用 fal flux 生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
-// 用 fal 而非 OpenRouter 图像模型:后者(OpenAI/Google)对国内服务器区域屏蔽。
+// GenerateCover 用 seedream 生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
+// seedream 走字节自家 provider,国内直连可达,不受 Google/OpenAI 图像模型的区域屏蔽。
 func (s *VideoService) GenerateCover(ctx context.Context, videoID uuid.UUID, prompt, aspectRatio string) {
-	if !s.fal.Configured() || !s.storage.Configured() {
+	if !s.llm.Configured() || !s.storage.Configured() {
 		return
 	}
-	data, ct, err := s.fal.GenerateImage(ctx, "vertical short-video cover poster, no text, "+prompt, fal.ImageSizeForAspect(aspectRatio))
+	if aspectRatio == "" {
+		aspectRatio = "9:16" // 短视频封面默认竖版
+	}
+	data, ct, err := s.llm.GenerateImage(ctx, "vertical short-video cover poster, no text, "+prompt, aspectRatio, nil)
 	if err != nil {
 		logger.Warn("[video] 封面生成失败", logger.String("video", videoID.String()), logger.Err(err))
 		return

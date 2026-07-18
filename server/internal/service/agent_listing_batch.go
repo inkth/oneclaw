@@ -87,16 +87,20 @@ var productShotSets = map[string][]string{
 const shotClassifySystem = `你是电商商品图像分类器。看图,从下列英文类别里挑最贴切的一个,只输出这一个词,不要任何解释、引号或标点:
 apparel beauty electronics home food jewelry toys other`
 
-// classifyProduct 用 Gemini 看图判商品品类;任何失败(未配置/报错/空/不在枚举内)都回 "other"(兜底)。
-// 走 ReviewModel(gemini 经代理),输出只一个词,maxTokens 很小;失败不影响出图(回落通用镜头组)。
+// classifyProduct 用 ReviewModel 看图判商品品类;任何失败(未配置/报错/空/不在枚举内)都回 "other"(兜底)。
+// 输出只一个词(实测 minimax 仅耗 4 个 completion token),但预算不能压到极限:模型若先吐一段
+// 推理再给答案,预算太小会被截断成空正文。64 是留足余量的下限,失败不影响出图(回落通用镜头组)。
+// 每条失败路径都留痕:这里曾因上游 403 长期静默回落 "other",表面一切正常,无人察觉。
 func (s *AgentService) classifyProduct(ctx context.Context, photoURL string) string {
 	if !s.llm.Configured() || photoURL == "" {
 		return "other"
 	}
 	cctx, cancel := context.WithTimeout(ctx, 25*time.Second)
 	defer cancel()
-	res, err := s.llm.ChatVision(cctx, s.llm.ReviewModel(), shotClassifySystem, "判断这张商品图的品类。", []string{photoURL}, false, 16)
+	res, err := s.llm.ChatVision(cctx, s.llm.ReviewModel(), shotClassifySystem, "判断这张商品图的品类。", []string{photoURL}, false, 64)
 	if err != nil || res == nil {
+		logger.Warn("[agent] 判品类失败,回落通用镜头组",
+			logger.String("model", s.llm.ReviewModel()), logger.Err(err))
 		return "other"
 	}
 	out := strings.ToLower(res.Content)
@@ -105,6 +109,8 @@ func (s *AgentService) classifyProduct(ctx context.Context, photoURL string) str
 			return cat
 		}
 	}
+	logger.Warn("[agent] 判品类返回不在枚举内,回落通用镜头组",
+		logger.String("model", s.llm.ReviewModel()), logger.String("raw", strings.TrimSpace(out)))
 	return "other"
 }
 
@@ -133,8 +139,8 @@ type ProductBatchResult struct {
 // 自建商品卡(DiscoverProductID 为空,SourceImages 存这组原图)→ 据这组图多参考出 N 张展示图
 // (白底/场景/细节/俯拍,fal edit,不调 LLM)。「各做1个」= 每组一张图;「合并为1个」= 一组多张。
 func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, groups [][]uuid.UUID) (*ProductBatchResult, error) {
-	if !s.fal.Configured() || !s.storage.Configured() {
-		return nil, apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
+	if !s.llm.Configured() || !s.storage.Configured() {
+		return nil, apperr.BadRequest("出图服务未配置(需要 OPENROUTER_API_KEY 与 COS)")
 	}
 	// 整理分组:组内去重、解析为有效图片 URL、参考图封顶;丢掉空组。
 	type grp struct {
@@ -219,8 +225,8 @@ func (s *AgentService) CreateProductBatch(ctx context.Context, wsID uuid.UUID, g
 // 原子认领 FAILED→RUNNING 防双击,重占一笔出图额度(失败时已退回)后按原图重出,
 // 成功/失败回写与退款复用 runProductImages 的口径。
 func (s *AgentService) RetryProductImages(ctx context.Context, wsID, productID uuid.UUID) error {
-	if !s.fal.Configured() || !s.storage.Configured() {
-		return apperr.BadRequest("出图服务未配置(需要 FALAI_API_KEY 与 COS)")
+	if !s.llm.Configured() || !s.storage.Configured() {
+		return apperr.BadRequest("出图服务未配置(需要 OPENROUTER_API_KEY 与 COS)")
 	}
 	var p model.Product
 	err := s.db.WithContext(ctx).Where("id = ? AND workspace_id = ?", productID, wsID).First(&p).Error

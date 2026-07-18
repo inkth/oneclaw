@@ -216,7 +216,7 @@ function CreditBalance({ usage }: { usage: Usage }) {
           <ImageIcon className="h-3 w-3 text-[var(--dk-content-tertiary)]" />出图 {b.images} 张
         </span>
         <span className="text-[var(--dk-content-tertiary)]">
-          (选品 {usage.creditCosts.agentTask} · 出片 {usage.creditCosts.video} · 出图{" "}
+          (选品 {usage.creditCosts.agentTask} · 出片 {usage.creditCosts.video}/秒 · 出图{" "}
           {usage.creditCosts.image} 积分)
         </span>
       </div>

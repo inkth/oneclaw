@@ -4,20 +4,23 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	apperr "github.com/faxianmao/server/internal/errors"
 	"github.com/faxianmao/server/internal/model"
 )
 
-// MarketingService 处理落地页的公开表单:邮件订阅 + 预约演示。
+// MarketingService 处理落地页的公开表单:邮件订阅 + 预约演示 + 代理商注册。
 type MarketingService struct {
-	db *gorm.DB
+	db  *gorm.DB
+	sms *SMSService
 }
 
-func NewMarketingService(db *gorm.DB) *MarketingService {
-	return &MarketingService{db: db}
+func NewMarketingService(db *gorm.DB, sms *SMSService) *MarketingService {
+	return &MarketingService{db: db, sms: sms}
 }
 
 // Subscribe 新增一条邮件订阅。email 已存在时返回 Conflict。
@@ -48,4 +51,37 @@ func (s *MarketingService) CreateDemo(ctx context.Context, in model.DemoRequest)
 		return nil, apperr.Wrap(apperr.CodeInternal, "提交预约失败", err)
 	}
 	return &in, nil
+}
+
+// SendPartnerCode 发送代理商注册专用短信验证码。
+func (s *MarketingService) SendPartnerCode(ctx context.Context, phone string) (string, error) {
+	return s.sms.sendForPurpose(ctx, strings.TrimSpace(phone), smsPurposePartnerRegistration)
+}
+
+// RegisterPartner 校验手机号后，用代理商名称和手机号登记注册申请。
+// 同一手机号重复提交为幂等操作，更新名称但保留审核状态。
+func (s *MarketingService) RegisterPartner(ctx context.Context, name, phone, code string) (*model.PartnerApplication, error) {
+	name = strings.TrimSpace(name)
+	phone = strings.TrimSpace(phone)
+	if err := s.sms.verifyForPurpose(ctx, phone, strings.TrimSpace(code), smsPurposePartnerRegistration); err != nil {
+		return nil, err
+	}
+	application := model.PartnerApplication{
+		Name:   name,
+		Phone:  phone,
+		Status: "PENDING",
+	}
+	if err := s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "phone"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"name":       name,
+			"updated_at": time.Now(),
+		}),
+	}).Create(&application).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "代理商注册失败", err)
+	}
+	if err := s.db.WithContext(ctx).Where("phone = ?", phone).First(&application).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询代理商注册信息失败", err)
+	}
+	return &application, nil
 }

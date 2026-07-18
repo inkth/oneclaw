@@ -13,19 +13,19 @@ import (
 
 	apperr "github.com/faxianmao/server/internal/errors"
 	"github.com/faxianmao/server/internal/model"
-	"github.com/faxianmao/server/internal/service/fal"
+	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/storage"
 )
 
 type MaterialService struct {
 	db      *gorm.DB
 	storage *storage.Storage
-	fal     *fal.Client
+	llm     *llm.Client
 	quota   *QuotaService
 }
 
-func NewMaterialService(db *gorm.DB, st *storage.Storage, f *fal.Client, q *QuotaService) *MaterialService {
-	return &MaterialService{db: db, storage: st, fal: f, quota: q}
+func NewMaterialService(db *gorm.DB, st *storage.Storage, l *llm.Client, q *QuotaService) *MaterialService {
+	return &MaterialService{db: db, storage: st, llm: l, quota: q}
 }
 
 // MaterialUpload 是一次上传的入参(由 handler 从 multipart 解析)。
@@ -90,9 +90,10 @@ func (s *MaterialService) Upload(ctx context.Context, wsID uuid.UUID, in Materia
 	return &m, nil
 }
 
-// GenerateMaterial 用文字 prompt 调 fal 出一张图,存为该工作台的 IMAGE 素材,
-// 供「添加」弹窗的「AI 生成」tab 用。同步出图(队列 API 短请求轮询,跨境不卡死)。
+// GenerateMaterial 用文字 prompt 调 seedream 出一张图,存为该工作台的 IMAGE 素材,
+// 供「添加」弹窗的「AI 生成」tab 用。同步出图(国内直连可达,十几秒返回)。
 // 出图额度前置扣减,出图/落库失败时按 refID 退回。
+// imageSize 传画幅比例("1:1"/"9:16" 等,前端当前不传,默认 1:1)。
 func (s *MaterialService) GenerateMaterial(ctx context.Context, wsID uuid.UUID, prompt, imageSize string) (*model.Material, error) {
 	prompt = strings.TrimSpace(prompt)
 	if prompt == "" {
@@ -101,11 +102,11 @@ func (s *MaterialService) GenerateMaterial(ctx context.Context, wsID uuid.UUID, 
 	if !s.storage.Configured() {
 		return nil, apperr.New(apperr.CodeServiceUnavailable, "存储未配置")
 	}
-	if s.fal == nil || !s.fal.Configured() {
+	if s.llm == nil || !s.llm.Configured() {
 		return nil, apperr.New(apperr.CodeServiceUnavailable, "出图服务未配置,请稍后再试")
 	}
 	if imageSize == "" {
-		imageSize = "square_hd"
+		imageSize = "1:1"
 	}
 
 	refID := uuid.New()
@@ -120,7 +121,7 @@ func (s *MaterialService) GenerateMaterial(ctx context.Context, wsID uuid.UUID, 
 
 	gctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	data, ct, err := s.fal.GenerateImageQueued(gctx, "", prompt, imageSize, nil)
+	data, ct, err := s.llm.GenerateImage(gctx, prompt, imageSize, nil)
 	if err != nil {
 		refund()
 		return nil, apperr.Wrap(apperr.CodeServiceUnavailable, "AI 出图失败,请重试", err)

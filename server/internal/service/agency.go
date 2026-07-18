@@ -74,7 +74,14 @@ func (s *AgencyService) BindReferralTx(tx *gorm.DB, userID, wsID uuid.UUID, invi
 	}
 	// 代理商用自己的码注册新号无意义,但新用户 ID 必然不等于代理 user_id,无需额外判重。
 	bonus := s.cfg.BonusCredits
-	ref := model.AgencyReferral{UserID: userID, AgencyID: ag.ID, BonusCredits: bonus}
+	eligibleUntil := now.AddDate(1, 0, 0)
+	ref := model.AgencyReferral{
+		UserID:                  userID,
+		AgencyID:                ag.ID,
+		BonusCredits:            bonus,
+		CommissionEligibleUntil: &eligibleUntil,
+		CreatedAt:               now,
+	}
 	// user_id 唯一;防御性 DoNothing:极端重放不重复绑。
 	res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&ref)
 	if res.Error != nil {
@@ -104,14 +111,17 @@ func (s *AgencyService) BindReferralTx(tx *gorm.DB, userID, wsID uuid.UUID, invi
 }
 
 // RecordCommissionTx 在既有事务 tx 内为一笔真实付费计佣(幂等:source 唯一冲突即空转)。
-// 找不到归因 / 代理停用 → 静默返回 nil,不影响主支付流程。
-func (s *AgencyService) RecordCommissionTx(tx *gorm.DB, sourceType string, sourceID, payerUserID uuid.UUID, baseCents int) error {
+// 找不到归因 / 超出注册后一年 / 代理停用 → 静默返回 nil,不影响主支付流程。
+func (s *AgencyService) RecordCommissionTx(tx *gorm.DB, sourceType string, sourceID, payerUserID uuid.UUID, baseCents int, paidAt time.Time) error {
 	var ref model.AgencyReferral
 	if err := tx.Where("user_id = ?", payerUserID).First(&ref).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil // 无归因,不计佣
 		}
 		return err
+	}
+	if !ref.CommissionEligibleAt(paidAt) {
+		return nil
 	}
 	var ag model.Agency
 	if err := tx.First(&ag, "id = ?", ref.AgencyID).Error; err != nil {

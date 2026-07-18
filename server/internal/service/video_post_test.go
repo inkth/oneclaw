@@ -62,6 +62,18 @@ All spoken dialogue is in English.`
 	if c6[1].Text != "毎日使ってる" {
 		t.Errorf("c6[1] text = %q, want full-width-quote content", c6[1].Text)
 	}
+
+	// 7. 无时间轴且台词长短不一 → 按字符长度加权:长句占更久;整体连续铺满总时长
+	c7 := parseVOCues(`VO: "hi" then VO: "this is a much longer spoken line"`, 12)
+	if len(c7) != 2 {
+		t.Fatalf("weighted split: got %d cues, want 2", len(c7))
+	}
+	if !(c7[1].EndSec-c7[1].StartSec > c7[0].EndSec-c7[0].StartSec) {
+		t.Errorf("longer line should get longer span: %+v", c7)
+	}
+	if c7[0].StartSec != 0 || c7[0].EndSec != c7[1].StartSec || c7[1].EndSec < 11.9 {
+		t.Errorf("weighted spans should be contiguous over total: %+v", c7)
+	}
 }
 
 func TestBuildASSAndTime(t *testing.T) {

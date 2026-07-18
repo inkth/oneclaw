@@ -63,6 +63,9 @@ export type StreamTask = {
     videoId?: string;
     durationSec?: number;
     aspectRatio?: string;
+    /** 实拍开场片段（真货镜头）：出片后原样拼在成片最前，AI 只生成承接镜头。 */
+    realClipUrl?: string;
+    realClipSec?: number;
     /** 目标市场 code 与口播语言（后端按市场母语生成；旧任务无此字段视同美国/英语）。 */
     region?: string;
     voiceLang?: string;
@@ -629,10 +632,13 @@ function TaskBubble({
                     )}
                     {confirming ? "提交中…" : "生成视频"}
                   </button>
-                  <CreditCost credits={CREDIT_COST.video} />
+                  {/* 出片按秒计费：35 积分 × AI 生成秒数（实拍开场不计秒） */}
+                  <CreditCost credits={CREDIT_COST.video * (t.metadata?.durationSec ?? 8)} />
                   <span className="text-2xs text-zinc-400">
-                    {t.metadata?.durationSec ?? 5}s · {t.metadata?.aspectRatio ?? "9:16"} ·{" "}
-                    {voiceLang}口播 · 确认后才开始消耗积分
+                    {t.metadata?.realClipSec
+                      ? `实拍开场 ${t.metadata.realClipSec}s + AI ${t.metadata?.durationSec ?? 8}s`
+                      : `${t.metadata?.durationSec ?? 8}s`}{" "}
+                    · {t.metadata?.aspectRatio ?? "9:16"} · {voiceLang}口播 · 确认后才开始消耗积分
                   </span>
                 </div>
               </div>

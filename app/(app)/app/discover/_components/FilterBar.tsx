@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, ChevronDown, ChevronUp, Search, X, Sparkles } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
+import { SegmentedTabs } from "@/components/ui/Tabs";
 import { REGIONS, type Region } from "./regions";
 import { useDiscoverFilterMemory } from "./filter-memory";
 
@@ -88,38 +89,50 @@ export function FilterBar({
         onSubmit={(kw) => navigate({ q: kw || null, category_id: null })}
       />
 
-      {/* AI 视频筛选：仅视频榜开启；搜索态下隐藏（搜索接口不支持 created_by_ai）。 */}
-      {showAiFilter && !searching && (
-        <PillRow label={<><Sparkles className="h-3.5 w-3.5" />视频类型</>}>
-          <Pill active={!ai} onClick={() => navigate({ ai: false })}>
-            全部
-          </Pill>
-          <Pill active={ai} onClick={() => navigate({ ai: true })}>
-            AI 视频
-          </Pill>
-        </PillRow>
-      )}
-
-      <PillRow label={<><Globe className="h-3.5 w-3.5" />国家/地区</>}>
-        {REGIONS.map((r) => (
-          <Pill
-            key={r.code}
-            active={region === r.code}
-            // 搜索态切地区=在新地区重搜（保留 q）;否则正常切榜并清类目。
-            onClick={() => navigate({ region: r.code, category_id: searching ? undefined : null })}
-          >
-            <span className="mr-1">{r.flag}</span>
-            {r.cn}
-          </Pill>
-        ))}
-      </PillRow>
+      <CollapsibleRow
+        label={<><Globe className="h-3.5 w-3.5" />国家/地区</>}
+        items={REGIONS.map((r) => ({
+          key: r.code,
+          active: region === r.code,
+          label: <><span className="mr-1">{r.flag}</span>{r.cn}</>,
+          // 搜索态切地区=在新地区重搜（保留 q）;否则正常切榜并清类目。
+          onClick: () => navigate({ region: r.code, category_id: searching ? undefined : null }),
+        }))}
+      />
 
       {categories.length > 0 && !searching && (
-        <CategoryRow
-          categories={categories}
-          active={categoryId ?? ""}
-          onSelect={(id) => navigate({ category_id: id || null })}
+        <CollapsibleRow
+          label="商品分类"
+          // 「全部」始终可见、不计入折叠配额。
+          lead={{
+            key: "__all__",
+            active: (categoryId ?? "") === "",
+            label: "全部",
+            onClick: () => navigate({ category_id: null }),
+          }}
+          items={categories.map((c) => ({
+            key: c.id,
+            active: (categoryId ?? "") === c.id,
+            label: c.name,
+            onClick: () => navigate({ category_id: c.id }),
+          }))}
         />
+      )}
+
+      {/* 视频类型：AI/全部 二选一，作为对榜单的精修放在最末；搜索态隐藏（接口不支持 created_by_ai）。
+       *  二选一用分段切换器而非两颗独立 pill，互斥语义更清楚。 */}
+      {showAiFilter && !searching && (
+        <PillRow label={<><Sparkles className="h-3.5 w-3.5" />视频类型</>}>
+          <SegmentedTabs
+            ariaLabel="视频类型"
+            value={ai ? "ai" : "all"}
+            onValueChange={(v) => navigate({ ai: v === "ai" })}
+            items={[
+              { label: "全部", value: "all" },
+              { label: "AI 视频", value: "ai" },
+            ]}
+          />
+        </PillRow>
       )}
     </div>
   );
@@ -142,7 +155,7 @@ function SearchRow({
         e.preventDefault();
         onSubmit(value.trim());
       }}
-      className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3"
+      className="flex flex-col items-stretch gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3"
     >
       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:text-sm">
         <Search className="h-3.5 w-3.5" />
@@ -185,7 +198,7 @@ function SearchRow({
 
 function PillRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
+    <div className="flex flex-col items-stretch gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
         {label}
       </span>
@@ -194,35 +207,86 @@ function PillRow({ label, children }: { label: React.ReactNode; children: React.
   );
 }
 
-// 类目行：超过 11 个折叠，行尾给「展开/收起」。
-function CategoryRow({
-  categories,
-  active,
-  onSelect,
+type RowItem = { key: string; label: React.ReactNode; active: boolean; onClick: () => void };
+
+// 可折叠 pill 行（国家 / 类目共用）：折叠态只留第一行，行尾给「展开/收起」。
+// 一行装得下几个取决于容器宽度和 pill 文字长度，所以用一份隐藏的全量副本实测：
+// 与第一个 pill 同 offsetTop 的即第一行，据此算 cutoff，容器宽度变化时重测。
+// lead 是始终可见、不计入折叠配额的领头 pill（如类目的「全部」）。
+function CollapsibleRow({
+  label,
+  items,
+  lead,
 }: {
-  categories: CategoryOption[];
-  active: string;
-  onSelect: (id: string) => void;
+  label: React.ReactNode;
+  items: RowItem[];
+  lead?: RowItem;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const COLLAPSED = 11;
-  const overflow = categories.length > COLLAPSED;
-  const visible = overflow && !expanded ? categories.slice(0, COLLAPSED) : categories;
+  const [cutoff, setCutoff] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const hasLead = !!lead;
+  // items 每次渲染都是新数组;用 key 签名做稳定依赖，避免每帧重挂 ResizeObserver。
+  const sig = items.map((i) => i.key).join(",");
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+
+    const remeasure = () => {
+      const pills = Array.from(measure.children) as HTMLElement[];
+      if (pills.length === 0) return;
+      const firstRowTop = pills[0].offsetTop;
+      const firstRow = pills.filter((p) => p.offsetTop === firstRowTop).length;
+      // 有 lead 时首个 pill 是它，不计入配额；至少留一个，免得窄屏折成空行。
+      setCutoff(Math.max(1, firstRow - (hasLead ? 1 : 0)));
+    };
+
+    remeasure();
+    const ro = new ResizeObserver(remeasure);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [sig, hasLead]);
+
+  // cutoff 未测出前先渲染全量，避免首帧闪一个错误的短列表。
+  const overflow = cutoff !== null && cutoff < items.length;
+  // 选中项落在折叠区 → 自动展开，别把用户的选择藏起来（用户之后仍可手动收起）。
+  const activeIdx = items.findIndex((i) => i.active);
+  const activeHidden = cutoff !== null && activeIdx >= cutoff;
+  useLayoutEffect(() => {
+    if (activeHidden) setExpanded(true);
+  }, [activeHidden]);
+
+  const visible = overflow && !expanded ? items.slice(0, cutoff) : items;
 
   return (
-    <div className="flex flex-col items-stretch gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
-      <span className="shrink-0 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
-        商品分类
+    <div className="flex flex-col items-stretch gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
+        {label}
       </span>
-      <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">
-        <Pill active={active === ""} onClick={() => onSelect("")}>
-          全部
-        </Pill>
-        {visible.map((c) => (
-          <Pill key={c.id} active={active === c.id} onClick={() => onSelect(c.id)}>
-            {c.name}
+      <div ref={containerRef} className="relative flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">
+        {lead && (
+          <Pill active={lead.active} onClick={lead.onClick}>
+            {lead.label}
+          </Pill>
+        )}
+        {visible.map((it) => (
+          <Pill key={it.key} active={it.active} onClick={it.onClick}>
+            {it.label}
           </Pill>
         ))}
+        <div
+          ref={measureRef}
+          aria-hidden
+          className="pointer-events-none invisible absolute inset-x-0 top-0 flex flex-wrap items-center gap-x-1 gap-y-1.5"
+        >
+          {lead && <Pill>{lead.label}</Pill>}
+          {items.map((it) => (
+            <Pill key={it.key}>{it.label}</Pill>
+          ))}
+        </div>
       </div>
       {overflow && (
         <button

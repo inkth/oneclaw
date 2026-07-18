@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "brand" | "vibrant" | "secondary" | "ghost" | "subtle";
+type Variant = "primary" | "brand" | "vibrant" | "secondary" | "ghost" | "subtle" | "danger";
 type Size = "sm" | "md" | "lg";
 
 // primary / brand / vibrant 都属于明确主操作，统一使用深靛蓝；
@@ -18,6 +18,8 @@ const VARIANTS: Record<Variant, string> = {
   // 幽灵：仅 hover 淡蓝灰底（与导航轨同一个 --dk-action-regular）
   ghost:
     "text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-primary)]",
+  // 不可逆动作（删除）的主按钮：与 tokens 的 danger tone 同色系，实底以示分量
+  danger: "bg-rose-600 text-white hover:bg-rose-700 press",
   // 弱强调：中性浅底
   subtle:
     "bg-[var(--dk-btn-tertiary)] text-[var(--dk-content-primary)] hover:bg-[var(--dk-btn-tertiary-hover)] press",

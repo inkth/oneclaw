@@ -27,7 +27,6 @@ type Config struct {
 	OverflowSettle OverflowSettleConfig
 	Storage        StorageConfig
 	OpenRouter     OpenRouterConfig
-	Fal            FalConfig
 	Agency         AgencyConfig
 	CORS           CORSConfig
 	Log            LogConfig
@@ -135,8 +134,8 @@ type DiscoverVideoPipelineConfig struct {
 	Interval      time.Duration
 	Region        string // 只处理该站点(先只跑美国站)
 	SaleThreshold int    // 带货销量门槛,超过才处理
-	PerRun        int    // 每轮每支路认领上限(成本闸门:直接封顶 EchoTik 实时调用 + gemini 调用数)
-	Concurrency   int    // 并发处理数(gemini 多模态 + ffmpeg 均重,宜小)
+	PerRun        int    // 每轮每支路认领上限(成本闸门:直接封顶 EchoTik 实时调用 + 多模态调用数)
+	Concurrency   int    // 并发处理数(多模态解析 + ffmpeg 均重,宜小)
 	MaxAttempts   int    // 单条失败退避上限
 }
 
@@ -163,30 +162,28 @@ func (s StorageConfig) Configured() bool {
 // OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
 type OpenRouterConfig struct {
 	APIKey         string
-	Model          string // 文本默认 deepseek/deepseek-chat
+	Model          string // 文本默认 deepseek/deepseek-v4-pro(直连可达;推理轻量,现有 800+ 预算即可出全文)
 	TranslateModel string // 选品外文字段翻译默认 deepseek/deepseek-v4-flash(快且便宜)
-	ReviewModel    string // 投放复盘深挖默认 google/gemini-3.5-flash(长上下文+便宜)
-	ReviewProxy    string // 复盘模型出网代理(绕国内 IP 的 OpenRouter 地区限制);空=直连。如 http://1.2.3.4:8888
-	VideoModel     string // 视频默认 bytedance/seedance-2.0-fast
-	ImageModel     string // 图像默认 google/gemini-3.1-flash-image-preview
-	Referer        string // HTTP-Referer 头
+	// ReviewModel 复盘深挖 + 看图(Listing/判品类)。须选国内直连可达的多模态模型:
+	// Google 全系在国内 IP 一律 403(地区限制),且经正向代理绕行会被 OpenRouter 判
+	// 「违反供应商服务条款」直接封禁 —— 2026-07-17 实测两条路都不通,故已弃用 gemini。
+	// minimax-m3 直连可用、支持看图、且不带推理(不会烧光 max_tokens 返回空正文)。
+	ReviewModel string
+	// AudioModel 视频解析第一段「听音频转录」专用。ReviewModel(minimax)不吃 input_audio
+	// (会 404 No endpoints found that support input audio),故转录另用支持音频的模型。
+	// voxtral-small-24b 国内直连可达、实测 ~20s 出准确逐句转录+翻译;第二段拆解仍走 ReviewModel。
+	AudioModel string
+	VideoModel string // 视频默认 bytedance/seedance-2.0-fast
+	// ImageModel 图像默认 bytedance-seed/seedream-4.5:字节自家 provider,国内直连可达
+	// (不像 Google/OpenAI 系对国内 IP 屏蔽),支持参考图编辑/多图合成/虚拟试穿,直接返回 JPEG。
+	ImageModel string
+	Referer    string // HTTP-Referer 头
 }
+
+// 注:全站已无出网代理 —— 经代理调 OpenRouter 会被判 ToS 违规封禁;出图改用 seedream(字节自家
+// provider,国内直连)后,原先唯一在用代理的 fal 结果图下载也随 fal 一并退役。
 
 func (o OpenRouterConfig) Configured() bool { return o.APIKey != "" }
-
-// FalConfig fal.ai(图像生成,国内可达,区域不受限)。
-type FalConfig struct {
-	APIKey     string
-	BaseURL    string // 默认 https://fal.run
-	ImageModel string // 默认 fal-ai/flux/schnell
-	TryOnModel string // 虚拟试穿:默认 fal-ai/fashn/tryon/v1.6
-	// DownloadProxy 结果图下载代理:生成 API(queue.fal.run)国内直连可达,但结果图托管在
-	// fal.media CDN,跨境 TLS 间歇挂死(实测直连 90s 下不完、经代理 6s)。仅下载结果图走此代理;
-	// 空=直连。默认复用 OPENROUTER_REVIEW_PROXY,生产已配则零额外配置。
-	DownloadProxy string
-}
-
-func (f FalConfig) Configured() bool { return f.APIKey != "" }
 
 // CORSConfig 带凭证跨域:本地开发 Next(:3000)调 Go(:8082)需显式白名单(不能用 *)。
 type CORSConfig struct {
@@ -277,21 +274,13 @@ func Load() *Config {
 		},
 		OpenRouter: OpenRouterConfig{
 			APIKey:         getEnv("OPENROUTER_API_KEY", ""),
-			Model:          getEnv("OPENROUTER_MODEL", "deepseek/deepseek-chat"),
+			Model:          getEnv("OPENROUTER_MODEL", "deepseek/deepseek-v4-pro"),
 			TranslateModel: getEnv("OPENROUTER_TRANSLATE_MODEL", "deepseek/deepseek-v4-flash"),
-			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "google/gemini-3.5-flash"),
-			ReviewProxy:    getEnv("OPENROUTER_REVIEW_PROXY", ""),
+			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "minimax/minimax-m3"),
+			AudioModel:     getEnv("OPENROUTER_AUDIO_MODEL", "mistralai/voxtral-small-24b-2507"),
 			VideoModel:     getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
-			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"),
+			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "bytedance-seed/seedream-4.5"),
 			Referer:        getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
-		},
-		Fal: FalConfig{
-			APIKey:     getEnv("FALAI_API_KEY", ""),
-			BaseURL:    getEnv("FALAI_BASE_URL", "https://fal.run"),
-			ImageModel: getEnv("FALAI_DEFAULT_IMAGE_MODEL", "fal-ai/flux/schnell"),
-			TryOnModel: getEnv("FALAI_TRYON_MODEL", "fal-ai/fashn/tryon/v1.6"),
-			// 默认复用复盘代理:生产已配 OPENROUTER_REVIEW_PROXY,无需新增 env。
-			DownloadProxy: getEnv("FALAI_DOWNLOAD_PROXY", getEnv("OPENROUTER_REVIEW_PROXY", "")),
 		},
 		Agency: AgencyConfig{
 			BonusCredits:        getEnvInt("AGENCY_BONUS_CREDITS", 300),

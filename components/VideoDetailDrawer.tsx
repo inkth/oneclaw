@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   X,
   Loader2,
@@ -39,6 +40,7 @@ type VideoFull = {
   thumbnailUrl: string | null;
   videoUrl: string | null;
   costCents: number;
+  realClipSec?: number;
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
@@ -109,6 +111,7 @@ export function VideoDetailDrawer({
   onRerendered?: () => void;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [video, setVideo] = useState<VideoFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -173,7 +176,13 @@ export function VideoDetailDrawer({
 
   async function del() {
     if (!video) return;
-    if (!confirm(`删除视频「${video.title}」？`)) return;
+    const ok = await confirm({
+      title: `删除视频「${video.title}」？`,
+      description: "删除后无法恢复，已消耗的积分不退回。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusy(true);
     const r = await fetch(`/api/v1/workspaces/${workspaceId}/videos/${videoId}`, {
       method: "DELETE",
@@ -475,7 +484,14 @@ export function VideoDetailDrawer({
                 <dl className="grid grid-cols-2 gap-2 text-2xs">
                   <KV label="引擎 key" value={video.engine ?? "—"} mono />
                   <KV label="比例" value={video.aspectRatio ?? "—"} />
-                  <KV label="时长" value={`${video.durationSec}s`} />
+                  <KV
+                    label="时长"
+                    value={
+                      video.realClipSec
+                        ? `${video.durationSec + video.realClipSec}s（含实拍开场 ${video.realClipSec}s）`
+                        : `${video.durationSec}s`
+                    }
+                  />
                   <KV
                     label="估算成本"
                     value={video.costCents > 0 ? `¢${video.costCents}` : "—"}

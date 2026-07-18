@@ -10,42 +10,32 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/faxianmao/server/internal/config"
+	"github.com/faxianmao/server/internal/logger"
 )
 
 const endpoint = "https://openrouter.ai/api/v1/chat/completions"
 const videoEndpoint = "https://openrouter.ai/api/v1/videos"
 
 type Client struct {
-	cfg        config.OpenRouterConfig
-	http       *http.Client
-	reviewHTTP *http.Client // 复盘模型专用(可走代理);ReviewProxy 空时即 http 本身
+	cfg  config.OpenRouterConfig
+	http *http.Client
 }
 
+// New 全部调用一律直连 —— 所选模型均为国内可达。
+// (曾经复盘模型走正向代理绕地区限制,2026-07-17 被 OpenRouter 判 ToS 违规封禁,已整条移除。)
 func New(cfg config.OpenRouterConfig) *Client {
-	c := &Client{cfg: cfg, http: &http.Client{Timeout: 90 * time.Second}}
-	// 复盘模型(海外 Gemini)经正向代理出网,绕开国内 IP 的 OpenRouter 地区限制;
-	// 其余调用(deepseek 等国内可达)仍直连。代理 URL 无效时回退直连。
-	c.reviewHTTP = c.http
-	if cfg.ReviewProxy != "" {
-		if u, err := url.Parse(cfg.ReviewProxy); err == nil {
-			c.reviewHTTP = &http.Client{
-				Timeout:   90 * time.Second,
-				Transport: &http.Transport{Proxy: http.ProxyURL(u)},
-			}
-		}
-	}
-	return c
+	return &Client{cfg: cfg, http: &http.Client{Timeout: 90 * time.Second}}
 }
 
 func (c *Client) Configured() bool       { return c.cfg.Configured() }
 func (c *Client) Model() string          { return c.cfg.Model }
 func (c *Client) TranslateModel() string { return c.cfg.TranslateModel }
 func (c *Client) ReviewModel() string    { return c.cfg.ReviewModel }
+func (c *Client) AudioModel() string     { return c.cfg.AudioModel }
 func (c *Client) VideoModel() string {
 	return c.cfg.VideoModel
 }
@@ -137,7 +127,7 @@ func (c *Client) ChatThread(ctx context.Context, model, system string, thread []
 }
 
 // ChatVision 让多模态模型「看图」对话:user 文本 + 一张或多张图片 URL 一起喂给模型。
-// model 须指向 vision-capable 模型(如 google/gemini-3.5-flash);prod 该模型经 reviewHTTP 代理出网。
+// model 须指向 vision-capable 模型(默认即 ReviewModel=minimax/minimax-m3);全部直连。
 func (c *Client) ChatVision(ctx context.Context, model, system, user string, imageURLs []string, jsonMode bool, maxTokens int) (*Result, error) {
 	if !c.Configured() {
 		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
@@ -166,7 +156,8 @@ type AudioPart struct {
 }
 
 // ChatAV 让多模态模型同时「听音频」+「看若干帧画面」对话:用于视频解析(转录口播 + 翻译 + 带货拆解)。
-// model 须指向支持 audio 输入的多模态模型(如 google/gemini-3.5-flash);prod 该模型经 reviewHTTP 代理出网。
+// model 须指向支持 audio 输入的模型。注意:当前 ReviewModel(minimax)不吃音频,传它会得到
+// 404 "No endpoints found that support input audio" —— 调用方须显式指定音频模型(见 agent_video_analysis)。
 // audio 可空(无口播时退化为纯看帧);imageDataURLs 传 data:image/... base64 或公网 URL 均可。
 func (c *Client) ChatAV(ctx context.Context, model, system, user string, audio *AudioPart, imageDataURLs []string, jsonMode bool, maxTokens int) (*Result, error) {
 	if !c.Configured() {
@@ -221,25 +212,38 @@ func (c *Client) do(ctx context.Context, model string, msgs []chatMsg, jsonMode 
 	req.Header.Set("HTTP-Referer", c.cfg.Referer)
 	req.Header.Set("X-Title", "Faxianmao")
 
-	client := c.http
-	if model == c.cfg.ReviewModel {
-		client = c.reviewHTTP // 复盘/vision 模型走代理(若配置了 ReviewProxy)
-	}
-	res, err := client.Do(req)
+	res, err := c.http.Do(req)
 	if err != nil {
+		logger.Warn("[llm] 请求失败", logger.String("model", model), logger.Err(err))
 		return nil, fmt.Errorf("llm: 请求失败: %w", err)
 	}
 	defer res.Body.Close()
 
 	var parsed chatResp
 	if err := json.NewDecoder(res.Body).Decode(&parsed); err != nil {
+		logger.Warn("[llm] 解析响应失败",
+			logger.String("model", model), logger.Int("http", res.StatusCode), logger.Err(err))
 		return nil, fmt.Errorf("llm: 解析响应失败: %w", err)
 	}
 	if parsed.Error != nil {
+		// 上游拒绝(地区限制/ToS/额度)一律留痕:这类故障过去只体现为静默降级,
+		// 生产曾整条多模态链路 403 数周无人察觉。
+		logger.Warn("[llm] 上游拒绝",
+			logger.String("model", model), logger.Int("http", res.StatusCode),
+			logger.String("upstream", parsed.Error.Message))
 		return nil, fmt.Errorf("llm: 上游错误: %s", parsed.Error.Message)
 	}
 	if len(parsed.Choices) == 0 {
+		logger.Warn("[llm] 空响应", logger.String("model", model), logger.Int("http", res.StatusCode))
 		return nil, fmt.Errorf("llm: 空响应(HTTP %d)", res.StatusCode)
+	}
+	// 无报错但正文为空:reasoning 模型烧光 max_tokens 时会这样(实测 stepfun/xiaomi 均如此)。
+	// 必须当失败处理并留痕,否则调用点会把空串当正常产出。
+	if strings.TrimSpace(parsed.Choices[0].Message.Content) == "" {
+		logger.Warn("[llm] 正文为空(疑似 max_tokens 被推理耗尽)",
+			logger.String("model", model), logger.Int("max_tokens", maxTokens),
+			logger.Int("tokens_out", parsed.Usage.CompletionTokens))
+		return nil, fmt.Errorf("llm: 模型返回空正文(model=%s, max_tokens=%d)", model, maxTokens)
 	}
 
 	usage := Usage{
@@ -285,7 +289,16 @@ var priceTable = map[string][2]float64{ // {input, output}
 	"openai/gpt-4o-mini":          {0.15, 0.6},
 	"google/gemini-2.5-pro":       {1.25, 10},
 	"google/gemini-3.5-flash":     {0.3, 2.5},
-	"deepseek/deepseek-chat":      {0.14, 0.28},
+	// 以下取自 OpenRouter /api/v1/models 的 pricing(2026-07-17 核对)。
+	// 注:deepseek-chat 此前误记为 {0.14, 0.28},output 实际是 0.8,成本一直被低估近 3 倍。
+	"deepseek/deepseek-v4-pro":   {0.435, 0.87},
+	"deepseek/deepseek-v4-flash": {0.098, 0.196},
+	"deepseek/deepseek-chat":     {0.2, 0.8},
+	// minimax 由生产实测两次调用的 usage.cost 反解(251in/603out=$0.000772、251in/429out=$0.000563);
+	// 含图调用实际计费略高于此(图片另算),粗估用途够。
+	"minimax/minimax-m3": {0.2, 1.2},
+	// voxtral 视频转录用;文本单价按官方 pricing,音频 token 另计,本表只做粗估。
+	"mistralai/voxtral-small-24b-2507": {0.1, 0.3},
 }
 
 func estimateCostCents(model string, tokensIn, tokensOut int) int {
@@ -412,17 +425,35 @@ func (c *Client) videoCall(ctx context.Context, method, url string, body any) (*
 // VideoCostCents 把 usage.cost(美元)换成美分。
 func VideoCostCents(usd float64) int { return int(usd*100 + 0.5) }
 
-// GenerateImage 用图像模型生成一张图(chat/completions + modalities)。
+// GenerateImage 用图像模型(seedream)生成一张图(chat/completions + modalities:image)。
+// refImageURLs 非空时作为参考图输入(编辑锚定/多图合成/虚拟试穿):OpenRouter 把这些 URL
+// 交给上游,由上游服务端自行下载,故必须是公网可达地址(我们的 COS public-read 满足)。
+// aspectRatio 传 "1:1"/"9:16"/"16:9"/"3:4"/"4:3" 等;空则用模型默认(约 2048 见方)。
+// seedream 走字节自家 provider,国内直连可达、直接返回 JPEG,无需代理或队列轮询。
 // 返回解码后的字节 + content-type。响应里图为 base64 data URL。
-func (c *Client) GenerateImage(ctx context.Context, prompt, aspectRatio string) ([]byte, string, error) {
+func (c *Client) GenerateImage(ctx context.Context, prompt, aspectRatio string, refImageURLs []string) ([]byte, string, error) {
 	if !c.Configured() {
 		return nil, "", fmt.Errorf("llm/image: OPENROUTER_API_KEY 未配置")
 	}
-	model := c.cfg.ImageModel
+	// user 消息体:无参考图时纯文本 prompt;带参考图时构造为 content-parts 数组
+	// (文本 + 逐张 image_url,照搬 ChatVision 的写法)。
+	var content any = prompt
+	if len(refImageURLs) > 0 {
+		parts := []map[string]any{{"type": "text", "text": prompt}}
+		for _, u := range refImageURLs {
+			if u = strings.TrimSpace(u); u != "" {
+				parts = append(parts, map[string]any{
+					"type":      "image_url",
+					"image_url": map[string]string{"url": u},
+				})
+			}
+		}
+		content = parts
+	}
 	body := map[string]any{
-		"model":      model,
-		"messages":   []chatMsg{{Role: "user", Content: prompt}},
-		"modalities": []string{"image", "text"},
+		"model":      c.cfg.ImageModel,
+		"messages":   []chatMsg{{Role: "user", Content: content}},
+		"modalities": []string{"image"}, // seedream 只出图不出文,带 "text" 会 404
 	}
 	if aspectRatio != "" {
 		body["image_config"] = map[string]any{"aspect_ratio": aspectRatio}

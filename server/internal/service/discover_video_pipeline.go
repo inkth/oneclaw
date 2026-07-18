@@ -14,7 +14,6 @@ import (
 	"github.com/faxianmao/server/internal/config"
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
-	"github.com/faxianmao/server/internal/service/llm"
 )
 
 // 热门视频管线下载超时:热门带货短视频体积通常几~几十 MB,给足 120s(交互式解析仍用 60s)。
@@ -176,16 +175,10 @@ func (s *DiscoverService) processHotVideo(ctx context.Context, dv model.Discover
 		logger.Warn("[video-pipeline] 抽音轨/帧失败", logger.String("videoId", dv.ExternalID), logger.Err(err))
 		return
 	}
-	res, err := s.llm.ChatAV(ctx, s.llm.ReviewModel(), videoAnalysisSystem, "请解析这条带货视频。", audio, frames, true, 4000)
+	out, _, err := analyzeVideoTwoStage(ctx, s.llm, "", audio, frames)
 	if err != nil {
 		s.bumpAnalysisAttempt(ctx, dv.ID)
 		logger.Warn("[video-pipeline] 多模态拆解失败", logger.String("videoId", dv.ExternalID), logger.Err(err))
-		return
-	}
-	var out videoAnalysisOut
-	if err := json.Unmarshal([]byte(llm.ExtractJSON(res.Content)), &out); err != nil {
-		s.bumpAnalysisAttempt(ctx, dv.ID)
-		logger.Warn("[video-pipeline] 拆解结果解析失败", logger.String("videoId", dv.ExternalID), logger.Err(err))
 		return
 	}
 	analysisJSON, _ := json.Marshal(out)

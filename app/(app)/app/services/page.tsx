@@ -146,17 +146,7 @@ export default function ServicesPage() {
         })}
       </div>
 
-      <div className="space-y-3 pt-1">
-        <div className="flex flex-col items-center gap-1 rounded-2xl border border-dashed border-black/[0.09] bg-white/45 px-5 py-7 text-center">
-          <p className="text-sm text-[var(--dk-content-secondary)]">没找到合适的服务？告诉我们你要解决什么。</p>
-          <button
-            onClick={() => setContact({ title: "其他服务需求" })}
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
-          >
-            提交服务需求
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
+      <div className="pt-1">
         <p className="px-4 text-center text-2xs leading-relaxed text-[var(--dk-content-tertiary)]">
           标注「合作方」的服务由第三方渠道提供，发现猫仅做筛选与对接引导、不对其资质与结果作担保或背书；
           合作条款、收费与交付以你与合作方另行约定为准。

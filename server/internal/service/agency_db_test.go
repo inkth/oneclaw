@@ -157,7 +157,7 @@ func TestAgencyCommissionOnOrder(t *testing.T) {
 	}
 	// 唯一索引兜底:同 source 再插入空转。
 	_ = db.Transaction(func(tx *gorm.DB) error {
-		return agencySvc.RecordCommissionTx(tx, model.CommissionSourceOrder, o.ID, payer, 19900)
+		return agencySvc.RecordCommissionTx(tx, model.CommissionSourceOrder, o.ID, payer, 19900, time.Now())
 	})
 	if n := commissionCount(t, db, o.ID); n != 1 {
 		t.Errorf("重复计佣后行数=%d, want 1", n)
@@ -262,14 +262,14 @@ func TestAgencyBonusQuota(t *testing.T) {
 		Source: model.BonusSourceAgencyInvite, ExpiresAt: time.Now().Add(24 * time.Hour),
 	})
 
-	// FREE 450 + bonus 300 = 750;出片 175/条,4 条=700<=750 放行。
+	// FREE 450 + bonus 300 = 750;按秒计费 35/秒,5s 出片=175 积分,4 条=700<=750 放行。
 	for i := 0; i < 4; i++ {
-		if err := quota.CheckAndRecord(ctx, ws.ID, model.UsageVideo, 1, nil); err != nil {
+		if err := quota.CheckAndRecord(ctx, ws.ID, model.UsageVideo, 5, nil); err != nil {
 			t.Fatalf("第 %d 条出片应放行: %v", i+1, err)
 		}
 	}
 	// 第 5 条:700+175=875 > 750,拒。
-	if err := quota.CheckAndRecord(ctx, ws.ID, model.UsageVideo, 1, nil); err == nil {
+	if err := quota.CheckAndRecord(ctx, ws.ID, model.UsageVideo, 5, nil); err == nil {
 		t.Error("超 750 应拒")
 	}
 	// 赠送过期 → 上限回 450,已用 700 > 450,出图(6)也拒。

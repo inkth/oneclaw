@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
 	"github.com/faxianmao/server/internal/service/llm"
 	"github.com/faxianmao/server/internal/service/review"
@@ -58,7 +59,10 @@ func (s *AgentService) enrichReviewAI(ctx context.Context, wsID, taskID uuid.UUI
 	out, err := s.llm.ChatWithModel(lctx, s.llm.ReviewModel(), reviewSystem, result.GeminiPrompt, false, 4000)
 	if err != nil {
 		s.quota.Refund(ctx, taskID, model.UsageAgentTask) // 失败不烧额度
-		result.Warnings = append(result.Warnings, "AI 深挖失败,仅展示本地诊断:"+err.Error())
+		// 上游原文(英文 ToS/地区限制等)只进日志,不进用户可见的 warning。
+		logger.Warn("[agent] 复盘 AI 深挖失败,降级为本地诊断",
+			logger.String("model", s.llm.ReviewModel()), logger.Err(err))
+		result.Warnings = append(result.Warnings, "AI 深挖暂时不可用,以下为本地诊断;可复制下方提示词自行深挖。")
 		return llm.Usage{}
 	}
 	result.Analysis = strings.TrimSpace(out.Content)

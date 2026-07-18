@@ -21,8 +21,10 @@ import (
 )
 
 const (
-	smsCodeTTL     = 5 * time.Minute
-	smsMaxAttempts = 5
+	smsCodeTTL                    = 5 * time.Minute
+	smsMaxAttempts                = 5
+	smsPurposeLogin               = "LOGIN"
+	smsPurposePartnerRegistration = "PARTNER_REGISTRATION"
 )
 
 // SMSSender 抽象短信通道。
@@ -71,9 +73,15 @@ func NewSMSService(db *gorm.DB, cfg *config.SMSConfig, dev bool) *SMSService {
 
 // Send 生成并发送验证码。返回 devCode(仅 dev 模式非空,便于本地联调)。
 func (s *SMSService) Send(ctx context.Context, phone string) (string, error) {
+	return s.sendForPurpose(ctx, phone, smsPurposeLogin)
+}
+
+// sendForPurpose 生成指定用途的验证码，避免登录码与代理商注册码交叉使用。
+func (s *SMSService) sendForPurpose(ctx context.Context, phone, purpose string) (string, error) {
 	code := fmt.Sprintf("%06d", s.rand.Intn(1000000))
 	rec := model.PhoneVerificationCode{
 		Phone:    phone,
+		Purpose:  purpose,
 		CodeHash: hashCode(code),
 		Expires:  time.Now().Add(smsCodeTTL),
 	}
@@ -91,9 +99,13 @@ func (s *SMSService) Send(ctx context.Context, phone string) (string, error) {
 
 // Verify 校验最新一条未使用、未过期的验证码。通过即作废。
 func (s *SMSService) Verify(ctx context.Context, phone, code string) error {
+	return s.verifyForPurpose(ctx, phone, code, smsPurposeLogin)
+}
+
+func (s *SMSService) verifyForPurpose(ctx context.Context, phone, code, purpose string) error {
 	var rec model.PhoneVerificationCode
 	err := s.db.WithContext(ctx).
-		Where("phone = ? AND used_at IS NULL", phone).
+		Where("phone = ? AND purpose = ? AND used_at IS NULL", phone, purpose).
 		Order("created_at DESC").
 		First(&rec).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
