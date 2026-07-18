@@ -18,13 +18,14 @@ export const STATUS_META: Record<Status, { label: string; tone: Tone }> = {
 };
 
 // TikTok Shop 主要目标市场。"global" = 与市场无关（如客服、收款），卡片上标注为「全球通用」。
-export type Region = "us" | "uk" | "sea" | "mx" | "eu" | "me" | "global";
+export type Region = "us" | "uk" | "sea" | "mx" | "br" | "eu" | "me" | "global";
 
 export const REGION_LABEL: Record<Region, string> = {
   us: "美国",
   uk: "英国",
   sea: "东南亚",
   mx: "墨西哥",
+  br: "巴西",
   eu: "欧洲",
   me: "中东",
   global: "全球通用",
@@ -96,6 +97,11 @@ const DACHONG: Partner = {
   wechat: "1291056817",
   email: "chanchanyinn@gmail.com",
 };
+const LIPOLIPOO: Partner = {
+  name: "LipoLipoo",
+  note: "巴西海外仓",
+  wechat: "17840717105",
+};
 const CHENFENG: Partner = {
   name: "晨风",
   note: "5 年跨境服务商 · 多平台本土店入驻",
@@ -121,12 +127,12 @@ export const CATEGORIES: Category[] = [
       },
       {
         label: "海外仓",
-        desc: "美东本地仓资源：一件代发、退货换标、本地尾程配送，旺季不爆仓、时效更稳。适合已有稳定出单、想把物流体验做上去的卖家。",
+        desc: "美东、巴西本地仓资源：一件代发、退货换标、本地尾程配送，旺季不爆仓、时效更稳。适合已有稳定出单、想把物流体验做上去的卖家。",
         icon: "Warehouse",
         status: "live",
         tags: ["一件代发", "退换处理", "本地尾程"],
-        regions: ["us"],
-        partners: [DACHONG],
+        regions: ["us", "br"],
+        partners: [DACHONG, LIPOLIPOO],
       },
       {
         label: "清关报关",
