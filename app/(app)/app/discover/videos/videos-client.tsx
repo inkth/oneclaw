@@ -80,7 +80,6 @@ export function VideosClient({
         categories={categories}
         keyword={keyword}
         ai={ai}
-        showAiFilter
         searchPlaceholder="搜索视频文案或话题"
       />
 

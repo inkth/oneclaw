@@ -2,9 +2,8 @@
 
 import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, ChevronDown, ChevronUp, Search, X, Sparkles } from "lucide-react";
+import { Globe, ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
-import { SegmentedTabs } from "@/components/ui/Tabs";
 import { REGIONS, type Region } from "./regions";
 import { useDiscoverFilterMemory } from "./filter-memory";
 
@@ -26,7 +25,6 @@ export function FilterBar({
   categories = [],
   keyword = "",
   ai = false,
-  showAiFilter = false,
   searchPlaceholder = "输入关键词搜索…",
 }: {
   basePath: string;
@@ -39,10 +37,8 @@ export function FilterBar({
   categories?: CategoryOption[];
   /** 当前关键词（URL ?q=）;非空=搜索态。 */
   keyword?: string;
-  /** 当前是否只看 AI 视频（URL ?ai=1）。仅 showAiFilter 榜生效。 */
+  /** 当前是否只看 AI 视频（URL ?ai=1）。UI 筛选行已下线，仅保留读取/透传。 */
   ai?: boolean;
-  /** 是否展示「AI 视频」筛选行（仅视频榜开启）。 */
-  showAiFilter?: boolean;
   searchPlaceholder?: string;
 }) {
   const router = useRouter();
@@ -119,21 +115,6 @@ export function FilterBar({
         />
       )}
 
-      {/* 视频类型：AI/全部 二选一，作为对榜单的精修放在最末；搜索态隐藏（接口不支持 created_by_ai）。
-       *  二选一用分段切换器而非两颗独立 pill，互斥语义更清楚。 */}
-      {showAiFilter && !searching && (
-        <PillRow label={<><Sparkles className="h-3.5 w-3.5" />视频类型</>}>
-          <SegmentedTabs
-            ariaLabel="视频类型"
-            value={ai ? "ai" : "all"}
-            onValueChange={(v) => navigate({ ai: v === "ai" })}
-            items={[
-              { label: "全部", value: "all" },
-              { label: "AI 视频", value: "ai" },
-            ]}
-          />
-        </PillRow>
-      )}
     </div>
   );
 }
@@ -193,17 +174,6 @@ function SearchRow({
         </button>
       </div>
     </form>
-  );
-}
-
-function PillRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-stretch gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:gap-3">
-      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-zinc-700 sm:w-[84px] sm:pt-1.5 sm:text-sm">
-        {label}
-      </span>
-      <div className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1.5">{children}</div>
-    </div>
   );
 }
 
