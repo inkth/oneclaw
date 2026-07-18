@@ -216,7 +216,7 @@ func (s *DiscoverService) influencerDTOFromModel(ctx context.Context, di *model.
 		NickName:          di.NickName,
 		Region:            di.Region,
 		Avatar:            di.AvatarURL,
-		Category:          di.Category,
+		Category:          zhInfluencerCategory(di.Category),
 		Gender:            di.Gender,
 		Language:          di.Language,
 		ContactEmail:      di.ContactEmail,

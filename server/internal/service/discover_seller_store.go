@@ -242,7 +242,7 @@ func (s *DiscoverService) sellerDTOFromModel(ctx context.Context, ds *model.Disc
 		Cover:             ds.CoverURL,
 		SellerLink:        ds.SellerLink,
 		Rating:            ds.Rating,
-		Categories:        parseCategories(ds.Categories),
+		Categories:        s.categoryZh(ctx, ds.Region).Names(parseCategories(ds.Categories)),
 		AvgPriceCents:     ds.AvgPriceCents,
 		TotalProductCnt:   productCnt,
 		TotalSaleCnt:      sale,

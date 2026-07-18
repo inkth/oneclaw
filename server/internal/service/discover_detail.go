@@ -310,7 +310,7 @@ func (s *DiscoverService) fetchProductInfluencers(ctx context.Context, id, regio
 			UserID:             r.UserID,
 			NickName:           r.NickName,
 			Avatar:             hosted[r.Avatar],
-			Category:           r.Category,
+			Category:           zhInfluencerCategory(r.Category),
 			Followers:          r.TotalFollowersCnt.Int(),
 			PerProductGmvCents: echotik.DollarsToCents(r.PerProductGmvAmt.Float()),
 			PerProductSaleCnt:  r.PerProductSaleCnt.Int(),
