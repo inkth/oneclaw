@@ -31,6 +31,10 @@ func (s *AuthService) SendCode(ctx context.Context, phone string) (string, error
 	return s.sms.Send(ctx, phone)
 }
 
+// defaultUserName 新建账号的默认昵称。建号有两条路径(手机号登录、管理端开通代理商),
+// 口径需一致。
+const defaultUserName = "跨境卖家"
+
 // LoginResult 登录结果:用户 + 默认工作台 + 已签发的 JWT。
 type LoginResult struct {
 	User      *model.User
@@ -53,7 +57,7 @@ func (s *AuthService) LoginByCode(ctx context.Context, phone, code, inviteCode, 
 		if errors.Is(e, gorm.ErrRecordNotFound) {
 			phoneVal := phone
 			now := time.Now()
-			name := "跨境卖家"
+			name := defaultUserName
 			user = model.User{Phone: &phoneVal, PhoneVerified: &now, Name: &name}
 			if e := tx.Create(&user).Error; e != nil {
 				return e

@@ -40,6 +40,13 @@ func (d *DemoRequest) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
+// 代理商申请审核状态。PENDING 由公开注册端点写入,其余由管理端审批流转。
+const (
+	PartnerPending  = "PENDING"
+	PartnerApproved = "APPROVED"
+	PartnerRejected = "REJECTED"
+)
+
 // PartnerApplication 代理商注册申请。手机号唯一，重复提交只更新代理商名称。
 type PartnerApplication struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`

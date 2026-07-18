@@ -63,6 +63,14 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   AGENCY_CREATE: "开通代理",
   AGENCY_UPDATE: "调整代理",
   WITHDRAWAL_REVIEW: "审核提现",
+  PARTNER_REVIEW: "审批代理申请",
+};
+
+// 代理商申请审核状态 → 中文 + 色调。
+export const PARTNER_STATUS_META: Record<string, { label: string; tone: Tone }> = {
+  PENDING: { label: "待审核", tone: "warning" },
+  APPROVED: { label: "已通过", tone: "success" },
+  REJECTED: { label: "已驳回", tone: "danger" },
 };
 
 // —— 后端返回类型 ——————————————————————————————————————————————
@@ -180,6 +188,20 @@ export type FeedbackRow = {
     createdAt: string;
   };
   userPhone: string;
+};
+
+// 代理商申请。hasUser 为 false 时，审批通过会一并建号。
+export type PartnerApplicationRow = {
+  application: {
+    id: string;
+    name: string;
+    phone: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  hasUser: boolean;
+  agencyCode?: string;
 };
 
 // 代理商相关(沿用既有形状)。

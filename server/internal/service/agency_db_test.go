@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/faxianmao/server/internal/config"
+	apperr "github.com/faxianmao/server/internal/errors"
 	"github.com/faxianmao/server/internal/model"
 )
 
@@ -348,5 +350,116 @@ func TestAgencyWithdrawal(t *testing.T) {
 	}
 	if _, err := svc.RequestWithdrawal(ctx, agencyUser, 3980, "微信"); err != nil {
 		t.Errorf("驳回后余额应释放,提现应成功: %v", err)
+	}
+}
+
+// resetInviteCodeSeq 重建发号 sequence(fixture 的 AutoMigrate 不含 raw DDL)。
+func resetInviteCodeSeq(t *testing.T, db *gorm.DB, start int64) {
+	t.Helper()
+	db.Exec("DROP SEQUENCE IF EXISTS agency_invite_code_seq")
+	// DDL 不接受 bind 参数,start 由测试自身提供,直接拼接。
+	ddl := fmt.Sprintf(`CREATE SEQUENCE agency_invite_code_seq
+		START WITH %d MINVALUE 1112 MAXVALUE 9999 NO CYCLE`, start)
+	if err := db.Exec(ddl).Error; err != nil {
+		t.Fatalf("建 sequence 失败: %v", err)
+	}
+}
+
+func TestIsUnluckyInviteCode(t *testing.T) {
+	// 含 4 即忌讳,不只末位。
+	for _, c := range []struct {
+		value   int64
+		unlucky bool
+	}{
+		{1112, false}, {1113, false},
+		{1114, true}, // 末位
+		{1140, true}, // 十位
+		{1400, true}, // 百位
+		{4000, true}, // 千位
+		{1444, true},
+		{9999, false},
+	} {
+		if got := isUnluckyInviteCode(c.value); got != c.unlucky {
+			t.Errorf("isUnluckyInviteCode(%d) = %v, 期望 %v", c.value, got, c.unlucky)
+		}
+	}
+}
+
+// 连号段整段含 4 时(1140-1149)应一次跳完,不是只跳末位。
+func TestNextInviteCodeSkipsWholeUnluckyRange(t *testing.T) {
+	db := openAgencyTestDB(t)
+	resetInviteCodeSeq(t, db, 1139)
+	got := make([]string, 0, 2)
+	for i := 0; i < 2; i++ {
+		code, err := nextInviteCode(db)
+		if err != nil {
+			t.Fatalf("nextInviteCode() error = %v", err)
+		}
+		got = append(got, code)
+	}
+	// 1140-1149 全含 4,应整段跳过直达 1150。
+	if got[0] != "1139" || got[1] != "1150" {
+		t.Errorf("发号序列 = %v, 期望 [1139 1150]", got)
+	}
+}
+
+// AdminCreate 两条不变量:发号跳过含 4 的号;手机号无账号时一并建号(含工作台与 OWNER 成员)。
+func TestAdminCreateSkipsUnluckyCodeAndCreatesUser(t *testing.T) {
+	db := openAgencyTestDB(t)
+	resetInviteCodeSeq(t, db, 1112)
+	ctx := context.Background()
+	svc := NewAgencyService(db, config.AgencyConfig{DefaultCommissionBP: 2000})
+
+	// 前两个手机号已有账号,后两个全新 → 顺带覆盖建号分支。
+	mkUser(t, db, "13600000001")
+	mkUser(t, db, "13600000002")
+	phones := []string{"13600000001", "13600000002", "13600000003", "13600000004"}
+
+	var got []string
+	for _, p := range phones {
+		ag, err := svc.AdminCreate(ctx, p, 0, "")
+		if err != nil {
+			t.Fatalf("AdminCreate(%s) error = %v", p, err)
+		}
+		got = append(got, ag.Code)
+	}
+	// 1114 尾数为 4,应被跳过。
+	want := []string{"1112", "1113", "1115", "1116"}
+	for i, w := range want {
+		if got[i] != w {
+			t.Errorf("第 %d 个邀请码 = %s, 期望 %s(完整序列 %v)", i+1, got[i], w, got)
+		}
+	}
+
+	// 全新手机号应建出 users + workspace + OWNER membership,缺一会让懒修复逻辑重复建台。
+	for _, p := range []string{"13600000003", "13600000004"} {
+		var u model.User
+		if err := db.Where("phone = ?", p).First(&u).Error; err != nil {
+			t.Fatalf("%s 应已建号: %v", p, err)
+		}
+		if u.PhoneVerified == nil {
+			t.Errorf("%s phone_verified 应非空(注册时已过短信验证)", p)
+		}
+		var mem model.Membership
+		if err := db.Where("user_id = ?", u.ID).First(&mem).Error; err != nil {
+			t.Fatalf("%s 应有 membership: %v", p, err)
+		}
+		if mem.Role != model.RoleOwner {
+			t.Errorf("%s membership 角色 = %s, 期望 %s", p, mem.Role, model.RoleOwner)
+		}
+		var ws model.Workspace
+		if err := db.First(&ws, "id = ?", mem.WorkspaceID).Error; err != nil {
+			t.Fatalf("%s 应有工作台: %v", p, err)
+		}
+		if ws.OwnerID != u.ID {
+			t.Errorf("%s 工作台 owner 不匹配", p)
+		}
+	}
+
+	// 重复开通应冲突,且不吞成 500。
+	if _, err := svc.AdminCreate(ctx, "13600000001", 0, ""); err == nil {
+		t.Error("重复开通应返回冲突")
+	} else if ae, ok := apperr.As(err); !ok || ae.Code != apperr.CodeConflict {
+		t.Errorf("重复开通错误 = %v, 期望 CONFLICT", err)
 	}
 }
