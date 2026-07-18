@@ -161,10 +161,11 @@ export function AgencyTab() {
         {agencies.length === 0 ? (
           <EmptyState icon={ShieldCheck} title="还没有代理商" description="用上方表单按手机号开通第一个代理商。" />
         ) : (
-          <TableWrap minWidth={720}>
+          <TableWrap minWidth={800}>
             <THead>
               <Tr>
                 <Th>手机号</Th>
+                <Th>昵称</Th>
                 <Th>邀请码</Th>
                 <Th align="right">客户</Th>
                 <Th align="right">累计佣金</Th>
@@ -225,6 +226,7 @@ function AgencyRow({
   return (
     <Tr className={disabled ? "opacity-60" : undefined}>
       <Td className="font-mono">{row.phone || "—"}</Td>
+      <Td className="text-[var(--dk-content-secondary)]">{row.name || "—"}</Td>
       <Td className="font-mono text-[var(--dk-content-secondary)]">{agency.code}</Td>
       <Td align="right">{row.customerCount}</Td>
       <Td align="right">{fmtYuan(row.totalCommissionCents)}</Td>

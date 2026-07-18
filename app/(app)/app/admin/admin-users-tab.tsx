@@ -111,10 +111,11 @@ export function UsersTab() {
         <EmptyState icon={Search} title="没有匹配的用户" description="换个手机号或筛选条件试试。" />
       ) : (
         <>
-          <TableWrap minWidth={760}>
+          <TableWrap minWidth={840}>
             <THead>
               <Tr>
                 <Th>手机号</Th>
+                <Th>昵称</Th>
                 <Th>方案</Th>
                 <Th>到期</Th>
                 <Th>注册</Th>
@@ -178,6 +179,7 @@ function UserRow({ u, onOpen }: { u: AdminUserRow; onOpen: () => void }) {
         {u.phone || "—"}
         {banned && <span className="ml-2 text-2xs text-rose-500">已封禁</span>}
       </Td>
+      <Td className="text-[var(--dk-content-secondary)]">{u.name || "—"}</Td>
       <Td>
         <Badge tone={PLAN_TONE[u.plan] ?? "neutral"}>{PLAN_LABEL[u.plan] ?? u.plan}</Badge>
       </Td>
