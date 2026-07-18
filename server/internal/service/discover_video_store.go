@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
 	"github.com/faxianmao/server/internal/service/echotik"
 )
@@ -100,10 +101,16 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 		return nil, nil
 	}
 
+	// 关联商品拉失败不连坐详情:照常落库,但 products 列保留既有值(同 refreshSellerDetail)。
+	// 视频本就没挂商品(pids 为空)时 prodErr 为 nil,空列表正常覆盖。
 	pids := parseIDList(d.VideoProducts)
 	var prodsRaw []echotik.ProductDetail
+	var prodErr error
 	if len(pids) > 0 {
-		prodsRaw, _ = s.echo.GetProductDetails(ctx, pids, region)
+		if prodsRaw, prodErr = s.echo.GetProductDetails(ctx, pids, region); prodErr != nil {
+			logger.Warn("视频关联商品拉取失败,保留既有列表",
+				logger.String("videoId", videoID), logger.Err(prodErr))
+		}
 	}
 
 	toHost := make([]string, 0, len(prodsRaw)+2)
@@ -168,14 +175,18 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 
 	target := dv
 	if s.db != nil {
+		cols := []string{
+			"unique_id", "cover_url", "avatar_url", "video_desc", "duration", "create_time",
+			"user_id", "is_ad", "created_by_ai", "views7d", "views30d", "favorites",
+			"total_views", "total_digg", "total_comments", "total_shares", "total_sale_cnt", "total_gmv_cents",
+			"raw", "detail_fetched_at", "updated_at",
+		}
+		if prodErr == nil {
+			cols = append(cols, "products")
+		}
 		s.db.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
-			DoUpdates: clause.AssignmentColumns([]string{
-				"unique_id", "cover_url", "avatar_url", "video_desc", "duration", "create_time",
-				"user_id", "is_ad", "created_by_ai", "views7d", "views30d", "favorites",
-				"total_views", "total_digg", "total_comments", "total_shares", "total_sale_cnt", "total_gmv_cents",
-				"products", "raw", "detail_fetched_at", "updated_at",
-			}),
+			Columns:   []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
+			DoUpdates: clause.AssignmentColumns(cols),
 		}).Create(&dv)
 
 		var stored model.DiscoverVideo

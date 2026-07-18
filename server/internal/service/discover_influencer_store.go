@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
 	"github.com/faxianmao/server/internal/service/echotik"
 )
@@ -108,7 +109,12 @@ func (s *DiscoverService) refreshInfluencerDetail(ctx context.Context, userID, r
 	if d == nil {
 		return nil, nil
 	}
-	videos, _ := s.echo.GetInfluencerVideos(ctx, userID, region, 10)
+	// 视频列表拉失败不连坐详情:照常落库,但 videos 列保留既有值(同 refreshSellerDetail)。
+	videos, vidErr := s.echo.GetInfluencerVideos(ctx, userID, region, 10)
+	if vidErr != nil {
+		logger.Warn("达人视频列表拉取失败,保留既有列表",
+			logger.String("userId", userID), logger.Err(vidErr))
+	}
 
 	// 头像 + 视频封面永久化到 COS(详情读 DB 后不再每次签名,避免 3 天过期裂图)。
 	toHost := make([]string, 0, len(videos)+1)
@@ -180,14 +186,18 @@ func (s *DiscoverService) refreshInfluencerDetail(ctx context.Context, userID, r
 
 	target := di
 	if s.db != nil {
+		cols := []string{
+			"unique_id", "nick_name", "category", "ec_score",
+			"followers", "digg_cnt", "product_cnt", "post_video_cnt", "live_cnt", "sale_cnt", "sale_gmv_cents",
+			"avatar_url", "gender", "language", "contact_email", "signature", "interaction_rate", "followers30d", "views_cnt",
+			"raw", "list_fetched_at", "detail_fetched_at", "updated_at",
+		}
+		if vidErr == nil {
+			cols = append(cols, "videos")
+		}
 		s.db.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
-			DoUpdates: clause.AssignmentColumns([]string{
-				"unique_id", "nick_name", "category", "ec_score",
-				"followers", "digg_cnt", "product_cnt", "post_video_cnt", "live_cnt", "sale_cnt", "sale_gmv_cents",
-				"avatar_url", "gender", "language", "contact_email", "signature", "interaction_rate", "followers30d", "views_cnt",
-				"videos", "raw", "list_fetched_at", "detail_fetched_at", "updated_at",
-			}),
+			Columns:   []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
+			DoUpdates: clause.AssignmentColumns(cols),
 		}).Create(&di)
 
 		var stored model.DiscoverInfluencer
