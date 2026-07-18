@@ -183,7 +183,8 @@ func (s *DiscoverService) backfillPage(ctx context.Context, kind, region, cat st
 		}
 		if len(raw) > 0 {
 			s.upsertSellerList(ctx, region, raw)
-			s.writeEntityRanklist(ctx, boardSeller, p, sellerIDsOf(raw))
+			// 按页合并进整表条目,避免单页覆盖 prewarm 已存的更深列表(顺序表是整表模式)。
+			s.mergeEntityRanklistPage(ctx, boardSeller, p, sellerIDsOf(raw))
 		}
 		return len(raw), nil
 	case boardInfluencer:
@@ -193,7 +194,7 @@ func (s *DiscoverService) backfillPage(ctx context.Context, kind, region, cat st
 		}
 		if len(raw) > 0 {
 			s.upsertInfluencerList(ctx, region, raw)
-			s.writeEntityRanklist(ctx, boardInfluencer, p, influencerIDsOf(raw))
+			s.mergeEntityRanklistPage(ctx, boardInfluencer, p, influencerIDsOf(raw))
 		}
 		return len(raw), nil
 	case boardVideo:
@@ -203,7 +204,7 @@ func (s *DiscoverService) backfillPage(ctx context.Context, kind, region, cat st
 		}
 		if len(raw) > 0 {
 			s.upsertVideoList(ctx, region, raw)
-			s.writeEntityRanklist(ctx, boardVideo, p, videoIDsOf(raw))
+			s.mergeEntityRanklistPage(ctx, boardVideo, p, videoIDsOf(raw))
 		}
 		return len(raw), nil
 	}

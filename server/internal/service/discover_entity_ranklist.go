@@ -26,7 +26,10 @@ func strPtrOrNil(s string) *string {
 
 func gmvCentsToDollars(cents int) float64 { return float64(cents) / 100.0 }
 
-// writeEntityRanklist upsert 一条榜单顺序快照((provider,kind,region,rank_type,rank_field,category_id) 幂等)。
+// writeEntityRanklist upsert 一条榜单顺序快照:整表模式——每个
+// (provider,kind,region,rank_type,rank_field,category_id) 一条,external_ids 累积全部已拉深度,
+// 读侧 pageSlice 本地分页。page_num 固定 1,只作为唯一索引 uq_ere_pg 的键维度占位
+// (ON CONFLICT 列必须与唯一索引完全一致,少列会整条写入报错——曾静默失败,故错误必打日志)。
 func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, p echotik.RanklistParams, ids []string) {
 	if s.db == nil || len(ids) == 0 {
 		return
@@ -34,15 +37,53 @@ func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, 
 	e := model.EntityRanklistEntry{
 		Provider: providerEchoTik, Kind: kind, Region: p.Region,
 		RankType: p.RankType, RankField: p.RankField, CategoryID: p.CategoryID,
-		ExternalIDs: ids, FetchedAt: time.Now(),
+		PageNum: 1, ExternalIDs: ids, FetchedAt: time.Now(),
 	}
-	s.db.WithContext(ctx).Clauses(clause.OnConflict{
+	err := s.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{Name: "provider"}, {Name: "kind"}, {Name: "region"},
-			{Name: "rank_type"}, {Name: "rank_field"}, {Name: "category_id"},
+			{Name: "rank_type"}, {Name: "rank_field"}, {Name: "category_id"}, {Name: "page_num"},
 		},
 		DoUpdates: clause.AssignmentColumns([]string{"external_ids", "fetched_at"}),
-	}).Create(&e)
+	}).Create(&e).Error
+	if err != nil {
+		logger.Warn("实体榜顺序表写入失败",
+			logger.String("kind", kind), logger.String("region", p.Region), logger.Err(err))
+	}
+}
+
+// mergeEntityRanklistPage 把单页 ids 合并进整表条目的对应区间(页外既有顺序保留,新页覆盖同区间)。
+// 供按页粒度的 backfill 使用:避免「单页写入把 prewarm 已存的更深列表截断/覆盖」。
+func (s *DiscoverService) mergeEntityRanklistPage(ctx context.Context, kind string, p echotik.RanklistParams, ids []string) {
+	if len(ids) == 0 {
+		return
+	}
+	existing, _, _ := s.lookupRanklistIDs(ctx, kind, p)
+	start := (p.PageNum - 1) * p.PageSize
+	if start < 0 {
+		start = 0
+	}
+	merged := make([]string, 0, len(existing)+len(ids))
+	if len(existing) >= start {
+		merged = append(merged, existing[:start]...)
+	} else {
+		merged = append(merged, existing...) // 中间页有洞:直接顺接,顺序近似
+	}
+	merged = append(merged, ids...)
+	if len(existing) > start+len(ids) {
+		merged = append(merged, existing[start+len(ids):]...)
+	}
+	// 去重保序(同一实体跨页重复时留首次出现位置)。
+	seen := make(map[string]struct{}, len(merged))
+	uniq := merged[:0]
+	for _, id := range merged {
+		if _, dup := seen[id]; dup {
+			continue
+		}
+		seen[id] = struct{}{}
+		uniq = append(uniq, id)
+	}
+	s.writeEntityRanklist(ctx, kind, p, uniq)
 }
 
 // lookupRanklistIDs 读榜单顺序。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,新鲜由 job/异步补全保证。
@@ -52,7 +93,7 @@ func (s *DiscoverService) lookupRanklistIDs(ctx context.Context, kind string, p 
 	}
 	var e model.EntityRanklistEntry
 	err := s.db.WithContext(ctx).
-		Where("provider = ? AND kind = ? AND region = ? AND rank_type = ? AND rank_field = ? AND category_id = ?",
+		Where("provider = ? AND kind = ? AND region = ? AND rank_type = ? AND rank_field = ? AND category_id = ? AND page_num = 1",
 			providerEchoTik, kind, p.Region, p.RankType, p.RankField, p.CategoryID).
 		First(&e).Error
 	if err != nil || len(e.ExternalIDs) == 0 {

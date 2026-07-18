@@ -44,16 +44,18 @@ func TestValidateRejectsWrongSecret(t *testing.T) {
 	}
 }
 
-// 篡改签名段必须被拒。
+// 篡改签名段必须被拒。注意不能只动最后一个字符:base64url 末字符的低 2 位是填充位,
+// 只差填充位的替换('a'↔'b'等)解码后签名不变、校验照过——曾致此测试偶发假失败。
+// 改倒数第二个字符,其 6 位全部落在签名有效位内。
 func TestValidateRejectsTampered(t *testing.T) {
 	s := authSvc("secret", 1)
 	tok, _ := s.GenerateToken(uuid.New(), "user")
-	tampered := tok[:len(tok)-1]
-	if tok[len(tok)-1] == 'a' {
-		tampered += "b"
-	} else {
-		tampered += "a"
+	i := len(tok) - 2
+	c := byte('a')
+	if tok[i] == c {
+		c = 'b'
 	}
+	tampered := tok[:i] + string(c) + tok[i+1:]
 	if _, _, err := s.ValidateToken(tampered); err == nil {
 		t.Fatal("被篡改的令牌应校验失败")
 	}

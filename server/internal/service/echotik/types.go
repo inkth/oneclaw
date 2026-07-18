@@ -248,7 +248,8 @@ type SellerListItem struct {
 	TotalLiveCnt            int       `json:"total_live_cnt"`
 }
 
-// InfluencerListItem 达人榜行。
+// InfluencerListItem 达人榜行。注意口径:total_* 是「榜单周期增量」(文档明示),
+// _history_* 才是累计总量;搜索行(/search/items)可能没有 history 字段(解析为 0)。
 type InfluencerListItem struct {
 	UserID            string  `json:"user_id"`
 	UniqueID          string  `json:"unique_id"` // @handle
@@ -264,6 +265,39 @@ type InfluencerListItem struct {
 	TotalLiveCnt      int     `json:"total_live_cnt"`
 	TotalSaleCnt      int     `json:"total_sale_cnt"`
 	TotalSaleGmvAmt   float64 `json:"total_sale_gmv_amt"`
+
+	// 累计总量(_history_ 后缀,与 detail 口径一致)。
+	TotalFollowersHistoryCnt int     `json:"total_followers_history_cnt"`
+	TotalDiggHistoryCnt      int     `json:"total_digg_history_cnt"`
+	TotalProductHistoryCnt   int     `json:"total_product_history_cnt"`
+	TotalPostVideoHistoryCnt int     `json:"total_post_video_history_cnt"`
+	TotalLiveHistoryCnt      int     `json:"total_live_history_cnt"`
+	TotalSaleHistoryCnt      int     `json:"total_sale_history_cnt"`
+	TotalSaleGmvHistoryAmt   float64 `json:"total_sale_gmv_history_amt"`
+}
+
+// CumFollowers 等:优先取累计(_history);缺失(0,搜索行没有该字段)退 total_* ——
+// 搜索接口无榜单周期概念,其 total_* 本身即累计,退回值口径仍对。
+func (it InfluencerListItem) CumFollowers() int { return firstPos(it.TotalFollowersHistoryCnt, it.TotalFollowersCnt) }
+func (it InfluencerListItem) CumDigg() int      { return firstPos(it.TotalDiggHistoryCnt, it.TotalDiggCnt) }
+func (it InfluencerListItem) CumProduct() int   { return firstPos(it.TotalProductHistoryCnt, it.TotalProductCnt) }
+func (it InfluencerListItem) CumPostVideo() int { return firstPos(it.TotalPostVideoHistoryCnt, it.TotalPostVideoCnt) }
+func (it InfluencerListItem) CumLive() int      { return firstPos(it.TotalLiveHistoryCnt, it.TotalLiveCnt) }
+func (it InfluencerListItem) CumSale() int      { return firstPos(it.TotalSaleHistoryCnt, it.TotalSaleCnt) }
+func (it InfluencerListItem) CumSaleGmv() float64 {
+	if it.TotalSaleGmvHistoryAmt > 0 {
+		return it.TotalSaleGmvHistoryAmt
+	}
+	return it.TotalSaleGmvAmt
+}
+
+func firstPos(vals ...int) int {
+	for _, v := range vals {
+		if v > 0 {
+			return v
+		}
+	}
+	return 0
 }
 
 // VideoListItem 带货视频榜行。

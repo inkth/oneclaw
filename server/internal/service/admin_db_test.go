@@ -137,13 +137,15 @@ func TestAdminSetPlan(t *testing.T) {
 	if err := admin.SetPlan(ctx, adminID, ws.ID, "GOLD", 1, ""); err == nil {
 		t.Fatal("非法方案应报错")
 	}
-	// 降回 FREE 清有效期。
+	// 降回 FREE 清有效期。注意用新变量重查:GORM 扫描 NULL 列不会清掉
+	// 已填充 struct 的旧指针值,复用 got 会读到降级前的 plan_expires_at 假失败。
 	if err := admin.SetPlan(ctx, adminID, ws.ID, model.PlanFree, 0, "到期"); err != nil {
 		t.Fatalf("降级失败: %v", err)
 	}
-	db.First(&got, "id = ?", ws.ID)
-	if got.Plan != model.PlanFree || got.PlanExpiresAt != nil {
-		t.Fatalf("降级后应为 FREE 且无到期,得 %+v", got)
+	var after model.Workspace
+	db.First(&after, "id = ?", ws.ID)
+	if after.Plan != model.PlanFree || after.PlanExpiresAt != nil {
+		t.Fatalf("降级后应为 FREE 且无到期,得 %+v", after)
 	}
 }
 

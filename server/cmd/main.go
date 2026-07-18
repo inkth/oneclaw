@@ -46,6 +46,10 @@ func main() {
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
+	// 实体榜顺序表:旧 6 列唯一索引 uq_ere_key 必须先删,AutoMigrate 才建含 page_num 的
+	// uq_ere_pg;两个索引并存时 ON CONFLICT 目标歧义(写入按 7 列对齐 uq_ere_pg)。
+	db.Exec("DROP INDEX IF EXISTS uq_ere_key")
+
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.PhoneVerificationCode{},
