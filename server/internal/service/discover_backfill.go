@@ -76,7 +76,7 @@ func (s *DiscoverService) BackfillDiscover(ctx context.Context, kinds []string) 
 		}
 
 		// 拉该站点一级类目(也是一次 API,同样限速)。失败/空回退占位类目(已知全局 L1 集)。
-		cats, cerr := s.echo.GetCategoriesL1(ctx, region)
+		cats, cerr := s.echo.GetCategoriesL1(ctx, region, "zh-CN")
 		s.backfillSleep(ctx, backfillReqInterval)
 		if cerr != nil || len(cats) == 0 {
 			logger.Warn("[backfill] 类目拉取失败,回退占位类目",

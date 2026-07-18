@@ -53,7 +53,7 @@ func (s *DiscoverService) Categories(ctx context.Context, region string) []Categ
 	if !configured {
 		raw = echotik.FallbackCategoriesL1()
 	} else {
-		fetched, err := s.echo.GetCategoriesL1(ctx, region)
+		fetched, err := s.echo.GetCategoriesL1(ctx, region, "zh-CN")
 		if err != nil {
 			return []CategoryOption{}
 		}

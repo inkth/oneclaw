@@ -44,9 +44,10 @@ func (s *DiscoverService) searchLocalSellers(ctx context.Context, p echotik.Rank
 		ids = append(ids, r.ID)
 	}
 	sparks := s.loadSellerSparks(ctx, ids)
+	cat := s.categoryZh(ctx, p.Region)
 	out := make([]SellerDTO, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, mapSellerFromModel(r, sparks[r.ID]))
+		out = append(out, mapSellerFromModel(r, sparks[r.ID], cat))
 	}
 	return out, true
 }

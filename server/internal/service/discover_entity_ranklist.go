@@ -241,14 +241,15 @@ func (s *DiscoverService) prewarmEntityKind(ctx context.Context, kind string, p 
 
 // mapSellerFromModel 榜单/搜索行 DTO:累计值走详情权威口径(sellerAuthority,0=详情未回填),
 // 近 7 天窗口读详情回填列,spark 由调用方批量差分传入。
-func mapSellerFromModel(ds model.DiscoverSeller, spark []int) SellerDTO {
+// cat 由调用方按页取一次(词典是整页共用的,别逐行去查缓存)。
+func mapSellerFromModel(ds model.DiscoverSeller, spark []int, cat categoryZhDict) SellerDTO {
 	if spark == nil {
 		spark = []int{}
 	}
 	sale, gmvCents, ifl, _, _, crawl := sellerAuthority(&ds)
 	return SellerDTO{
 		SellerID: ds.ExternalID, SellerName: ds.SellerName, Region: ds.Region,
-		CoverURL: strPtrOrNil(ds.CoverURL), Rating: ds.Rating, Categories: parseCategories(ds.Categories),
+		CoverURL: strPtrOrNil(ds.CoverURL), Rating: ds.Rating, Categories: cat.Names(parseCategories(ds.Categories)),
 		Sale7dCnt: ds.Sale7dCnt, Gmv7dAmt: gmvCentsToDollars(ds.Gmv7dCents), Spark7d: spark,
 		TotalSaleCnt: sale, TotalSaleGmvAmt: gmvCentsToDollars(gmvCents), TotalIflCnt: ifl,
 		CrawlProductCnt: crawl,
@@ -274,10 +275,11 @@ func (s *DiscoverService) lookupSellerRanklist(ctx context.Context, p echotik.Ra
 		modelIDs = append(modelIDs, r.ID)
 	}
 	sparks := s.loadSellerSparks(ctx, modelIDs)
+	cat := s.categoryZh(ctx, p.Region)
 	out := make([]SellerDTO, 0, len(pageIDs))
 	for _, id := range pageIDs {
 		if r, ok := byID[id]; ok {
-			out = append(out, mapSellerFromModel(r, sparks[r.ID]))
+			out = append(out, mapSellerFromModel(r, sparks[r.ID], cat))
 		}
 	}
 	at := fetchedAt
@@ -299,7 +301,7 @@ func sellerIDsOf(raw []echotik.SellerListItem) []string {
 func mapInfluencerFromModel(di model.DiscoverInfluencer) InfluencerDTO {
 	return InfluencerDTO{
 		UserID: di.ExternalID, UniqueID: di.UniqueID, NickName: di.NickName, Region: di.Region,
-		AvatarURL: strPtrOrNil(di.AvatarURL), Category: di.Category, EcScore: di.EcScore,
+		AvatarURL: strPtrOrNil(di.AvatarURL), Category: zhInfluencerCategory(di.Category), EcScore: di.EcScore,
 		TotalFollowersCnt: di.Followers, TotalDiggCnt: di.DiggCnt, TotalProductCnt: di.ProductCnt,
 		TotalPostVideoCnt: di.PostVideoCnt, TotalLiveCnt: di.LiveCnt,
 		TotalSaleCnt: di.SaleCnt, TotalSaleGmvAmt: gmvCentsToDollars(di.SaleGmvCents),

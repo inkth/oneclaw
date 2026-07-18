@@ -40,7 +40,7 @@ func (s *DiscoverService) BackfillAllEntities(ctx context.Context) (fetched, ski
 		if ctx.Err() != nil {
 			return fetched, skipped, ctx.Err()
 		}
-		cats, cerr := s.echo.GetCategoriesL1(ctx, region)
+		cats, cerr := s.echo.GetCategoriesL1(ctx, region, "zh-CN")
 		s.backfillSleep(ctx, backfillReqInterval)
 		if cerr != nil || len(cats) == 0 {
 			logger.Warn("[backfill-entities] 类目拉取失败,回退占位类目",
