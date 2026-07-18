@@ -16,6 +16,8 @@ import (
 // upsertInfluencerList 把达人榜行落库(列表级,头像 rehost 到 COS 永久化)并写当日累计快照。
 // 供定时任务/榜单冷启动调用。列表 upsert 只更新榜单字段 + 头像,绝不碰其余详情字段
 // (gender/signature/videos/interaction_rate 等)与 detail_fetched_at;头像仅在 rehost 成功时更新,不清空既有。
+// 口径:榜单行 total_* 是「榜单周期增量」,主表列与快照一律用 _history_ 累计值(Cum* 取值,
+// 与 detail 口径一致;搜索行没有 history 字段时退 total_*——搜索无周期概念,其值本身即累计)。
 func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region string, raw []echotik.InfluencerListItem) {
 	if s.db == nil || len(raw) == 0 {
 		return
@@ -31,6 +33,7 @@ func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region strin
 			if it.UserID == "" {
 				continue
 			}
+			cumGmvCents := echotik.DollarsToCents(it.CumSaleGmv())
 			di := model.DiscoverInfluencer{
 				Provider:      providerEchoTik,
 				ExternalID:    it.UserID,
@@ -39,25 +42,24 @@ func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region strin
 				NickName:      it.NickName,
 				Category:      it.Category,
 				EcScore:       it.EcScore,
-				Followers:     it.TotalFollowersCnt,
-				DiggCnt:       it.TotalDiggCnt,
-				ProductCnt:    it.TotalProductCnt,
-				PostVideoCnt:  it.TotalPostVideoCnt,
-				LiveCnt:       it.TotalLiveCnt,
-				SaleCnt:       it.TotalSaleCnt,
-				SaleGmvCents:  echotik.DollarsToCents(it.TotalSaleGmvAmt),
+				Followers:     it.CumFollowers(),
+				DiggCnt:       it.CumDigg(),
+				ProductCnt:    it.CumProduct(),
+				PostVideoCnt:  it.CumPostVideo(),
+				LiveCnt:       it.CumLive(),
+				SaleCnt:       it.CumSale(),
+				SaleGmvCents:  cumGmvCents,
 				ListFetchedAt: time.Now(),
 			}
 			cols := []string{
 				"unique_id", "nick_name", "category", "ec_score",
-				"sale_cnt", "sale_gmv_cents", "list_fetched_at", "updated_at",
+				"list_fetched_at", "updated_at",
 			}
-			// 带货榜(influencer_rank_field=2)行的粉丝/互动/产出数可能缺失(0):
-			// 0 视为缺失,不覆盖详情/粉丝榜已积累的非零值。
+			// 部分行的个别指标可能缺失(0):0 视为缺失,不覆盖详情/其他榜已积累的非零值。
 			for col, v := range map[string]int{
-				"followers": it.TotalFollowersCnt, "digg_cnt": it.TotalDiggCnt,
-				"product_cnt": it.TotalProductCnt, "post_video_cnt": it.TotalPostVideoCnt,
-				"live_cnt": it.TotalLiveCnt,
+				"followers": di.Followers, "digg_cnt": di.DiggCnt,
+				"product_cnt": di.ProductCnt, "post_video_cnt": di.PostVideoCnt,
+				"live_cnt": di.LiveCnt, "sale_cnt": di.SaleCnt, "sale_gmv_cents": di.SaleGmvCents,
 			} {
 				if v > 0 {
 					cols = append(cols, col)
@@ -72,6 +74,11 @@ func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region strin
 				DoUpdates: clause.AssignmentColumns(cols),
 			}).Create(&di)
 
+			// 快照只在拿到确凿累计口径(history 有值)时写:搜索行缺 history 时跳过,
+			// 防止任何非累计值混入差分序列(混入会毁趋势)。
+			if it.TotalSaleHistoryCnt <= 0 && it.TotalSaleGmvHistoryAmt <= 0 && it.TotalFollowersHistoryCnt <= 0 {
+				continue
+			}
 			var stored model.DiscoverInfluencer
 			if err := tx.Where("provider = ? AND external_id = ? AND region = ?",
 				providerEchoTik, it.UserID, region).First(&stored).Error; err != nil {
@@ -80,7 +87,7 @@ func (s *DiscoverService) upsertInfluencerList(ctx context.Context, region strin
 			// 快照 followers 取 upsert 后的主表值:榜单行有值即新值,缺失(0)沿用旧值,避免趋势假 0。
 			snap := model.DiscoverInfluencerSnapshot{
 				DiscoverInfluencerID: stored.ID, Dt: today,
-				Followers: stored.Followers, SaleCnt: it.TotalSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalSaleGmvAmt),
+				Followers: stored.Followers, SaleCnt: it.TotalSaleHistoryCnt, GmvCents: echotik.DollarsToCents(it.TotalSaleGmvHistoryAmt),
 			}
 			tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "discover_influencer_id"}, {Name: "dt"}},

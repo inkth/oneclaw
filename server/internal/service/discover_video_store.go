@@ -12,8 +12,10 @@ import (
 	"github.com/faxianmao/server/internal/service/echotik"
 )
 
-// upsertVideoList 把视频榜行落库(列表级,封面/头像 rehost 到 COS 永久化)并写当日累计快照。
+// upsertVideoList 把视频榜行落库(列表级,封面/头像 rehost 到 COS 永久化)。
 // 供定时任务/榜单冷启动调用。封面/头像仅在 rehost 成功时更新,不清空既有;不碰 user_id/products 等详情字段。
+// 注意:榜单行的 views/sale 等按 EchoTik 文档是「榜单周期增量」而非累计,
+// 故不在此写累计快照(快照只收详情路径的累计值,混入周期增量会毁差分趋势)。
 func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, raw []echotik.VideoListItem) {
 	if s.db == nil || len(raw) == 0 {
 		return
@@ -23,7 +25,6 @@ func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, ra
 		imgs = append(imgs, it.ReflowCover, it.Avatar)
 	}
 	hosted := s.rehostCovers(ctx, imgs)
-	today := time.Now().Format("2006-01-02")
 	var transJobs []translateJob
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, it := range raw {
@@ -83,15 +84,6 @@ func (s *DiscoverService) upsertVideoList(ctx context.Context, region string, ra
 			if stored.DescZh == "" && stored.Desc != "" {
 				transJobs = append(transJobs, translateJob{Table: "discover_videos", Column: "desc_zh", ID: stored.ID, Text: stored.Desc})
 			}
-			// 快照 views 取 upsert 后的主表值:榜单行有值即新值,缺失(0)沿用旧值,避免趋势里出现假 0。
-			snap := model.DiscoverVideoSnapshot{
-				DiscoverVideoID: stored.ID, Dt: today,
-				Views: stored.Views, SaleCnt: it.TotalVideoSaleCnt, GmvCents: echotik.DollarsToCents(it.TotalVideoSaleGmvAmt),
-			}
-			tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "discover_video_id"}, {Name: "dt"}},
-				DoUpdates: clause.AssignmentColumns([]string{"views", "sale_cnt", "gmv_cents"}),
-			}).Create(&snap)
 		}
 		return nil
 	})
@@ -146,6 +138,7 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 
 	prodsJSON, _ := json.Marshal(prods)
 	rawJSON, _ := json.Marshal(d)
+	// 只写详情口径字段:views/sale_cnt 等列表列留给榜单路径(周期增量口径),两边不互踩。
 	dv := model.DiscoverVideo{
 		Provider:        providerEchoTik,
 		ExternalID:      d.VideoID,
@@ -156,21 +149,20 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 		Desc:            d.VideoDesc,
 		Duration:        d.Duration.Int(),
 		CreateTime:      string(d.CreateTime),
-		Views:           d.TotalViewsCnt.Int(),
-		Digg:            d.TotalDiggCnt.Int(),
-		Comments:        d.TotalCommentsCnt.Int(),
-		Shares:          d.TotalSharesCnt.Int(),
-		SaleCnt:         d.TotalVideoSaleCnt.Int(),
-		SaleGmvCents:    echotik.DollarsToCents(d.TotalVideoSaleGmv.Float()),
 		UserID:          d.UserID,
 		IsAd:            d.IsAd.Int() == 1,
 		CreatedByAI:     string(d.CreatedByAI) == "true" || string(d.CreatedByAI) == "1",
 		Views7d:         d.TotalViews7dCnt.Int(),
 		Views30d:        d.TotalViews30dCnt.Int(),
 		Favorites:       d.TotalFavoritesCnt.Int(),
+		TotalViews:      d.TotalViewsCnt.Int(),
+		TotalDigg:       d.TotalDiggCnt.Int(),
+		TotalComments:   d.TotalCommentsCnt.Int(),
+		TotalShares:     d.TotalSharesCnt.Int(),
+		TotalSaleCnt:    d.TotalVideoSaleCnt.Int(),
+		TotalGmvCents:   echotik.DollarsToCents(d.TotalVideoSaleGmv.Float()),
 		Products:        model.JSONB(prodsJSON),
 		Raw:             model.JSONB(rawJSON),
-		ListFetchedAt:   time.Now(),
 		DetailFetchedAt: time.Now(),
 	}
 
@@ -180,9 +172,9 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 			Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"unique_id", "cover_url", "avatar_url", "video_desc", "duration", "create_time",
-				"views", "digg", "comments", "shares", "sale_cnt", "sale_gmv_cents",
 				"user_id", "is_ad", "created_by_ai", "views7d", "views30d", "favorites",
-				"products", "raw", "list_fetched_at", "detail_fetched_at", "updated_at",
+				"total_views", "total_digg", "total_comments", "total_shares", "total_sale_cnt", "total_gmv_cents",
+				"products", "raw", "detail_fetched_at", "updated_at",
 			}),
 		}).Create(&dv)
 
@@ -196,7 +188,7 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 			today := time.Now().Format("2006-01-02")
 			snap := model.DiscoverVideoSnapshot{
 				DiscoverVideoID: stored.ID, Dt: today,
-				Views: dv.Views, SaleCnt: dv.SaleCnt, GmvCents: dv.SaleGmvCents,
+				Views: dv.TotalViews, SaleCnt: dv.TotalSaleCnt, GmvCents: dv.TotalGmvCents, // 累计口径,供差分趋势
 			}
 			s.db.WithContext(ctx).Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "discover_video_id"}, {Name: "dt"}},
@@ -207,8 +199,32 @@ func (s *DiscoverService) refreshVideoDetail(ctx context.Context, videoID, regio
 	return videoDTOFromModel(&target), nil
 }
 
+// videoAuthority 返回视频详情口径的累计权威值(播放/点赞/评论/分享/销量/GMV)。
+// 新列全 0 且 raw 里有详情整包时兜底解析(迁移前已拉过详情的旧行读时自愈,不写库)。
+func videoAuthority(dv *model.DiscoverVideo) (views, digg, comments, shares, sale, gmvCents int) {
+	views, digg, comments = dv.TotalViews, dv.TotalDigg, dv.TotalComments
+	shares, sale, gmvCents = dv.TotalShares, dv.TotalSaleCnt, dv.TotalGmvCents
+	if views > 0 || sale > 0 || len(dv.Raw) == 0 {
+		return
+	}
+	var d echotik.VideoDetail
+	if json.Unmarshal(dv.Raw, &d) != nil {
+		return
+	}
+	views, digg, comments = d.TotalViewsCnt.Int(), d.TotalDiggCnt.Int(), d.TotalCommentsCnt.Int()
+	shares, sale = d.TotalSharesCnt.Int(), d.TotalVideoSaleCnt.Int()
+	gmvCents = echotik.DollarsToCents(d.TotalVideoSaleGmv.Float())
+	return
+}
+
 // videoDTOFromModel 用 DB 行(含 Products JSONB)组装详情 DTO,零 API。视频详情当前不含趋势。
+// 累计指标走详情权威口径;从未拉过详情的行退榜单周期值(口径偏小,SWR 会马上补详情)。
 func videoDTOFromModel(dv *model.DiscoverVideo) *VideoDetailDTO {
+	views, digg, comments, shares, sale, gmvCents := videoAuthority(dv)
+	if views == 0 && sale == 0 {
+		views, digg, comments = dv.Views, dv.Digg, dv.Comments
+		shares, sale, gmvCents = dv.Shares, dv.SaleCnt, dv.SaleGmvCents
+	}
 	return &VideoDetailDTO{
 		VideoID:      dv.ExternalID,
 		UserID:       dv.UserID,
@@ -222,15 +238,15 @@ func videoDTOFromModel(dv *model.DiscoverVideo) *VideoDetailDTO {
 		CreateTime:   dv.CreateTime,
 		IsAd:         dv.IsAd,
 		CreatedByAI:  dv.CreatedByAI,
-		Views:        dv.Views,
+		Views:        views,
 		Views7d:      dv.Views7d,
 		Views30d:     dv.Views30d,
-		Digg:         dv.Digg,
-		Comments:     dv.Comments,
-		Shares:       dv.Shares,
+		Digg:         digg,
+		Comments:     comments,
+		Shares:       shares,
 		Favorites:    dv.Favorites,
-		SaleCnt:      dv.SaleCnt,
-		SaleGmvCents: dv.SaleGmvCents,
+		SaleCnt:      sale,
+		SaleGmvCents: gmvCents,
 		Products:     parseEntityProducts(dv.Products),
 		VideoURL:     dv.VideoURL,
 		Analysis:     dv.Analysis,

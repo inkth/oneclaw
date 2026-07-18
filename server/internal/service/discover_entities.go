@@ -112,20 +112,6 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 	return &EntityRanklistResult[InfluencerDTO]{State: "cached", Warming: true, Rows: []InfluencerDTO{}}
 }
 
-// signMapInfluencers 签头像 + 映射 DTO(榜单 / 搜索共用)。
-func (s *DiscoverService) signMapInfluencers(ctx context.Context, raw []echotik.InfluencerListItem) []InfluencerDTO {
-	imgs := make([]string, 0, len(raw))
-	for _, it := range raw {
-		imgs = append(imgs, it.Avatar)
-	}
-	signed := s.echo.SignCovers(ctx, imgs)
-	rows := make([]InfluencerDTO, 0, len(raw))
-	for _, it := range raw {
-		rows = append(rows, mapInfluencer(it, signed))
-	}
-	return rows
-}
-
 // VideoRanklist 带货视频榜:读路径**零同步 EchoTik**(同 SellerRanklist)。
 func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[VideoDTO] {
 	if p.PageSize <= 0 {
@@ -143,20 +129,6 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 	}
 	s.warmEntityRanklist(ctx, "video", p, defaultRanklistDepth)
 	return &EntityRanklistResult[VideoDTO]{State: "cached", Warming: true, Rows: []VideoDTO{}}
-}
-
-// signMapVideos 签封面/头像 + 映射 DTO(榜单 / 搜索共用)。
-func (s *DiscoverService) signMapVideos(ctx context.Context, raw []echotik.VideoListItem) []VideoDTO {
-	imgs := make([]string, 0, len(raw)*2)
-	for _, it := range raw {
-		imgs = append(imgs, it.ReflowCover, it.Avatar)
-	}
-	signed := s.echo.SignCovers(ctx, imgs)
-	rows := make([]VideoDTO, 0, len(raw))
-	for _, it := range raw {
-		rows = append(rows, mapVideo(it, signed))
-	}
-	return rows
 }
 
 // PrewarmEntities 供定时任务/回填预热实体榜:强制拉取前 pages 页并累积落库
@@ -182,46 +154,6 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 		}
 	}
 	return firstErr
-}
-
-func mapInfluencer(it echotik.InfluencerListItem, signed map[string]string) InfluencerDTO {
-	return InfluencerDTO{
-		UserID:            it.UserID,
-		UniqueID:          it.UniqueID,
-		NickName:          it.NickName,
-		Region:            it.Region,
-		AvatarURL:         signedURL(it.Avatar, signed),
-		Category:          it.Category,
-		EcScore:           it.EcScore,
-		TotalFollowersCnt: it.TotalFollowersCnt,
-		TotalDiggCnt:      it.TotalDiggCnt,
-		TotalProductCnt:   it.TotalProductCnt,
-		TotalPostVideoCnt: it.TotalPostVideoCnt,
-		TotalLiveCnt:      it.TotalLiveCnt,
-		TotalSaleCnt:      it.TotalSaleCnt,
-		TotalSaleGmvAmt:   it.TotalSaleGmvAmt,
-	}
-}
-
-func mapVideo(it echotik.VideoListItem, signed map[string]string) VideoDTO {
-	return VideoDTO{
-		VideoID:              it.VideoID,
-		NickName:             it.NickName,
-		UniqueID:             it.UniqueID,
-		Region:               it.Region,
-		CoverURL:             signedURL(it.ReflowCover, signed),
-		AvatarURL:            signedURL(it.Avatar, signed),
-		Desc:                 it.VideoDesc,
-		Category:             it.Category,
-		Duration:             it.Duration,
-		CreateTime:           string(it.CreateTime),
-		TotalViewsCnt:        it.TotalViewsCnt,
-		TotalDiggCnt:         it.TotalDiggCnt,
-		TotalCommentsCnt:     it.TotalCommentsCnt,
-		TotalSharesCnt:       it.TotalSharesCnt,
-		TotalVideoSaleCnt:    it.TotalVideoSaleCnt,
-		TotalVideoSaleGmvAmt: it.TotalVideoSaleGmvAmt,
-	}
 }
 
 // signedURL 把原始防盗链 URL 换成签名后的;签名缺失(非 TOS host)返回 nil → 前端走占位图。

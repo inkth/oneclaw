@@ -369,8 +369,16 @@ type DiscoverVideo struct {
 	Views7d     int    `gorm:"column:views7d;default:0" json:"views7d"`
 	Views30d    int    `gorm:"column:views30d;default:0" json:"views30d"`
 	Favorites   int    `gorm:"default:0" json:"favorites"`
-	Products    JSONB  `gorm:"type:jsonb" json:"-"` // []EntityProductDTO 带货商品
-	Raw         JSONB  `gorm:"type:jsonb" json:"-"`
+	// 累计权威值(video/detail 口径)。榜单行的 views 等按 EchoTik 文档是「榜单周期增量」,
+	// 与累计不能混写一列(同 DiscoverSeller 的 total_* 分列);0=未拉过详情。
+	TotalViews    int   `gorm:"column:total_views;default:0" json:"totalViews"`
+	TotalDigg     int   `gorm:"column:total_digg;default:0" json:"totalDigg"`
+	TotalComments int   `gorm:"column:total_comments;default:0" json:"totalComments"`
+	TotalShares   int   `gorm:"column:total_shares;default:0" json:"totalShares"`
+	TotalSaleCnt  int   `gorm:"column:total_sale_cnt;default:0" json:"totalSaleCnt"`
+	TotalGmvCents int   `gorm:"column:total_gmv_cents;default:0" json:"totalGmvCents"`
+	Products      JSONB `gorm:"type:jsonb" json:"-"` // []EntityProductDTO 带货商品
+	Raw           JSONB `gorm:"type:jsonb" json:"-"`
 
 	// ── 爆款永久化 + AI 拆解(sale_cnt>阈值 的热门视频后台预计算,见 discover_video_pipeline.go)──
 	VideoURL         string    `gorm:"column:video_url;type:text;default:''" json:"videoUrl"` // 无水印 mp4 转存 COS 永久地址;空=未转存

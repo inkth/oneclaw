@@ -96,7 +96,13 @@ export function VideosClient({
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {videos.map((v, idx) => (
-            <VideoCard key={v.videoId} rank={idx + 1} video={v} />
+            <VideoCard
+              key={v.videoId}
+              rank={idx + 1}
+              video={v}
+              // 榜单行数值是「榜单周期增量」(EchoTik 口径),标签按周期如实标注;搜索行为累计,不带周期。
+              periodLabel={searching ? "" : (PERIOD_LABEL[rankType] ?? "")}
+            />
           ))}
         </div>
       )}
@@ -106,7 +112,10 @@ export function VideosClient({
   );
 }
 
-function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
+// 天/周/月榜的数值周期前缀(rank_type 1/2/3)。
+const PERIOD_LABEL: Record<number, string> = { 1: "近1天", 2: "近7天", 3: "近30天" };
+
+function VideoCard({ rank, video: v, periodLabel = "" }: { rank: number; video: Video; periodLabel?: string }) {
   return (
     <Link
       href={`/app/discover/videos/${v.videoId}?region=${v.region}`}
@@ -144,7 +153,10 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
           {fmtDuration(v.duration)}
         </span>
         {v.totalViewsCnt > 0 && (
-          <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white">
+          <span
+            className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white"
+            title={`${periodLabel}播放`}
+          >
             <Eye className="h-2.5 w-2.5" />
             {fmt(v.totalViewsCnt)}
           </span>
@@ -166,19 +178,19 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
         {/* 带货榜行上游不回填播放/互动数（0=缺失），全 0 时整行不渲染，避免看着像坏数据。 */}
         {(v.totalDiggCnt > 0 || v.totalCommentsCnt > 0 || v.totalSharesCnt > 0) && (
           <div className="grid grid-cols-3 gap-1 text-2xs text-zinc-500">
-            <Metric icon={<Heart className="h-2.5 w-2.5" />} value={fmt(v.totalDiggCnt)} />
-            <Metric icon={<MessageCircle className="h-2.5 w-2.5" />} value={fmt(v.totalCommentsCnt)} />
-            <Metric icon={<Share2 className="h-2.5 w-2.5" />} value={fmt(v.totalSharesCnt)} />
+            <Metric icon={<Heart className="h-2.5 w-2.5" />} value={fmt(v.totalDiggCnt)} title={`${periodLabel}点赞`} />
+            <Metric icon={<MessageCircle className="h-2.5 w-2.5" />} value={fmt(v.totalCommentsCnt)} title={`${periodLabel}评论`} />
+            <Metric icon={<Share2 className="h-2.5 w-2.5" />} value={fmt(v.totalSharesCnt)} title={`${periodLabel}分享`} />
           </div>
         )}
 
         <div className="mt-auto flex items-center justify-between rounded-lg bg-[var(--dk-surface-2)] px-2 py-1.5">
           <div>
-            <div className="text-2xs uppercase tracking-wider text-zinc-400">带货销量</div>
+            <div className="text-2xs uppercase tracking-wider text-zinc-400">{periodLabel ? `${periodLabel}销量` : "带货销量"}</div>
             <div className="text-xs font-semibold tabular-nums text-zinc-900">{fmt(v.totalVideoSaleCnt)}</div>
           </div>
           <div className="text-right">
-            <div className="text-2xs uppercase tracking-wider text-zinc-400">带货 GMV</div>
+            <div className="text-2xs uppercase tracking-wider text-zinc-400">{periodLabel ? `${periodLabel} GMV` : "带货 GMV"}</div>
             <div className="text-xs font-semibold tabular-nums text-emerald-700">{fmtMoney(v.totalVideoSaleGmvAmt)}</div>
           </div>
         </div>
@@ -188,9 +200,9 @@ function VideoCard({ rank, video: v }: { rank: number; video: Video }) {
   );
 }
 
-function Metric({ icon, value }: { icon: React.ReactNode; value: string }) {
+function Metric({ icon, value, title }: { icon: React.ReactNode; value: string; title?: string }) {
   return (
-    <span className="inline-flex items-center gap-0.5 tabular-nums">
+    <span className="inline-flex items-center gap-0.5 tabular-nums" title={title}>
       {icon}
       {value}
     </span>

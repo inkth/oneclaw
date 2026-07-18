@@ -149,6 +149,8 @@ func TestBackfillSellerReadPath(t *testing.T) {
 				})
 			}
 			writeEnv(w, out)
+		case "/echotik/seller/detail":
+			writeEnv(w, []echotik.SellerDetail{}) // 详情回填钩子:回空即可,不在本测试范围
 		case "/echotik/batch/cover/download":
 			writeEnv(w, []map[string]string{}) // 无封面签名,避免噪声
 		default:
@@ -170,9 +172,9 @@ func TestBackfillSellerReadPath(t *testing.T) {
 		t.Errorf("店铺主表行数=%d, 期望 20", sellers)
 	}
 
-	// 顺序表:全部类目("") + 类目(601152) 各 1 个前端页 = 2 条(各 20 id)。
+	// 顺序表整表模式:全部类目("") + 类目(601152) 各 1 条(page_num 恒 1,ids 累积全深度)。
 	var entries int64
-	db.Model(&model.EntityRanklistEntry{}).Where("kind = ? AND region = ?", boardSeller, "US").Count(&entries)
+	db.Model(&model.EntityRanklistEntry{}).Where("kind = ? AND region = ? AND page_num = 1", boardSeller, "US").Count(&entries)
 	if entries != 2 {
 		t.Errorf("顺序表条数=%d, 期望 2", entries)
 	}
@@ -185,14 +187,22 @@ func TestBackfillSellerReadPath(t *testing.T) {
 	if r1 := svc.SellerRanklist(context.Background(), p); r1.State != "cached" || len(r1.Rows) != 20 {
 		t.Errorf("类目第1页 state=%q rows=%d, 期望 cached/20", r1.State, len(r1.Rows))
 	}
-	// 第 2 页未回填:首访 live(前端页 2 → EchoTik 页 3+4 = 3 条,与第 1 页零重叠)
-	// 并落顺序表,再访命中本地。
+	// 第 2 页超出已存深度:读路径零同步 EchoTik——首访返回空 + warming(后台异步补全)。
 	p.PageNum = 2
-	if r2 := svc.SellerRanklist(context.Background(), p); r2.State != "live" || len(r2.Rows) != 3 {
-		t.Errorf("类目第2页首访 state=%q rows=%d, 期望 live/3", r2.State, len(r2.Rows))
+	if r2 := svc.SellerRanklist(context.Background(), p); r2.State != "cached" || len(r2.Rows) != 0 || !r2.Warming {
+		t.Errorf("类目第2页首访 state=%q rows=%d warming=%v, 期望 cached/0/true", r2.State, len(r2.Rows), r2.Warming)
+	}
+	// 确定性地模拟异步补全:同步拉深 2 个前端页(页 2 → EchoTik 页 3+4 = 3 条,与页 1 零重叠)。
+	if err := svc.prewarmEntityKind(context.Background(), boardSeller, p, 2); err != nil {
+		t.Fatalf("拉深失败: %v", err)
 	}
 	if r2b := svc.SellerRanklist(context.Background(), p); r2b.State != "cached" || len(r2b.Rows) != 3 {
-		t.Errorf("类目第2页再访 state=%q rows=%d, 期望 cached/3", r2b.State, len(r2b.Rows))
+		t.Errorf("类目第2页补全后 state=%q rows=%d, 期望 cached/3", r2b.State, len(r2b.Rows))
+	}
+	// 拉深整表覆盖后,第 1 页仍完整(mergeEntityRanklistPage/writeEntityRanklist 不截断)。
+	p.PageNum = 1
+	if r1b := svc.SellerRanklist(context.Background(), p); r1b.State != "cached" || len(r1b.Rows) != 20 {
+		t.Errorf("拉深后类目第1页 state=%q rows=%d, 期望 cached/20", r1b.State, len(r1b.Rows))
 	}
 }
 
