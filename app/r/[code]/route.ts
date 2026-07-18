@@ -16,13 +16,16 @@ export async function GET(
   context: { params: Promise<{ code: string }> },
 ) {
   const { code } = await context.params;
+  const forwardedHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  const publicOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : request.url;
   const hasSession = request.cookies.has(SESSION_COOKIE);
   const existingToken = request.cookies.get(REFERRAL_COOKIE)?.value ?? "";
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
 
   // 已登录用户不是新客，不计推广访问，也不保留归因 Cookie。
   if (hasSession) {
-    const response = NextResponse.redirect(new URL("/app", request.url), 302);
+    const response = NextResponse.redirect(new URL("/app", publicOrigin), 302);
     response.cookies.set({
       name: REFERRAL_COOKIE,
       value: "",
@@ -64,7 +67,7 @@ export async function GET(
     // 跟踪异常不能阻断正常登录。
   }
 
-  const targetUrl = new URL("/login", request.url);
+  const targetUrl = new URL("/login", publicOrigin);
   targetUrl.searchParams.set("callbackUrl", "/app");
   if (result?.valid && result.inviteCode) {
     targetUrl.searchParams.set("invite", result.inviteCode);
