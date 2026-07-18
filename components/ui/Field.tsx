@@ -12,7 +12,9 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
 }
 
 export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(control, "resize-none py-2.5 leading-relaxed", className)} {...props} />;
+  // leading-relaxed 排在 className 之后：调用方传字号（text-sm 等）会连带覆盖行高，
+  // twMerge 把靠前的 leading-* 判成被覆盖删掉，行距会塌回紧排。
+  return <textarea className={cn(control, "resize-none py-2.5", className, "leading-relaxed")} {...props} />;
 }
 
 export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {

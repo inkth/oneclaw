@@ -232,8 +232,10 @@ html { scroll-behavior: smooth; }
   font-weight: 600;
   color: var(--ink);
 }
-/* 中文正文行高补偿：段落更舒展透气 */
-.text-cjk-relaxed {
+/* 中文正文行高补偿：段落更舒展透气。
+   注意别改回 text-* 前缀：它只设行高/字距，但 twMerge 会按前缀把它判进 text-color 组，
+   在 cn() 里与真正的文字颜色互相吞掉（历史上 SectionHeading 的次级灰就是这么丢的）。 */
+.cjk-relaxed {
   line-height: 1.75;
   letter-spacing: 0.01em;
 }

@@ -138,7 +138,7 @@ export function HomeHero() {
             </h1>
           </div>
 
-          <p className="max-w-xl border-l-2 border-brand-400 pl-4 text-sm text-zinc-600 text-cjk-relaxed sm:pl-5 sm:text-base lg:mb-1 lg:text-lg">
+          <p className="max-w-xl border-l-2 border-brand-400 pl-4 text-sm text-zinc-600 cjk-relaxed sm:pl-5 sm:text-base lg:mb-1 lg:text-lg">
             从真实榜单里找机会，再让 AI 帮你选品、做视频、写 Listing、复盘投放。
             <br className="hidden sm:block" />
             每一步都有结果，下一步接着用。

@@ -33,7 +33,8 @@ export function SectionHeading({
       {description && (
         <p
           className={cn(
-            "max-w-2xl text-base leading-relaxed text-[var(--dk-content-secondary)] text-cjk-relaxed",
+            // 行高由 cjk-relaxed（1.75）接管，不再叠 leading-relaxed
+            "max-w-2xl text-base cjk-relaxed text-[var(--dk-content-secondary)]",
             align === "center" && "mx-auto"
           )}
         >

@@ -65,7 +65,7 @@ export function Chain() {
           </div>
           <div>
             <h2 className="text-display-sm">从发现机会，到做出结果</h2>
-            <p className="mt-4 max-w-2xl text-base text-zinc-600 text-cjk-relaxed">
+            <p className="mt-4 max-w-2xl text-base text-zinc-600 cjk-relaxed">
               发现猫把选品、内容、Listing 和复盘连在一起，
               上一步的结果可以直接交给下一位 Agent 继续做。
             </p>

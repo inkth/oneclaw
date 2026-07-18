@@ -19,6 +19,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { Markdown } from "@/components/ui/Markdown";
 import { CreditCost } from "@/components/ui/CreditCost";
 import { CREDIT_COST } from "@/lib/credits";
 import {
@@ -106,6 +107,13 @@ const ACTIVE_STATUSES = new Set(["QUEUED", "RUNNING"]);
 const OUTPUT_COLLAPSE_LIMIT = 600;
 
 /**
+ * 正文按 Markdown 渲染的 Agent 白名单。
+ * 只有 ADVISOR 是"长篇自然语言回答"（会用小标题/清单讲流程），后端 prompt 已放开 markdown。
+ * ANALYST 是 300 字内短判断、DIRECTOR 是口播脚本原文，都按纯文本呈现更干净。
+ */
+const MARKDOWN_AGENTS = new Set(["ADVISOR"]);
+
+/**
  * 会话流：每次派活 = 右侧用户气泡（指令）+ 左侧 Agent 气泡（状态/结果）。
  * 新任务在最上方紧贴输入框，执行中实时显示进度，完成后结果就地展开;
  * 所有 Agent 统一落任务表，复盘（REVIEW）从 metadata.review 还原仪表盘。
@@ -155,7 +163,8 @@ export function TaskStream({
 function UserBubble({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[85%] rounded-lg rounded-br-md bg-[var(--dk-btn-black)] px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+      {/* 用户原文不渲染 markdown（那是他自己敲的字），但换行要保留 */}
+      <div className="max-w-[85%] whitespace-pre-wrap rounded-lg rounded-br-md bg-[var(--dk-btn-black)] px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
         {children}
       </div>
     </div>
@@ -305,7 +314,12 @@ function TaskBubble({
   const active = ACTIVE_STATUSES.has(t.status);
   const output = t.output ?? "";
   const long = output.length > OUTPUT_COLLAPSE_LIMIT;
-  const shown = !long || expanded ? output : output.slice(0, OUTPUT_COLLAPSE_LIMIT) + "…";
+  const asMarkdown = MARKDOWN_AGENTS.has(t.agent);
+  // markdown 不能按字符截断（会切在 ** 中间或表格半行上），折叠改为限高 + 渐隐遮罩，内容始终完整。
+  const shown = asMarkdown || !long || expanded
+    ? output
+    : output.slice(0, OUTPUT_COLLAPSE_LIMIT) + "…";
+  const clamped = asMarkdown && long && !expanded;
 
   // LISTING 结果有结构化 metadata 时用卡片组渲染（可逐区复制/确认出主图），不再铺纯文本。
   const isListing = t.agent === "LISTING" && t.status === "DONE" && !!t.metadata?.title;
@@ -546,9 +560,18 @@ function TaskBubble({
           <VideoAnalysisResult data={t.metadata} />
         ) : (
           <>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-900">
-              {shown || "(无输出)"}
-            </div>
+            {asMarkdown && shown ? (
+              <div className={clamped ? "relative max-h-72 overflow-hidden" : undefined}>
+                <Markdown className="text-sm text-zinc-900">{shown}</Markdown>
+                {clamped && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-[var(--dk-surface)]" />
+                )}
+              </div>
+            ) : (
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-900">
+                {shown || "(无输出)"}
+              </div>
+            )}
             {long && (
               <button
                 onClick={() => setExpanded((v) => !v)}
