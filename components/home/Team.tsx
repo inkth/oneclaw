@@ -40,7 +40,7 @@ export function Team() {
           </div>
           <div>
             <h2 className="text-display-sm text-white">不是四个工具，是一支共享上下文的团队</h2>
-            <p className="mt-4 max-w-2xl text-base text-zinc-400 text-cjk-relaxed">
+            <p className="mt-4 max-w-2xl text-base text-zinc-400 cjk-relaxed">
               每位 Agent 都接着上一位的产物继续工作。你只说一次目标，整条链路围绕同一件商品向前推进。
             </p>
           </div>

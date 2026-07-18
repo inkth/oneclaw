@@ -132,7 +132,7 @@ export default function PricingPage() {
             <h1 className="mt-6 text-display-sm">
               选品数据永久免费，AI 按需付费
             </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-sm text-zinc-600 text-cjk-relaxed sm:text-base">
+            <p className="mx-auto mt-4 max-w-2xl text-sm text-zinc-600 cjk-relaxed sm:text-base">
               商品、店铺、达人、视频榜单与市场数据均可免费浏览；
               只有调用 Agent 分析、出片或出图时才消耗积分。
               套餐区别仅在 AI 积分额度、用量结算和服务支持。

@@ -89,7 +89,13 @@ export const ComposerTextarea = forwardRef<
   HTMLTextAreaElement,
   TextareaHTMLAttributes<HTMLTextAreaElement> & VariantProps<typeof textareaStyles>
 >(({ variant, className, ...props }, ref) => (
-  <textarea ref={ref} className={cn(textareaStyles({ variant }), className)} {...props} />
+  // 四个 variant 都是 leading-relaxed，统一补在 className 之后：
+  // 调用方传字号会让 twMerge 删掉靠前的 leading-*，行距塌回紧排。
+  <textarea
+    ref={ref}
+    className={cn(textareaStyles({ variant }), className, "leading-relaxed")}
+    {...props}
+  />
 ));
 ComposerTextarea.displayName = "ComposerTextarea";
 
