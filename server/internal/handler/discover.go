@@ -105,6 +105,26 @@ func (h *DiscoverHandler) RanklistPublic(c *gin.Context) {
 	OK(c, res)
 }
 
+// Rising GET /workspaces/:wid/discover/rising?region&mode&category_id&limit —— 爆品雷达(本地动量榜)。
+func (h *DiscoverHandler) Rising(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	res := h.discover.RisingProducts(c.Request.Context(), wid,
+		defaultStr(c.Query("region"), "US"), c.Query("category_id"),
+		defaultStr(c.Query("mode"), "hot7d"), defaultInt(c.Query("limit"), 20))
+	OK(c, res)
+}
+
+// RisingPublic GET /discover/rising —— 公共爆品雷达,游客可访问。
+func (h *DiscoverHandler) RisingPublic(c *gin.Context) {
+	res := h.discover.RisingProducts(c.Request.Context(), uuid.Nil,
+		defaultStr(c.Query("region"), "US"), c.Query("category_id"),
+		defaultStr(c.Query("mode"), "hot7d"), defaultInt(c.Query("limit"), 20))
+	OK(c, res)
+}
+
 // Favorite POST /workspaces/:wid/discover/favorites —— 收藏/取消店铺·达人·视频。
 func (h *DiscoverHandler) Favorite(c *gin.Context) {
 	_, wid, ok := authorizeWorkspace(c, h.ws)

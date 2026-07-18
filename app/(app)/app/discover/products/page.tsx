@@ -50,16 +50,19 @@ export default async function DiscoverProductsPage({
   const categoryId = sp.category_id || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
   const q = (sp.q ?? "").trim();
+  // 爆品雷达视图(本地动量榜):hot7d=近7天爆量 / accel=上升黑马。搜索态优先于雷达。
+  const view = !q && (sp.view === "hot7d" || sp.view === "accel") ? sp.view : null;
   // 搜索：走 EchoTik 关键词搜索（只认 region,单次 ≤30、无分页）;否则正常榜单+分页。
   const query = q
     ? `region=${region}&product_rank_field=${field}&page_size=30&keyword=${encodeURIComponent(q)}`
     : `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16&page_num=${page}`;
+  const path = view
+    ? `discover/rising?region=${region}&mode=${view}${categoryId ? `&category_id=${categoryId}` : ""}&limit=20`
+    : `discover/ranklist?${query}`;
 
   const [result, categories] = await Promise.all([
     apiServer<RanklistResult>(
-      workspace
-        ? `/workspaces/${workspace.id}/discover/ranklist?${query}`
-        : `/discover/ranklist?${query}`,
+      workspace ? `/workspaces/${workspace.id}/${path}` : `/${path}`,
     ).catch((): RanklistResult => ({ state: "error", products: [] })),
     fetchCategories(region),
   ]);
@@ -99,8 +102,9 @@ export default async function DiscoverProductsPage({
         importedProductId: p.importedProductId,
         analysis: null,
       }))}
+      view={view}
       page={page}
-      hasNext={!q && result.products.length >= 16 && page < 10}
+      hasNext={!q && !view && result.products.length >= 16 && page < 10}
     />
   );
 }

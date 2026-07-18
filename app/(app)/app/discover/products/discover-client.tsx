@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { apiBrowser } from "@/lib/api-browser";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { FilterBar, type CategoryOption, type FieldOption } from "../_components/FilterBar";
+import { SegmentedTabs } from "@/components/ui/Tabs";
 import { type Region } from "../_components/regions";
 import { Pagination } from "../_components/Pagination";
 import { Thumb } from "../_components/shared";
@@ -72,6 +73,21 @@ const PRODUCT_FIELDS: FieldOption[] = [
 
 type DiscoverState = "live" | "cached" | "empty" | "error";
 
+// 榜单视图:rank=EchoTik 热销总榜(默认);hot7d/accel=爆品雷达(本地动量榜,单页 Top20)。
+type BoardView = "rank" | "hot7d" | "accel";
+
+const BOARD_VIEWS: { label: string; value: BoardView }[] = [
+  { label: "热销总榜", value: "rank" },
+  { label: "7天爆量", value: "hot7d" },
+  { label: "上升黑马", value: "accel" },
+];
+
+const BOARD_HINTS: Record<BoardView, string | null> = {
+  rank: null,
+  hot7d: "按近 7 天销量排序——最近一周正在出单的商品，比累计榜更接近当下。",
+  accel: "按「近 7 天销量 ÷ 累计销量」排序——累计不高但一周猛涨的冷启动黑马。",
+};
+
 export function DiscoverClient({
   workspaceId,
   region,
@@ -80,6 +96,7 @@ export function DiscoverClient({
   categoryId,
   categories,
   keyword = "",
+  view = null,
   warming,
   products,
   page,
@@ -93,6 +110,7 @@ export function DiscoverClient({
   categoryId: string | null;
   categories: CategoryOption[];
   keyword?: string;
+  view?: "hot7d" | "accel" | null;
   state: DiscoverState;
   fetchedAt: string | null;
   warming?: boolean;
@@ -102,8 +120,19 @@ export function DiscoverClient({
   isGuest?: boolean;
 }) {
   const searching = keyword.trim().length > 0;
+  const boardView: BoardView = view ?? "rank";
   const router = useRouter();
   useWarmingRefresh(warming);
+
+  // 切换榜单视图:保留地区/类目,清掉分页(雷达单页);rank 视图不带 view 参数。
+  function switchView(next: BoardView) {
+    if (next === boardView) return;
+    const p = new URLSearchParams();
+    p.set("region", region);
+    if (categoryId) p.set("category_id", categoryId);
+    if (next !== "rank") p.set("view", next);
+    router.push(`/app/discover/products?${p.toString()}`);
+  }
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const { open: openAuthModal } = useAuthModal();
 
@@ -174,6 +203,21 @@ export function DiscoverClient({
         searchPlaceholder="搜索商品或关键词"
       />
 
+      {/* 榜单视图切换:热销总榜(EchoTik 存量口径) vs 爆品雷达(本地动量口径)。搜索态隐藏。 */}
+      {!searching && (
+        <div className="space-y-1.5">
+          <SegmentedTabs
+            items={BOARD_VIEWS}
+            value={boardView}
+            onValueChange={switchView}
+            ariaLabel="榜单视图"
+          />
+          {BOARD_HINTS[boardView] && (
+            <p className="text-2xs text-zinc-400">{BOARD_HINTS[boardView]}</p>
+          )}
+        </div>
+      )}
+
       {/* Main table — 无数据时不渲染裸表头，改用统一空态 */}
       {products.length === 0 ? (
         searching ? (
@@ -181,6 +225,12 @@ export function DiscoverClient({
             icon={PackageSearch}
             title={`没找到与「${keyword}」相关的商品`}
             description="换个关键词或地区再试，也可以清空搜索回到爆品榜。"
+          />
+        ) : boardView !== "rank" ? (
+          <EmptyState
+            icon={PackageSearch}
+            title="雷达暂无数据"
+            description="近 7 天动量数据随榜单同步逐步回填，稍后再来，或换个地区/类目看看。"
           />
         ) : (
           <EmptyState
@@ -418,7 +468,7 @@ export function DiscoverClient({
         </>
       )}
 
-      {!searching && <Pagination page={page} hasNext={hasNext} />}
+      {!searching && boardView === "rank" && <Pagination page={page} hasNext={hasNext} />}
     </div>
   );
 }
