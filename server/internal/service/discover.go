@@ -63,6 +63,7 @@ func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storag
 type DecoratedProduct struct {
 	ProductID         string   `json:"productId"` // EchoTik external id
 	Name              string   `json:"name"`
+	NameZh            string   `json:"nameZh"` // 中文译文,空=尚未翻译(前端退回原文)
 	Region            string   `json:"region"`
 	AvgPriceCents     int      `json:"avgPriceCents"`
 	MinPriceCents     int      `json:"minPriceCents"`
@@ -70,12 +71,13 @@ type DecoratedProduct struct {
 	CommissionRate    float64  `json:"commissionRate"`
 	TotalSaleCnt      int      `json:"totalSaleCnt"`
 	TotalSaleGmvCents int      `json:"totalSaleGmvCents"`
+	Sale7dCnt         int      `json:"sale7dCnt"`  // 近 7 天销量(EchoTik 官方口径);0=暂无数据
+	Sale30dCnt        int      `json:"sale30dCnt"` // 近 30 天销量
+	Gmv7dCents        int      `json:"gmv7dCents"` // 近 7 天 GMV(分);0=暂无数据
+	Gmv30dCents       int      `json:"gmv30dCents"`
+	Spark7d           []int    `json:"spark7d"` // 近 7 天日销量增量(快照差分,oldest→newest);<2 点不足以画线
 	TotalIflCnt       int      `json:"totalIflCnt"`
 	TotalVideoCnt     int      `json:"totalVideoCnt"`
-	Sale7dCnt         int      `json:"sale7dCnt"`  // 近 7 天销量(0=未取到详情或真为 0)
-	Sale30dCnt        int      `json:"sale30dCnt"` // 近 30 天销量
-	Gmv7dCents        int      `json:"gmv7dCents"`
-	Gmv30dCents       int      `json:"gmv30dCents"`
 	CoverUrls         []string `json:"coverUrls"`
 	ImportedProductID *string  `json:"importedProductId"`
 }
@@ -517,16 +519,22 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 		}
 	}
 
+	sparks := s.loadSaleSparks(ctx, ids)
+
 	out := make([]DecoratedProduct, 0, len(dps))
 	for _, d := range dps {
 		dp := DecoratedProduct{
-			ProductID: d.ExternalID, Name: d.Name, Region: d.Region,
+			ProductID: d.ExternalID, Name: d.Name, NameZh: d.NameZh, Region: d.Region,
 			AvgPriceCents: d.AvgPriceCents, MinPriceCents: d.MinPriceCents, MaxPriceCents: d.MaxPriceCents,
 			CommissionRate: d.CommissionRate, TotalSaleCnt: d.TotalSaleCnt, TotalSaleGmvCents: d.TotalSaleGmv,
-			TotalIflCnt: d.TotalIflCnt, TotalVideoCnt: d.TotalVideoCnt,
 			Sale7dCnt: d.Sale7dCnt, Sale30dCnt: d.Sale30dCnt,
 			Gmv7dCents: d.Gmv7dCents, Gmv30dCents: d.Gmv30dCents,
+			Spark7d:     sparks[d.ID],
+			TotalIflCnt: d.TotalIflCnt, TotalVideoCnt: d.TotalVideoCnt,
 			CoverUrls: parseCovers(d.CoverUrls),
+		}
+		if dp.Spark7d == nil {
+			dp.Spark7d = []int{}
 		}
 		if pid, ok := importedBy[d.ID]; ok {
 			dp.ImportedProductID = &pid
@@ -536,9 +544,40 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 	return out
 }
 
+// loadSaleSparks 批量取每商品最近 8 天快照并差分成日销量增量序列(oldest→newest,最多 7 点),
+// 供列表迷你趋势线。与详情页 productTrendFromSnapshots 同源同口径,只是限窗 + 批量。
+func (s *DiscoverService) loadSaleSparks(ctx context.Context, ids []uuid.UUID) map[uuid.UUID][]int {
+	out := map[uuid.UUID][]int{}
+	if s.db == nil || len(ids) == 0 {
+		return out
+	}
+	cutoff := time.Now().AddDate(0, 0, -8).Format("2006-01-02")
+	var snaps []model.DiscoverSnapshot
+	if err := s.db.WithContext(ctx).
+		Where("discover_product_id IN ? AND dt >= ?", ids, cutoff).
+		Order("dt asc").Find(&snaps).Error; err != nil {
+		return out
+	}
+	grouped := map[uuid.UUID][]model.DiscoverSnapshot{}
+	for _, sn := range snaps {
+		grouped[sn.DiscoverProductID] = append(grouped[sn.DiscoverProductID], sn)
+	}
+	for id, g := range grouped {
+		if len(g) < 2 {
+			continue // 单点差分不出增量,前端按无数据处理
+		}
+		pts := make([]int, 0, len(g)-1)
+		for i := 1; i < len(g); i++ {
+			pts = append(pts, nonNeg(g[i].TotalSaleCnt-g[i-1].TotalSaleCnt))
+		}
+		out[id] = pts
+	}
+	return out
+}
+
 // enrichDetails 批量取商品详情:封面永久化 + 完整详情透传。
 // 返回 covers: productID -> JSONB([]string{permanentURL});details: productID -> 完整 ProductDetail
-// (persist 顺带把近窗字段落主表,同一次详情调用不多花一分钱)。
+// (persist 顺带把近窗字段落主表 + detail 标量整包落 detail_extras,同一次详情调用不多花一分钱)。
 // 封面流程:product/detail 拿防盗链原文 → rehostCovers 下载并转存 COS(永久,失败回退 3 天签名 URL)。
 // 前端只显示 coverUrls[0],故每个商品只处理首图,省接口调用。
 // 任一步出错只影响封面(降级为占位图),不阻断榜单返回。

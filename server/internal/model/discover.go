@@ -31,7 +31,8 @@ type DiscoverProduct struct {
 	TotalIflCnt    int       `gorm:"default:0" json:"totalIflCnt"`
 	TotalVideoCnt  int       `gorm:"default:0" json:"totalVideoCnt"`
 	TotalLiveCnt   int       `gorm:"default:0" json:"totalLiveCnt"`
-	// 近窗销量/GMV(详情接口补封面时顺带回填;0 = 尚未取到详情或真为 0,前端按缺省处理)。
+	// 近窗销量/GMV(列表级,EchoTik 官方口径)。榜单同步时与封面同批从 product/detail 回填,
+	// 详情页刷新时也更新;0=暂无数据(未拉过详情)。命名对齐 DiscoverSeller。
 	Sale7dCnt     int       `gorm:"column:sale7d_cnt;default:0" json:"sale7dCnt"`
 	Sale30dCnt    int       `gorm:"column:sale30d_cnt;default:0" json:"sale30dCnt"`
 	Gmv7dCents    int       `gorm:"column:gmv7d_cents;default:0" json:"gmv7dCents"`

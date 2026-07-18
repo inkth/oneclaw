@@ -16,6 +16,9 @@ type DecoratedProduct = {
   commissionRate: number;
   totalSaleCnt: number;
   totalSaleGmvCents: number;
+  sale7dCnt: number;
+  gmv7dCents: number;
+  spark7d: number[] | null;
   totalIflCnt: number;
   totalVideoCnt: number;
   coverUrls: string[];
@@ -85,6 +88,9 @@ export default async function DiscoverProductsPage({
         commissionRate: p.commissionRate,
         totalSaleCnt: p.totalSaleCnt,
         totalSaleGmvAmt: p.totalSaleGmvCents / 100,
+        sale7dCnt: p.sale7dCnt ?? 0,
+        gmv7dAmt: (p.gmv7dCents ?? 0) / 100,
+        spark7d: p.spark7d ?? [],
         totalIflCnt: p.totalIflCnt,
         totalVideoCnt: p.totalVideoCnt,
         totalLiveCnt: 0,
