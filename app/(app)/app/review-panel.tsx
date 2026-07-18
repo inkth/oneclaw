@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Markdown } from "@/components/ui/Markdown";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { type Tone } from "@/lib/ui/tokens";
 import { cn } from "@/lib/utils";
@@ -185,9 +186,10 @@ export function ReviewResults({ result }: { result: ReviewResult }) {
             </div>
             <CopyButton text={result.analysis} />
           </div>
-          <pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] p-4 text-xs leading-relaxed text-zinc-600">
-            {result.analysis}
-          </pre>
+          {/* 后端 prompt 明确要求这段输出「优化行动清单」Markdown 表格，按 markdown 渲染而非原样铺管道符 */}
+          <div className="mt-3 max-h-[32rem] overflow-auto rounded-lg border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] p-4">
+            <Markdown className="text-xs text-zinc-600">{result.analysis}</Markdown>
+          </div>
         </Card>
       ) : (
         <Card>
