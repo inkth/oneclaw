@@ -17,7 +17,6 @@ import { type Tone } from "@/lib/ui/tokens";
 import { TrendChart } from "../_components/TrendChart";
 import { fmt, fmtMoney, initial, fmtUnixDate, stringToGradient } from "../_components/format";
 import {
-  Sparkles,
   Loader2,
   Bookmark,
   BookmarkCheck,
@@ -149,7 +148,7 @@ export function ProductDetailClient({
 }) {
   const router = useRouter();
   const [gallery, setGallery] = useState(0);
-  const [busy, setBusy] = useState<"" | "import" | "analyze">("");
+  const [busy, setBusy] = useState<"" | "import">("");
   const [imported, setImported] = useState<string | null>(p.importedProductId);
   const { open: openAuthModal } = useAuthModal();
   // 上报当前商品给情境助手；已导入的带自建商品 id，composer 可结构化消费；
@@ -187,37 +186,6 @@ export function ProductDetailClient({
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "收藏失败");
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function analyzeProduct() {
-    if (busy || gateGuest()) return;
-    setBusy("analyze");
-    try {
-      const start = await apiBrowser<{ task: { id: string } }>(
-        `/workspaces/${workspaceId}/discover/analyze`,
-        { method: "POST", body: JSON.stringify({ productId: p.productId, region: p.region }) },
-      );
-      const taskId = start.task.id;
-      for (let i = 0; i < 24; i++) {
-        await new Promise((r) => setTimeout(r, 2500));
-        const cur = await apiBrowser<{ task: { status: string; output: string | null } }>(
-          `/workspaces/${workspaceId}/agent-tasks/${taskId}`,
-        );
-        if (cur.task.status === "DONE") {
-          toast.success("AI 分析完成", { description: cur.task.output ?? undefined, duration: 12000 });
-          return;
-        }
-        if (cur.task.status === "FAILED") {
-          toast.error("分析失败", { description: cur.task.output ?? "请稍后重试" });
-          return;
-        }
-      }
-      toast.message("分析仍在进行", { description: "稍后可在工作台查看结果" });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "分析失败，稍后再试");
     } finally {
       setBusy("");
     }
@@ -261,10 +229,6 @@ export function ProductDetailClient({
         }
         actions={
           <>
-            <Button variant="subtle" size="sm" onClick={analyzeProduct} disabled={busy === "analyze"}>
-              {busy === "analyze" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              AI 深度分析
-            </Button>
             {imported ? (
               <Button variant="secondary" size="sm" onClick={() => router.push("/app/discover/favorites")}>
                 <BookmarkCheck className="h-3.5 w-3.5 text-emerald-600" /> 已收藏
