@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/faxianmao/server/internal/model"
 	"github.com/faxianmao/server/internal/service/echotik"
 )
@@ -37,9 +39,14 @@ func (s *DiscoverService) searchLocalSellers(ctx context.Context, p echotik.Rank
 		Order("sale_gmv_cents DESC").Limit(p.PageSize).Find(&rows).Error; err != nil || len(rows) == 0 {
 		return nil, false
 	}
+	ids := make([]uuid.UUID, 0, len(rows))
+	for _, r := range rows {
+		ids = append(ids, r.ID)
+	}
+	sparks := s.loadSellerSparks(ctx, ids)
 	out := make([]SellerDTO, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, mapSellerFromModel(r))
+		out = append(out, mapSellerFromModel(r, sparks[r.ID]))
 	}
 	return out, true
 }

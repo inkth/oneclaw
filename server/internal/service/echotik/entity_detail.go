@@ -19,7 +19,8 @@ type SellerDetail struct {
 	Rating                  FlexFloat `json:"rating"`
 	MostProductCategoryList string    `json:"most_product_category_list"` // stringified JSON
 	SpuAvgPrice             FlexFloat `json:"spu_avg_price"`
-	TotalProductCnt         FlexFloat `json:"total_product_cnt"`
+	TotalProductCnt         FlexFloat `json:"total_product_cnt"`       // 历史在店商品数(含下架)
+	TotalCrawlProductCnt    FlexFloat `json:"total_crawl_product_cnt"` // 在售(在店)商品数
 	TotalSaleCnt            FlexFloat `json:"total_sale_cnt"`
 	TotalSaleGmvAmt         FlexFloat `json:"total_sale_gmv_amt"`
 	TotalIflCnt             FlexFloat `json:"total_ifl_cnt"`

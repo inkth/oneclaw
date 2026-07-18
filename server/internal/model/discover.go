@@ -295,8 +295,16 @@ type DiscoverSeller struct {
 	Sale30dCnt    int    `gorm:"column:sale30d_cnt;default:0" json:"sale30dCnt"`
 	Gmv7dCents    int    `gorm:"column:gmv7d_cents;default:0" json:"gmv7dCents"`
 	Gmv30dCents   int    `gorm:"column:gmv30d_cents;default:0" json:"gmv30dCents"`
-	Products      JSONB  `gorm:"type:jsonb" json:"-"` // []EntityProductDTO,详情子资源
-	Raw           JSONB  `gorm:"type:jsonb" json:"-"`
+	// 累计权威值(seller/detail 口径)。榜单行的 sale_cnt 等按 EchoTik 文档是「当前榜单
+	// 周期的增量」(天/周/月各不同),与累计口径不能混写一列,故分列;0=未拉过详情。
+	TotalSaleCnt    int   `gorm:"column:total_sale_cnt;default:0" json:"totalSaleCnt"`
+	TotalGmvCents   int   `gorm:"column:total_gmv_cents;default:0" json:"totalGmvCents"`
+	TotalIflCnt     int   `gorm:"column:total_ifl_cnt;default:0" json:"totalIflCnt"`
+	TotalVideoCnt   int   `gorm:"column:total_video_cnt;default:0" json:"totalVideoCnt"`
+	TotalLiveCnt    int   `gorm:"column:total_live_cnt;default:0" json:"totalLiveCnt"`
+	CrawlProductCnt int   `gorm:"column:crawl_product_cnt;default:0" json:"crawlProductCnt"` // 在售(在店)商品数
+	Products        JSONB `gorm:"type:jsonb" json:"-"`                                       // []EntityProductDTO,详情子资源
+	Raw             JSONB `gorm:"type:jsonb" json:"-"`
 
 	IsTracked       bool      `gorm:"default:false;index" json:"isTracked"`
 	ListFetchedAt   time.Time `gorm:"index" json:"listFetchedAt"`

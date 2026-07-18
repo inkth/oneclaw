@@ -20,18 +20,21 @@ type EntityRanklistResult[T any] struct {
 }
 
 type SellerDTO struct {
-	SellerID        string   `json:"sellerId"`
-	SellerName      string   `json:"sellerName"`
-	Region          string   `json:"region"`
-	CoverURL        *string  `json:"coverUrl"`
-	Rating          float64  `json:"rating"`
-	Categories      []string `json:"categories"`
-	TotalProductCnt int      `json:"totalProductCnt"`
-	TotalSaleCnt    int      `json:"totalSaleCnt"`
-	TotalSaleGmvAmt float64  `json:"totalSaleGmvAmt"`
-	TotalIflCnt     int      `json:"totalIflCnt"`
-	TotalVideoCnt   int      `json:"totalVideoCnt"`
-	TotalLiveCnt    int      `json:"totalLiveCnt"`
+	SellerID   string   `json:"sellerId"`
+	SellerName string   `json:"sellerName"`
+	Region     string   `json:"region"`
+	CoverURL   *string  `json:"coverUrl"`
+	Rating     float64  `json:"rating"`
+	Categories []string `json:"categories"`
+	// 近 7 天窗口 + 迷你趋势(详情回填/快照差分;0/空 = 详情尚未回填,前端画 —)
+	Sale7dCnt int     `json:"sale7dCnt"`
+	Gmv7dAmt  float64 `json:"gmv7dAmt"`
+	Spark7d   []int   `json:"spark7d"`
+	// 累计权威值(seller/detail 口径)。榜单行原生的 total_* 是「榜单周期增量」,不透出。
+	TotalSaleCnt    int     `json:"totalSaleCnt"`
+	TotalSaleGmvAmt float64 `json:"totalSaleGmvAmt"`
+	TotalIflCnt     int     `json:"totalIflCnt"`
+	CrawlProductCnt int     `json:"crawlProductCnt"` // 在售商品数
 }
 
 type InfluencerDTO struct {
@@ -88,20 +91,6 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 	}
 	s.warmEntityRanklist(ctx, "seller", p, defaultRanklistDepth)
 	return &EntityRanklistResult[SellerDTO]{State: "cached", Warming: true, Rows: []SellerDTO{}}
-}
-
-// signMapSellers 签封面 + 映射 DTO(榜单 / 搜索共用)。
-func (s *DiscoverService) signMapSellers(ctx context.Context, raw []echotik.SellerListItem) []SellerDTO {
-	imgs := make([]string, 0, len(raw))
-	for _, it := range raw {
-		imgs = append(imgs, it.CoverURL)
-	}
-	signed := s.echo.SignCovers(ctx, imgs)
-	rows := make([]SellerDTO, 0, len(raw))
-	for _, it := range raw {
-		rows = append(rows, mapSeller(it, signed))
-	}
-	return rows
 }
 
 // InfluencerRanklist 达人榜:读路径**零同步 EchoTik**(同 SellerRanklist)。
@@ -193,23 +182,6 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 		}
 	}
 	return firstErr
-}
-
-func mapSeller(it echotik.SellerListItem, signed map[string]string) SellerDTO {
-	return SellerDTO{
-		SellerID:        it.SellerID,
-		SellerName:      it.SellerName,
-		Region:          it.Region,
-		CoverURL:        signedURL(it.CoverURL, signed),
-		Rating:          it.Rating.Float(),
-		Categories:      parseCategoryNames(it.MostProductCategoryList, 2),
-		TotalProductCnt: it.TotalProductCnt,
-		TotalSaleCnt:    it.TotalSaleCnt,
-		TotalSaleGmvAmt: it.TotalSaleGmvAmt,
-		TotalIflCnt:     it.TotalIflCnt,
-		TotalVideoCnt:   it.TotalVideoCnt,
-		TotalLiveCnt:    it.TotalLiveCnt,
-	}
 }
 
 func mapInfluencer(it echotik.InfluencerListItem, signed map[string]string) InfluencerDTO {
