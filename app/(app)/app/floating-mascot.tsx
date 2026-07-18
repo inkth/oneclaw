@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  ChevronUp,
   CircleAlert,
   Clapperboard,
   Compass,
@@ -39,6 +40,8 @@ type ContextAction = {
   productId?: string;
   /** discover 商品引用：派活时后端注入该商品真实数据做单品判断（ANALYST） */
   discoverRef?: { productId: string; region: string };
+  /** 情境问题：浮层里按当前实体给几条现成问法，点选填入输入框 */
+  suggestions?: string[];
 };
 
 const NEW_TASK = "/app/agents/new#agent-composer";
@@ -50,8 +53,22 @@ function taskHref(agent: string, prompt: string, productId?: string) {
 }
 
 /** 可原地派活的情境动作：href 仍保留，作浮层里「展开完整对话」的出口。 */
-function dispatchAction(label: string, icon: LucideIcon, agent: AgentKey, prompt: string, productId?: string): ContextAction {
-  return { label, icon, agent, prompt, productId, href: taskHref(agent, prompt, productId) };
+function dispatchAction(
+  label: string,
+  icon: LucideIcon,
+  agent: AgentKey,
+  prompt: string,
+  opts?: { productId?: string; suggestions?: string[] },
+): ContextAction {
+  return {
+    label,
+    icon,
+    agent,
+    prompt,
+    productId: opts?.productId,
+    suggestions: opts?.suggestions,
+    href: taskHref(agent, prompt, opts?.productId),
+  };
 }
 
 // 实体名进 prompt 前截断，避免超长视频文案把指令挤没
@@ -62,36 +79,87 @@ function clip(s: string, max = 24) {
 function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
   if (pathname.startsWith("/app/discover/products")) {
     if (entity?.kind === "discover-product") {
+      const n = `【${clip(entity.name)}】`;
       // 已导入过的带 productId：切到 DIRECTOR/LISTING 时 composer 能注入真实商品数据
-      const action = dispatchAction("判断这个商品", PackageSearch, "ANALYST", `请帮我判断【${clip(entity.name)}】这个商品是否值得做，并给出下一步建议。`, entity.productId);
+      const action = dispatchAction("判断这个商品", PackageSearch, "ANALYST", `请帮我判断${n}这个商品是否值得做，并给出下一步建议。`, {
+        productId: entity.productId,
+        // 这些问法都会命中后端注入的真实销量/佣金/达人数据（单品判断模式）
+        suggestions: [
+          `${n}的销量主要靠谁带？达人、视频还是自然流量？`,
+          `${n}还有利润空间吗？按售价和佣金帮我算笔账。`,
+          `${n}是稳定爆品还是短期冲量？现在跟进还来得及吗？`,
+        ],
+      });
       // discover 引用：派活时后端据此注入销量/佣金/达人等真实数据，走单品判断而非榜单选品
       action.discoverRef = { productId: entity.id, region: entity.region ?? "US" };
       return action;
     }
-    return dispatchAction("开始选品判断", PackageSearch, "ANALYST", "我正在选品，请告诉我判断一个商品值不值得做要看哪些关键指标，我看中后发给你分析。");
+    return dispatchAction("开始选品判断", PackageSearch, "ANALYST", "我正在选品，请告诉我判断一个商品值不值得做要看哪些关键指标，我看中后发给你分析。", {
+      suggestions: [
+        "现在美区哪些类目对新手比较友好？",
+        "帮我定一套自己的选品标准，我做低客单价商品。",
+      ],
+    });
   }
   if (pathname.startsWith("/app/discover/influencers")) {
     if (entity?.kind === "discover-influencer") {
-      return dispatchAction("评估这位达人", UsersRound, "ADVISOR", `请帮我评估达人「${clip(entity.name)}」是否值得合作，并给出合作建议。`);
+      const n = `「${clip(entity.name)}」`;
+      return dispatchAction("评估这位达人", UsersRound, "ADVISOR", `请帮我评估达人${n}是否值得合作，并给出合作建议。`, {
+        suggestions: [
+          `和达人${n}谈合作怎么开口？佣金给多少合适？`,
+          `达人${n}的内容风格适合带什么类型的商品？`,
+          `第一次找达人${n}这种量级的合作，要注意什么坑？`,
+        ],
+      });
     }
-    return dispatchAction("评估达人合作", UsersRound, "ADVISOR", "我想找达人带货，请告诉我筛选达人要看哪些指标、怎么开口谈合作。");
+    return dispatchAction("评估达人合作", UsersRound, "ADVISOR", "我想找达人带货，请告诉我筛选达人要看哪些指标、怎么开口谈合作。", {
+      suggestions: [
+        "新店没销量，达人为什么要理我？怎么破冷启动？",
+        "达人建联的话术模板给我一份。",
+      ],
+    });
   }
   if (pathname.startsWith("/app/discover/sellers")) {
     if (entity?.kind === "discover-seller") {
-      return dispatchAction("分析这家店铺", Compass, "ANALYST", `请帮我分析店铺「${clip(entity.name)}」的机会、风险和下一步动作。`);
+      const n = `「${clip(entity.name)}」`;
+      return dispatchAction("分析这家店铺", Compass, "ANALYST", `请帮我分析店铺${n}的机会、风险和下一步动作。`, {
+        suggestions: [
+          `店铺${n}的选品和打法有什么可复制的？`,
+          `如果和店铺${n}做同类目，我该怎么差异化？`,
+          `店铺${n}这种体量大概什么运营配置？我能跟吗？`,
+        ],
+      });
     }
-    return dispatchAction("分析店铺机会", Compass, "ANALYST", "我在研究同行店铺，请告诉我分析一家 TikTok Shop 店铺要看哪些维度。");
+    return dispatchAction("分析店铺机会", Compass, "ANALYST", "我在研究同行店铺，请告诉我分析一家 TikTok Shop 店铺要看哪些维度。", {
+      suggestions: [
+        "怎么从店铺榜找到适合我模仿的对标店？",
+        "美区店铺现在什么打法起量最快？",
+      ],
+    });
   }
   if (pathname.startsWith("/app/discover/videos")) {
     if (entity?.kind === "discover-video") {
       // 视频文案可能为空，退回用 ID 指代
       const ref = entity.name ? `《${clip(entity.name)}》` : `（ID ${entity.id}）`;
-      return dispatchAction("拆解这条视频", Clapperboard, "DIRECTOR", `请帮我拆解视频${ref}的带货结构，并给出可复用的创作建议。`);
+      return dispatchAction("拆解这条视频", Clapperboard, "DIRECTOR", `请帮我拆解视频${ref}的带货结构，并给出可复用的创作建议。`, {
+        suggestions: [
+          `照视频${ref}的结构，帮我写一个仿拍脚本大纲。`,
+          `视频${ref}的开头是怎么留住人的？我怎么套用？`,
+          `视频${ref}这种拍法，不出镜能做吗？`,
+        ],
+      });
     }
-    return dispatchAction("拆解带货视频", Clapperboard, "DIRECTOR", "我想学爆款带货视频，请告诉我拆解一条视频要看哪些结构和信号。");
+    return dispatchAction("拆解带货视频", Clapperboard, "DIRECTOR", "我想学爆款带货视频，请告诉我拆解一条视频要看哪些结构和信号。", {
+      suggestions: [
+        "爆款带货视频的通用结构是什么？",
+        "不出镜、不真人口播，能做哪些类型的带货视频？",
+      ],
+    });
   }
   if (pathname.startsWith("/app/products") && entity?.kind === "my-product") {
-    return dispatchAction("为它生成内容", WandSparkles, "LISTING", `请为我的商品【${clip(entity.name)}】生成 TikTok Shop Listing 内容。`, entity.productId);
+    return dispatchAction("为它生成内容", WandSparkles, "LISTING", `请为我的商品【${clip(entity.name)}】生成 TikTok Shop Listing 内容。`, {
+      productId: entity.productId,
+    });
   }
   if (pathname.startsWith("/app/assets/materials")) {
     return dispatchAction("用素材开始创作", ImagePlus, "DIRECTOR", "请基于我的素材，帮我规划一条带货短视频。");
@@ -103,7 +171,13 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
     return dispatchAction("优化视频脚本", Clapperboard, "DIRECTOR", "请帮我优化当前视频的脚本与转化表达。");
   }
   if (pathname.startsWith("/app/services")) {
-    return dispatchAction("规划经营下一步", BarChart3, "ADVISOR", "请根据我的跨境经营目标，建议下一步优先做什么。");
+    return dispatchAction("规划经营下一步", BarChart3, "ADVISOR", "请根据我的跨境经营目标，建议下一步优先做什么。", {
+      suggestions: [
+        "我是新手，帮我规划从开店到第一单的路线。",
+        "美区本土店和全托管有什么区别？我适合哪种？",
+        "开店前期要准备多少预算？大头花在哪？",
+      ],
+    });
   }
   return { label: "发起新任务", href: NEW_TASK, icon: MessageSquarePlus };
 }
@@ -143,6 +217,12 @@ const ONBOARD_ACTION: ContextAction = dispatchAction(
   Compass,
   "ADVISOR",
   "我刚开始做 TikTok Shop 跨境电商，请根据我的情况告诉我第一步该做什么。",
+  {
+    suggestions: [
+      "开一家美区小店需要什么条件和预算？",
+      "没货源、没粉丝，我该从哪一步开始？",
+    ],
+  },
 );
 
 /** sessionStorage 缓存「是否派过任务」，避免每次导航重复请求。"1"=派过，"0"=从未。 */
@@ -334,19 +414,28 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
     };
   }, [workspaceId, poll]);
 
+  // 只在选品/服务板块出场：工作台、对话、资产各有自己的主流程，浮猫不去抢注意力。
+  // 放在所有 hooks 之后早退，轮询照常在后台保温——切回可见板块时信标状态即时正确。
+  if (!pathname.startsWith("/app/discover") && !pathname.startsWith("/app/services")) {
+    return null;
+  }
+
   const pillBase =
     "group inline-flex h-11 items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-4";
+  // 底部居中停靠条：inset-x-0 铺满仅为定位居中，pointer-events 只留给内容本身
+  const dock =
+    "pointer-events-none fixed inset-x-0 bottom-[76px] z-50 flex justify-center px-3 md:bottom-6";
 
   // 揭晓态：任务刚到终态，短暂展示结果入口后自动回落。
   if (reveal) {
     const done = reveal.kind === "done";
     const RevealIcon = done ? Sparkles : CircleAlert;
     return (
-      <div className="fixed bottom-[76px] right-3 z-50 md:bottom-5 md:right-6">
+      <div className={dock}>
         <Link
           href={`/app/agents/${reveal.conversationId}`}
           onClick={() => setReveal(null)}
-          className={`${pillBase} ${
+          className={`pointer-events-auto ${pillBase} ${
             done
               ? "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-300 hover:bg-emerald-100"
               : "border-rose-200 bg-rose-50 text-rose-900 hover:border-rose-300 hover:bg-rose-100"
@@ -374,10 +463,10 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
     const label =
       active.length === 1 ? `${identity?.label ?? "任务"}进行中…` : `${active.length} 个任务进行中…`;
     return (
-      <div className="fixed bottom-[76px] right-3 z-50 md:bottom-5 md:right-6">
+      <div className={dock}>
         <Link
           href={`/app/agents/${latest.conversationId}`}
-          className={`${pillBase} border-brand-200 bg-white text-ink hover:border-brand-300 hover:bg-brand-50`}
+          className={`pointer-events-auto ${pillBase} border-brand-200 bg-white text-ink hover:border-brand-300 hover:bg-brand-50`}
           aria-label={label}
         >
           <span className="glow-pulse flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white">
@@ -393,18 +482,25 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
   // 静止态：从未派过任务的新用户固定引导去问跨境顾问，其余按当前页给情境动作。
   const action = neverTasked ? ONBOARD_ACTION : actionFor(pathname, entity);
   const Icon = action.icon;
-  const pillIdle = `${pillBase} border-black/[0.09] bg-white text-ink hover:border-brand-200 hover:bg-brand-50`;
-  const pillBody = (
+  // 折叠条：双行（身份 + 情境引导），点击展开成派活浮层
+  const barIdle =
+    "pointer-events-auto group flex items-center gap-3 rounded-full border border-black/[0.09] bg-white py-1.5 pl-1.5 pr-4 text-left shadow-[0_16px_40px_-20px_rgba(18,20,25,0.4)] transition-colors hover:border-brand-200 hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-4";
+  const barBody = (
     <>
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white">
         <BrandMark className="h-5 w-5" />
       </span>
-      <Icon className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-      <span className={`truncate ${neverTasked ? "max-w-52" : "max-w-36"}`}>{action.label}</span>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-sm font-semibold leading-5 text-ink">发现猫 Agent</span>
+        <span className="flex items-center gap-1 text-2xs leading-4 text-[var(--dk-content-secondary)]">
+          <Icon className="h-3 w-3 shrink-0 text-brand-600" aria-hidden />
+          <span className="max-w-56 truncate">{action.label}</span>
+        </span>
+      </span>
     </>
   );
 
-  // 可原地派活的动作：点击展开派活浮层，上下文留在眼前；浮层打开时胶囊让位。
+  // 可原地派活的动作：点击展开派活浮层，上下文留在眼前；浮层打开时折叠条让位。
   if (action.agent && action.prompt) {
     if (sheetOpen) {
       return (
@@ -416,23 +512,28 @@ export function FloatingMascot({ workspaceId }: { workspaceId?: string }) {
           fullHref={action.href}
           entityName={entity?.name || undefined}
           discoverRef={action.discoverRef}
+          suggestions={action.suggestions}
           onClose={() => setSheetPath(null)}
         />
       );
     }
     return (
-      <div className="fixed bottom-[76px] right-3 z-50 md:bottom-5 md:right-6">
-        <button type="button" onClick={() => setSheetPath(pathname)} className={pillIdle} aria-label={action.label}>
-          {pillBody}
+      <div className={dock}>
+        <button type="button" onClick={() => setSheetPath(pathname)} className={barIdle} aria-label={`展开：${action.label}`}>
+          {barBody}
+          <ChevronUp
+            className="h-4 w-4 shrink-0 text-[var(--dk-content-tertiary)] transition-transform group-hover:-translate-y-0.5"
+            aria-hidden
+          />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-[76px] right-3 z-50 md:bottom-5 md:right-6">
-      <Link href={action.href} className={pillIdle} aria-label={action.label}>
-        {pillBody}
+    <div className={dock}>
+      <Link href={action.href} className={barIdle} aria-label={action.label}>
+        {barBody}
       </Link>
     </div>
   );
