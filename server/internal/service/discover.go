@@ -38,9 +38,9 @@ type DiscoverService struct {
 	translateInflight  map[string]struct{}
 	translateMu        sync.Mutex
 	ranklistRefreshing sync.Map
-	// enrichMinSale 后台同步路径的补全销量门槛:累计销量低于此值的商品只落基础行+快照,
-	// 跳过详情请求(封面/窗口)与标题翻译,省跨境调用/COS/LLM。0=不设门槛。
-	// 只作用于榜单预热/SWR 刷新;用户搜索路径不受限。
+	// enrichMinSale 后台同步路径的入库销量门槛:累计销量低于此值的商品整条跳过
+	// (不入库、不写快照、不请求详情/封面、不投翻译),省 DB/跨境调用/COS/LLM。0=不设门槛。
+	// 只作用于榜单预热/SWR 刷新;用户搜索路径不受限。已入库的存量行不删,只是不再更新。
 	enrichMinSale int
 }
 
@@ -347,39 +347,36 @@ func (s *DiscoverService) lookupProductsByCategory(ctx context.Context, p echoti
 // persist 落库 DiscoverProduct(永远 upsert,支持导入);writeSnapshot 控制是否写每日快照(趋势源),
 // writeCacheEntry 控制是否写榜单顺序表(单页路径用;多页累积走 RefreshRanklistDeep+writeRanklistEntry),
 // enrichCover 控制是否补取详情(封面+近窗字段,与缓存解耦,搜索 live 也补)。
-// gateEnrich=true(后台同步/预热路径)时启用销量门槛:累计销量 < enrichMinSale 的商品
-// 跳过详情补全(封面/窗口)与翻译投递,基础行+快照照常(榜单不缺行,销量涨过门槛后
-// 下一轮自然补全);用户触发路径传 false 不设限。
+// gateEnrich=true(后台同步/预热路径)时启用入库销量门槛:累计销量 < enrichMinSale 的商品
+// 整条跳过——不入库、不写快照、不请求详情、不投翻译,也不进榜单顺序表(返回值即不含它们);
+// 销量涨过门槛后下一轮自然入库。用户触发路径传 false 不设限。
 func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams, raw []echotik.ProductListItem, writeSnapshot, writeCacheEntry, enrichCover, gateEnrich bool) []model.DiscoverProduct {
+	if gateEnrich && s.enrichMinSale > 0 {
+		kept := make([]echotik.ProductListItem, 0, len(raw))
+		for _, it := range raw {
+			if it.TotalSaleCnt >= s.enrichMinSale {
+				kept = append(kept, it)
+			}
+		}
+		if skipped := len(raw) - len(kept); skipped > 0 {
+			logger.Info("发现页入库门槛生效,低销量商品整条跳过",
+				logger.String("region", p.Region), logger.Int("skipped", skipped),
+				logger.Int("minSale", s.enrichMinSale))
+		}
+		raw = kept
+	}
+
 	today := time.Now().Format("2006-01-02")
 	out := make([]model.DiscoverProduct, 0, len(raw))
 	externalIDs := make([]string, 0, len(raw))
 	var transJobs []translateJob // 待翻译商品标题(name_zh 空),事务后统一投递
-
-	belowGate := func(it echotik.ProductListItem) bool {
-		return gateEnrich && s.enrichMinSale > 0 && it.TotalSaleCnt < s.enrichMinSale
-	}
 
 	// 商品榜接口不带封面/窗口;仅 live 拉取时调详情接口补取。
 	// 同一次详情调用顺带带回近 7/30 天窗口,persist 时零新增调用写进主表。
 	var coverByID map[string]model.JSONB
 	var detailByID map[string]echotik.ProductDetail
 	if enrichCover {
-		enrichable := raw
-		if gateEnrich && s.enrichMinSale > 0 {
-			enrichable = make([]echotik.ProductListItem, 0, len(raw))
-			for _, it := range raw {
-				if !belowGate(it) {
-					enrichable = append(enrichable, it)
-				}
-			}
-			if skipped := len(raw) - len(enrichable); skipped > 0 {
-				logger.Info("发现页补全门槛生效,低销量商品跳过详情请求",
-					logger.String("region", p.Region), logger.Int("skipped", skipped),
-					logger.Int("minSale", s.enrichMinSale))
-			}
-		}
-		coverByID, detailByID = s.enrichDetails(ctx, p.Region, enrichable)
+		coverByID, detailByID = s.enrichDetails(ctx, p.Region, raw)
 	}
 
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -451,9 +448,8 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 						Updates(map[string]any{"detail_extras": model.JSONB(b), "detail_extras_at": time.Now()})
 				}
 			}
-			// 标题外文本地化:仅补空、不覆盖既有译文(与视频文案同一 worker 批量翻译回填);
-			// 门槛内低销量商品不投递,省 LLM 调用(涨过门槛后下一轮补空即译)。
-			if stored.NameZh == "" && stored.Name != "" && !belowGate(it) {
+			// 标题外文本地化:仅补空、不覆盖既有译文(与视频文案同一 worker 批量翻译回填)。
+			if stored.NameZh == "" && stored.Name != "" {
 				transJobs = append(transJobs, translateJob{Table: "discover_products", Column: "name_zh", ID: stored.ID, Text: stored.Name})
 			}
 
