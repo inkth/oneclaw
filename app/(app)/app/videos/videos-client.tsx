@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2, Video, WandSparkles } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, XCircle, Play, Download, Trash2, Video, WandSparkles, X } from "lucide-react";
 import { VideoDetailDrawer } from "@/components/VideoDetailDrawer";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MediaPlaceholder } from "@/components/ui/MediaPlaceholder";
@@ -39,6 +39,83 @@ const styleMap: Record<string, { label: string }> = {
   BEFORE_AFTER: { label: "Before/After" },
 };
 
+function VideoPreviewModal({ video, onClose }: { video: Video; onClose: () => void }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const aspectRatio = video.aspectRatio ?? "9:16";
+  const totalDuration = video.durationSec + (video.realClipSec ?? 0);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [onClose]);
+
+  if (!video.videoUrl) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="video-preview-title"
+        className="w-full max-w-md overflow-hidden rounded-[var(--dk-radius-lg)] bg-zinc-950 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 text-white">
+          <div className="min-w-0">
+            <h2 id="video-preview-title" className="truncate text-sm font-semibold">
+              {video.title}
+            </h2>
+            <p className="mt-0.5 text-2xs text-zinc-400">
+              {aspectRatio} · {totalDuration}s · {styleMap[video.style]?.label ?? video.style}
+            </p>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            aria-label="关闭视频预览"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex justify-center bg-black">
+          <video
+            key={video.id}
+            src={video.videoUrl}
+            poster={video.thumbnailUrl ?? undefined}
+            controls
+            autoPlay
+            playsInline
+            preload="metadata"
+            aria-label={`视频预览：${video.title}`}
+            className="max-h-[calc(100dvh-9rem)] w-full bg-black object-contain"
+            style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
+          >
+            你的浏览器暂不支持视频播放。
+          </video>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function VideosClient({
   workspaceId,
   initialVideos,
@@ -52,6 +129,7 @@ export function VideosClient({
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [drawerVideoId, setDrawerVideoId] = useState<string | null>(null);
+  const [previewVideo, setPreviewVideo] = useState<Video | null>(null);
   // 首屏拿满一页才可能有下一页;点「加载更多」按 offset 续拉。
   const [hasMore, setHasMore] = useState(initialVideos.length >= PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -205,7 +283,7 @@ export function VideosClient({
           </ButtonLink>
         }
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {videos.map((v) => {
           const style = styleMap[v.style] ?? styleMap.UNBOXING;
           const isGenerating = v.processing === "GENERATING";
@@ -215,9 +293,12 @@ export function VideosClient({
               key={v.id}
               className="dk-card dk-lift group flex flex-col overflow-hidden"
             >
-            <div
-              className="relative"
-              style={{ aspectRatio: (v.aspectRatio ?? "9:16").replace(":", " / ") }}
+            <button
+              type="button"
+              onClick={() => v.videoUrl && setPreviewVideo(v)}
+              disabled={!v.videoUrl}
+              aria-label={v.videoUrl ? `预览视频：${v.title}` : undefined}
+              className="relative aspect-[4/5] w-full overflow-hidden text-left disabled:cursor-default"
             >
               {v.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -232,14 +313,13 @@ export function VideosClient({
               {/* 去渐变（硬规则）:封面遮罩改纯色半透明黑，只为给上下叠字/徽章提对比度 */}
               <div className="absolute inset-0 bg-black/25" />
 
-              {/* 视频播放 / 处理状态 */}
+              {/* 卡片只展示轻量封面，完整播放器在弹层中打开。 */}
               {v.videoUrl ? (
-                <video
-                  src={v.videoUrl}
-                  controls
-                  playsInline
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-lg transition-transform group-hover:scale-105">
+                    <Play className="ml-0.5 h-4 w-4 fill-current" />
+                  </span>
+                </div>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   {isGenerating ? (
@@ -278,7 +358,7 @@ export function VideosClient({
               <div className="absolute inset-x-0 bottom-0 p-3 text-white pointer-events-none">
                 <div className="text-xs font-semibold truncate">{v.title}</div>
               </div>
-            </div>
+            </button>
 
             <div className="px-3 py-2.5 flex items-center justify-between text-2xs text-zinc-500 border-t border-[var(--dk-stroke-divider)]">
               <button
@@ -375,6 +455,9 @@ export function VideosClient({
           onDeleted={(id) => setVideos((prev) => prev.filter((v) => v.id !== id))}
           onRerendered={reload}
         />
+      )}
+      {previewVideo && (
+        <VideoPreviewModal video={previewVideo} onClose={() => setPreviewVideo(null)} />
       )}
     </div>
   );
