@@ -64,16 +64,22 @@ func (s *DiscoverService) BackfillCovers(ctx context.Context) (updated, skipped 
 				items[j] = echotik.ProductListItem{ProductID: dp.ExternalID}
 			}
 			// 复用榜单同款永久化链路:product/detail 取防盗链原文 → rehostCovers → COS。
-			coverByID := s.enrichCovers(ctx, region, items)
+			coverByID, windowByID := s.enrichCovers(ctx, region, items)
 			for _, dp := range chunk {
 				cov, ok := coverByID[dp.ExternalID]
 				if !ok || len(cov) == 0 {
 					skipped++ // 详情查不到封面 / 上游失败,留待下次
 					continue
 				}
+				updates := map[string]any{"cover_urls": cov}
+				// 详情响应里顺带有近 7 天窗口,一并回填(零额外调用)。
+				if w, wok := windowByID[dp.ExternalID]; wok {
+					updates["sale7d_cnt"] = w.sale7dCnt
+					updates["gmv7d_cents"] = w.gmv7dCents
+				}
 				if e := s.db.WithContext(ctx).Model(&model.DiscoverProduct{}).
 					Where("id = ?", dp.ID).
-					Update("cover_urls", cov).Error; e != nil {
+					Updates(updates).Error; e != nil {
 					logger.Warn("封面回填落库失败", logger.String("externalId", dp.ExternalID), logger.Err(e))
 					skipped++
 					continue

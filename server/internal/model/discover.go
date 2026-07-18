@@ -31,6 +31,10 @@ type DiscoverProduct struct {
 	TotalIflCnt    int       `gorm:"default:0" json:"totalIflCnt"`
 	TotalVideoCnt  int       `gorm:"default:0" json:"totalVideoCnt"`
 	TotalLiveCnt   int       `gorm:"default:0" json:"totalLiveCnt"`
+	// 近 7 天窗口(列表级,EchoTik 官方口径)。榜单同步时与封面同批从 product/detail 回填,
+	// 详情页刷新时也更新;0=暂无数据(未拉过详情)。命名对齐 DiscoverSeller。
+	Sale7dCnt  int `gorm:"column:sale7d_cnt;default:0" json:"sale7dCnt"`
+	Gmv7dCents int `gorm:"column:gmv7d_cents;default:0" json:"gmv7dCents"`
 	CoverUrls      JSONB     `gorm:"type:jsonb" json:"coverUrls,omitempty"`
 	Raw            JSONB     `gorm:"type:jsonb" json:"-"`
 	LastFetchedAt  time.Time `gorm:"index" json:"lastFetchedAt"`

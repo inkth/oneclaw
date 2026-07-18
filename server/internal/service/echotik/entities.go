@@ -102,11 +102,12 @@ func (c *Client) GetVideoRanklist(ctx context.Context, p RanklistParams) ([]Vide
 	return getEntityRanklist[VideoListItem](ctx, c, "/echotik/video/ranklist", "video_rank_field", "product_category_id", p)
 }
 
-// GetProductCovers 按 product_ids 批量取详情,返回 productID -> 封面原始 URL 列表(按 index 升序)。
-// 商品榜(product/ranklist)不返回 cover,封面只能从 /echotik/product/detail 拿(防盗链原文,需再签名)。
+// GetProductDetailMap 按 product_ids 批量取详情,返回 productID -> ProductDetail。
+// 商品榜(product/ranklist)不返回 cover 与窗口指标,只能从 /echotik/product/detail 拿:
+// 封面(防盗链原文,需再签名)与近 7 天销量/GMV 在同一响应里,榜单同步一次调用两用。
 // 单次最多 detailBatch 个 id。
-func (c *Client) GetProductCovers(ctx context.Context, productIDs []string, region string) (map[string][]string, error) {
-	out := make(map[string][]string, len(productIDs))
+func (c *Client) GetProductDetailMap(ctx context.Context, productIDs []string, region string) (map[string]ProductDetail, error) {
+	out := make(map[string]ProductDetail, len(productIDs))
 	const detailBatch = 10
 	// 深页预热(160 商品=16 批)若串行跑跨境 detail 会撑爆 combo 超时;限并发 4 提速。
 	var mu sync.Mutex
@@ -133,15 +134,7 @@ func (c *Client) GetProductCovers(ctx context.Context, productIDs []string, regi
 			mu.Lock()
 			defer mu.Unlock()
 			for _, d := range env.Data {
-				covers := ParseCovers(d.CoverURL)
-				if len(covers) == 0 {
-					continue
-				}
-				urls := make([]string, 0, len(covers))
-				for _, cv := range covers {
-					urls = append(urls, cv.URL)
-				}
-				out[d.ProductID] = urls
+				out[d.ProductID] = d
 			}
 			return nil
 		})

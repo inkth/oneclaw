@@ -18,6 +18,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { RankMedal } from "@/components/ui/RankMedal";
 import { Delta } from "@/components/ui/Delta";
+import { Sparkline } from "@/components/ui/Sparkline";
 import { useWarmingRefresh } from "../_components/useWarmingRefresh";
 import { VERDICT_TONE, VERDICT_LABEL } from "@/lib/ui/tokens";
 import {
@@ -50,6 +51,9 @@ type DiscoverProduct = {
   commissionRate: number;
   totalSaleCnt: number;
   totalSaleGmvAmt: number;
+  sale7dCnt: number;
+  gmv7dAmt: number;
+  spark7d: number[];
   totalIflCnt: number;
   totalVideoCnt: number;
   totalLiveCnt: number;
@@ -241,6 +245,18 @@ export function DiscoverClient({
                   </div>
                 </div>
 
+                {/* 近 7 天窗口:有数据才显示(旧库存量商品可能还没回填,不给一排「—」占版面) */}
+                {(p.sale7dCnt > 0 || p.spark7d.length > 1) && (
+                  <div className="mt-2 flex items-center gap-3 rounded-xl bg-[var(--dk-surface-2)] px-3 py-2">
+                    <span className="shrink-0 text-2xs text-zinc-400">近7天</span>
+                    {p.spark7d.length > 1 && <Sparkline data={p.spark7d} width={72} height={18} />}
+                    <div className="ml-auto flex items-baseline gap-3">
+                      {p.sale7dCnt > 0 && <span className="text-xs font-semibold nums">{fmt(p.sale7dCnt)} 件</span>}
+                      {p.gmv7dAmt > 0 && <span className="text-xs font-semibold nums">{fmtMoney(p.gmv7dAmt)}</span>}
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <Link
                     href={`/app/discover/products/${p.productId}?region=${p.region}`}
@@ -269,13 +285,16 @@ export function DiscoverClient({
             ))}
           </div>
 
-          <TableWrap className="hidden md:block">
+          <TableWrap className="hidden md:block" minWidth={1160}>
           <THead>
             <tr>
               <Th>#</Th>
               <Th>商品</Th>
               <Th align="right">均价</Th>
               <Th align="right">佣金</Th>
+              <Th>近7天趋势</Th>
+              <Th align="right">近7天销量</Th>
+              <Th align="right">近7天 GMV</Th>
               <Th align="right">总销量</Th>
               <Th align="right">总 GMV</Th>
               <Th align="right">达人</Th>
@@ -336,6 +355,19 @@ export function DiscoverClient({
                 </Td>
                 <Td align="right" className="text-emerald-700">
                   {(p.commissionRate * 100).toFixed(0)}%
+                </Td>
+                <Td>
+                  {p.spark7d.length > 1 ? (
+                    <Sparkline data={p.spark7d} />
+                  ) : (
+                    <span className="text-zinc-300">—</span>
+                  )}
+                </Td>
+                <Td align="right" className="font-semibold">
+                  {p.sale7dCnt > 0 ? fmt(p.sale7dCnt) : <span className="font-normal text-zinc-300">—</span>}
+                </Td>
+                <Td align="right">
+                  {p.gmv7dAmt > 0 ? fmtMoney(p.gmv7dAmt) : <span className="text-zinc-300">—</span>}
                 </Td>
                 <Td align="right">
                   <div className="inline-flex items-baseline gap-1.5">
