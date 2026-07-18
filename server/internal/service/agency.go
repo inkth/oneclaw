@@ -467,49 +467,66 @@ func (s *AgencyService) AdminList(ctx context.Context) ([]AgencyAdminRow, error)
 	return out, nil
 }
 
-// AdminCreate 按手机号开通代理商。用户须已注册;已是代理返回冲突。commissionBP<=0 用默认。
+// AdminCreate 按手机号开通代理商。手机号尚无账号时一并建号(含默认工作台),
+// 因为代理商多为线下谈成、从未登录过产品;已是代理返回冲突。commissionBP<=0 用默认。
 func (s *AgencyService) AdminCreate(ctx context.Context, phone string, commissionBP int, note string) (*model.Agency, error) {
 	phone = strings.TrimSpace(phone)
 	if phone == "" {
 		return nil, apperr.BadRequest("手机号不能为空")
 	}
-	var u model.User
-	if err := s.db.WithContext(ctx).Where("phone = ?", phone).First(&u).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperr.BadRequest("该手机号尚未注册,请先让其登录一次")
-		}
-		return nil, apperr.Wrap(apperr.CodeInternal, "查询用户失败", err)
-	}
-	var existing model.Agency
-	if err := s.db.WithContext(ctx).Where("user_id = ?", u.ID).First(&existing).Error; err == nil {
-		return nil, apperr.Conflict("该用户已是代理商")
-	}
 	if commissionBP <= 0 {
 		commissionBP = s.cfg.DefaultCommissionBP
 	}
-	ag := model.Agency{
-		UserID:       u.ID,
-		CommissionBP: commissionBP,
-		Status:       model.AgencyActive,
-		Note:         note,
-	}
-	// 四位数字邀请码由数据库 sequence 从 1112 开始并发安全分配。
+	var ag model.Agency
+	var created bool
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var nextCode int64
-		if err := tx.Raw("SELECT nextval('agency_invite_code_seq')").Scan(&nextCode).Error; err != nil {
-			return err
+		var u model.User
+		e := tx.Where("phone = ?", phone).First(&u).Error
+		if errors.Is(e, gorm.ErrRecordNotFound) {
+			// 建号口径与 LoginByCode 保持一致:工作台与 OWNER membership 必须成对,
+			// 否则 GetDefault 的兜底会再建一个工作台。
+			phoneVal := phone
+			now := time.Now()
+			name := defaultUserName
+			u = model.User{Phone: &phoneVal, PhoneVerified: &now, Name: &name}
+			if e := tx.Create(&u).Error; e != nil {
+				return e
+			}
+			if _, e := createDefaultForUser(tx, u.ID, ""); e != nil {
+				return e
+			}
+			created = true
+		} else if e != nil {
+			return e
 		}
-		code, err := formatAgencyInviteCode(nextCode)
-		if err != nil {
-			return err
+		var existing model.Agency
+		if e := tx.Where("user_id = ?", u.ID).First(&existing).Error; e == nil {
+			return apperr.Conflict("该用户已是代理商")
+		}
+		ag = model.Agency{
+			UserID:       u.ID,
+			CommissionBP: commissionBP,
+			Status:       model.AgencyActive,
+			Note:         note,
+		}
+		// 四位数字邀请码由数据库 sequence 从 1112 开始并发安全分配。
+		code, e := nextInviteCode(tx)
+		if e != nil {
+			return e
 		}
 		ag.Code = code
 		return tx.Create(&ag).Error
 	})
 	if err != nil {
+		if ae, ok := apperr.As(err); ok {
+			return nil, ae
+		}
 		return nil, apperr.Wrap(apperr.CodeInternal, "开通代理失败", err)
 	}
-	logger.Info("[agency] 开通代理", logger.String("user", u.ID.String()), logger.String("code", ag.Code))
+	logger.Info("[agency] 开通代理",
+		logger.String("user", ag.UserID.String()),
+		logger.String("code", ag.Code),
+		logger.Bool("newUser", created))
 	return &ag, nil
 }
 

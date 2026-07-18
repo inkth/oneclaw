@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -69,7 +70,7 @@ func (s *MarketingService) RegisterPartner(ctx context.Context, name, phone, cod
 	application := model.PartnerApplication{
 		Name:   name,
 		Phone:  phone,
-		Status: "PENDING",
+		Status: model.PartnerPending,
 	}
 	if err := s.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "phone"}},
@@ -84,4 +85,88 @@ func (s *MarketingService) RegisterPartner(ctx context.Context, name, phone, cod
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询代理商注册信息失败", err)
 	}
 	return &application, nil
+}
+
+// PartnerApplicationRow 申请行 + 该手机号在系统内的现状,供管理端判断审批后果:
+// 无账号的申请通过时会一并建号。
+type PartnerApplicationRow struct {
+	Application model.PartnerApplication `json:"application"`
+	HasUser     bool                     `json:"hasUser"`
+	AgencyCode  string                   `json:"agencyCode,omitempty"`
+}
+
+// AdminListPartners 分页列出代理商申请。status="" 为全部。
+func (s *MarketingService) AdminListPartners(ctx context.Context, status string, page int) ([]PartnerApplicationRow, int64, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	q := s.db.WithContext(ctx).Model(&model.PartnerApplication{})
+	if status != "" {
+		q = q.Where("status = ?", status)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, page, apperr.Wrap(apperr.CodeInternal, "统计代理商申请失败", err)
+	}
+	var items []model.PartnerApplication
+	// 待审的排前面,同状态按申请时间倒序。
+	if err := q.Order("CASE WHEN status = 'PENDING' THEN 0 ELSE 1 END, created_at DESC").
+		Limit(adminPageSize).Offset((page - 1) * adminPageSize).Find(&items).Error; err != nil {
+		return nil, 0, page, apperr.Wrap(apperr.CodeInternal, "查询代理商申请失败", err)
+	}
+	if len(items) == 0 {
+		return []PartnerApplicationRow{}, total, page, nil
+	}
+
+	// 批量补现状:手机号 -> 用户 -> 代理商邀请码。
+	phones := make([]string, 0, len(items))
+	for _, it := range items {
+		phones = append(phones, it.Phone)
+	}
+	var users []model.User
+	s.db.WithContext(ctx).Select("id", "phone").Where("phone IN ?", phones).Find(&users)
+	userIDByPhone := make(map[string]uuid.UUID, len(users))
+	ids := make([]uuid.UUID, 0, len(users))
+	for _, u := range users {
+		if u.Phone != nil {
+			userIDByPhone[*u.Phone] = u.ID
+			ids = append(ids, u.ID)
+		}
+	}
+	codeByUser := map[uuid.UUID]string{}
+	if len(ids) > 0 {
+		var ags []model.Agency
+		s.db.WithContext(ctx).Select("user_id", "code").Where("user_id IN ?", ids).Find(&ags)
+		for _, a := range ags {
+			codeByUser[a.UserID] = a.Code
+		}
+	}
+
+	rows := make([]PartnerApplicationRow, 0, len(items))
+	for _, it := range items {
+		uid, ok := userIDByPhone[it.Phone]
+		rows = append(rows, PartnerApplicationRow{
+			Application: it,
+			HasUser:     ok,
+			AgencyCode:  codeByUser[uid],
+		})
+	}
+	return rows, total, page, nil
+}
+
+// SetPartnerStatus 流转申请状态。审批动作本身在 AdminService 中编排。
+func (s *MarketingService) SetPartnerStatus(ctx context.Context, id uuid.UUID, status string) (*model.PartnerApplication, error) {
+	var app model.PartnerApplication
+	if err := s.db.WithContext(ctx).First(&app, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.NotFound("申请不存在")
+		}
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询代理商申请失败", err)
+	}
+	if err := s.db.WithContext(ctx).Model(&app).
+		Updates(map[string]any{"status": status, "updated_at": time.Now()}).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "更新申请状态失败", err)
+	}
+	app.Status = status
+	return &app, nil
 }

@@ -149,7 +149,7 @@ func main() {
 	quotaSvc := service.NewQuotaService(db)
 	matSvc := service.NewMaterialService(db, store, llmClient, quotaSvc)
 	billingSvc := service.NewBillingService(db, cfg.IsDev(), agencySvc, cfg.Agency.CommissionOnMock)
-	adminSvc := service.NewAdminService(db, billingSvc, quotaSvc, agencySvc)
+	adminSvc := service.NewAdminService(db, billingSvc, quotaSvc, agencySvc, mktSvc)
 	feedbackSvc := service.NewFeedbackService(db)
 	videoSvc := service.NewVideoService(db, llmClient, store, quotaSvc)
 	if llmClient.Configured() {

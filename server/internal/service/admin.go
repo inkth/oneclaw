@@ -18,14 +18,15 @@ import (
 // AdminService 运营后台聚合服务:平台看板 + 用户管理 + 订单/账单运维 + 审计。
 // 组合既有 billing/quota/agency,不重复其事务/计佣/幂等原语;所有写操作留审计(best-effort)。
 type AdminService struct {
-	db      *gorm.DB
-	billing *BillingService
-	quota   *QuotaService
-	agency  *AgencyService
+	db        *gorm.DB
+	billing   *BillingService
+	quota     *QuotaService
+	agency    *AgencyService
+	marketing *MarketingService
 }
 
-func NewAdminService(db *gorm.DB, billing *BillingService, quota *QuotaService, agency *AgencyService) *AdminService {
-	return &AdminService{db: db, billing: billing, quota: quota, agency: agency}
+func NewAdminService(db *gorm.DB, billing *BillingService, quota *QuotaService, agency *AgencyService, marketing *MarketingService) *AdminService {
+	return &AdminService{db: db, billing: billing, quota: quota, agency: agency, marketing: marketing}
 }
 
 const adminPageSize = 20
@@ -444,6 +445,52 @@ func (s *AdminService) CreateAgency(ctx context.Context, adminID uuid.UUID, phon
 	s.audit(ctx, adminID, model.AuditAgencyCreate, "agency", ag.ID.String(),
 		fmt.Sprintf("开通代理 %s(佣金 %.1f%%)", phone, float64(ag.CommissionBP)/100))
 	return ag, nil
+}
+
+// ReviewPartner 审批代理商申请。通过时按申请手机号开通代理商(手机号无账号则一并建号);
+// 该手机号若已是代理商则跳过开通、只归档申请,使历史手工开通的申请也能正常收口。
+func (s *AdminService) ReviewPartner(ctx context.Context, adminID, appID uuid.UUID, approve bool, bp int) (*PartnerApplicationRow, error) {
+	var app model.PartnerApplication
+	if err := s.db.WithContext(ctx).First(&app, "id = ?", appID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.NotFound("申请不存在")
+		}
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询代理商申请失败", err)
+	}
+
+	if !approve {
+		updated, err := s.marketing.SetPartnerStatus(ctx, appID, model.PartnerRejected)
+		if err != nil {
+			return nil, err
+		}
+		s.audit(ctx, adminID, model.AuditPartnerReview, "partner_application", appID.String(),
+			fmt.Sprintf("驳回代理商申请 %s(%s)", app.Name, app.Phone))
+		return &PartnerApplicationRow{Application: *updated}, nil
+	}
+
+	ag, err := s.agency.AdminCreate(ctx, app.Phone, bp, fmt.Sprintf("代理商申请审批通过:%s", app.Name))
+	if err != nil {
+		ae, ok := apperr.As(err)
+		if !ok || ae.Code != apperr.CodeConflict {
+			return nil, err
+		}
+		// 已是代理商:仅归档申请。
+		ag = nil
+	}
+	updated, err := s.marketing.SetPartnerStatus(ctx, appID, model.PartnerApproved)
+	if err != nil {
+		return nil, err
+	}
+	row := PartnerApplicationRow{Application: *updated, HasUser: true}
+	detail := fmt.Sprintf("通过代理商申请 %s(%s)", app.Name, app.Phone)
+	if ag != nil {
+		row.AgencyCode = ag.Code
+		detail += fmt.Sprintf(",开通邀请码 %s(佣金 %.1f%%)", ag.Code, float64(ag.CommissionBP)/100)
+	} else {
+		detail += ",该手机号已是代理商,仅归档"
+	}
+	s.audit(ctx, adminID, model.AuditPartnerReview, "partner_application", appID.String(), detail)
+	return &row, nil
 }
 
 func (s *AdminService) UpdateAgency(ctx context.Context, adminID, agencyID uuid.UUID, bp int, status string) (*model.Agency, error) {

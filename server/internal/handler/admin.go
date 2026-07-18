@@ -14,12 +14,13 @@ import (
 // AdminHandler 管理端(仅 role=admin,路由挂 RequireAdmin)。
 // admin = 运营后台聚合(看板/用户/订单/审计 + 审计化的代理写操作);agency 供代理读列表。
 type AdminHandler struct {
-	admin  *service.AdminService
-	agency *service.AgencyService
+	admin     *service.AdminService
+	agency    *service.AgencyService
+	marketing *service.MarketingService
 }
 
-func NewAdminHandler(admin *service.AdminService, agency *service.AgencyService) *AdminHandler {
-	return &AdminHandler{admin: admin, agency: agency}
+func NewAdminHandler(admin *service.AdminService, agency *service.AgencyService, marketing *service.MarketingService) *AdminHandler {
+	return &AdminHandler{admin: admin, agency: agency, marketing: marketing}
 }
 
 // adminID 取当前管理员 ID(路由已过 Auth + RequireAdmin,必有)。
@@ -276,6 +277,42 @@ func (h *AdminHandler) CreateAgency(c *gin.Context) {
 		return
 	}
 	Created(c, gin.H{"agency": ag})
+}
+
+// —— 代理商申请审批 ————————————————————————————————————————————
+
+func (h *AdminHandler) ListPartnerApplications(c *gin.Context) {
+	rows, total, page, err := h.marketing.AdminListPartners(c.Request.Context(), c.Query("status"), pageParam(c))
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"rows": rows, "total": total, "page": page, "pageSize": 20})
+}
+
+type reviewPartnerReq struct {
+	Approve      bool `json:"approve"`
+	CommissionBP int  `json:"commissionBp"`
+}
+
+func (h *AdminHandler) ReviewPartnerApplication(c *gin.Context) {
+	pid, err := uuid.Parse(c.Param("pid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("申请 ID 无效"))
+		return
+	}
+	var in reviewPartnerReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		_ = c.Error(apperr.BadRequest("参数缺失"))
+		return
+	}
+	admin, _ := adminID(c)
+	row, err := h.admin.ReviewPartner(c.Request.Context(), admin, pid, in.Approve, in.CommissionBP)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, gin.H{"row": row})
 }
 
 type updateAgencyReq struct {

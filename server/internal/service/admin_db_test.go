@@ -47,7 +47,7 @@ func newAdminSvc(db *gorm.DB) *AdminService {
 	agency := NewAgencyService(db, config.AgencyConfig{DefaultCommissionBP: 2000, BonusCredits: 300})
 	quota := NewQuotaService(db)
 	billing := NewBillingService(db, true, agency, true) // dev + 允许 mock 计佣
-	return NewAdminService(db, billing, quota, agency)
+	return NewAdminService(db, billing, quota, agency, NewMarketingService(db, nil))
 }
 
 func countAudit(t *testing.T, db *gorm.DB, action string) int64 {

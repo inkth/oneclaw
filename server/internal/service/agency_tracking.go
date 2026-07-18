@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -181,4 +182,25 @@ func formatAgencyInviteCode(value int64) (string, error) {
 		return "", fmt.Errorf("邀请码号段已用尽")
 	}
 	return fmt.Sprintf("%04d", value), nil
+}
+
+// isUnluckyInviteCode 含数字 4 的号中文忌讳,发号时跳过(不只末位)。
+// 代价:1112-9999 的可用号从 8888 个降到 5740 个。
+func isUnluckyInviteCode(value int64) bool {
+	return strings.Contains(strconv.FormatInt(value, 10), "4")
+}
+
+// nextInviteCode 从 sequence 取下一个可用邀请码,跳过忌讳号。
+// sequence 是 NO CYCLE 的,号段耗尽时 nextval 直接报错,循环不会空转。
+func nextInviteCode(tx *gorm.DB) (string, error) {
+	for {
+		var value int64
+		if err := tx.Raw("SELECT nextval('agency_invite_code_seq')").Scan(&value).Error; err != nil {
+			return "", err
+		}
+		if isUnluckyInviteCode(value) {
+			continue
+		}
+		return formatAgencyInviteCode(value)
+	}
 }
