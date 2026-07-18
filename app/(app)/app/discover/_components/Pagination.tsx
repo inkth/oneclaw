@@ -42,7 +42,9 @@ export function Pagination({
     <nav
       aria-label="分页"
       className={cn(
-        "flex items-center justify-center gap-1.5 pt-2",
+        // 给底部悬浮信标留出安全区：叠加 AppLayout 自带的底部 padding 后，
+        // 移动端与桌面端分页下方分别保留约 24px / 20px 的可视间距。
+        "flex items-center justify-center gap-1.5 pb-8 pt-2 md:pb-10",
         pending && "pointer-events-none opacity-60",
       )}
     >
