@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Coins, Settings, LogOut, Sparkles, Megaphone, ShieldCheck } from "lucide-react";
 import { Popover } from "@/components/ui/Popover";
+import { IdentityAvatar } from "@/components/ui/IdentityAvatar";
 import { useUpgradeModal } from "@/components/billing/UpgradeModalProvider";
 import { apiBrowser } from "@/lib/api-browser";
 
@@ -21,6 +22,7 @@ export function AccountMenu({
   creditsLimit,
   isAgency,
   isAdmin,
+  avatarSeed,
 }: {
   display: string;
   plan: string | null;
@@ -28,6 +30,8 @@ export function AccountMenu({
   creditsLimit: number | null;
   isAgency?: boolean;
   isAdmin?: boolean;
+  /** 头像图案种子：传用户 id，改昵称不换图案。 */
+  avatarSeed?: string;
 }) {
   const router = useRouter();
   const { open: openUpgrade } = useUpgradeModal();
@@ -49,7 +53,7 @@ export function AccountMenu({
     router.refresh();
   }
 
-  const initial = display.charAt(0).toUpperCase();
+  const seed = avatarSeed || display;
 
   return (
     <div className="flex items-center gap-2">
@@ -88,11 +92,11 @@ export function AccountMenu({
         trigger={({ open }) => (
           <span
             title={display}
-            className={`flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white transition-shadow ${
+            className={`flex h-8 w-8 items-center justify-center rounded-full transition-shadow ${
               open ? "ring-2 ring-brand-200" : ""
             }`}
           >
-            {initial}
+            <IdentityAvatar seed={seed} size={32} title={display} />
           </span>
         )}
       >
@@ -100,9 +104,7 @@ export function AccountMenu({
           <div className="text-sm">
             {/* 身份 */}
             <div className="flex items-center gap-2.5 px-3.5 py-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white">
-                {initial}
-              </span>
+              <IdentityAvatar seed={seed} size={36} title={display} />
               <div className="min-w-0">
                 <div className="truncate font-medium text-ink" title={display}>
                   {display}

@@ -23,6 +23,7 @@ export function AppHeader({
   isAgency,
   isAdmin,
   workspaceId,
+  avatarSeed,
 }: {
   loggedIn: boolean;
   display: string;
@@ -32,6 +33,8 @@ export function AppHeader({
   isAgency?: boolean;
   isAdmin?: boolean;
   workspaceId?: string | null;
+  /** 头像图案的稳定种子（用户 id）——改昵称不换头像。 */
+  avatarSeed?: string | null;
 }) {
   const { open } = useAuthModal();
 
@@ -55,6 +58,7 @@ export function AppHeader({
             creditsLimit={creditsLimit}
             isAgency={isAgency}
             isAdmin={isAdmin}
+            avatarSeed={avatarSeed ?? display}
           />
         ) : (
           <button
