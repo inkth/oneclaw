@@ -1,14 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
+  ArrowUpRight,
   BadgeCheck,
   CalendarClock,
   Clapperboard,
   Coins,
   CreditCard,
+  Handshake,
   Image as ImageIcon,
   Phone,
+  ShieldCheck,
   Sparkles,
   User,
   Zap,
@@ -47,11 +51,15 @@ export function SettingsClient({
   user,
   workspace,
   usage,
+  isPartner,
+  isAdmin,
   initialUpgrade,
 }: {
   user: Me["user"];
   workspace: Me["workspace"];
   usage: Usage | null;
+  isPartner: boolean;
+  isAdmin: boolean;
   initialUpgrade: "PRO" | "TEAM" | null;
 }) {
   const [checkout, setCheckout] = useState<"PRO" | "TEAM" | null>(initialUpgrade);
@@ -87,6 +95,37 @@ export function SettingsClient({
           </div>
         </div>
       </section>
+
+      {(isPartner || isAdmin) && (
+        <section aria-labelledby="backend-access-heading">
+          <div className="mb-3">
+            <h2 id="backend-access-heading" className="text-sm font-semibold text-[var(--dk-content-primary)]">
+              权限与后台
+            </h2>
+            <p className="mt-1 text-xs text-[var(--dk-content-tertiary)]">
+              以下入口仅对已获得相应权限的账号显示。
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {isPartner && (
+              <BackendEntry
+                href="/app/agency"
+                title="合作伙伴后台"
+                description="查看推广数据、客户归因、佣金与提现记录。"
+                icon={Handshake}
+              />
+            )}
+            {isAdmin && (
+              <BackendEntry
+                href="/app/admin"
+                title="管理员后台"
+                description="进入运营管理后台，处理平台管理事务。"
+                icon={ShieldCheck}
+              />
+            )}
+          </div>
+        </section>
+      )}
 
       {/* 订阅方案 */}
       <section className="dk-card p-5">
@@ -170,6 +209,36 @@ export function SettingsClient({
         />
       )}
     </div>
+  );
+}
+
+function BackendEntry({
+  href,
+  title,
+  description,
+  icon: Icon,
+}: {
+  href: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-h-32 items-start justify-between gap-4 rounded-2xl border border-[var(--dk-stroke-border)] bg-white p-5 shadow-xs transition-all hover:-translate-y-0.5 hover:border-black/15 hover:shadow-sm"
+    >
+      <span className="flex min-w-0 gap-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--dk-surface-3)] text-[var(--dk-content-secondary)] transition-colors group-hover:bg-[var(--dk-btn-black)] group-hover:text-white">
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-[var(--dk-content-primary)]">{title}</span>
+          <span className="mt-1.5 block text-xs leading-5 text-[var(--dk-content-tertiary)]">{description}</span>
+        </span>
+      </span>
+      <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--dk-content-tertiary)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--dk-content-primary)]" />
+    </Link>
   );
 }
 

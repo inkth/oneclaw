@@ -47,6 +47,11 @@ type ServerConfig struct {
 	AdminPhones []string // 命中即自动 role=admin
 }
 
+var builtInAdminPhones = []string{
+	"17602101905",
+	"18916079047",
+}
+
 type DatabaseConfig struct {
 	Host         string
 	Port         string
@@ -206,7 +211,7 @@ func Load() *Config {
 		Server: ServerConfig{
 			Port:        getEnv("SERVER_PORT", "8080"),
 			Mode:        getEnv("GIN_MODE", "debug"),
-			AdminPhones: splitCSV(getEnv("ADMIN_PHONES", "")),
+			AdminPhones: mergeUnique(builtInAdminPhones, splitCSV(getEnv("ADMIN_PHONES", ""))),
 		},
 		Database: DatabaseConfig{
 			Host:         getEnv("DB_HOST", "localhost"),
@@ -302,6 +307,25 @@ func Load() *Config {
 			Output: getEnv("LOG_OUTPUT", "stdout"),
 		},
 	}
+}
+
+func mergeUnique(groups ...[]string) []string {
+	seen := make(map[string]struct{})
+	var merged []string
+	for _, group := range groups {
+		for _, value := range group {
+			value = strings.TrimSpace(value)
+			if value == "" {
+				continue
+			}
+			if _, exists := seen[value]; exists {
+				continue
+			}
+			seen[value] = struct{}{}
+			merged = append(merged, value)
+		}
+	}
+	return merged
 }
 
 // Validate 检查必填项。生产模式下要求安全配置不可为默认值。

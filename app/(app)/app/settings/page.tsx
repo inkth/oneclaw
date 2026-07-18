@@ -27,6 +27,8 @@ export default async function SettingsPage({
       user={me.user}
       workspace={me.workspace}
       usage={usage}
+      isPartner={me.agency?.status === "ACTIVE"}
+      isAdmin={me.role === "admin"}
       initialUpgrade={upgrade === "PRO" || upgrade === "TEAM" ? upgrade : null}
     />
   );
