@@ -109,7 +109,7 @@ func main() {
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
 	llmClient := llm.New(cfg.OpenRouter)
-	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient)
+	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient, cfg.DiscoverSync.EnrichMinSale)
 	quotaSvc := service.NewQuotaService(db)
 	matSvc := service.NewMaterialService(db, store, llmClient, quotaSvc)
 	billingSvc := service.NewBillingService(db, cfg.IsDev(), agencySvc, cfg.Agency.CommissionOnMock)

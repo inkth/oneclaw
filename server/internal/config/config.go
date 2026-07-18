@@ -117,6 +117,7 @@ type DiscoverSyncConfig struct {
 	PageSize      int           // 每榜抓取条数
 	Pages         int           // 每组合预热的页数(累积到顺序表,供本地翻页)
 	CategorySweep bool          // 每日一轮 combo 站点 × 全一级类目 × 四榜第 1 页(类目首屏保鲜)
+	EnrichMinSale int           // 补全销量门槛:后台同步中累计销量低于此值的商品跳过详情/封面/翻译(0=不设限)
 }
 
 // SyncCombo 一组榜单抓取参数。RankType/RankField 取值见 echotik 包枚举(1=热销榜/销量)。
@@ -251,6 +252,8 @@ func Load() *Config {
 			Pages:    getEnvInt("DISCOVER_SYNC_PAGES", 3),
 			// 每日类目扫:combo 站点 × 全一级类目 × 四榜第 1 页,约 500 请求/天。
 			CategorySweep: getEnvBool("DISCOVER_SYNC_CATEGORY_SWEEP", true),
+			// 门槛设低只剔近零销量长尾(类目扫尾部居多),避免误杀累计低但正在起量的新品。
+			EnrichMinSale: getEnvInt("DISCOVER_ENRICH_MIN_SALE", 10),
 		},
 		VideoPipeline: DiscoverVideoPipelineConfig{
 			Enabled:       getEnvBool("VIDEO_PIPELINE_ENABLED", true),

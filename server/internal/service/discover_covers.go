@@ -64,7 +64,7 @@ func (s *DiscoverService) BackfillCovers(ctx context.Context) (updated, skipped 
 				items[j] = echotik.ProductListItem{ProductID: dp.ExternalID}
 			}
 			// 复用榜单同款永久化链路:product/detail 取防盗链原文 → rehostCovers → COS。
-			coverByID := s.enrichCovers(ctx, region, items)
+			coverByID, _ := s.enrichDetails(ctx, region, items)
 			for _, dp := range chunk {
 				cov, ok := coverByID[dp.ExternalID]
 				if !ok || len(cov) == 0 {

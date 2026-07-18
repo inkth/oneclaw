@@ -89,7 +89,7 @@ func TestBackfillProducts(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := NewDiscoverService(db, echotik.New(config.EchoTikConfig{BaseURL: srv.URL, Username: "u", Password: "p"}), nil, nil)
+	svc := NewDiscoverService(db, echotik.New(config.EchoTikConfig{BaseURL: srv.URL, Username: "u", Password: "p"}), nil, nil, 0)
 
 	// 第一轮:1 个前端页(20 条)= EchoTik 页 1+2 两次请求。
 	fetched, skipped, err := svc.BackfillDiscover(context.Background(), BackfillKindsProductOnly)
@@ -157,7 +157,7 @@ func TestBackfillSellerReadPath(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := NewDiscoverService(db, echotik.New(config.EchoTikConfig{BaseURL: srv.URL, Username: "u", Password: "p"}), nil, nil)
+	svc := NewDiscoverService(db, echotik.New(config.EchoTikConfig{BaseURL: srv.URL, Username: "u", Password: "p"}), nil, nil, 0)
 
 	if _, _, err := svc.BackfillDiscover(context.Background(), []string{boardSeller}); err != nil {
 		t.Fatalf("店铺回填失败: %v", err)
