@@ -8,7 +8,7 @@ import (
 
 // 店铺/达人/视频三榜:公开只读,无需工作台上下文。query: region & rank_type & field & page_size & date。
 // field 语义随榜单不同(见 echotik 包枚举注释),选品默认:店铺=热销、达人/视频=带货。
-// 服务层始终返回结果(失败降级 mock),故 handler 不返回错误。
+// 服务层始终返回结果(未配置时空态),故 handler 不返回错误。
 
 func entityParams(c *gin.Context, defaultField int) echotik.RanklistParams {
 	return echotik.RanklistParams{

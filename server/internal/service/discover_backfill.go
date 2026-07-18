@@ -81,7 +81,7 @@ func (s *DiscoverService) BackfillDiscover(ctx context.Context, kinds []string) 
 		if cerr != nil || len(cats) == 0 {
 			logger.Warn("[backfill] 类目拉取失败,回退占位类目",
 				logger.String("region", region), logger.Err(cerr))
-			cats = echotik.MockCategoriesL1()
+			cats = echotik.FallbackCategoriesL1()
 		}
 		catIDs := make([]string, 0, len(cats))
 		for _, c := range cats {

@@ -217,7 +217,7 @@ func main() {
 	if echoClient.Configured() {
 		logger.Info("[echotik] 已配置凭证,走实时数据")
 	} else {
-		logger.Warn("[echotik] 未配置 ECHOTIK_USERNAME/PASSWORD,发现页走 mock 数据")
+		logger.Warn("[echotik] 未配置 ECHOTIK_USERNAME/PASSWORD,发现页返回空态")
 	}
 
 	// 后台任务:选品榜单定时同步(预热缓存 + 每日快照)+ TEAM 超额月度结算出账。

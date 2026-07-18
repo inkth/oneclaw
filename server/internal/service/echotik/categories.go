@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// GetCategoriesL1 拉一级类目(中文名)。未配置凭证时由调用方走 mock。
+// GetCategoriesL1 拉一级类目(中文名)。未配置凭证时由调用方走 FallbackCategoriesL1。
 func (c *Client) GetCategoriesL1(ctx context.Context, region string) ([]Category, error) {
 	params := map[string]string{"language": "zh-CN", "region": region}
 	var env Envelope[[]Category]
@@ -18,8 +18,9 @@ func (c *Client) GetCategoriesL1(ctx context.Context, region string) ([]Category
 	return env.Data, nil
 }
 
-// MockCategoriesL1 没配凭证时的占位类目(便于 dev/preview 看 UI)。
-func MockCategoriesL1() []Category {
+// FallbackCategoriesL1 类目静态兜底(真实 EchoTik 一级类目 ID,非假数据):
+// 未配置凭证或类目接口临时不可用时,类目下拉/类目扫/回填仍能工作。
+func FallbackCategoriesL1() []Category {
 	return []Category{
 		{CategoryID: "601152", CategoryName: "美妆个护"},
 		{CategoryID: "601450", CategoryName: "女装与女士内衣"},

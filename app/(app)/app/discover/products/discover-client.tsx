@@ -70,7 +70,7 @@ const PRODUCT_FIELDS: FieldOption[] = [
   { v: 3, cn: "增长" },
 ];
 
-type DiscoverState = "live" | "cached" | "empty" | "mock" | "error";
+type DiscoverState = "live" | "cached" | "empty" | "error";
 
 export function DiscoverClient({
   workspaceId,

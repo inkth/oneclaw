@@ -8,7 +8,7 @@ import (
 )
 
 // 搜索:EchoTik 优先(探索新内容是其强项),失败/未配置时回落到已落库实体的本地匹配,
-// 而非返回 mock —— EchoTik 不可用时搜索仍以真实数据可用。本地匹配按累计指标降序。
+// —— EchoTik 不可用时搜索仍以真实数据可用。本地匹配按累计指标降序。
 
 // ── 本地匹配(name ILIKE) ──────────────────────────────────────────────────────
 
@@ -82,7 +82,7 @@ func (s *DiscoverService) searchLocalVideos(ctx context.Context, p echotik.Rankl
 
 // ── 三类搜索(DB-first + 后台异步落库) ─────────────────────────────────────────
 // 读路径零同步 EchoTik:先返回本地 ILIKE 匹配,再 goRefresh 用 echo.Search* 拉取并 upsert 主表
-// (下次本地即可命中);本地空且 echo 已配置时返回空+warming;未配置回落 mock。
+// (下次本地即可命中);本地空且 echo 已配置时返回空+warming;未配置返回空态。
 
 func (s *DiscoverService) searchSellers(ctx context.Context, p echotik.RanklistParams) *EntityRanklistResult[SellerDTO] {
 	if s.echo.Configured() {
@@ -101,7 +101,7 @@ func (s *DiscoverService) searchSellers(ctx context.Context, p echotik.RanklistP
 		return &EntityRanklistResult[SellerDTO]{State: "cached", Rows: rows}
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.signMapSellers(ctx, echotik.MockSearchSellers(p.Region, p.Keyword, p.PageSize))}
+		return &EntityRanklistResult[SellerDTO]{State: "empty", Rows: []SellerDTO{}}
 	}
 	return &EntityRanklistResult[SellerDTO]{State: "cached", Warming: true, Rows: []SellerDTO{}}
 }
@@ -118,7 +118,7 @@ func (s *DiscoverService) searchInfluencers(ctx context.Context, p echotik.Rankl
 		return &EntityRanklistResult[InfluencerDTO]{State: "cached", Rows: rows}
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.signMapInfluencers(ctx, echotik.MockSearchInfluencers(p.Region, p.Keyword, p.PageSize))}
+		return &EntityRanklistResult[InfluencerDTO]{State: "empty", Rows: []InfluencerDTO{}}
 	}
 	return &EntityRanklistResult[InfluencerDTO]{State: "cached", Warming: true, Rows: []InfluencerDTO{}}
 }
@@ -135,7 +135,7 @@ func (s *DiscoverService) searchVideos(ctx context.Context, p echotik.RanklistPa
 		return &EntityRanklistResult[VideoDTO]{State: "cached", Rows: rows}
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.signMapVideos(ctx, echotik.MockSearchVideos(p.Region, p.Keyword, p.PageSize))}
+		return &EntityRanklistResult[VideoDTO]{State: "empty", Rows: []VideoDTO{}}
 	}
 	return &EntityRanklistResult[VideoDTO]{State: "cached", Warming: true, Rows: []VideoDTO{}}
 }

@@ -51,7 +51,7 @@ func (s *DiscoverService) Categories(ctx context.Context, region string) []Categ
 
 	var raw []echotik.Category
 	if !configured {
-		raw = echotik.MockCategoriesL1()
+		raw = echotik.FallbackCategoriesL1()
 	} else {
 		fetched, err := s.echo.GetCategoriesL1(ctx, region)
 		if err != nil {

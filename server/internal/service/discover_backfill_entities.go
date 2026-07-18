@@ -45,7 +45,7 @@ func (s *DiscoverService) BackfillAllEntities(ctx context.Context) (fetched, ski
 		if cerr != nil || len(cats) == 0 {
 			logger.Warn("[backfill-entities] 类目拉取失败,回退占位类目",
 				logger.String("region", region), logger.Err(cerr))
-			cats = echotik.MockCategoriesL1()
+			cats = echotik.FallbackCategoriesL1()
 		}
 
 		// 类目集合 = 无类目主榜("") + 所有一级类目。

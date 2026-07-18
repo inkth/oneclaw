@@ -9,9 +9,9 @@ import (
 )
 
 // 店铺/达人/视频三榜:不落库、不导入、不收藏,只「取数 → 签图 → 映射 DTO」。
-// 与商品榜共用 EchoTik 客户端,未配置凭证时降级到 mock。
+// 与商品榜共用 EchoTik 客户端,未配置凭证时返回空态。
 
-// EntityRanklistResult 三榜统一返回信封。state: cached | mock | empty。
+// EntityRanklistResult 三榜统一返回信封。state: cached | empty。
 type EntityRanklistResult[T any] struct {
 	State     string     `json:"state"`
 	FetchedAt *time.Time `json:"fetchedAt,omitempty"`
@@ -84,7 +84,7 @@ func (s *DiscoverService) SellerRanklist(ctx context.Context, p echotik.Ranklist
 		return res
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[SellerDTO]{State: "mock", Rows: s.signMapSellers(ctx, echotik.MockSellers(p.Region, p.PageSize))}
+		return &EntityRanklistResult[SellerDTO]{State: "empty", Rows: []SellerDTO{}}
 	}
 	s.warmEntityRanklist(ctx, "seller", p, defaultRanklistDepth)
 	return &EntityRanklistResult[SellerDTO]{State: "cached", Warming: true, Rows: []SellerDTO{}}
@@ -117,7 +117,7 @@ func (s *DiscoverService) InfluencerRanklist(ctx context.Context, p echotik.Rank
 		return res
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[InfluencerDTO]{State: "mock", Rows: s.signMapInfluencers(ctx, echotik.MockInfluencers(p.Region, p.PageSize))}
+		return &EntityRanklistResult[InfluencerDTO]{State: "empty", Rows: []InfluencerDTO{}}
 	}
 	s.warmEntityRanklist(ctx, "influencer", p, defaultRanklistDepth)
 	return &EntityRanklistResult[InfluencerDTO]{State: "cached", Warming: true, Rows: []InfluencerDTO{}}
@@ -150,7 +150,7 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 		return res
 	}
 	if !s.echo.Configured() {
-		return &EntityRanklistResult[VideoDTO]{State: "mock", Rows: s.signMapVideos(ctx, echotik.MockVideos(p.Region, p.PageSize))}
+		return &EntityRanklistResult[VideoDTO]{State: "empty", Rows: []VideoDTO{}}
 	}
 	s.warmEntityRanklist(ctx, "video", p, defaultRanklistDepth)
 	return &EntityRanklistResult[VideoDTO]{State: "cached", Warming: true, Rows: []VideoDTO{}}
@@ -249,7 +249,7 @@ func mapVideo(it echotik.VideoListItem, signed map[string]string) VideoDTO {
 	}
 }
 
-// signedURL 把原始防盗链 URL 换成签名后的;签名缺失(mock / 非 TOS host)返回 nil → 前端走占位图。
+// signedURL 把原始防盗链 URL 换成签名后的;签名缺失(非 TOS host)返回 nil → 前端走占位图。
 // 注:店铺/达人/视频三榜走签名 URL(3 天有效,前端 onError 兜底);仅商品榜走 COS 永久化(rehostCovers)。
 func signedURL(raw string, signed map[string]string) *string {
 	if raw == "" || signed == nil {

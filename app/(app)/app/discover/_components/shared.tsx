@@ -5,7 +5,7 @@ import { useState } from "react";
 import { EmptyState as UIEmptyState } from "@/components/ui/EmptyState";
 import { stringToGradient, initial } from "./format";
 
-export type DiscoverState = "live" | "cached" | "empty" | "mock" | "error";
+export type DiscoverState = "live" | "cached" | "empty" | "error";
 
 /** 空榜提示。 */
 export function EmptyState({ hint }: { hint?: string }) {

@@ -40,7 +40,7 @@ type DiscoverService struct {
 	ranklistRefreshing sync.Map
 	// enrichMinSale 后台同步路径的补全销量门槛:累计销量低于此值的商品只落基础行+快照,
 	// 跳过详情请求(封面/窗口)与标题翻译,省跨境调用/COS/LLM。0=不设门槛。
-	// 只作用于榜单预热/SWR 刷新;用户搜索、mock 路径不受限。
+	// 只作用于榜单预热/SWR 刷新;用户搜索路径不受限。
 	enrichMinSale int
 }
 
@@ -83,7 +83,7 @@ type DecoratedProduct struct {
 }
 
 type RanklistResult struct {
-	State     string             `json:"state"` // live | cached | mock | error
+	State     string             `json:"state"` // live | cached | empty | error
 	FetchedAt *time.Time         `json:"fetchedAt,omitempty"`
 	Warming   bool               `json:"warming,omitempty"` // 当前返回为空/部分,已触发后台异步补全,前端可稍后重取
 	Products  []DecoratedProduct `json:"products"`
@@ -94,7 +94,7 @@ const defaultRanklistDepth = 3
 
 // Ranklist 取榜单:读路径**零同步 EchoTik**。读本地 DB(顺序表 + 主表),按页切片;
 // miss/陈旧/请求页超出已存深度 → goRefresh 后台异步拉取落库,当前请求按"库存为准"返回
-// (可能为空 + warming);EchoTik 未配置时回落 mock(开发演示),不阻塞、不在请求内打跨境接口。
+// (可能为空 + warming);EchoTik 未配置时返回空态,不阻塞、不在请求内打跨境接口。
 func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echotik.RanklistParams) (*RanklistResult, error) {
 	if p.PageSize <= 0 {
 		p.PageSize = 10
@@ -117,7 +117,7 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 			return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}, nil
 		}
 		if !s.echo.Configured() {
-			return s.mockRanklist(ctx, wsID, p), nil
+			return &RanklistResult{State: "empty", Products: []DecoratedProduct{}}, nil
 		}
 		return &RanklistResult{State: "cached", Warming: true, Products: []DecoratedProduct{}}, nil
 	}
@@ -147,7 +147,7 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 
 	// ── 冷启动(顺序表为空)。 ──
 	if !s.echo.Configured() {
-		return s.mockRanklist(ctx, wsID, p), nil
+		return &RanklistResult{State: "empty", Products: []DecoratedProduct{}}, nil
 	}
 	goRefresh(ctx, "ranklist-cold", func(bg context.Context) {
 		if _, e := s.RefreshRanklistDeep(bg, p, defaultRanklistDepth); e != nil {
@@ -155,14 +155,6 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		}
 	})
 	return &RanklistResult{State: "cached", Warming: true, Products: []DecoratedProduct{}}, nil
-}
-
-// mockRanklist EchoTik 未配置时的开发兜底:用预置 mock 数据 upsert 进 DiscoverProduct
-// (支持导入/收藏演示),不写榜单顺序/快照/封面。
-func (s *DiscoverService) mockRanklist(ctx context.Context, wsID uuid.UUID, p echotik.RanklistParams) *RanklistResult {
-	raw := echotik.MockRanklist(p.Region, p.PageSize)
-	dps := s.persist(ctx, p, raw, false, false, false, false)
-	return &RanklistResult{State: "mock", Products: s.decorate(ctx, wsID, dps)}
 }
 
 // searchProducts 关键词搜商品:**DB-first**。先返回已落库商品的本地 ILIKE 匹配(零 EchoTik),
@@ -175,9 +167,7 @@ func (s *DiscoverService) searchProducts(ctx context.Context, wsID uuid.UUID, p 
 		return &RanklistResult{State: "cached", Products: s.decorate(ctx, wsID, dps)}
 	}
 	if !s.echo.Configured() {
-		raw := echotik.MockSearchProducts(p.Region, p.Keyword, p.PageSize)
-		dps := s.persist(ctx, p, raw, false, false, false, false)
-		return &RanklistResult{State: "mock", Products: s.decorate(ctx, wsID, dps)}
+		return &RanklistResult{State: "empty", Products: []DecoratedProduct{}}
 	}
 	return &RanklistResult{State: "cached", Warming: true, Products: []DecoratedProduct{}}
 }
@@ -370,7 +360,7 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 		return gateEnrich && s.enrichMinSale > 0 && it.TotalSaleCnt < s.enrichMinSale
 	}
 
-	// 商品榜接口不带封面/窗口;仅 live 拉取时调详情接口补取,避免给 mock/error 数据空跑。
+	// 商品榜接口不带封面/窗口;仅 live 拉取时调详情接口补取。
 	// 同一次详情调用顺带带回近 7/30 天窗口,persist 时零新增调用写进主表。
 	var coverByID map[string]model.JSONB
 	var detailByID map[string]echotik.ProductDetail

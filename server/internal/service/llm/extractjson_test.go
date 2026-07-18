@@ -11,8 +11,8 @@ func TestExtractJSON(t *testing.T) {
 	}{
 		{"clean", `{"a":1}`, `{"a":1}`},
 		{"fenced", "```json\n{\"a\":1}\n```", `{"a":1}`},
-		{"trailing brace", "{\"a\":1}\n}", `{"a":1}`},           // 生产遇到的多余 }
-		{"trailing prose", `{"a":1} 说明:以上是结果`, `{"a":1}`},      // JSON 后追加散文
+		{"trailing brace", "{\"a\":1}\n}", `{"a":1}`},     // 生产遇到的多余 }
+		{"trailing prose", `{"a":1} 说明:以上是结果`, `{"a":1}`}, // JSON 后追加散文
 		{"leading prose", "结果如下:\n{\"a\":1}", `{"a":1}`},
 		{"array trailing junk", `[1,2,3]]`, `[1,2,3]`},
 	}

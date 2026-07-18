@@ -4,14 +4,14 @@ import "testing"
 
 func TestEstimateLandedCost(t *testing.T) {
 	cases := []struct {
-		name       string
-		price      int
-		prod       string
-		region     string
-		wantArch   string
-		wantGoods  int
-		wantLogi   int
-		wantTotal  int
+		name      string
+		price     int
+		prod      string
+		region    string
+		wantArch  string
+		wantGoods int
+		wantLogi  int
+		wantTotal int
 	}{
 		// 美妆 0.18 货价 + US 0.18 物流。
 		{"beauty-us", 2000, "Hydrating Face Serum", "US", "美妆个护", 360, 360, 720},

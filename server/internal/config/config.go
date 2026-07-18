@@ -109,7 +109,7 @@ type EchoTikConfig struct {
 func (e EchoTikConfig) Configured() bool { return e.Username != "" && e.Password != "" }
 
 // DiscoverSyncConfig 选品榜单定时同步:预热榜单缓存 + 保证每日快照连续。
-// 仅在 EchoTik 已配置时生效(mock 模式无预热价值)。
+// 仅在 EchoTik 已配置时生效。
 type DiscoverSyncConfig struct {
 	Enabled       bool
 	Interval      time.Duration // 与榜单缓存 TTL(6h)对齐

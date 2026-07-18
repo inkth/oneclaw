@@ -74,7 +74,7 @@ export default async function DiscoverProductsPage({
       categoryId={categoryId}
       categories={categories}
       keyword={q}
-      state={result.state as "live" | "cached" | "empty" | "mock" | "error"}
+      state={result.state as "live" | "cached" | "empty" | "error"}
       fetchedAt={result.fetchedAt ?? null}
       warming={result.warming ?? false}
       products={result.products.map((p) => ({

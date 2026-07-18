@@ -478,22 +478,15 @@ func (s *AgentService) snapshotTrendDelta(ctx context.Context, dpIDs []uuid.UUID
 	return out
 }
 
-// ensureCandidates 候选为空时的兜底:live 配置现场刷一次榜单;mock 模式触发 mock 落库。
+// ensureCandidates 候选为空时的兜底:live 配置现场刷一次榜单;未配置 EchoTik 无从取数,原样返回空。
 func (s *AgentService) ensureCandidates(ctx context.Context, regions []string, limit int) ([]model.DiscoverProduct, error) {
 	dps, err := s.analystCandidates(ctx, regions, limit)
-	if err != nil || len(dps) > 0 {
+	if err != nil || len(dps) > 0 || !s.discover.echo.Configured() {
 		return dps, err
 	}
 	p := echotik.RanklistParams{Region: regions[0], RankType: 1, RankField: 1, PageSize: 30}
-	if s.discover.echo.Configured() {
-		if _, err := s.discover.RefreshRanklist(ctx, p); err != nil {
-			logger.Warn("[agent] analyst 现场刷新榜单失败", logger.Err(err))
-		}
-	} else {
-		// mock 模式:Ranklist 会把预置商品 upsert 进 discover_products,本地无凭证也能演示。
-		if _, err := s.discover.Ranklist(ctx, uuid.Nil, p); err != nil {
-			logger.Warn("[agent] analyst mock 榜单落库失败", logger.Err(err))
-		}
+	if _, err := s.discover.RefreshRanklist(ctx, p); err != nil {
+		logger.Warn("[agent] analyst 现场刷新榜单失败", logger.Err(err))
 	}
 	return s.analystCandidates(ctx, regions, limit)
 }
