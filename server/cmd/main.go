@@ -96,6 +96,16 @@ func main() {
 		UpdateColumn("commission_eligible_until", gorm.Expr("created_at + INTERVAL '1 year'")).Error; err != nil {
 		logger.Fatal("代理商计佣窗口回填失败", logger.Err(err))
 	}
+	// 商品近窗指标列上线回填:已拉过详情的存量商品把 detail_extras 里的窗口值提到列表列
+	// (幂等,只补 0 值行;失败仅告警——展示层数据,不该拦启动)。
+	if err := db.Exec(`UPDATE discover_products SET
+			sale7d_cnt = COALESCE((detail_extras->'windows'->>'sale7dCnt')::numeric, 0)::int,
+			sale30d_cnt = COALESCE((detail_extras->'windows'->>'sale30dCnt')::numeric, 0)::int,
+			gmv7d_cents = COALESCE((detail_extras->'windows'->>'gmv7dCents')::numeric, 0)::int,
+			gmv30d_cents = COALESCE((detail_extras->'windows'->>'gmv30dCents')::numeric, 0)::int
+		WHERE (sale7d_cnt = 0 OR sale30d_cnt = 0) AND detail_extras->'windows'->>'sale7dCnt' IS NOT NULL`).Error; err != nil {
+		logger.Warn("商品近窗指标回填失败", logger.Err(err))
+	}
 
 	// Services
 	agencySvc := service.NewAgencyService(db, cfg.Agency)
@@ -109,7 +119,7 @@ func main() {
 	shopSvc := service.NewShopService(db)
 	modelSvc := service.NewModelAssetService(db)
 	llmClient := llm.New(cfg.OpenRouter)
-	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient)
+	discSvc := service.NewDiscoverService(db, echoClient, store, llmClient, cfg.DiscoverSync.EnrichMinSale)
 	quotaSvc := service.NewQuotaService(db)
 	matSvc := service.NewMaterialService(db, store, llmClient, quotaSvc)
 	billingSvc := service.NewBillingService(db, cfg.IsDev(), agencySvc, cfg.Agency.CommissionOnMock)

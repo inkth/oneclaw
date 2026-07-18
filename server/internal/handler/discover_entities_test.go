@@ -17,7 +17,7 @@ import (
 // 「query 解析 → service → mock → DTO 映射 → {ok,data} 信封」。
 func newEntityRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
-	disc := service.NewDiscoverService(nil, echotik.New(config.EchoTikConfig{}), nil, nil)
+	disc := service.NewDiscoverService(nil, echotik.New(config.EchoTikConfig{}), nil, nil, 0)
 	h := NewDiscoverHandler(disc, nil, nil)
 	r := gin.New()
 	r.GET("/discover/seller-ranklist", h.SellerRanklist)

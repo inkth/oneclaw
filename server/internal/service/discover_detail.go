@@ -92,7 +92,10 @@ type SignalDTO struct {
 
 // detailExtras 是 pdetail 缓存的内容(详情扩展 + 签名图廊)。
 type detailExtras struct {
-	Gallery      []string    `json:"gallery"`
+	Gallery []string `json:"gallery"`
+	// GalleryRaw 图廊防盗链原文 URL(不能直接展示)。同步路径零成本存下,
+	// 详情页首开时直接 rehost 成 Gallery,省一次 product/detail 调用。
+	GalleryRaw   []string    `json:"galleryRaw,omitempty"`
 	Rating       float64     `json:"rating"`
 	ReviewCount  int         `json:"reviewCount"`
 	Discount     string      `json:"discount"`
@@ -124,16 +127,18 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 	dto := &ProductDetailDTO{DecoratedProduct: base}
 	trend := s.productTrendFromSnapshots(ctx, dp.ID)
 
-	hasDetail := !dp.DetailFetchedAt.IsZero()
-	fresh := hasDetail && time.Since(dp.DetailFetchedAt) < productDetailTTL
+	// extras 与达人/视频整包解耦:同步路径会顺带回填 detail_extras,库里有就先渲染
+	// (首开即有评分/描述/窗口,不用等后台)。
+	extras := parseProductExtras(dp.DetailExtras)
 
-	var extras *detailExtras
-	if fresh || hasDetail || !s.echo.Configured() {
+	hasBundle := !dp.DetailFetchedAt.IsZero() // 达人/视频整包拉过
+	fresh := hasBundle && time.Since(dp.DetailFetchedAt) < productDetailTTL
+
+	if hasBundle || !s.echo.Configured() {
 		// 新鲜 / SWR 旧值 / 未配置降级:全部读 DB。
-		extras = parseProductExtras(dp.DetailExtras)
 		dto.Influencers = parseProductInfluencers(dp.DetailInfluencers)
 		dto.Videos = parseProductVideos(dp.DetailVideos)
-		if !fresh && hasDetail && s.echo.Configured() {
+		if !fresh && hasBundle && s.echo.Configured() {
 			goRefresh(ctx, "product-detail", func(bg context.Context) {
 				if _, _, _, e := s.refreshProductDetail(bg, externalID, region); e != nil {
 					logger.Warn("选品详情后台刷新失败", logger.String("id", externalID), logger.Err(e))
@@ -141,7 +146,7 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 			})
 		}
 	} else {
-		// 首见:不阻塞——后台异步拉详情扩展并落库,本次仅返回基础(榜单级)视图 + warming,下次即有详情。
+		// 首见(达人/视频尚未拉过):不阻塞——后台异步拉取并落库,本次返回已有部分 + warming,下次补全。
 		dto.Warming = true
 		goRefresh(ctx, "product-detail-first", func(bg context.Context) {
 			if _, _, _, e := s.refreshProductDetail(bg, externalID, region); e != nil {
@@ -183,22 +188,48 @@ func (s *DiscoverService) ProductDetailFull(ctx context.Context, wsID uuid.UUID,
 // ── 详情子资源(拉取 + 永久化 + 落库) ──────────────────────────────────────────
 
 // refreshProductDetail 并行拉详情扩展/带货达人/带货视频,封面 rehost 到 COS 永久化,落库 DiscoverProduct
-// 详情字段。趋势不在此取(走 DiscoverSnapshot 差分)。任一子资源失败只影响该块,全失败才返回 error。
+// 详情字段。同步路径已回填且仍新鲜的 detail_extras 直接复用(省一次 product/detail 调用),
+// 图廊缺失时用存的防盗链原文直接 rehost(下载/COS,零 EchoTik)。
+// 趋势不在此取(走 DiscoverSnapshot 差分)。任一子资源失败只影响该块,全失败才返回 error。
 func (s *DiscoverService) refreshProductDetail(ctx context.Context, id, region string) (*detailExtras, []ProductInfluencerDTO, []ProductVideoDTO, error) {
 	var (
 		extras *detailExtras
 		infls  []ProductInfluencerDTO
 		vids   []ProductVideoDTO
 	)
+	if dp, e := s.findDiscover(ctx, id, region); e == nil && dp != nil &&
+		!dp.DetailExtrasAt.IsZero() && time.Since(dp.DetailExtrasAt) < productDetailTTL {
+		extras = parseProductExtras(dp.DetailExtras)
+	}
+	reused := extras != nil
+	builtGallery := false
+
 	g, gctx := errgroup.WithContext(ctx)
-	g.Go(func() error { extras = s.fetchProductExtras(gctx, id, region); return nil })
+	if reused {
+		if len(extras.Gallery) == 0 && len(extras.GalleryRaw) > 0 {
+			g.Go(func() error {
+				if gal := s.rehostGallery(gctx, extras.GalleryRaw); len(gal) > 0 {
+					extras.Gallery = gal
+					builtGallery = true
+				}
+				return nil
+			})
+		}
+	} else {
+		g.Go(func() error { extras = s.fetchProductExtras(gctx, id, region); return nil })
+	}
 	g.Go(func() error { infls = s.fetchProductInfluencers(gctx, id, region); return nil })
 	g.Go(func() error { vids = s.fetchProductVideos(gctx, id, region); return nil })
 	_ = g.Wait()
 	if extras == nil && len(infls) == 0 && len(vids) == 0 {
 		return nil, nil, nil, errors.New("选品详情子资源全部拉取失败")
 	}
-	s.persistProductDetail(ctx, id, region, extras, infls, vids)
+	// 复用且无新图廊时不重写 extras:避免把同步落的数据无限续期(freshness 归真正拉取方所有)。
+	persistExtras := extras
+	if reused && !builtGallery {
+		persistExtras = nil
+	}
+	s.persistProductDetail(ctx, id, region, persistExtras, infls, vids)
 	return extras, infls, vids, nil
 }
 
@@ -210,20 +241,21 @@ func (s *DiscoverService) fetchProductExtras(ctx context.Context, id, region str
 		}
 		return nil
 	}
+	ex := extrasFromDetail(d)
+	ex.Gallery = s.rehostGallery(ctx, ex.GalleryRaw) // 图廊永久化到 COS
+	return ex
+}
+
+// extrasFromDetail 把 product/detail 响应映射成 detailExtras(纯映射,不 rehost;
+// 图廊只存防盗链原文到 GalleryRaw)。同步路径顺带落库与详情页现场拉取共用。
+func extrasFromDetail(d *echotik.ProductDetail) *detailExtras {
 	covers := echotik.ParseCovers(d.CoverURL)
 	raws := make([]string, 0, len(covers))
 	for _, cv := range covers {
 		raws = append(raws, cv.URL)
 	}
-	hosted := s.rehostCovers(ctx, raws) // 图廊永久化到 COS
-	gallery := make([]string, 0, len(raws))
-	for _, r := range raws {
-		if u := hosted[r]; u != "" {
-			gallery = append(gallery, u)
-		}
-	}
 	return &detailExtras{
-		Gallery:      gallery,
+		GalleryRaw:   raws,
 		Rating:       d.ProductRating.Float(),
 		ReviewCount:  d.ReviewCount.Int(),
 		Discount:     string(d.Discount),
@@ -244,6 +276,21 @@ func (s *DiscoverService) fetchProductExtras(ctx context.Context, id, region str
 		TotalVideoCnt: d.TotalVideoCnt.Int(),
 		TotalLiveCnt:  d.TotalLiveCnt.Int(),
 	}
+}
+
+// rehostGallery 把防盗链原文图廊逐张下载转存 COS,返回永久 URL 列表(失败的图跳过)。
+func (s *DiscoverService) rehostGallery(ctx context.Context, raws []string) []string {
+	if len(raws) == 0 {
+		return []string{}
+	}
+	hosted := s.rehostCovers(ctx, raws)
+	gallery := make([]string, 0, len(raws))
+	for _, r := range raws {
+		if u := hosted[r]; u != "" {
+			gallery = append(gallery, u)
+		}
+	}
+	return gallery
 }
 
 func (s *DiscoverService) fetchProductInfluencers(ctx context.Context, id, region string) []ProductInfluencerDTO {
@@ -329,6 +376,14 @@ func (s *DiscoverService) persistProductDetail(ctx context.Context, id, region s
 	if extras != nil {
 		if b, e := json.Marshal(extras); e == nil {
 			updates["detail_extras"] = model.JSONB(b)
+			updates["detail_extras_at"] = time.Now()
+		}
+		// 近窗指标同步提到列表列(榜单/发现页直读,不用解 JSONB)。
+		if extras.Windows != nil {
+			updates["sale7d_cnt"] = extras.Windows.Sale7dCnt
+			updates["sale30d_cnt"] = extras.Windows.Sale30dCnt
+			updates["gmv7d_cents"] = extras.Windows.Gmv7dCents
+			updates["gmv30d_cents"] = extras.Windows.Gmv30dCents
 		}
 	}
 	if infls != nil {

@@ -31,15 +31,24 @@ type DiscoverProduct struct {
 	TotalIflCnt    int       `gorm:"default:0" json:"totalIflCnt"`
 	TotalVideoCnt  int       `gorm:"default:0" json:"totalVideoCnt"`
 	TotalLiveCnt   int       `gorm:"default:0" json:"totalLiveCnt"`
-	CoverUrls      JSONB     `gorm:"type:jsonb" json:"coverUrls,omitempty"`
-	Raw            JSONB     `gorm:"type:jsonb" json:"-"`
-	LastFetchedAt  time.Time `gorm:"index" json:"lastFetchedAt"`
+	// 近窗销量/GMV(列表级,EchoTik 官方口径)。榜单同步时与封面同批从 product/detail 回填,
+	// 详情页刷新时也更新;0=暂无数据(未拉过详情)。命名对齐 DiscoverSeller。
+	Sale7dCnt     int       `gorm:"column:sale7d_cnt;default:0" json:"sale7dCnt"`
+	Sale30dCnt    int       `gorm:"column:sale30d_cnt;default:0" json:"sale30dCnt"`
+	Gmv7dCents    int       `gorm:"column:gmv7d_cents;default:0" json:"gmv7dCents"`
+	Gmv30dCents   int       `gorm:"column:gmv30d_cents;default:0" json:"gmv30dCents"`
+	CoverUrls     JSONB     `gorm:"type:jsonb" json:"coverUrls,omitempty"`
+	Raw           JSONB     `gorm:"type:jsonb" json:"-"`
+	LastFetchedAt time.Time `gorm:"index" json:"lastFetchedAt"`
 
 	// 详情级(详情页按条件刷新,对标达人/店铺/视频两级新鲜度;趋势走 DiscoverSnapshot 差分,不在此存)。
 	DetailExtras      JSONB     `gorm:"column:detail_extras;type:jsonb" json:"-"`      // 图廊/评分/描述/窗口/累计权威值
 	DetailInfluencers JSONB     `gorm:"column:detail_influencers;type:jsonb" json:"-"` // []ProductInfluencerDTO
 	DetailVideos      JSONB     `gorm:"column:detail_videos;type:jsonb" json:"-"`      // []ProductVideoDTO
 	DetailFetchedAt   time.Time `gorm:"column:detail_fetched_at;index" json:"detailFetchedAt"`
+	// DetailExtrasAt 单指 detail_extras 的新鲜度(同步路径顺带回填也会更新;
+	// DetailFetchedAt 仍代表「达人/视频整包」拉过,两者解耦)。
+	DetailExtrasAt time.Time `gorm:"column:detail_extras_at" json:"detailExtrasAt"`
 
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
