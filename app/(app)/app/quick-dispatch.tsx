@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowUpRight, BadgeCheck, Loader2, Send, X } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, ChevronDown, Loader2, Send } from "lucide-react";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import {
   ComposerSendButton,
@@ -33,6 +33,7 @@ export function QuickDispatchSheet({
   fullHref,
   entityName,
   discoverRef,
+  suggestions,
   onClose,
 }: {
   workspaceId: string;
@@ -46,6 +47,8 @@ export function QuickDispatchSheet({
   entityName?: string;
   /** discover 商品引用：随任务下发，后端注入销量/佣金/达人等真实数据做单品判断 */
   discoverRef?: { productId: string; region: string };
+  /** 情境问题：按当前实体给的现成问法，点选填入输入框（可再编辑后发送） */
+  suggestions?: string[];
   onClose: () => void;
 }) {
   const identity = AGENT_IDENTITY[agent];
@@ -118,7 +121,7 @@ export function QuickDispatchSheet({
       <div
         role="dialog"
         aria-label={`派活给${identity.label}`}
-        className="absolute inset-x-3 bottom-[88px] mx-auto max-w-[560px] rounded-2xl border border-black/[0.08] bg-white p-3 shadow-[0_24px_64px_-24px_rgba(18,20,25,0.35)] md:bottom-10"
+        className="absolute inset-x-3 bottom-[76px] mx-auto max-w-[560px] rounded-2xl border border-black/[0.08] bg-white p-3 shadow-[0_24px_64px_-24px_rgba(18,20,25,0.35)] md:bottom-6"
       >
         <div className="flex items-center gap-2 px-1 pb-2">
           <span className={`h-2 w-2 rounded-full ${identity.dot}`} aria-hidden />
@@ -137,12 +140,29 @@ export function QuickDispatchSheet({
           <button
             type="button"
             onClick={onClose}
-            aria-label="关闭"
+            aria-label="收起"
             className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--dk-content-tertiary)] transition-colors hover:bg-[var(--dk-action-regular)] hover:text-[var(--dk-content-primary)]"
           >
-            <X className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4" />
           </button>
         </div>
+        {suggestions && suggestions.length > 0 && (
+          <div className="grid grid-cols-1 gap-1.5 pb-2 sm:grid-cols-2">
+            {suggestions.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => {
+                  setInput(q);
+                  boxRef.current?.focus();
+                }}
+                className="rounded-xl border border-black/[0.07] bg-white px-3 py-2 text-left text-2xs leading-5 text-[var(--dk-content-secondary)] transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-[var(--dk-content-primary)]"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
         <ComposerSurface variant="compact">
           <ComposerTextarea
             variant="compact"
