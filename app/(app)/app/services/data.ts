@@ -89,6 +89,19 @@ const UVA: Partner = {
   note: "主角跨境 · 主体入驻与财税合规",
   phone: "+86 189 2523 9734",
 };
+const DACHONG: Partner = {
+  name: "Dachong LLC",
+  note: "美东海外仓 · 联系人 Anita Chan",
+  phone: "+1 626 525 3281",
+  wechat: "1291056817",
+  email: "chanchanyinn@gmail.com",
+};
+const CHENFENG: Partner = {
+  name: "晨风",
+  note: "5 年跨境服务商 · 多平台本土店入驻",
+  wechat: "Gao061818",
+  email: "2648269853@qq.com",
+};
 
 export const CATEGORIES: Category[] = [
   {
@@ -108,11 +121,12 @@ export const CATEGORIES: Category[] = [
       },
       {
         label: "海外仓",
-        desc: "主流市场的本地仓资源：一件代发、退货换标、本地尾程配送，旺季不爆仓、时效更稳。适合已有稳定出单、想把物流体验做上去的卖家。",
+        desc: "美东本地仓资源：一件代发、退货换标、本地尾程配送，旺季不爆仓、时效更稳。适合已有稳定出单、想把物流体验做上去的卖家。",
         icon: "Warehouse",
-        status: "soon",
+        status: "live",
         tags: ["一件代发", "退换处理", "本地尾程"],
-        regions: ["us", "uk", "sea", "eu", "mx"],
+        regions: ["us"],
+        partners: [DACHONG],
       },
       {
         label: "清关报关",
@@ -174,7 +188,7 @@ export const CATEGORIES: Category[] = [
         status: "live",
         tags: ["主体注册", "本土店入驻", "提审跟进"],
         regions: ["us", "uk", "sea", "eu"],
-        partners: [CHAOREN, UVA],
+        partners: [CHAOREN, UVA, CHENFENG],
       },
     ],
   },
