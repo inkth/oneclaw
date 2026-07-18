@@ -10,16 +10,18 @@ import { DashboardTab } from "./admin-dashboard-tab";
 import { UsersTab } from "./admin-users-tab";
 import { OrdersTab } from "./admin-orders-tab";
 import { AgencyTab } from "./admin-agency-tab";
+import { PartnersTab } from "./admin-partners-tab";
 import { AuditTab } from "./admin-audit-tab";
 import { FeedbackTab } from "./admin-feedback-tab";
 
-type TabKey = "dashboard" | "users" | "orders" | "agency" | "feedback" | "audit";
+type TabKey = "dashboard" | "users" | "orders" | "agency" | "partners" | "feedback" | "audit";
 
 const TABS: { value: TabKey; label: string }[] = [
   { value: "dashboard", label: "概览" },
   { value: "users", label: "用户" },
   { value: "orders", label: "订单账单" },
   { value: "agency", label: "代理商" },
+  { value: "partners", label: "代理申请" },
   { value: "feedback", label: "反馈" },
   { value: "audit", label: "审计" },
 ];
@@ -36,7 +38,7 @@ export function AdminShell({ dashboard }: { dashboard: Dashboard }) {
             仅管理员
           </Badge>
         }
-        description="平台运营:数据看板、用户管理、订单账单、代理分销、用户反馈与操作审计。"
+        description="平台运营:数据看板、用户管理、订单账单、代理分销与申请审批、用户反馈与操作审计。"
       />
 
       <SegmentedTabs
@@ -50,6 +52,7 @@ export function AdminShell({ dashboard }: { dashboard: Dashboard }) {
       {tab === "users" && <UsersTab />}
       {tab === "orders" && <OrdersTab />}
       {tab === "agency" && <AgencyTab />}
+      {tab === "partners" && <PartnersTab />}
       {tab === "feedback" && <FeedbackTab />}
       {tab === "audit" && <AuditTab />}
     </div>

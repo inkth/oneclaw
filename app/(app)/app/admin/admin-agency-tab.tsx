@@ -120,7 +120,9 @@ export function AgencyTab() {
 
       <Card>
         <SectionHeader icon={ShieldCheck} title="开通代理商" />
-        <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">按手机号开通。该手机号需已注册（登录过一次）。</p>
+        <p className="mt-1 text-xs text-[var(--dk-content-secondary)]">
+          按手机号开通。该手机号未注册过也可以，会自动建号。走落地页申请的请用「代理申请」页审批。
+        </p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input
             type="tel"

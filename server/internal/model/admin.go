@@ -18,6 +18,7 @@ const (
 	AuditOverflowSettle   = "OVERFLOW_SETTLE"
 	AuditAgencyCreate     = "AGENCY_CREATE"
 	AuditAgencyUpdate     = "AGENCY_UPDATE"
+	AuditPartnerReview    = "PARTNER_REVIEW"
 	AuditWithdrawalReview = "WITHDRAWAL_REVIEW"
 )
 

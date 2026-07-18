@@ -61,7 +61,7 @@ func New(d Deps) *gin.Engine {
 	reviewH := handler.NewReviewHandler(d.Workspace, d.Agent)
 	billH := handler.NewBillingHandler(d.Billing, d.Quota, d.Workspace)
 	agencyH := handler.NewAgencyHandler(d.Agency)
-	adminH := handler.NewAdminHandler(d.Admin, d.Agency)
+	adminH := handler.NewAdminHandler(d.Admin, d.Agency, d.Marketing)
 	fbH := handler.NewFeedbackHandler(d.Feedback)
 
 	r.GET("/health", handler.Health)
@@ -222,6 +222,10 @@ func New(d Deps) *gin.Engine {
 			adm.PATCH("/agencies/:aid", adminH.UpdateAgency)
 			adm.GET("/withdrawals", adminH.ListWithdrawals)
 			adm.POST("/withdrawals/:wid/review", adminH.ReviewWithdrawal)
+
+			// 代理商申请审批
+			adm.GET("/partner-applications", adminH.ListPartnerApplications)
+			adm.POST("/partner-applications/:pid/review", adminH.ReviewPartnerApplication)
 		}
 	}
 

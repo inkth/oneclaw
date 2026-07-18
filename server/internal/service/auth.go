@@ -29,6 +29,16 @@ func NewAuthService(db *gorm.DB, cfg *config.Config, sms *SMSService, agency *Ag
 	return &AuthService{db: db, cfg: cfg, sms: sms, agency: agency}
 }
 
+// defaultUserName 新建账号的默认昵称:喵 + 手机号后 6 位(不足 6 位则取全部)。
+// 建号有两条路径(手机号登录、管理端开通代理商),口径需一致。
+func defaultUserName(phone string) string {
+	digits := []rune(phone)
+	if len(digits) > 6 {
+		digits = digits[len(digits)-6:]
+	}
+	return "喵" + string(digits)
+}
+
 // SendCode 发送登录验证码,返回 devCode(仅 dev 非空)。
 func (s *AuthService) SendCode(ctx context.Context, phone string) (string, error) {
 	return s.sms.Send(ctx, phone)
@@ -56,7 +66,7 @@ func (s *AuthService) LoginByCode(ctx context.Context, phone, code, inviteCode, 
 		if errors.Is(e, gorm.ErrRecordNotFound) {
 			phoneVal := phone
 			now := time.Now()
-			name := "跨境卖家"
+			name := defaultUserName(phone)
 			user = model.User{Phone: &phoneVal, PhoneVerified: &now, Name: &name}
 			if e := tx.Create(&user).Error; e != nil {
 				return e
