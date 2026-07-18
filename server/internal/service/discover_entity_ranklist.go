@@ -30,9 +30,15 @@ func gmvCentsToDollars(cents int) float64 { return float64(cents) / 100.0 }
 // (provider,kind,region,rank_type,rank_field,category_id) 一条,external_ids 累积全部已拉深度,
 // 读侧 pageSlice 本地分页。page_num 固定 1,只作为唯一索引 uq_ere_pg 的键维度占位
 // (ON CONFLICT 列必须与唯一索引完全一致,少列会整条写入报错——曾静默失败,故错误必打日志)。
+//
+// 防缩水:新列表只覆盖它够得着的前缀,既有更深的尾部保留。上游某天数据没出全、或跨境超时
+// 只拉回几条时,绝不能把已存的完整榜单截断——曾致达人榜首页只剩 6 条并挂满一个 TTL。
 func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, p echotik.RanklistParams, ids []string) {
 	if s.db == nil || len(ids) == 0 {
 		return
+	}
+	if existing, _, ok := s.lookupRanklistIDs(ctx, kind, p); ok && len(existing) > len(ids) {
+		ids = mergeIDsAt(existing, ids, 0)
 	}
 	e := model.EntityRanklistEntry{
 		Provider: providerEchoTik, Kind: kind, Region: p.Region,
@@ -60,6 +66,12 @@ func (s *DiscoverService) mergeEntityRanklistPage(ctx context.Context, kind stri
 	}
 	existing, _, _ := s.lookupRanklistIDs(ctx, kind, p)
 	start := (p.PageNum - 1) * p.PageSize
+	s.writeEntityRanklist(ctx, kind, p, mergeIDsAt(existing, ids, start))
+}
+
+// mergeIDsAt 把 ids 覆盖到 existing 的 [start, start+len(ids)) 区间,区间外的既有顺序保留,
+// 再去重保序(同一实体跨页重复时留首次出现位置)。start 超出既有长度时直接顺接(顺序近似)。
+func mergeIDsAt(existing, ids []string, start int) []string {
 	if start < 0 {
 		start = 0
 	}
@@ -73,7 +85,6 @@ func (s *DiscoverService) mergeEntityRanklistPage(ctx context.Context, kind stri
 	if len(existing) > start+len(ids) {
 		merged = append(merged, existing[start+len(ids):]...)
 	}
-	// 去重保序(同一实体跨页重复时留首次出现位置)。
 	seen := make(map[string]struct{}, len(merged))
 	uniq := merged[:0]
 	for _, id := range merged {
@@ -83,7 +94,7 @@ func (s *DiscoverService) mergeEntityRanklistPage(ctx context.Context, kind stri
 		seen[id] = struct{}{}
 		uniq = append(uniq, id)
 	}
-	s.writeEntityRanklist(ctx, kind, p, uniq)
+	return uniq
 }
 
 // lookupRanklistIDs 读榜单顺序。不看 TTL(有就用):保证 EchoTik 不可用时榜单仍可读,新鲜由 job/异步补全保证。
@@ -113,14 +124,22 @@ func entityStaleTTL(kind string) time.Duration {
 	return entitySlowTTL
 }
 
-// warmEntityIfNeeded 命中后台保鲜判定:顺序表陈旧(>entityStaleTTL)或请求页超出已存深度 → 异步拉深。
+// entityShortRetryTTL 首页不满一页时的重拉冷却:上游确实只有这么多(冷门类目)时,
+// 不能每次访问都打一次跨境接口。
+const entityShortRetryTTL = time.Hour
+
+// warmEntityIfNeeded 命中后台保鲜判定:顺序表陈旧(>entityStaleTTL)、请求页超出已存深度、
+// 或首页残缺(不足一页)→ 异步拉深。
 func (s *DiscoverService) warmEntityIfNeeded(ctx context.Context, kind string, p echotik.RanklistParams, fetchedAt *time.Time, rowCount int) {
 	if !s.echo.Configured() {
 		return
 	}
 	stale := fetchedAt != nil && time.Since(*fetchedAt) > entityStaleTTL(kind)
 	beyond := rowCount == 0 && p.PageNum > 1 // 请求页超出已存深度
-	if !stale && !beyond {
+	// 首页不足一页=顺序表被短结果截断、或主表缺行:不等满 TTL,按冷却重拉一次。
+	short := p.PageNum == 1 && rowCount < p.PageSize &&
+		fetchedAt != nil && time.Since(*fetchedAt) > entityShortRetryTTL
+	if !stale && !beyond && !short {
 		return
 	}
 	depth := p.PageNum
