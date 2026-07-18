@@ -115,7 +115,13 @@ func (s *DiscoverService) refreshSellerDetail(ctx context.Context, sellerID, reg
 	if d == nil {
 		return nil, nil
 	}
-	products, _ := s.echo.GetSellerProducts(ctx, sellerID, region, 10)
+	// 商品列表拉失败不能连坐详情:详情本身已到手,照常落库,但 products 列保留既有值
+	// (空列表覆盖会让「店铺热销商品」卡整块消失,且 detail_fetched_at 一刷就冻 72h)。
+	products, prodErr := s.echo.GetSellerProducts(ctx, sellerID, region, 10)
+	if prodErr != nil {
+		logger.Warn("店铺商品列表拉取失败,保留既有列表",
+			logger.String("sellerId", sellerID), logger.Err(prodErr))
+	}
 
 	toHost := make([]string, 0, len(products)+1)
 	toHost = append(toHost, d.CoverURL)
@@ -170,7 +176,7 @@ func (s *DiscoverService) refreshSellerDetail(ctx context.Context, sellerID, reg
 		TotalIflCnt:     d.TotalIflCnt.Int(),
 		TotalVideoCnt:   d.TotalVideoCnt.Int(),
 		TotalLiveCnt:    d.TotalLiveCnt.Int(),
-		CrawlProductCnt: d.TotalCrawlProductCnt.Int(),
+		CrawlProductCnt: sellerProductCnt(d),
 		Products:        model.JSONB(prodsJSON),
 		Raw:             model.JSONB(rawJSON),
 		DetailFetchedAt: time.Now(),
@@ -178,14 +184,18 @@ func (s *DiscoverService) refreshSellerDetail(ctx context.Context, sellerID, reg
 
 	target := ds
 	if s.db != nil {
+		cols := []string{
+			"seller_name", "cover_url", "rating", "categories", "seller_link", "avg_price_cents",
+			"sale7d_cnt", "sale30d_cnt", "gmv7d_cents", "gmv30d_cents",
+			"total_sale_cnt", "total_gmv_cents", "total_ifl_cnt", "total_video_cnt", "total_live_cnt",
+			"crawl_product_cnt", "raw", "detail_fetched_at", "updated_at",
+		}
+		if prodErr == nil { // 拉成功才写:真·空列表(店铺没在售品)照常覆盖,失败则不动既有值
+			cols = append(cols, "products")
+		}
 		s.db.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
-			DoUpdates: clause.AssignmentColumns([]string{
-				"seller_name", "cover_url", "rating", "categories", "seller_link", "avg_price_cents",
-				"sale7d_cnt", "sale30d_cnt", "gmv7d_cents", "gmv30d_cents",
-				"total_sale_cnt", "total_gmv_cents", "total_ifl_cnt", "total_video_cnt", "total_live_cnt",
-				"crawl_product_cnt", "products", "raw", "detail_fetched_at", "updated_at",
-			}),
+			Columns:   []clause.Column{{Name: "provider"}, {Name: "external_id"}, {Name: "region"}},
+			DoUpdates: clause.AssignmentColumns(cols),
 		}).Create(&ds)
 
 		var stored model.DiscoverSeller
@@ -206,21 +216,37 @@ func (s *DiscoverService) refreshSellerDetail(ctx context.Context, sellerID, reg
 	return s.sellerDTOFromModel(ctx, &target), nil
 }
 
+// sellerProductCnt 在售商品数:优先 total_crawl_product_cnt(在售口径)。上游约一成店铺
+// 不返回该字段(如 medicube US Store),回落 total_product_cnt(历史在店,含已下架,口径偏大)
+// ——有数强于显示 0。两个都没有才是真 0。
+func sellerProductCnt(d *echotik.SellerDetail) int {
+	if n := d.TotalCrawlProductCnt.Int(); n > 0 {
+		return n
+	}
+	return d.TotalProductCnt.Int()
+}
+
 // sellerAuthority 返回详情口径的累计权威值(总销量/总GMV/达人/视频/直播/在售商品数)。
-// 新列全 0 且 raw 里有详情整包时兜底解析——迁移前已拉过详情的旧行读时自愈,不写库。
+// 对应列为 0 且 raw 里有详情整包时兜底解析——迁移前已拉过详情、以及在售商品数因上游缺字段
+// 落成 0 的旧行,读时自愈,不写库。累计值与在售商品数各自独立判缺,互不牵连。
 func sellerAuthority(ds *model.DiscoverSeller) (sale, gmvCents, ifl, video, live, crawl int) {
 	sale, gmvCents, ifl = ds.TotalSaleCnt, ds.TotalGmvCents, ds.TotalIflCnt
 	video, live, crawl = ds.TotalVideoCnt, ds.TotalLiveCnt, ds.CrawlProductCnt
-	if sale > 0 || gmvCents > 0 || len(ds.Raw) == 0 {
+	needTotals, needCrawl := sale == 0 && gmvCents == 0, crawl == 0
+	if (!needTotals && !needCrawl) || len(ds.Raw) == 0 {
 		return
 	}
 	var d echotik.SellerDetail
 	if json.Unmarshal(ds.Raw, &d) != nil {
 		return
 	}
-	sale, gmvCents = d.TotalSaleCnt.Int(), echotik.DollarsToCents(d.TotalSaleGmvAmt.Float())
-	ifl, video, live = d.TotalIflCnt.Int(), d.TotalVideoCnt.Int(), d.TotalLiveCnt.Int()
-	crawl = d.TotalCrawlProductCnt.Int()
+	if needTotals {
+		sale, gmvCents = d.TotalSaleCnt.Int(), echotik.DollarsToCents(d.TotalSaleGmvAmt.Float())
+		ifl, video, live = d.TotalIflCnt.Int(), d.TotalVideoCnt.Int(), d.TotalLiveCnt.Int()
+	}
+	if needCrawl {
+		crawl = sellerProductCnt(&d)
+	}
 	return
 }
 
