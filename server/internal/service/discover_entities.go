@@ -134,6 +134,10 @@ func (s *DiscoverService) VideoRanklist(ctx context.Context, p echotik.RanklistP
 // PrewarmEntities 供定时任务/回填预热实体榜:强制拉取前 pages 页并累积落库
 // (主表 + 顺序表)。p.PageSize 必须与前端一致(20),否则顺序表键含 page_size 不匹配、预热失效。
 // kinds 不传=三榜全预热;各榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
+//
+// p.RankField 被忽略:各榜按 entityDefaultRankField 取自己的 UI 默认口径(店铺=销量、
+// 达人/视频=带货)。曾统一沿用商品 combo 的 RankField(=1),预热的是粉丝榜/播放榜,
+// 而 UI 读的是带货榜——键对不上,达人/视频榜实际从未被定时保鲜过。
 func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.RanklistParams, pages int, kinds ...string) error {
 	if !s.echo.Configured() {
 		return nil
@@ -145,11 +149,13 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 		pages = 1
 	}
 	if len(kinds) == 0 {
-		kinds = []string{"seller", "influencer", "video"}
+		kinds = []string{boardSeller, boardInfluencer, boardVideo}
 	}
 	var firstErr error
 	for _, kind := range kinds {
-		if err := s.prewarmEntityKind(ctx, kind, p, pages); err != nil && firstErr == nil {
+		kp := p
+		kp.RankField = entityDefaultRankField(kind)
+		if err := s.prewarmEntityKind(ctx, kind, kp, pages); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}

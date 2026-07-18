@@ -76,7 +76,7 @@ func (s *DiscoverService) BackfillDiscover(ctx context.Context, kinds []string) 
 		}
 
 		// 拉该站点一级类目(也是一次 API,同样限速)。失败/空回退占位类目(已知全局 L1 集)。
-		cats, cerr := s.echo.GetCategoriesL1(ctx, region)
+		cats, cerr := s.echo.GetCategoriesL1(ctx, region, "zh-CN")
 		s.backfillSleep(ctx, backfillReqInterval)
 		if cerr != nil || len(cats) == 0 {
 			logger.Warn("[backfill] 类目拉取失败,回退占位类目",
@@ -149,9 +149,9 @@ func (s *DiscoverService) backfillCombo(ctx context.Context, kind, region, cat s
 	return fetched, 0
 }
 
-// backfillRankField 各榜回填用的排序字段,必须与 handler 默认读一致,否则顺序表键
-// (rank_field)对不上、回填白做。field 语义随榜单不同,见 echotik 包枚举注释。
-func backfillRankField(kind string) int {
+// entityDefaultRankField 各榜写入(回填/预热)用的排序字段,必须与 handler 默认读一致,
+// 否则顺序表键(rank_field)对不上、写了白写。field 语义随榜单不同,见 echotik 包枚举注释。
+func entityDefaultRankField(kind string) int {
 	switch kind {
 	case boardInfluencer:
 		return echotik.InfluencerFieldSales
@@ -168,7 +168,7 @@ func (s *DiscoverService) backfillPage(ctx context.Context, kind, region, cat st
 	p := echotik.RanklistParams{
 		Region:     region,
 		RankType:   echotik.RankHot,
-		RankField:  backfillRankField(kind), // 与各榜默认读对齐(店铺/商品=销量,达人/视频=带货)
+		RankField:  entityDefaultRankField(kind), // 与各榜默认读对齐(店铺/商品=销量,达人/视频=带货)
 		CategoryID: cat,
 		PageNum:    page,
 		PageSize:   backfillPageSize,

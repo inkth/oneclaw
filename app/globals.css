@@ -100,6 +100,11 @@
   --color-brand-900: var(--brand-900);
   --color-brand-950: var(--brand-950);
 
+  /* 近黑正文/行动色 → 生成 bg-ink / text-ink / bg-ink-action 等工具类。
+     漏注册会让 bg-ink 静默失效（白底 + text-white = 按钮看不见）。 */
+  --color-ink: var(--ink);
+  --color-ink-action: var(--ink-action);
+
   /* 别名 token：bg-brand / text-accent 仍可用 */
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);

@@ -186,16 +186,16 @@ func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo, slowEn
 
 	// 2. 实体榜预热:视频榜每轮(跟商品节奏,爆款视频管线数据源要新);
 	// 店铺/达人日更浏览数据,仅到期轮(EntityInterval)才拉,省 EchoTik 配额。
+	// RankField 不从 combo 带入:各榜按自己的 UI 默认口径预热(见 PrewarmEntities)。
 	kinds := []string{"video"}
 	if slowEntityDue {
 		kinds = []string{"seller", "influencer", "video"}
 	}
 	estart := time.Now()
 	if err := j.discover.PrewarmEntities(cctx, echotik.RanklistParams{
-		Region:    c.Region,
-		RankType:  c.RankType,
-		RankField: c.RankField,
-		PageSize:  entityPrewarmPageSize,
+		Region:   c.Region,
+		RankType: c.RankType,
+		PageSize: entityPrewarmPageSize,
 	}, j.cfg.Pages, kinds...); err != nil {
 		logger.Warn("[job] entity 榜预热失败",
 			logger.String("region", c.Region),
