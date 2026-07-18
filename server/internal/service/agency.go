@@ -487,7 +487,7 @@ func (s *AgencyService) AdminCreate(ctx context.Context, phone string, commissio
 			// 否则 GetDefault 的兜底会再建一个工作台。
 			phoneVal := phone
 			now := time.Now()
-			name := defaultUserName
+			name := defaultUserName(phone)
 			u = model.User{Phone: &phoneVal, PhoneVerified: &now, Name: &name}
 			if e := tx.Create(&u).Error; e != nil {
 				return e
