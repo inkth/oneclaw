@@ -427,6 +427,7 @@ func (s *AgencyService) RequestWithdrawal(ctx context.Context, userID uuid.UUID,
 type AgencyAdminRow struct {
 	Agency               model.Agency `json:"agency"`
 	Phone                string       `json:"phone"` // 代理商本人手机号(明文,管理端可见)
+	Name                 string       `json:"name,omitempty"` // 代理商昵称
 	CustomerCount        int          `json:"customerCount"`
 	TotalCommissionCents int          `json:"totalCommissionCents"`
 	BalanceCents         int          `json:"balanceCents"`
@@ -439,10 +440,15 @@ func (s *AgencyService) AdminList(ctx context.Context) ([]AgencyAdminRow, error)
 	}
 	out := make([]AgencyAdminRow, 0, len(ags))
 	for _, ag := range ags {
-		phone := ""
+		phone, name := "", ""
 		var u model.User
-		if s.db.WithContext(ctx).Select("phone").First(&u, "id = ?", ag.UserID).Error == nil && u.Phone != nil {
-			phone = *u.Phone
+		if s.db.WithContext(ctx).Select("phone", "name").First(&u, "id = ?", ag.UserID).Error == nil {
+			if u.Phone != nil {
+				phone = *u.Phone
+			}
+			if u.Name != nil {
+				name = *u.Name
+			}
 		}
 		var cnt int64
 		s.db.WithContext(ctx).Model(&model.AgencyReferral{}).Where("agency_id = ?", ag.ID).Count(&cnt)
@@ -452,6 +458,7 @@ func (s *AgencyService) AdminList(ctx context.Context) ([]AgencyAdminRow, error)
 		out = append(out, AgencyAdminRow{
 			Agency:               ag,
 			Phone:                phone,
+			Name:                 name,
 			CustomerCount:        int(cnt),
 			TotalCommissionCents: int(commission),
 			BalanceCents:         s.balanceCents(ctx, s.db, ag.ID),

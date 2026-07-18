@@ -196,6 +196,7 @@ export type Agency = {
 export type AdminAgencyRow = {
   agency: Agency;
   phone: string;
+  name?: string;
   customerCount: number;
   totalCommissionCents: number;
   balanceCents: number;
