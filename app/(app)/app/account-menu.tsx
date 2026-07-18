@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Coins, Settings, LogOut, Sparkles, Megaphone, ShieldCheck } from "lucide-react";
 import { Popover } from "@/components/ui/Popover";
+import { useUpgradeModal } from "@/components/billing/UpgradeModalProvider";
 import { apiBrowser } from "@/lib/api-browser";
 
 const PLAN_LABEL: Record<string, string> = { FREE: "免费版", PRO: "专业版", TEAM: "旗舰版" };
@@ -29,13 +30,14 @@ export function AccountMenu({
   isAdmin?: boolean;
 }) {
   const router = useRouter();
+  const { open: openUpgrade } = useUpgradeModal();
 
   const hasCredits = creditsLimit !== null && creditsUsed !== null;
   const unlimited = hasCredits && creditsLimit! < 0;
   const remaining = hasCredits && !unlimited ? Math.max(0, creditsLimit! - creditsUsed!) : null;
   const low = remaining !== null && creditsLimit! > 0 && remaining / creditsLimit! <= 0.1;
   const isTeam = plan === "TEAM" || unlimited;
-  const upgradeHref = `/app/settings?upgrade=${plan === "PRO" ? "TEAM" : "PRO"}`;
+  const upgradePlan = plan === "PRO" ? "TEAM" : "PRO";
 
   async function logout() {
     try {
@@ -67,15 +69,16 @@ export function AccountMenu({
         </Link>
       )}
 
-      {/* 升级会员（非旗舰版才显示）*/}
+      {/* 升级会员（非旗舰版才显示）→ 原地弹浮层，不跳设置页 */}
       {!isTeam && (
-        <Link
-          href={upgradeHref}
+        <button
+          type="button"
+          onClick={() => openUpgrade(upgradePlan)}
           className="pop-cta hidden items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white transition-colors sm:inline-flex"
         >
           <Sparkles className="h-3.5 w-3.5" />
           升级会员
-        </Link>
+        </button>
       )}
 
       {/* 头像 → 下拉菜单 */}
@@ -128,14 +131,17 @@ export function AccountMenu({
             {/* 操作 */}
             <div className="border-t border-[var(--dk-stroke-divider)] py-1">
               {!isTeam && (
-                <Link
-                  href={upgradeHref}
-                  onClick={close}
-                  className="flex items-center gap-2.5 px-3.5 py-2 text-zinc-900 hover:bg-[var(--dk-action-regular)]"
+                <button
+                  type="button"
+                  onClick={() => {
+                    close();
+                    openUpgrade(upgradePlan);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-zinc-900 hover:bg-[var(--dk-action-regular)]"
                 >
                   <Sparkles className="h-4 w-4 text-brand-500" />
                   升级会员
-                </Link>
+                </button>
               )}
               {isAgency && (
                 <Link
