@@ -8,6 +8,7 @@ import { Pagination } from "../_components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableWrap, THead, Th, Tr, Td } from "@/components/ui/Table";
 import { RankMedal } from "@/components/ui/RankMedal";
+import { Sparkline } from "@/components/ui/Sparkline";
 import { fmt, fmtMoney } from "../_components/format";
 import { useWarmingRefresh } from "../_components/useWarmingRefresh";
 
@@ -18,14 +19,25 @@ export type Seller = {
   coverUrl: string | null;
   rating: number;
   categories: string[];
-  // EchoTik 榜单接口此字段几乎恒为 0(非真实店铺商品总数),真实值仅 detail 接口有,故列表不展示。
-  totalProductCnt: number;
+  // 近 7 天窗口 + 迷你趋势(详情回填;0/空 = 尚未回填,画 —)
+  sale7dCnt: number;
+  gmv7dAmt: number;
+  spark7d: number[];
+  // 累计权威值(店铺详情口径;榜单原生值是周期增量,不展示)
   totalSaleCnt: number;
   totalSaleGmvAmt: number;
   totalIflCnt: number;
-  totalVideoCnt: number;
-  totalLiveCnt: number;
+  crawlProductCnt: number; // 在售商品数
 };
+
+function Num({ value, money = false, strong = false }: { value?: number; money?: boolean; strong?: boolean }) {
+  if (!value || value <= 0) return <span className="text-zinc-300">—</span>;
+  return (
+    <span className={strong ? "font-semibold text-zinc-900" : undefined}>
+      {money ? fmtMoney(value) : fmt(value)}
+    </span>
+  );
+}
 
 export function SellersClient({
   region,
@@ -86,17 +98,18 @@ export function SellersClient({
           }
         />
       ) : (
-        <TableWrap>
+        <TableWrap minWidth={1080}>
           <THead>
             <tr>
               <Th>#</Th>
               <Th>店铺</Th>
-              <Th align="right">评分</Th>
+              <Th>近7天趋势</Th>
+              <Th align="right">近7天销量</Th>
+              <Th align="right">近7天 GMV</Th>
               <Th align="right">总销量</Th>
               <Th align="right">总 GMV</Th>
+              <Th align="right">在售商品</Th>
               <Th align="right">达人</Th>
-              <Th align="right">视频</Th>
-              <Th align="right">直播</Th>
             </tr>
           </THead>
           <tbody>
@@ -121,25 +134,29 @@ export function SellersClient({
                         {s.categories.length > 0 && (
                           <span className="truncate">· {s.categories.join(" / ")}</span>
                         )}
+                        {s.rating > 0 && (
+                          <span className="inline-flex shrink-0 items-center gap-0.5 text-amber-600">
+                            <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                            {s.rating.toFixed(1)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </Link>
                 </Td>
-                <Td align="right">
-                  {s.rating > 0 ? (
-                    <span className="inline-flex items-center gap-0.5 text-amber-600">
-                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {s.rating.toFixed(1)}
-                    </span>
+                <Td>
+                  {(s.spark7d?.length ?? 0) > 1 ? (
+                    <Sparkline data={s.spark7d} />
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-zinc-300">—</span>
                   )}
                 </Td>
-                <Td align="right" className="font-semibold text-zinc-900">{fmt(s.totalSaleCnt)}</Td>
-                <Td align="right">{fmtMoney(s.totalSaleGmvAmt)}</Td>
-                <Td align="right">{fmt(s.totalIflCnt)}</Td>
-                <Td align="right">{fmt(s.totalVideoCnt)}</Td>
-                <Td align="right">{fmt(s.totalLiveCnt)}</Td>
+                <Td align="right"><Num value={s.sale7dCnt} strong /></Td>
+                <Td align="right"><Num value={s.gmv7dAmt} money /></Td>
+                <Td align="right"><Num value={s.totalSaleCnt} /></Td>
+                <Td align="right"><Num value={s.totalSaleGmvAmt} money /></Td>
+                <Td align="right"><Num value={s.crawlProductCnt} /></Td>
+                <Td align="right"><Num value={s.totalIflCnt} /></Td>
               </Tr>
             ))}
           </tbody>

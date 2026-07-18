@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm/clause"
 
 	"github.com/faxianmao/server/internal/logger"
@@ -168,17 +169,29 @@ func (s *DiscoverService) prewarmEntityKind(ctx context.Context, kind string, p 
 	if len(allIDs) > 0 {
 		s.writeEntityRanklist(ctx, kind, p, allIDs)
 	}
+	// 店铺榜:近7天窗口/累计权威值/在售商品数只有 seller/detail 有,榜单落库后顺带补详情
+	// (24h TTL 内跳过,单轮限量)。放在顺序表写入之后,不挡榜单可读。
+	if kind == "seller" {
+		s.backfillSellerDetails(ctx, p.Region, allIDs)
+	}
 	return nil
 }
 
 // ── 店铺 ──────────────────────────────────────────────────────────────────────
 
-func mapSellerFromModel(ds model.DiscoverSeller) SellerDTO {
+// mapSellerFromModel 榜单/搜索行 DTO:累计值走详情权威口径(sellerAuthority,0=详情未回填),
+// 近 7 天窗口读详情回填列,spark 由调用方批量差分传入。
+func mapSellerFromModel(ds model.DiscoverSeller, spark []int) SellerDTO {
+	if spark == nil {
+		spark = []int{}
+	}
+	sale, gmvCents, ifl, _, _, crawl := sellerAuthority(&ds)
 	return SellerDTO{
 		SellerID: ds.ExternalID, SellerName: ds.SellerName, Region: ds.Region,
 		CoverURL: strPtrOrNil(ds.CoverURL), Rating: ds.Rating, Categories: parseCategories(ds.Categories),
-		TotalProductCnt: ds.ProductCnt, TotalSaleCnt: ds.SaleCnt, TotalSaleGmvAmt: gmvCentsToDollars(ds.SaleGmvCents),
-		TotalIflCnt: ds.IflCnt, TotalVideoCnt: ds.VideoCnt, TotalLiveCnt: ds.LiveCnt,
+		Sale7dCnt: ds.Sale7dCnt, Gmv7dAmt: gmvCentsToDollars(ds.Gmv7dCents), Spark7d: spark,
+		TotalSaleCnt: sale, TotalSaleGmvAmt: gmvCentsToDollars(gmvCents), TotalIflCnt: ifl,
+		CrawlProductCnt: crawl,
 	}
 }
 
@@ -195,13 +208,16 @@ func (s *DiscoverService) lookupSellerRanklist(ctx context.Context, p echotik.Ra
 			Find(&rows)
 	}
 	byID := make(map[string]model.DiscoverSeller, len(rows))
+	modelIDs := make([]uuid.UUID, 0, len(rows))
 	for _, r := range rows {
 		byID[r.ExternalID] = r
+		modelIDs = append(modelIDs, r.ID)
 	}
+	sparks := s.loadSellerSparks(ctx, modelIDs)
 	out := make([]SellerDTO, 0, len(pageIDs))
 	for _, id := range pageIDs {
 		if r, ok := byID[id]; ok {
-			out = append(out, mapSellerFromModel(r))
+			out = append(out, mapSellerFromModel(r, sparks[r.ID]))
 		}
 	}
 	at := fetchedAt
