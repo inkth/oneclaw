@@ -149,9 +149,9 @@ func (s *DiscoverService) backfillCombo(ctx context.Context, kind, region, cat s
 	return fetched, 0
 }
 
-// backfillRankField 各榜回填用的排序字段,必须与 handler 默认读一致,否则顺序表键
-// (rank_field)对不上、回填白做。field 语义随榜单不同,见 echotik 包枚举注释。
-func backfillRankField(kind string) int {
+// entityDefaultRankField 各榜写入(回填/预热)用的排序字段,必须与 handler 默认读一致,
+// 否则顺序表键(rank_field)对不上、写了白写。field 语义随榜单不同,见 echotik 包枚举注释。
+func entityDefaultRankField(kind string) int {
 	switch kind {
 	case boardInfluencer:
 		return echotik.InfluencerFieldSales
@@ -168,7 +168,7 @@ func (s *DiscoverService) backfillPage(ctx context.Context, kind, region, cat st
 	p := echotik.RanklistParams{
 		Region:     region,
 		RankType:   echotik.RankHot,
-		RankField:  backfillRankField(kind), // 与各榜默认读对齐(店铺/商品=销量,达人/视频=带货)
+		RankField:  entityDefaultRankField(kind), // 与各榜默认读对齐(店铺/商品=销量,达人/视频=带货)
 		CategoryID: cat,
 		PageNum:    page,
 		PageSize:   backfillPageSize,
