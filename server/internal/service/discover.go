@@ -514,6 +514,12 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 
 	out := make([]DecoratedProduct, 0, len(dps))
 	for _, d := range dps {
+		// 榜单行的 total_sale_cnt 是 EchoTik 排名窗口口径(可能比近7天还小),与 7d 列并排
+		// 会自相矛盾;有详情权威累计(detail_extras,同步整包落库)就覆盖——与详情页同一处理。
+		authSale, authGmv, authIfl, authVideo := 0, 0, 0, 0
+		if ex := parseProductExtras(d.DetailExtras); ex != nil && (ex.TotalSaleCnt > 0 || ex.TotalVideoCnt > 0) {
+			authSale, authGmv, authIfl, authVideo = ex.TotalSaleCnt, ex.TotalGmvCents, ex.TotalIflCnt, ex.TotalVideoCnt
+		}
 		dp := DecoratedProduct{
 			ProductID: d.ExternalID, Name: d.Name, NameZh: d.NameZh, Region: d.Region,
 			AvgPriceCents: d.AvgPriceCents, MinPriceCents: d.MinPriceCents, MaxPriceCents: d.MaxPriceCents,
@@ -526,6 +532,10 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 		}
 		if dp.Spark7d == nil {
 			dp.Spark7d = []int{}
+		}
+		if authSale > 0 || authVideo > 0 {
+			dp.TotalSaleCnt, dp.TotalSaleGmvCents = authSale, authGmv
+			dp.TotalIflCnt, dp.TotalVideoCnt = authIfl, authVideo
 		}
 		if pid, ok := importedBy[d.ID]; ok {
 			dp.ImportedProductID = &pid

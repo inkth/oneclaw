@@ -34,8 +34,10 @@ func (s *DiscoverService) RisingProducts(ctx context.Context, wsID uuid.UUID, re
 	}
 	switch mode {
 	case "accel":
+		// 分母用详情权威累计(detail_extras,主表 total_sale_cnt 是排名窗口口径会失真);
+		// 无详情的行回退窗口口径,并与 sale7d 取大保证比值 ≤1。
 		q = q.Where("sale7d_cnt >= ?", risingAccelMinSale).
-			Order("sale7d_cnt::float / GREATEST(total_sale_cnt, 1) DESC")
+			Order("sale7d_cnt::float / GREATEST(COALESCE(NULLIF((detail_extras->>'totalSaleCnt')::numeric, 0), total_sale_cnt), sale7d_cnt, 1) DESC")
 	default: // hot7d
 		q = q.Order("sale7d_cnt DESC")
 	}
