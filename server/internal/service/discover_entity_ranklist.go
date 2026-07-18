@@ -62,12 +62,21 @@ func (s *DiscoverService) lookupRanklistIDs(ctx context.Context, kind string, p 
 
 // ── 后台异步补全(读路径零同步 EchoTik) ────────────────────────────────────────
 
-// warmEntityIfNeeded 命中后台保鲜判定:顺序表陈旧(>cacheTTL)或请求页超出已存深度 → 异步拉深。
+// entityStaleTTL 按实体类型给读路径 SWR 陈旧阈值:视频榜跟商品节奏(12h,爆款发现要快),
+// 店铺/达人日更浏览数据放宽到 24h(与后台预热节奏对齐,避免用户访问把省下的请求打回去)。
+func entityStaleTTL(kind string) time.Duration {
+	if kind == "video" {
+		return cacheTTL
+	}
+	return entitySlowTTL
+}
+
+// warmEntityIfNeeded 命中后台保鲜判定:顺序表陈旧(>entityStaleTTL)或请求页超出已存深度 → 异步拉深。
 func (s *DiscoverService) warmEntityIfNeeded(ctx context.Context, kind string, p echotik.RanklistParams, fetchedAt *time.Time, rowCount int) {
 	if !s.echo.Configured() {
 		return
 	}
-	stale := fetchedAt != nil && time.Since(*fetchedAt) > cacheTTL
+	stale := fetchedAt != nil && time.Since(*fetchedAt) > entityStaleTTL(kind)
 	beyond := rowCount == 0 && p.PageNum > 1 // 请求页超出已存深度
 	if !stale && !beyond {
 		return

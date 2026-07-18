@@ -170,10 +170,10 @@ func (s *DiscoverService) signMapVideos(ctx context.Context, raw []echotik.Video
 	return rows
 }
 
-// PrewarmEntities 供定时任务/回填预热店铺/达人/视频三榜:强制拉取前 pages 页并累积落库
+// PrewarmEntities 供定时任务/回填预热实体榜:强制拉取前 pages 页并累积落库
 // (主表 + 顺序表)。p.PageSize 必须与前端一致(20),否则顺序表键含 page_size 不匹配、预热失效。
-// 三榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
-func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.RanklistParams, pages int) error {
+// kinds 不传=三榜全预热;各榜独立尝试,单榜失败不影响其他;返回首个错误供调用方记日志。
+func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.RanklistParams, pages int, kinds ...string) error {
 	if !s.echo.Configured() {
 		return nil
 	}
@@ -183,8 +183,11 @@ func (s *DiscoverService) PrewarmEntities(ctx context.Context, p echotik.Ranklis
 	if pages < 1 {
 		pages = 1
 	}
+	if len(kinds) == 0 {
+		kinds = []string{"seller", "influencer", "video"}
+	}
 	var firstErr error
-	for _, kind := range []string{"seller", "influencer", "video"} {
+	for _, kind := range kinds {
 		if err := s.prewarmEntityKind(ctx, kind, p, pages); err != nil && firstErr == nil {
 			firstErr = err
 		}

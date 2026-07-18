@@ -111,13 +111,16 @@ func (e EchoTikConfig) Configured() bool { return e.Username != "" && e.Password
 // DiscoverSyncConfig 选品榜单定时同步:预热榜单缓存 + 保证每日快照连续。
 // 仅在 EchoTik 已配置时生效。
 type DiscoverSyncConfig struct {
-	Enabled       bool
-	Interval      time.Duration // 与榜单缓存 TTL(6h)对齐
-	Combos        []SyncCombo   // 抓取的 region × 榜单组合
-	PageSize      int           // 每榜抓取条数
-	Pages         int           // 每组合预热的页数(累积到顺序表,供本地翻页)
-	CategorySweep bool          // 每日一轮 combo 站点 × 全一级类目 × 四榜第 1 页(类目首屏保鲜)
-	EnrichMinSale int           // 入库销量门槛:后台同步中累计销量低于此值的商品整条不入库(0=不设限)
+	Enabled bool
+	// Interval 商品榜 + 视频榜节奏(上游 T-1 日更,12h 已够新;与读路径 cacheTTL 对齐)。
+	Interval time.Duration
+	// EntityInterval 店铺/达人榜节奏(纯浏览参考,24h 一轮;与读路径 entitySlowTTL 对齐)。
+	EntityInterval time.Duration
+	Combos         []SyncCombo // 抓取的 region × 榜单组合
+	PageSize       int         // 每榜抓取条数
+	Pages          int         // 每组合预热的页数(累积到顺序表,供本地翻页)
+	CategorySweep  bool        // 每日一轮 combo 站点 × 全一级类目 × 四榜第 1 页(类目首屏保鲜)
+	EnrichMinSale  int         // 入库销量门槛:后台同步中累计销量低于此值的商品整条不入库(0=不设限)
 }
 
 // SyncCombo 一组榜单抓取参数。RankType/RankField 取值见 echotik 包枚举(1=热销榜/销量)。
@@ -243,9 +246,10 @@ func Load() *Config {
 			Password: getEnv("ECHOTIK_PASSWORD", ""),
 		},
 		DiscoverSync: DiscoverSyncConfig{
-			Enabled:  getEnvBool("DISCOVER_SYNC_ENABLED", true),
-			Interval: time.Duration(getEnvInt("DISCOVER_SYNC_INTERVAL_HOURS", 6)) * time.Hour,
-			Combos:   parseSyncCombos(getEnv("DISCOVER_SYNC_COMBOS", "US,ID,TH,VN")),
+			Enabled:        getEnvBool("DISCOVER_SYNC_ENABLED", true),
+			Interval:       time.Duration(getEnvInt("DISCOVER_SYNC_INTERVAL_HOURS", 12)) * time.Hour,
+			EntityInterval: time.Duration(getEnvInt("DISCOVER_ENTITY_SYNC_INTERVAL_HOURS", 24)) * time.Hour,
+			Combos:         parseSyncCombos(getEnv("DISCOVER_SYNC_COMBOS", "US,ID,TH,VN")),
 			// 预热前 maxDiscoverPage(10)页商品榜:10 页 × 前端 page_size 16 = 160,
 			// 让「全部」类目前 10 页全命中缓存零 EchoTik。改小会让深页回退实时拉。
 			PageSize: getEnvInt("DISCOVER_SYNC_PAGE_SIZE", 160),

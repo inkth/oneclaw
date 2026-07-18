@@ -21,6 +21,9 @@ type DiscoverSync struct {
 	// lastSweepDay 当日类目扫完成标记(yyyy-MM-dd)。内存态:重启后当天会再扫一轮,
 	// 幂等(upsert)且量小(~500 req),可接受。
 	lastSweepDay string
+	// lastSlowEntity 店铺/达人榜上次预热时间。内存态:重启后首轮会再预热一次,幂等可接受。
+	// 视频榜跟商品节奏(每轮),店铺/达人按 EntityInterval(默认 24h)降频。
+	lastSlowEntity time.Time
 }
 
 func NewDiscoverSync(cfg config.DiscoverSyncConfig, d *service.DiscoverService, e *echotik.Client) *DiscoverSync {
@@ -59,6 +62,7 @@ func (j *DiscoverSync) Start(ctx context.Context) {
 	}()
 	logger.Info("[job] 选品同步已启动",
 		logger.String("interval", j.cfg.Interval.String()),
+		logger.String("entityInterval", j.cfg.EntityInterval.String()),
 		logger.Int("combos", len(j.cfg.Combos)),
 		logger.Int("pageSize", j.cfg.PageSize),
 		logger.Bool("categorySweep", j.cfg.CategorySweep))
@@ -71,6 +75,9 @@ func (j *DiscoverSync) runOnce(ctx context.Context) {
 			logger.Error("[job] 选品同步 panic", logger.String("err", fmt.Sprintf("%v", r)))
 		}
 	}()
+	// 店铺/达人榜是否到期(减 5 分钟容差,防 ticker 抖动导致 24h 档永远差一点)。
+	slowEntityDue := time.Since(j.lastSlowEntity) >= j.cfg.EntityInterval-5*time.Minute
+
 	for i, c := range j.cfg.Combos {
 		if ctx.Err() != nil {
 			return
@@ -82,7 +89,10 @@ func (j *DiscoverSync) runOnce(ctx context.Context) {
 				return
 			}
 		}
-		j.syncCombo(ctx, c)
+		j.syncCombo(ctx, c, slowEntityDue)
+	}
+	if slowEntityDue && ctx.Err() == nil {
+		j.lastSlowEntity = time.Now()
 	}
 
 	// 所有榜单刷完后,刷新被收藏(tracked)且详情最旧的实体:把 EchoTik 配额优先花在用户关注的实体上。
@@ -147,8 +157,8 @@ func (j *DiscoverSync) sweepCategories(ctx context.Context) {
 		logger.String("duration", time.Since(start).Round(time.Second).String()))
 }
 
-func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
-	// 商品榜 + 店铺/达人/视频三榜串行(视频榜还要批量签封面),留足跨境拉取时间。
+func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo, slowEntityDue bool) {
+	// 商品榜 + 实体榜串行(视频榜还要批量签封面),留足跨境拉取时间。
 	// 深页预热(160 商品=封面 32 批跨境调用,即便限并发 4)冷启动较慢,放宽到 6 分钟避免整 combo 超时回滚成 0。
 	cctx, cancel := context.WithTimeout(ctx, 6*time.Minute)
 	defer cancel()
@@ -174,20 +184,26 @@ func (j *DiscoverSync) syncCombo(ctx context.Context, c config.SyncCombo) {
 			logger.String("duration", time.Since(start).Round(time.Millisecond).String()))
 	}
 
-	// 2. 店铺/达人/视频三榜:预热 DiscoverCache,否则每 6h TTL 过期后首个用户冷启动慢。
+	// 2. 实体榜预热:视频榜每轮(跟商品节奏,爆款视频管线数据源要新);
+	// 店铺/达人日更浏览数据,仅到期轮(EntityInterval)才拉,省 EchoTik 配额。
+	kinds := []string{"video"}
+	if slowEntityDue {
+		kinds = []string{"seller", "influencer", "video"}
+	}
 	estart := time.Now()
 	if err := j.discover.PrewarmEntities(cctx, echotik.RanklistParams{
 		Region:    c.Region,
 		RankType:  c.RankType,
 		RankField: c.RankField,
 		PageSize:  entityPrewarmPageSize,
-	}, j.cfg.Pages); err != nil {
+	}, j.cfg.Pages, kinds...); err != nil {
 		logger.Warn("[job] entity 榜预热失败",
 			logger.String("region", c.Region),
 			logger.Err(err))
 	} else {
 		logger.Info("[job] entity 榜预热",
 			logger.String("region", c.Region),
+			logger.Int("kinds", len(kinds)),
 			logger.String("duration", time.Since(estart).Round(time.Millisecond).String()))
 	}
 }

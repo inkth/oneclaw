@@ -22,7 +22,12 @@ import (
 
 const (
 	providerEchoTik = "echotik"
-	cacheTTL        = 6 * time.Hour
+	// cacheTTL 商品榜/视频榜读路径 SWR 陈旧阈值。上游 EchoTik 是 T-1 日粒度,
+	// 12h 已足够新;与 DISCOVER_SYNC_INTERVAL_HOURS(默认 12)对齐。
+	cacheTTL = 12 * time.Hour
+	// entitySlowTTL 店铺/达人榜读路径 SWR 陈旧阈值:纯浏览参考、日更数据,一天一轮足够;
+	// 与 DISCOVER_ENTITY_SYNC_INTERVAL_HOURS(默认 24)对齐。
+	entitySlowTTL = 24 * time.Hour
 )
 
 type DiscoverService struct {
