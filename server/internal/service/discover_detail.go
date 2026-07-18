@@ -330,6 +330,11 @@ func (s *DiscoverService) persistProductDetail(ctx context.Context, id, region s
 		if b, e := json.Marshal(extras); e == nil {
 			updates["detail_extras"] = model.JSONB(b)
 		}
+		// 近 7 天窗口同步提到列表列(榜单/发现页直读,不用解 JSONB)。
+		if extras.Windows != nil {
+			updates["sale7d_cnt"] = extras.Windows.Sale7dCnt
+			updates["gmv7d_cents"] = extras.Windows.Gmv7dCents
+		}
 	}
 	if infls != nil {
 		if b, e := json.Marshal(infls); e == nil {

@@ -96,6 +96,14 @@ func main() {
 		UpdateColumn("commission_eligible_until", gorm.Expr("created_at + INTERVAL '1 year'")).Error; err != nil {
 		logger.Fatal("代理商计佣窗口回填失败", logger.Err(err))
 	}
+	// 商品近 7 天窗口列上线回填:已拉过详情的存量商品把 detail_extras 里的窗口值提到列表列
+	// (幂等,只补 0 值行;失败仅告警——展示层数据,不该拦启动)。
+	if err := db.Exec(`UPDATE discover_products SET
+			sale7d_cnt = COALESCE((detail_extras->'windows'->>'sale7dCnt')::numeric, 0)::int,
+			gmv7d_cents = COALESCE((detail_extras->'windows'->>'gmv7dCents')::numeric, 0)::int
+		WHERE sale7d_cnt = 0 AND detail_extras->'windows'->>'sale7dCnt' IS NOT NULL`).Error; err != nil {
+		logger.Warn("商品近7天窗口回填失败", logger.Err(err))
+	}
 
 	// Services
 	agencySvc := service.NewAgencyService(db, cfg.Agency)

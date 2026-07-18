@@ -58,6 +58,7 @@ func NewDiscoverService(db *gorm.DB, echo *echotik.Client, store *storage.Storag
 type DecoratedProduct struct {
 	ProductID         string   `json:"productId"` // EchoTik external id
 	Name              string   `json:"name"`
+	NameZh            string   `json:"nameZh"` // 中文译文,空=尚未翻译(前端退回原文)
 	Region            string   `json:"region"`
 	AvgPriceCents     int      `json:"avgPriceCents"`
 	MinPriceCents     int      `json:"minPriceCents"`
@@ -65,6 +66,9 @@ type DecoratedProduct struct {
 	CommissionRate    float64  `json:"commissionRate"`
 	TotalSaleCnt      int      `json:"totalSaleCnt"`
 	TotalSaleGmvCents int      `json:"totalSaleGmvCents"`
+	Sale7dCnt         int      `json:"sale7dCnt"`  // 近 7 天销量(EchoTik 官方口径);0=暂无数据
+	Gmv7dCents        int      `json:"gmv7dCents"` // 近 7 天 GMV(分);0=暂无数据
+	Spark7d           []int    `json:"spark7d"`    // 近 7 天日销量增量(快照差分,oldest→newest);<2 点不足以画线
 	TotalIflCnt       int      `json:"totalIflCnt"`
 	TotalVideoCnt     int      `json:"totalVideoCnt"`
 	CoverUrls         []string `json:"coverUrls"`
@@ -352,10 +356,11 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 	externalIDs := make([]string, 0, len(raw))
 	var transJobs []translateJob // 待翻译商品标题(name_zh 空),事务后统一投递
 
-	// 商品榜接口不带封面;仅 live 拉取时补取并签名(防盗链),避免给 mock/error 数据空跑。
+	// 商品榜接口不带封面/近7天窗口;仅 live 拉取时补取详情(防盗链签名+窗口),避免给 mock/error 数据空跑。
 	var coverByID map[string]model.JSONB
+	var windowByID map[string]listWindow
 	if enrichCover {
-		coverByID = s.enrichCovers(ctx, p.Region, raw)
+		coverByID, windowByID = s.enrichCovers(ctx, p.Region, raw)
 	}
 
 	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -389,6 +394,12 @@ func (s *DiscoverService) persist(ctx context.Context, p echotik.RanklistParams,
 			if cov, ok := coverByID[it.ProductID]; ok && len(cov) > 0 {
 				dp.CoverUrls = cov
 				updateCols = append(updateCols, "cover_urls")
+			}
+			// 同理:只在本轮拿到详情窗口时才更新近 7 天列,详情拉取失败保留旧值。
+			if w, ok := windowByID[it.ProductID]; ok {
+				dp.Sale7dCnt = w.sale7dCnt
+				dp.Gmv7dCents = w.gmv7dCents
+				updateCols = append(updateCols, "sale7d_cnt", "gmv7d_cents")
 			}
 
 			// upsert by (provider, external_id, region)
@@ -462,14 +473,20 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 		}
 	}
 
+	sparks := s.loadSaleSparks(ctx, ids)
+
 	out := make([]DecoratedProduct, 0, len(dps))
 	for _, d := range dps {
 		dp := DecoratedProduct{
-			ProductID: d.ExternalID, Name: d.Name, Region: d.Region,
+			ProductID: d.ExternalID, Name: d.Name, NameZh: d.NameZh, Region: d.Region,
 			AvgPriceCents: d.AvgPriceCents, MinPriceCents: d.MinPriceCents, MaxPriceCents: d.MaxPriceCents,
 			CommissionRate: d.CommissionRate, TotalSaleCnt: d.TotalSaleCnt, TotalSaleGmvCents: d.TotalSaleGmv,
+			Sale7dCnt: d.Sale7dCnt, Gmv7dCents: d.Gmv7dCents, Spark7d: sparks[d.ID],
 			TotalIflCnt: d.TotalIflCnt, TotalVideoCnt: d.TotalVideoCnt,
 			CoverUrls: parseCovers(d.CoverUrls),
+		}
+		if dp.Spark7d == nil {
+			dp.Spark7d = []int{}
 		}
 		if pid, ok := importedBy[d.ID]; ok {
 			dp.ImportedProductID = &pid
@@ -479,14 +496,52 @@ func (s *DiscoverService) decorate(ctx context.Context, wsID uuid.UUID, dps []mo
 	return out
 }
 
-// enrichCovers 取商品榜封面并永久化,返回 productID -> JSONB([]string{permanentURL})。
-// 流程:product/detail 拿防盗链原文 → rehostCovers 下载并转存 COS(永久,失败回退 3 天签名 URL)。
-// 前端只显示 coverUrls[0],故每个商品只处理首图,省接口调用。
-// 任一步出错只影响封面(降级为占位图),不阻断榜单返回。
-func (s *DiscoverService) enrichCovers(ctx context.Context, region string, raw []echotik.ProductListItem) map[string]model.JSONB {
-	out := map[string]model.JSONB{}
-	if len(raw) == 0 || !s.echo.Configured() {
+// loadSaleSparks 批量取每商品最近 8 天快照并差分成日销量增量序列(oldest→newest,最多 7 点),
+// 供列表迷你趋势线。与详情页 productTrendFromSnapshots 同源同口径,只是限窗 + 批量。
+func (s *DiscoverService) loadSaleSparks(ctx context.Context, ids []uuid.UUID) map[uuid.UUID][]int {
+	out := map[uuid.UUID][]int{}
+	if s.db == nil || len(ids) == 0 {
 		return out
+	}
+	cutoff := time.Now().AddDate(0, 0, -8).Format("2006-01-02")
+	var snaps []model.DiscoverSnapshot
+	if err := s.db.WithContext(ctx).
+		Where("discover_product_id IN ? AND dt >= ?", ids, cutoff).
+		Order("dt asc").Find(&snaps).Error; err != nil {
+		return out
+	}
+	grouped := map[uuid.UUID][]model.DiscoverSnapshot{}
+	for _, sn := range snaps {
+		grouped[sn.DiscoverProductID] = append(grouped[sn.DiscoverProductID], sn)
+	}
+	for id, g := range grouped {
+		if len(g) < 2 {
+			continue // 单点差分不出增量,前端按无数据处理
+		}
+		pts := make([]int, 0, len(g)-1)
+		for i := 1; i < len(g); i++ {
+			pts = append(pts, nonNeg(g[i].TotalSaleCnt-g[i-1].TotalSaleCnt))
+		}
+		out[id] = pts
+	}
+	return out
+}
+
+// listWindow 榜单行近 7 天窗口(EchoTik 官方口径,与封面同一批 product/detail 响应,零额外调用)。
+type listWindow struct {
+	sale7dCnt  int
+	gmv7dCents int
+}
+
+// enrichCovers 批量取商品详情,返回封面(productID -> JSONB([]string{permanentURL}))与
+// 近 7 天窗口(productID -> listWindow)。封面流程:product/detail 拿防盗链原文 →
+// rehostCovers 下载并转存 COS(永久,失败回退 3 天签名 URL);前端只显示 coverUrls[0],
+// 故每个商品只处理首图,省接口调用。任一步出错只影响该块(封面降级占位图),不阻断榜单返回。
+func (s *DiscoverService) enrichCovers(ctx context.Context, region string, raw []echotik.ProductListItem) (map[string]model.JSONB, map[string]listWindow) {
+	out := map[string]model.JSONB{}
+	windows := map[string]listWindow{}
+	if len(raw) == 0 || !s.echo.Configured() {
+		return out, windows
 	}
 
 	ids := make([]string, 0, len(raw))
@@ -494,24 +549,29 @@ func (s *DiscoverService) enrichCovers(ctx context.Context, region string, raw [
 		ids = append(ids, it.ProductID)
 	}
 
-	coversByID, err := s.echo.GetProductCovers(ctx, ids, region)
+	detailByID, err := s.echo.GetProductDetailMap(ctx, ids, region)
 	if err != nil {
 		logger.Warn("发现页封面取详情失败,降级占位图", logger.String("region", region), logger.Err(err))
-		return out
+		return out, windows
 	}
 
-	// 收集每个商品的首图原文,批量签名。
-	firstRaw := make(map[string]string, len(coversByID))
-	rawList := make([]string, 0, len(coversByID))
-	for pid, urls := range coversByID {
-		if len(urls) == 0 {
+	// 收集每个商品的首图原文,批量签名;窗口指标顺带提取。
+	firstRaw := make(map[string]string, len(detailByID))
+	rawList := make([]string, 0, len(detailByID))
+	for pid, d := range detailByID {
+		windows[pid] = listWindow{
+			sale7dCnt:  d.TotalSale7dCnt.Int(),
+			gmv7dCents: echotik.DollarsToCents(d.TotalSaleGmv7dAmt.Float()),
+		}
+		covers := echotik.ParseCovers(d.CoverURL)
+		if len(covers) == 0 {
 			continue
 		}
-		firstRaw[pid] = urls[0]
-		rawList = append(rawList, urls[0])
+		firstRaw[pid] = covers[0].URL
+		rawList = append(rawList, covers[0].URL)
 	}
 	if len(rawList) == 0 {
-		return out
+		return out, windows
 	}
 
 	rehosted := s.rehostCovers(ctx, rawList)
@@ -526,7 +586,7 @@ func (s *DiscoverService) enrichCovers(ctx context.Context, region string, raw [
 		}
 		out[pid] = model.JSONB(b)
 	}
-	return out
+	return out, windows
 }
 
 func parseCovers(raw model.JSONB) []string {
