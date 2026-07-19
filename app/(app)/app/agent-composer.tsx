@@ -560,7 +560,7 @@ export function AgentComposer({
       <div
         className={
           compactAgentSelector
-            ? "mb-2 flex gap-2 overflow-x-auto rounded-2xl border border-black/[0.08] bg-[var(--surface)] p-2 shadow-[0_12px_32px_-28px_rgba(18,20,25,0.55)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            ? "flex h-14 shrink-0 gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5"
             : "flex gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5"
         }
         aria-label="已添加图片"
@@ -570,11 +570,20 @@ export function AgentComposer({
           return (
             <div
               key={preview.id}
-              className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)]"
+              className={`group relative shrink-0 overflow-hidden rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] ${
+                compactAgentSelector ? "h-10 w-10" : "h-16 w-16"
+              }`}
               title={preview.name}
             >
               {preview.url ? (
-                <Image src={preview.url} alt={`已添加图片 ${index + 1}`} fill sizes="64px" unoptimized className="object-cover" />
+                <Image
+                  src={preview.url}
+                  alt={`已添加图片 ${index + 1}`}
+                  fill
+                  sizes={compactAgentSelector ? "40px" : "64px"}
+                  unoptimized
+                  className="object-cover"
+                />
               ) : (
                 <span className="flex h-full w-full items-center justify-center text-sky-600">
                   <ImagePlus className="h-5 w-5" />
@@ -602,9 +611,6 @@ export function AgentComposer({
 
   return (
     <>
-      {/* 会话页把附件托盘放在输入卡上方，粘贴图片时保持输入卡高度和底部锚点不变。 */}
-      {compactAgentSelector && imagePreviewTray}
-
       <ComposerSurface
         variant="console"
         onDragOver={(e) => e.preventDefault()}
@@ -745,23 +751,25 @@ export function AgentComposer({
           </div>
         )}
 
-        {/* 首页 launcher 保持卡内缩略图；会话页已在卡片上方渲染，避免改变输入卡高度。 */}
-        {!compactAgentSelector && imagePreviewTray}
+        {/* 会话页的图片与文字共享固定高度，缩略图留在卡内但不会再撑高整张输入卡。 */}
+        <div className={compactAgentSelector ? "flex h-28 min-h-28 flex-col" : undefined}>
+          {imagePreviewTray}
 
-        <ComposerTextarea
-          variant="console"
-          id="agent-composer"
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => onInputChange(e.target.value)}
-          onPaste={handleComposerPaste}
-          rows={compactAgentSelector ? 2 : 4}
-          placeholder={placeholder}
-          className={compactAgentSelector ? "max-h-[min(18rem,40dvh)] min-h-28 overflow-y-auto pt-2.5 sm:pt-2.5" : undefined}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
-          }}
-        />
+          <ComposerTextarea
+            variant="console"
+            id="agent-composer"
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => onInputChange(e.target.value)}
+            onPaste={handleComposerPaste}
+            rows={compactAgentSelector ? 2 : 4}
+            placeholder={placeholder}
+            className={compactAgentSelector ? "min-h-0 flex-1 overflow-y-auto py-2.5 sm:py-2.5" : undefined}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+            }}
+          />
+        </div>
 
         {/* 操作区与输入面融为一体，减少后台表单式的分割感。 */}
         <ComposerToolbar variant="console">
