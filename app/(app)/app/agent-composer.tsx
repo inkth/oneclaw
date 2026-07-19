@@ -561,7 +561,7 @@ export function AgentComposer({
         className={
           compactAgentSelector
             ? "flex h-14 shrink-0 gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5"
-            : "flex gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5"
+            : "flex h-16 shrink-0 gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:h-[4.75rem] sm:px-5 sm:py-1.5"
         }
         aria-label="已添加图片"
       >
@@ -571,7 +571,7 @@ export function AgentComposer({
             <div
               key={preview.id}
               className={`group relative shrink-0 overflow-hidden rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)] ${
-                compactAgentSelector ? "h-10 w-10" : "h-16 w-16"
+                compactAgentSelector ? "h-10 w-10" : "h-12 w-12 sm:h-16 sm:w-16"
               }`}
               title={preview.name}
             >
@@ -580,7 +580,7 @@ export function AgentComposer({
                   src={preview.url}
                   alt={`已添加图片 ${index + 1}`}
                   fill
-                  sizes={compactAgentSelector ? "40px" : "64px"}
+                  sizes={compactAgentSelector ? "40px" : "(min-width: 640px) 64px, 48px"}
                   unoptimized
                   className="object-cover"
                 />
@@ -751,8 +751,8 @@ export function AgentComposer({
           </div>
         )}
 
-        {/* 会话页的图片与文字共享固定高度，缩略图留在卡内但不会再撑高整张输入卡。 */}
-        <div className={compactAgentSelector ? "flex h-28 min-h-28 flex-col" : undefined}>
+        {/* 图片与文字共享固定内容高度，首页和会话页粘贴图片后都不会撑高整张输入卡。 */}
+        <div className={compactAgentSelector ? "flex h-28 min-h-28 flex-col" : "flex h-40 min-h-40 flex-col"}>
           {imagePreviewTray}
 
           <ComposerTextarea
@@ -764,7 +764,11 @@ export function AgentComposer({
             onPaste={handleComposerPaste}
             rows={compactAgentSelector ? 2 : 4}
             placeholder={placeholder}
-            className={compactAgentSelector ? "min-h-0 flex-1 overflow-y-auto py-2.5 sm:py-2.5" : undefined}
+            className={
+              compactAgentSelector
+                ? "min-h-0 flex-1 overflow-y-auto py-2.5 sm:py-2.5"
+                : "min-h-0 flex-1 overflow-y-auto"
+            }
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
             }}
