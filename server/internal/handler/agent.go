@@ -34,6 +34,15 @@ func (h *AgentHandler) List(c *gin.Context) {
 		OK(c, gin.H{"tasks": items})
 		return
 	}
+	if c.Query("references") == "1" {
+		items, err := h.agents.ListAnalysisReferences(c.Request.Context(), wid)
+		if err != nil {
+			_ = c.Error(err)
+			return
+		}
+		OK(c, gin.H{"tasks": items})
+		return
+	}
 	items, err := h.agents.List(c.Request.Context(), wid)
 	if err != nil {
 		_ = c.Error(err)
@@ -47,7 +56,7 @@ type agentCreateReq struct {
 	Input string `json:"input" binding:"required"`
 	// ConversationID 归属会话 ID(可选):传了则追加进该会话,空则后端新建一条。
 	ConversationID string `json:"conversationId"`
-	// ProductID 选品库商品 ID(可选):DIRECTOR/LISTING 据此注入真实商品数据并关联产出。
+	// ProductID 选品库商品 ID(可选):顾问/选品/创作 Agent 按需注入真实商品数据。
 	ProductID string `json:"productId"`
 	// ModelAssetID 出镜人设 ID(可选,DIRECTOR):脚本贴合人设,确认出片时默认沿用。
 	ModelAssetID string `json:"modelAssetId"`
@@ -65,6 +74,8 @@ type agentCreateReq struct {
 	// 后端注入真实数据走单品判断;配 DiscoverRegion 定位记录。
 	DiscoverProductID string `json:"discoverProductId"`
 	DiscoverRegion    string `json:"discoverRegion"`
+	// ReferenceTaskID 已完成的分析任务 ID(可选,ADVISOR):作为本次咨询的参考。
+	ReferenceTaskID string `json:"referenceTaskId"`
 }
 
 func (h *AgentHandler) Create(c *gin.Context) {
@@ -100,6 +111,9 @@ func (h *AgentHandler) Create(c *gin.Context) {
 		return
 	}
 	if opts.MaterialID, valid = parseOpt(in.MaterialID, "materialId"); !valid {
+		return
+	}
+	if opts.ReferenceTaskID, valid = parseOpt(in.ReferenceTaskID, "referenceTaskId"); !valid {
 		return
 	}
 	seenMaterials := make(map[uuid.UUID]bool, len(in.MaterialIDs))

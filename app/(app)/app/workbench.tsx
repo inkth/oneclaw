@@ -5,32 +5,20 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MessagesSquare } from "lucide-react";
 import { authFetch } from "@/lib/api-browser";
-import {
-  AgentComposer,
-  AgentPills,
-  type ComposerKind,
-  type DirectorMode,
-} from "./agent-composer";
+import { AgentComposer, AgentPills, type ComposerKind, type DirectorMode } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
 import { ReviewTrend } from "./review-trend";
 import { industryPresets } from "@/components/OnboardingCard";
+import type { DiscoverSelection, TaskReferenceSelection } from "./create/asset-chips";
 
 const POLL_MS = 5000;
-const PRIMARY_AGENT_KINDS = new Set<ComposerKind>([
-  "ADVISOR",
-  "ANALYST",
-  "DIRECTOR",
-  "LISTING",
-  "REVIEW",
-]);
+const PRIMARY_AGENT_KINDS = new Set<ComposerKind>(["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
 
 function taskAgentToComposerKind(agent: string | undefined): ComposerKind | undefined {
   if (agent === "TRYON") return "LISTING";
   if (agent === "VIDEO_ANALYSIS") return "DIRECTOR";
-  return agent && PRIMARY_AGENT_KINDS.has(agent as ComposerKind)
-    ? (agent as ComposerKind)
-    : undefined;
+  return agent && PRIMARY_AGENT_KINDS.has(agent as ComposerKind) ? (agent as ComposerKind) : undefined;
 }
 
 /**
@@ -51,7 +39,7 @@ export function Workbench({
   agents,
   streamAgents,
   showQuickActions = false,
-  showAssetChips = false,
+  showAssetChips = true,
   showStream = true,
   align = "center",
 }: {
@@ -76,23 +64,23 @@ export function Workbench({
   streamAgents?: ComposerKind[];
   /** 是否展示快捷功能卡（创作类模板，挂在创作页）。 */
   showQuickActions?: boolean;
-  /** 是否在输入卡底栏挂资产选择器（商品/人设/素材，创作页开）。 */
+  /** 是否在输入卡底栏挂 Agent 自己的上下文「添加」入口。 */
   showAssetChips?: boolean;
   /** 胶囊行与预设行的对齐：创作页居中 hero,工作台驾驶舱左对齐。 */
   align?: "center" | "start";
   /** 是否在输入框下方挂对话流（任务消息流）。工作台关掉：派活后只提示去「会话」看进展与结果。 */
   showStream?: boolean;
 }) {
-  const [activeAgent, setActiveAgent] = useState<ComposerKind>(() =>
-    initialAgent ?? taskAgentToComposerKind(initialTasks[0]?.agent) ?? agents?.[0] ?? "ADVISOR",
+  const [activeAgent, setActiveAgent] = useState<ComposerKind>(
+    () => initialAgent ?? taskAgentToComposerKind(initialTasks[0]?.agent) ?? agents?.[0] ?? "ADVISOR",
   );
   const [input, setInput] = useState(initialInput ?? "");
   const [productId, setProductId] = useState<string | null>(initialProductId ?? null);
+  const [discoverSelection, setDiscoverSelection] = useState<DiscoverSelection | null>(null);
+  const [referenceTask, setReferenceTask] = useState<TaskReferenceSelection | null>(null);
   // 创作工具链选中的资产：与 productId 同生命周期，派活成功即消费清空。
   const [personaId, setPersonaId] = useState<string | null>(null);
-  const [materialIds, setMaterialIds] = useState<string[]>(
-    initialMaterialId ? [initialMaterialId] : [],
-  );
+  const [materialIds, setMaterialIds] = useState<string[]>(initialMaterialId ? [initialMaterialId] : []);
   // 短视频子模式（做视频 / 视频解析）:切走 DIRECTOR 自动回 create。
   const [directorMode, setDirectorMode] = useState<DirectorMode>("create");
   // 所有 Agent(含同步复盘)统一落任务表，流就是任务列表。
@@ -115,9 +103,7 @@ export function Workbench({
   }
 
   // 轮询拉的是工作区全量任务，本页只看 streamAgents 的（创作页只看视频/Listing）。
-  const visibleTasks = streamAgents
-    ? tasks.filter((t) => (streamAgents as string[]).includes(t.agent))
-    : tasks;
+  const visibleTasks = streamAgents ? tasks.filter((t) => (streamAgents as string[]).includes(t.agent)) : tasks;
 
   // 带指令接力进来时（如收藏跳转），光标直接落到输入框，看一眼就能发。
   useEffect(() => {
@@ -156,9 +142,7 @@ export function Workbench({
     if (!hasActive || !workspaceId || !showStream || !conversationId) return;
     const timer = setInterval(async () => {
       try {
-        const res = await authFetch(
-          `/api/v1/workspaces/${workspaceId}/conversations/${conversationId}/tasks`,
-        );
+        const res = await authFetch(`/api/v1/workspaces/${workspaceId}/conversations/${conversationId}/tasks`);
         const json = await res.json().catch(() => null);
         const fresh = (json?.data?.tasks ?? json?.tasks) as StreamTask[] | undefined;
         if (res.ok && json?.ok && Array.isArray(fresh)) setTasks(fresh);
@@ -220,6 +204,10 @@ export function Workbench({
       productId={productId}
       onClearProduct={() => setProductId(null)}
       onProductChange={setProductId}
+      discoverSelection={discoverSelection}
+      onDiscoverSelectionChange={setDiscoverSelection}
+      referenceTask={referenceTask}
+      onReferenceTaskChange={setReferenceTask}
       personaId={personaId}
       onPersonaChange={setPersonaId}
       materialIds={materialIds}
@@ -234,23 +222,19 @@ export function Workbench({
       agentKinds={agents}
       onDispatched={(task) => {
         // 关联资产是一次性的：派活成功即消费，避免下一条任务误带上一次的选择
-        if (
-          task.agent === "DIRECTOR" ||
-          task.agent === "LISTING" ||
-          task.agent === "TRYON"
-        ) {
+        if (["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "TRYON"].includes(task.agent)) {
           setProductId(null);
           setPersonaId(null);
           setMaterialIds([]);
+          setDiscoverSelection(null);
+          setReferenceTask(null);
         }
         ingest(task);
       }}
     />
   );
 
-  const pills = (
-    <AgentPills active={activeAgent} onChange={changeAgent} kinds={agents} align={align} />
-  );
+  const pills = <AgentPills active={activeAgent} onChange={changeAgent} kinds={agents} align={align} />;
 
   // 聊天布局（会话页）:会话流在上（正序，旧→新），对话框常驻底部 —— 与微信、ChatGPT 同方向。
   if (showStream) {
@@ -267,9 +251,7 @@ export function Workbench({
                   <MessagesSquare className="h-6 w-6" />
                 </span>
                 <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
-                  {isGuest
-                    ? "选一个 Agent，说说你想解决什么。登录后会自动保存这段对话。"
-                    : "还没有内容。选一个 Agent，说说你想解决什么。"}
+                  {isGuest ? "选一个 Agent，说说你想解决什么。登录后会自动保存这段对话。" : "还没有内容。选一个 Agent，说说你想解决什么。"}
                 </p>
               </div>
             ) : (
@@ -294,19 +276,10 @@ export function Workbench({
 
       <div>{composer}</div>
 
-      {showQuickActions && (
-        <QuickActionCards
-          activeAgent={activeAgent}
-          onPick={pickQuickAction}
-        />
-      )}
+      {showQuickActions && <QuickActionCards activeAgent={activeAgent} onPick={pickQuickAction} />}
 
       {showPresets && (
-        <div
-          className={`flex flex-wrap items-center gap-2 ${
-            align === "center" ? "justify-center" : "justify-start"
-          }`}
-        >
+        <div className={`flex flex-wrap items-center gap-2 ${align === "center" ? "justify-center" : "justify-start"}`}>
           <span className="text-xs text-zinc-400">还没想好？从一个常见品类开始：</span>
           {industryPresets.map((p) => (
             <button

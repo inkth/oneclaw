@@ -42,7 +42,7 @@ var validAgents = map[string]bool{
 	model.AgentVideoAnalysis: true,
 }
 
-// AgentCreateOpts 派活时的可选关联资产,创作类 Agent 按需消费。
+// AgentCreateOpts 派活时的可选关联资产和上下文,Agent 按需消费。
 type AgentCreateOpts struct {
 	ConversationID *uuid.UUID  // 归属会话:命中则追加进该会话,空/越权则新建一条
 	ProductID      *uuid.UUID  // 选品库商品:注入真实数据,产出关联到该商品
@@ -56,6 +56,8 @@ type AgentCreateOpts struct {
 	// 该商品的真实数据做单品判断,替代默认的榜单选品模式。配 DiscoverRegion 定位记录。
 	DiscoverProductID string
 	DiscoverRegion    string
+	// ReferenceTaskID 用户主动选中的已完成分析任务(ADVISOR):把原问题和结果作为参考上下文。
+	ReferenceTaskID *uuid.UUID
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
@@ -93,6 +95,9 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 			metaKV["discoverRegion"] = opts.DiscoverRegion
 		}
 	}
+	if opts.ReferenceTaskID != nil {
+		metaKV["referenceTaskId"] = opts.ReferenceTaskID.String()
+	}
 	if len(metaKV) > 0 {
 		if b, e := json.Marshal(metaKV); e == nil {
 			t.Metadata = model.JSONB(b)
@@ -115,6 +120,29 @@ func (s *AgentService) List(ctx context.Context, wsID uuid.UUID) ([]model.AgentT
 		Limit(50).
 		Find(&items).Error; err != nil {
 		return nil, apperr.Wrap(apperr.CodeInternal, "查询任务失败", err)
+	}
+	return items, nil
+}
+
+// AnalysisReferenceLite 顾问「已有分析」选择器用的轻量投影,避免一次下载多条完整长产出。
+type AnalysisReferenceLite struct {
+	ID        uuid.UUID `json:"id"`
+	Agent     string    `json:"agent"`
+	Input     string    `json:"input"`
+	Output    string    `json:"output"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (s *AgentService) ListAnalysisReferences(ctx context.Context, wsID uuid.UUID) ([]AnalysisReferenceLite, error) {
+	items := []AnalysisReferenceLite{}
+	if err := s.db.WithContext(ctx).Model(&model.AgentTask{}).
+		Select("id, agent, input, LEFT(output, 240) AS output, created_at").
+		Where("workspace_id = ? AND status = ? AND agent IN ? AND output IS NOT NULL", wsID, model.TaskDone,
+			[]string{model.AgentAnalyst, model.AgentReview}).
+		Order("created_at DESC").
+		Limit(30).
+		Find(&items).Error; err != nil {
+		return nil, apperr.Wrap(apperr.CodeInternal, "查询可引用分析失败", err)
 	}
 	return items, nil
 }
@@ -183,7 +211,7 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 	)
 	switch agent {
 	case model.AgentAdvisor:
-		output, meta, usage, err = s.runAdvisor(ctx, taskID, input)
+		output, meta, usage, err = s.runAdvisor(ctx, taskID, wsID, input, opts)
 	case model.AgentAnalyst:
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input, opts)
 	case model.AgentDirector:
@@ -231,7 +259,7 @@ var retryableAgents = map[string]bool{
 	model.AgentListing:  true,
 }
 
-// retryMeta 失败任务 metadata 里可还原派活选项的字段(DIRECTOR/LISTING 写入)。
+// retryMeta 失败任务 metadata 里可还原派活选项的字段。
 type retryMeta struct {
 	ProductID          string `json:"productId"`
 	PreferredPersonaID string `json:"preferredPersonaId"`
@@ -240,6 +268,7 @@ type retryMeta struct {
 	AspectRatio        string `json:"aspectRatio"`
 	DiscoverProductID  string `json:"discoverProductId"`
 	DiscoverRegion     string `json:"discoverRegion"`
+	ReferenceTaskID    string `json:"referenceTaskId"`
 }
 
 // optsFromTask 从任务 metadata 还原 AgentCreateOpts,让重试沿用原商品/市场/人设/时长/比例。
@@ -263,6 +292,9 @@ func optsFromTask(t *model.AgentTask) AgentCreateOpts {
 	opts.AspectRatio = m.AspectRatio
 	opts.DiscoverProductID = m.DiscoverProductID
 	opts.DiscoverRegion = m.DiscoverRegion
+	if id, err := uuid.Parse(m.ReferenceTaskID); err == nil {
+		opts.ReferenceTaskID = &id
+	}
 	return opts
 }
 
@@ -356,15 +388,15 @@ func (s *AgentService) RecoverStartup(ctx context.Context) {
 // 选品分析基于 discover_products 真实榜单数据(EchoTik 定时同步/按需拉取落库),
 // LLM 只负责"从候选中筛选 + 给理由",指标(ROI/毛利/趋势)全部由既有换算函数得出,不让模型编数。
 
-// analystFocusSystem 单品判断模式:事实块来自 DB 里的 EchoTik 真实数据(discoverFacts),
+// analystFocusSystem 单品判断模式:事实块来自 EchoTik 或当前工作台商品档案,
 // 输出是会话里的自然段落,与榜单选品模式(analystSystem,JSON picks)分开。
-const analystFocusSystem = `你是 发现猫 的"选品分析 Agent"，正在帮用户判断他当前查看的一个 TikTok Shop 商品。
+const analystFocusSystem = `你是 发现猫 的"选品分析 Agent"，正在帮用户判断他选中的一个商品。
 
-**事实块里是该商品的真实数据（EchoTik）**，请直接基于这些数字推理，不要编造更多数字。
+**事实块来自 EchoTik 真实数据或用户的工作台商品档案**，请只基于其中已有字段推理，不要编造更多数字。工作台中的毛利、ROI 评分等若未标明来源，按用户记录或估算处理，不要当成平台实时数据。
 
 要求：
 - 第一句先给结论：值得做 / 可小规模试 / 不建议做
-- 依据要点名具体数字：价格带与佣金算毛利空间，销量/达人数/视频数看竞争与切入时机
+- 依据要点名事实块里已有的具体数字；缺少佣金、成本、销量或竞争数据时，直接说还需确认什么
 - 给 2-3 条可执行的下一步建议（如带货角度、定价策略、找什么样的达人）
 - 用户问题里有具体关注点时优先回应
 - 用简洁中文段落输出，不要 JSON，不要 markdown 标题，全文不超过 300 字`
@@ -508,6 +540,20 @@ func (s *AgentService) runAnalystFocus(ctx context.Context, input string, dp mod
 	return strings.TrimSpace(res.Content), meta, res.Usage, nil
 }
 
+func (s *AgentService) runAnalystWorkspaceFocus(ctx context.Context, wsID uuid.UUID, input string, productID uuid.UUID) (string, any, llm.Usage, error) {
+	facts, _, _, _, ok := s.productFacts(ctx, wsID, productID, false)
+	if !ok {
+		return "", nil, llm.Usage{}, fmt.Errorf("找不到选中的商品,请重新选择")
+	}
+	user := fmt.Sprintf("用户问题:%s\n\n工作台商品档案:\n%s", input, facts)
+	res, err := s.llm.Chat(ctx, analystFocusSystem, user, false, 1200)
+	if err != nil {
+		return "", nil, llm.Usage{}, err
+	}
+	meta := map[string]any{"source": "workspace.product", "productId": productID.String()}
+	return strings.TrimSpace(res.Content), meta, res.Usage, nil
+}
+
 func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请在服务端 .env 设置 OPENROUTER_API_KEY")
@@ -530,6 +576,9 @@ func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input str
 		// 商品记录缺失(可能被清理):退回榜单模式,用户仍能得到答案而不是报错。
 		logger.Warn("[agent] analyst 单品事实缺失,退回榜单模式",
 			logger.String("externalId", opts.DiscoverProductID), logger.String("region", region))
+	}
+	if opts.ProductID != nil {
+		return s.runAnalystWorkspaceFocus(ctx, wsID, input, *opts.ProductID)
 	}
 
 	regions := detectRegions(input)
