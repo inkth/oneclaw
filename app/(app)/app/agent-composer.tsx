@@ -58,8 +58,8 @@ const AGENT_DESCRIPTIONS: Record<Exclude<ComposerKind, "TRYON">, string> = {
 };
 
 const PLACEHOLDERS: Record<ComposerKind, string> = {
-  ADVISOR: "例：预算 5000 元，没有货源，想做美国市场，我该从哪一步开始？",
-  ANALYST: "例：从美国爆品榜挑 3 个高佣金、仍在增长的潜力商品",
+  ADVISOR: "例：预算 5000 元，没有货源，想做美国市场，我该从哪一步开始？也可直接粘贴图片",
+  ANALYST: "例：从美国爆品榜挑 3 个高佣金、仍在增长的潜力商品，可直接粘贴图片",
   DIRECTOR: "例：为榜首商品做一条 UGC 开箱带货视频，突出使用前后对比",
   LISTING: "例：为便携榨汁杯生成标题、五点卖点、图文详情和主图方案",
   TRYON: "选一位模特 + 一张服饰图，生成模特上身效果图",
