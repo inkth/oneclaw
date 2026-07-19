@@ -139,7 +139,7 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	}
 
 	// 有实拍图就让 vision 模型看图写文案(标题/五点基于照片里的真货);vision 走 ReviewModel
-	// (gemini,prod 经代理)。但 gemini 经代理偶发「无报错却返回空/截断内容」,故不仅 transport
+	// 视觉模型偶发「无报错却返回空/截断内容」,故不仅 transport
 	// 错误要降级,**解析失败(空/截断/无效)也降级**回纯文本(deepseek,prod 稳定),保证 Listing 出得来。
 	var res *llm.Result
 	var out listingOut

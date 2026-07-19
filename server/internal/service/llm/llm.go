@@ -324,9 +324,8 @@ var priceTable = map[string][2]float64{ // {input, output}
 	"deepseek/deepseek-v4-flash": {0.098, 0.196},
 	"deepseek/deepseek-chat":     {0.2, 0.8},
 	"qwen/qwen3.7-plus":          {0.32, 1.28},
-	// minimax 由生产实测两次调用的 usage.cost 反解(251in/603out=$0.000772、251in/429out=$0.000563);
-	// 含图调用实际计费略高于此(图片另算),粗估用途够。
-	"minimax/minimax-m3": {0.2, 1.2},
+	// OpenRouter 2026-07-19 公示价;含图调用的图片 token 另计。
+	"minimax/minimax-m3": {0.3, 1.2},
 	// voxtral 视频转录用;文本单价按官方 pricing,音频 token 另计,本表只做粗估。
 	"mistralai/voxtral-small-24b-2507": {0.1, 0.3},
 }

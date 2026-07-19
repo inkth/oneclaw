@@ -230,7 +230,13 @@ func main() {
 		videoSvc.RecoverStartup(rctx)
 	}()
 	if llmClient.Configured() {
-		logger.Info("[llm] OpenRouter 已配置", logger.String("model", llmClient.Model()))
+		logger.Info("[llm] OpenRouter 已配置",
+			logger.String("model", llmClient.Model()),
+			logger.String("advisor_model", llmClient.AdvisorModel()),
+			logger.String("translate_model", llmClient.TranslateModel()),
+			logger.String("review_model", llmClient.ReviewModel()),
+			logger.String("audio_model", llmClient.AudioModel()),
+			logger.String("video_model", llmClient.VideoModel()))
 	} else {
 		logger.Warn("[llm] OPENROUTER_API_KEY 未配置,Agent 走未配置降级")
 	}

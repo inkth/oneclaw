@@ -174,13 +174,13 @@ func (s StorageConfig) Configured() bool {
 // OpenRouterConfig LLM 网关(Agent 用)。未配置 key 时 Agent 走 mock。
 type OpenRouterConfig struct {
 	APIKey         string
-	Model          string // 文本默认 deepseek/deepseek-v4-pro(直连可达;推理轻量,现有 800+ 预算即可出全文)
-	AdvisorModel   string // 跨境顾问单独用中文咨询模型,避免切换时影响选品/创作等 Agent
-	TranslateModel string // 选品外文字段翻译默认 deepseek/deepseek-v4-flash(快且便宜)
+	Model          string // 通用文本 Agent
+	AdvisorModel   string // 跨境顾问多轮对话
+	TranslateModel string // 选品外文字段翻译
 	// ReviewModel 复盘深挖 + 看图(Listing/判品类)。须选国内直连可达的多模态模型:
 	// Google 全系在国内 IP 一律 403(地区限制),且经正向代理绕行会被 OpenRouter 判
 	// 「违反供应商服务条款」直接封禁 —— 2026-07-17 实测两条路都不通,故已弃用 gemini。
-	// minimax-m3 直连可用、支持看图、且不带推理(不会烧光 max_tokens 返回空正文)。
+	// minimax-m3 直连可用并支持图片/视频理解。
 	ReviewModel string
 	// AudioModel 视频解析第一段「听音频转录」专用。ReviewModel(minimax)不吃 input_audio
 	// (会 404 No endpoints found that support input audio),故转录另用支持音频的模型。
@@ -291,9 +291,9 @@ func Load() *Config {
 		},
 		OpenRouter: OpenRouterConfig{
 			APIKey:         getEnv("OPENROUTER_API_KEY", ""),
-			Model:          getEnv("OPENROUTER_MODEL", "deepseek/deepseek-v4-pro"),
-			AdvisorModel:   getEnv("OPENROUTER_ADVISOR_MODEL", "qwen/qwen3.7-plus"),
-			TranslateModel: getEnv("OPENROUTER_TRANSLATE_MODEL", "deepseek/deepseek-v4-flash"),
+			Model:          getEnv("OPENROUTER_MODEL", "minimax/minimax-m3"),
+			AdvisorModel:   getEnv("OPENROUTER_ADVISOR_MODEL", "minimax/minimax-m3"),
+			TranslateModel: getEnv("OPENROUTER_TRANSLATE_MODEL", "minimax/minimax-m3"),
 			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "minimax/minimax-m3"),
 			AudioModel:     getEnv("OPENROUTER_AUDIO_MODEL", "mistralai/voxtral-small-24b-2507"),
 			VideoModel:     getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),

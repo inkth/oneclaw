@@ -75,9 +75,9 @@ type Result struct {
 	Counts    map[Quadrant]int            `json:"counts"`
 	Quadrants map[Quadrant][]QuadrantItem `json:"quadrants"`
 	Actions   []ActionItem                `json:"actions"`
-	// GeminiPrompt 可直接粘进 Gemini 的提示词;同时作为服务层 AI 深挖(ChatWithModel)的输入。
+	// GeminiPrompt 是历史兼容字段名;内容同时作为服务层 AI 深挖(ChatWithModel)的输入。
 	GeminiPrompt string `json:"geminiPrompt"`
-	// Analysis 服务层(agent_review.go)用 google/gemini-3.5-flash 深挖出的 Markdown 结论;
+	// Analysis 服务层(agent_review.go)用 ReviewModel 深挖出的 Markdown 结论;
 	// 纯计算的 review 包不填它,空表示未深挖(前端回退为「复制提示词手动深挖」)。
 	Analysis string   `json:"analysis,omitempty"`
 	Warnings []string `json:"warnings"`
