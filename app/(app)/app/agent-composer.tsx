@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Check,
+  ChevronDown,
   Clapperboard,
   FileSpreadsheet,
   FileVideo,
@@ -28,6 +29,7 @@ import {
   ComposerToolbar,
 } from "@/components/ui/Composer";
 import { CreditCost } from "@/components/ui/CreditCost";
+import { Popover } from "@/components/ui/Popover";
 import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
 import { TASK_DISPATCHED_EVENT } from "./floating-mascot";
@@ -49,6 +51,14 @@ export type DirectorMode = "create" | "analyze";
 const PILL_AGENTS = (["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
   (kind) => ({ kind: kind as ComposerKind, ...AGENT_IDENTITY[kind] }),
 );
+
+const AGENT_DESCRIPTIONS: Record<Exclude<ComposerKind, "TRYON">, string> = {
+  ADVISOR: "答疑、拆解问题并规划下一步",
+  ANALYST: "判断市场机会、竞争和利润空间",
+  DIRECTOR: "产出脚本、分镜和短视频素材",
+  LISTING: "生成标题、卖点和商品详情内容",
+  REVIEW: "分析投放报表并给出优化建议",
+};
 
 const PLACEHOLDERS: Record<ComposerKind, string> = {
   ADVISOR: "例：预算 5000 元，没有货源，想做美国市场，我该从哪一步开始？",
@@ -142,6 +152,8 @@ export function AgentComposer({
   textareaRef,
   onDispatched,
   allowReview = true,
+  compactAgentSelector = false,
+  agentKinds,
 }: {
   workspaceId: string;
   /** 当前会话 ID:派活时带上则追加进该会话，空则后端新建一条。 */
@@ -175,6 +187,10 @@ export function AgentComposer({
   onDispatched?: (task: StreamTask) => void;
   /** 本页是否提供「上传报表复盘」入口（创作页没有 REVIEW,关掉附件按钮与拖拽）。 */
   allowReview?: boolean;
+  /** 已进入具体会话后，把平铺 Agent 收成输入框内的单一切换入口。 */
+  compactAgentSelector?: boolean;
+  /** 当前页面允许选择的主 Agent 子集。 */
+  agentKinds?: ComposerKind[];
 }) {
   const [submitting, setSubmitting] = useState(false);
   // 虚拟试穿内联选择器（选模特 + 服饰图）开关；复用 DIRECTOR/LISTING 的资产选择弹窗。
@@ -196,6 +212,10 @@ export function AgentComposer({
   const { open: openAuthModal } = useAuthModal();
 
   const isReview = activeAgent === "REVIEW";
+  const activeIdentity = AGENT_IDENTITY[activeAgent];
+  const selectableAgents = agentKinds
+    ? PILL_AGENTS.filter((agent) => agentKinds.includes(agent.kind))
+    : PILL_AGENTS;
   // 视频解析 = 短视频创作的子模式：输入是一条上传的视频，选填关注点，传完才可发。
   const isAnalyze = activeAgent === "DIRECTOR" && directorMode === "analyze";
   // 虚拟试穿 = Listing 的「上身图」子模式：输入是「模特 + 服饰图」两张图而非文字，凑齐才可发。
@@ -406,6 +426,79 @@ export function AgentComposer({
           if (f) attach(f);
         }}
       >
+        {compactAgentSelector && (
+          <div className="flex items-center px-4 pt-3.5 sm:px-5">
+            <Popover
+              align="start"
+              panelClassName="w-[min(21rem,calc(100vw-3rem))] p-2"
+              trigger={({ open }) => (
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-2.5 text-xs font-medium transition-colors ${
+                    open
+                      ? "border-black/15 bg-[var(--dk-action-regular)] text-ink"
+                      : "border-[var(--dk-stroke-border)] bg-[var(--dk-surface)] text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)] hover:text-ink"
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className={`flex h-6 w-6 items-center justify-center rounded-lg border ${activeIdentity.iconSurface}`}
+                  >
+                    <activeIdentity.icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="text-[var(--dk-content-tertiary)]">当前 Agent</span>
+                  <span className="text-ink">{activeIdentity.label}</span>
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 text-[var(--dk-content-tertiary)] transition-transform ${open ? "rotate-180" : ""}`}
+                  />
+                </span>
+              )}
+            >
+              {({ close }) => (
+                <div>
+                  <div className="px-2 pb-2 pt-1">
+                    <div className="text-xs font-semibold text-ink">选择接下来回答的 Agent</div>
+                    <div className="mt-0.5 text-2xs text-[var(--dk-content-tertiary)]">
+                      保留当前对话，仅影响下一次发送
+                    </div>
+                  </div>
+                  <div className="space-y-0.5">
+                    {selectableAgents.map((agent) => {
+                      const selected = agent.kind === activeAgent;
+                      return (
+                        <button
+                          key={agent.kind}
+                          type="button"
+                          onClick={() => {
+                            onAgentChange(agent.kind);
+                            close();
+                          }}
+                          className={`flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors ${
+                            selected ? "bg-[var(--dk-action-regular)]" : "hover:bg-[var(--dk-action-regular)]"
+                          }`}
+                        >
+                          <span
+                            aria-hidden
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agent.iconSurface}`}
+                          >
+                            <agent.icon className="h-4 w-4" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium text-ink">{agent.label}</span>
+                            <span className="mt-0.5 block truncate text-xs text-[var(--dk-content-secondary)]">
+                              {AGENT_DESCRIPTIONS[agent.kind as Exclude<ComposerKind, "TRYON">]}
+                            </span>
+                          </span>
+                          {selected && <Check className="h-4 w-4 shrink-0 text-ink" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </Popover>
+          </div>
+        )}
+
         {/* 关联商品 chip:收藏接力带入（创作页有 AssetChips 时由选择器展示，不重复出 chip） */}
         {!showAssetChips && !isTryOn && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
@@ -485,6 +578,7 @@ export function AgentComposer({
             onChange={(e) => onInputChange(e.target.value)}
             rows={4}
             placeholder={placeholder}
+            className={compactAgentSelector ? "pt-3 sm:pt-3" : undefined}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
             }}
