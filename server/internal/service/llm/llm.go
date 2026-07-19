@@ -28,7 +28,7 @@ type Client struct {
 // New 全部调用一律直连 —— 所选模型均为国内可达。
 // (曾经复盘模型走正向代理绕地区限制,2026-07-17 被 OpenRouter 判 ToS 违规封禁,已整条移除。)
 func New(cfg config.OpenRouterConfig) *Client {
-	return &Client{cfg: cfg, http: &http.Client{Timeout: 90 * time.Second}}
+	return &Client{cfg: cfg, http: &http.Client{Timeout: 120 * time.Second}}
 }
 
 func (c *Client) Configured() bool       { return c.cfg.Configured() }
