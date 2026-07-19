@@ -155,9 +155,12 @@ func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.
 
 // execute 后台执行单个任务。任何 panic/错误都落库为 FAILED。
 func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts AgentCreateOpts) {
-	// 视频解析要下载视频 + ffmpeg 抽音轨 + 多模态转录,比纯文本派活慢,放宽超时。
+	// 顾问复杂推理和视频解析都可能超过普通文本派活时长,分别放宽超时。
 	timeout := 2 * time.Minute
-	if agent == model.AgentVideoAnalysis {
+	if agent == model.AgentAdvisor {
+		// M3 的完整复杂方案可能超过一分钟,给模型请求之外留出任务状态落库时间。
+		timeout = 150 * time.Second
+	} else if agent == model.AgentVideoAnalysis {
 		timeout = 5 * time.Minute
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

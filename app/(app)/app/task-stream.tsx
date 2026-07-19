@@ -304,7 +304,10 @@ function TaskBubble({
   task: StreamTask;
   newest?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  // 顾问会按问题复杂度自适应篇幅：最新回答直接完整展示，历史长回答仍可按需展开。
+  const [expanded, setExpanded] = useState(
+    () => newest && task.agent === "ADVISOR",
+  );
   // 确认卡改目标市场会触发后端重写脚本，完成后用返回的新任务就地覆盖展示（脚本/口播语言一起换）。
   const [localTask, setLocalTask] = useState<StreamTask | null>(null);
   const t = localTask ?? task;
