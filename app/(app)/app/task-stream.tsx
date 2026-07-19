@@ -114,6 +114,48 @@ const OUTPUT_COLLAPSE_LIMIT = 600;
 const MARKDOWN_AGENTS = new Set(["ADVISOR"]);
 
 /**
+ * 会实时吐字的 Agent。顾问恒有；选品只有「带引用」的三条路径有（单品/工作台商品/看图），
+ * 默认的榜单模式产出由后端按真实数据拼装、没有 token 流。
+ * 前端分不清选品走的哪条，所以一律订阅：没流可订时后端回 idle，就地退回等待态。
+ */
+const STREAM_AGENTS = new Set(["ADVISOR", "ANALYST"]);
+
+/**
+ * 订阅任务的实时正文（SSE）。返回边生成边到的文本，任务终态后由轮询拿到的 output 接管。
+ * 这里只负责「看得见在写」——正确性始终以任务表为准，连不上就是退回原来的等待态。
+ */
+function useTaskStream(task: StreamTask, active: boolean) {
+  const [text, setText] = useState("");
+  const streamable = active && STREAM_AGENTS.has(task.agent);
+
+  useEffect(() => {
+    if (!streamable || !task.workspaceId) return;
+    const es = new EventSource(
+      `/api/v1/workspaces/${task.workspaceId}/agent-tasks/${task.id}/stream`,
+      { withCredentials: true },
+    );
+    es.addEventListener("delta", (e) => {
+      try {
+        setText((prev) => prev + (JSON.parse((e as MessageEvent).data).text ?? ""));
+      } catch {
+        // 单帧解析失败不致命：轮询仍会拿到完整产出
+      }
+    });
+    // done=本次生成结束、idle=没流可订（榜单模式/任务已终态）。两者都交还给轮询。
+    es.addEventListener("done", () => es.close());
+    es.addEventListener("idle", () => es.close());
+    es.onerror = () => es.close(); // 断线不重连：轮询是兜底，重连只会白占连接
+    // 订阅结束即清空：终态由轮询拿到的 output 接管，重试时也不会残留上一轮的半截文本。
+    return () => {
+      es.close();
+      setText("");
+    };
+  }, [streamable, task.id, task.workspaceId]);
+
+  return text;
+}
+
+/**
  * 会话流：每次派活 = 右侧用户气泡（指令）+ 左侧 Agent 气泡（状态/结果）。
  * 新任务在最上方紧贴输入框，执行中实时显示进度，完成后结果就地展开;
  * 所有 Agent 统一落任务表，复盘（REVIEW）从 metadata.review 还原仪表盘。
@@ -315,6 +357,8 @@ function TaskBubble({
   // 最新一条复盘默认展开仪表盘（刚提交完就要看结果），历史折叠省空间。
   const [dashOpen, setDashOpen] = useState(newest);
   const active = ACTIVE_STATUSES.has(t.status);
+  // 运行中：实时正文；终态：以任务表的 output 为准（流只是旁路，不参与正确性）。
+  const streaming = useTaskStream(task, active);
   const output = t.output ?? "";
   const long = output.length > OUTPUT_COLLAPSE_LIMIT;
   const asMarkdown = MARKDOWN_AGENTS.has(t.agent);
@@ -529,7 +573,19 @@ function TaskBubble({
     <div id={`task-${task.id}`} className="space-y-2 scroll-mt-24">
       <UserBubble>{task.input}</UserBubble>
       <AgentBubble agent={t.agent} status={t.status}>
-        {active ? (
+        {active && streaming ? (
+          // 已经在吐字：直接显示正文 + 光标，比任何「正在工作」的文案都实在。
+          <div className="space-y-1">
+            {asMarkdown ? (
+              <Markdown className="text-sm text-zinc-900">{streaming}</Markdown>
+            ) : (
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-900">
+                {streaming}
+              </div>
+            )}
+            <span className="inline-block h-4 w-[2px] animate-pulse bg-brand-500 align-text-bottom" />
+          </div>
+        ) : active ? (
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {t.status === "QUEUED" ? "排队中，马上开始…" : "正在工作，结果会出现在这里…"}

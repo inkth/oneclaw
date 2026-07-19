@@ -131,7 +131,9 @@ func (s *AgentService) advisorAttachedContext(ctx context.Context, taskID, wsID 
 	return strings.Join(sections, "\n\n")
 }
 
-func (s *AgentService) runAdvisor(ctx context.Context, taskID, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
+// emit 非空时把回答实时广播给已订阅的前端(见 agent_stream.go)。顾问是纯文本长回答,
+// 逐字出正是它该有的样子 —— 落库逻辑不变,emit 只是旁路。
+func (s *AgentService) runAdvisor(ctx context.Context, taskID, wsID uuid.UUID, input string, opts AgentCreateOpts, emit func(string)) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请在服务端 .env 设置 OPENROUTER_API_KEY")
 	}
@@ -153,7 +155,7 @@ func (s *AgentService) runAdvisor(ctx context.Context, taskID, wsID uuid.UUID, i
 
 	lctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
-	optsForChat := llm.ChatOptions{Temperature: 0.7, ReasoningEffort: "low"}
+	optsForChat := llm.ChatOptions{Temperature: 0.7, ReasoningEffort: "low", OnDelta: emit}
 	var res *llm.Result
 	var err error
 	if len(imageURLs) > 0 {

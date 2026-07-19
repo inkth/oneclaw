@@ -27,10 +27,28 @@ type AgentService struct {
 	discover *DiscoverService // analyst 用来取真实榜单候选
 	storage  *storage.Storage // listing 主图传 COS
 	quota    *QuotaService    // 派活/出图前扣减月度配额
+	stream   *streamHub       // 流式 Agent 的实时正文中转(见 agent_stream.go)
 }
 
 func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover *DiscoverService, st *storage.Storage, q *QuotaService) *AgentService {
-	return &AgentService{db: db, llm: l, videos: videos, discover: discover, storage: st, quota: q}
+	return &AgentService{
+		db: db, llm: l, videos: videos, discover: discover, storage: st, quota: q,
+		stream: newStreamHub(),
+	}
+}
+
+// streamableTask 判定这条任务会不会有 token 流可看。
+// 顾问恒有(纯 markdown 长回答)。选品只有「带引用」的三条路径有 —— 默认的榜单模式
+// 产出是后端按真实数据拼的文案(见 runAnalyst 末尾的 strings.Builder),模型原文是
+// 一段用户永远看不到的 JSON,流它没有意义。
+func streamableTask(agent string, opts AgentCreateOpts) bool {
+	switch agent {
+	case model.AgentAdvisor:
+		return true
+	case model.AgentAnalyst:
+		return opts.MaterialID != nil || opts.DiscoverProductID != "" || opts.ProductID != nil
+	}
+	return false
 }
 
 var validAgents = map[string]bool{
@@ -206,6 +224,14 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 	s.db.WithContext(ctx).Model(&model.AgentTask{}).Where("id = ?", taskID).
 		Updates(map[string]any{"status": model.TaskRunning, "started_at": now})
 
+	// 流式任务开一条广播流;emit 为空即非流式,下游按普通调用跑。
+	// finish 放 defer 里,保证失败/panic 时订阅者也能收到收尾信号而不是一直挂着。
+	var emit func(string)
+	if streamableTask(agent, opts) {
+		emit = s.stream.begin(taskID)
+		defer s.stream.finish(taskID)
+	}
+
 	var (
 		output string
 		meta   any
@@ -214,9 +240,9 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 	)
 	switch agent {
 	case model.AgentAdvisor:
-		output, meta, usage, err = s.runAdvisor(ctx, taskID, wsID, input, opts)
+		output, meta, usage, err = s.runAdvisor(ctx, taskID, wsID, input, opts, emit)
 	case model.AgentAnalyst:
-		output, meta, usage, err = s.runAnalyst(ctx, wsID, input, opts)
+		output, meta, usage, err = s.runAnalyst(ctx, wsID, input, opts, emit)
 	case model.AgentDirector:
 		output, meta, usage, err = s.runDirector(ctx, wsID, input, opts)
 	case model.AgentListing:
@@ -545,9 +571,9 @@ func (s *AgentService) ensureCandidates(ctx context.Context, regions []string, l
 }
 
 // runAnalystFocus 单品判断:事实块复用 discoverFacts(与深度分析同一数据口径),回答落在会话里。
-func (s *AgentService) runAnalystFocus(ctx context.Context, input string, dp model.DiscoverProduct) (string, any, llm.Usage, error) {
+func (s *AgentService) runAnalystFocus(ctx context.Context, input string, dp model.DiscoverProduct, emit func(string)) (string, any, llm.Usage, error) {
 	user := fmt.Sprintf("用户问题：%s\n\n商品真实数据（TikTok Shop · EchoTik）：\n%s", input, discoverFacts(dp))
-	res, err := s.llm.Chat(ctx, analystFocusSystem, user, false, 1200)
+	res, err := s.llm.ChatWithOptions(ctx, analystFocusSystem, user, false, 1200, llm.ChatOptions{OnDelta: emit})
 	if err != nil {
 		return "", nil, llm.Usage{}, err
 	}
@@ -557,13 +583,13 @@ func (s *AgentService) runAnalystFocus(ctx context.Context, input string, dp mod
 	return strings.TrimSpace(res.Content), meta, res.Usage, nil
 }
 
-func (s *AgentService) runAnalystWorkspaceFocus(ctx context.Context, wsID uuid.UUID, input string, productID uuid.UUID) (string, any, llm.Usage, error) {
+func (s *AgentService) runAnalystWorkspaceFocus(ctx context.Context, wsID uuid.UUID, input string, productID uuid.UUID, emit func(string)) (string, any, llm.Usage, error) {
 	facts, _, _, _, ok := s.productFacts(ctx, wsID, productID, false)
 	if !ok {
 		return "", nil, llm.Usage{}, fmt.Errorf("找不到选中的商品,请重新选择")
 	}
 	user := fmt.Sprintf("用户问题:%s\n\n工作台商品档案:\n%s", input, facts)
-	res, err := s.llm.Chat(ctx, analystFocusSystem, user, false, 1200)
+	res, err := s.llm.ChatWithOptions(ctx, analystFocusSystem, user, false, 1200, llm.ChatOptions{OnDelta: emit})
 	if err != nil {
 		return "", nil, llm.Usage{}, err
 	}
@@ -571,8 +597,9 @@ func (s *AgentService) runAnalystWorkspaceFocus(ctx context.Context, wsID uuid.U
 	return strings.TrimSpace(res.Content), meta, res.Usage, nil
 }
 
-func (s *AgentService) runAnalystImageFocus(ctx context.Context, input string, materialID uuid.UUID, imageURL string) (string, any, llm.Usage, error) {
-	res, err := s.llm.ChatVision(ctx, s.llm.ReviewModel(), analystImageSystem, input, []string{imageURL}, false, 4000)
+func (s *AgentService) runAnalystImageFocus(ctx context.Context, input string, materialID uuid.UUID, imageURL string, emit func(string)) (string, any, llm.Usage, error) {
+	res, err := s.llm.ChatVisionWithOptions(ctx, s.llm.ReviewModel(), analystImageSystem, input, []string{imageURL},
+		false, 4000, llm.ChatOptions{OnDelta: emit})
 	if err != nil {
 		return "", nil, llm.Usage{}, err
 	}
@@ -580,13 +607,15 @@ func (s *AgentService) runAnalystImageFocus(ctx context.Context, input string, m
 	return strings.TrimSpace(res.Content), meta, res.Usage, nil
 }
 
-func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
+// emit 非空时把模型正文实时广播出去(仅下面三条「带引用」的纯文本路径;
+// 榜单模式的产出由本函数末尾自行拼装,不经模型原文,故不流)。
+func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts, emit func(string)) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请在服务端 .env 设置 OPENROUTER_API_KEY")
 	}
 	if opts.MaterialID != nil {
 		if imageURL := s.materialImageURL(ctx, wsID, *opts.MaterialID); imageURL != "" {
-			return s.runAnalystImageFocus(ctx, input, *opts.MaterialID, imageURL)
+			return s.runAnalystImageFocus(ctx, input, *opts.MaterialID, imageURL, emit)
 		}
 		return "", nil, llm.Usage{}, fmt.Errorf("找不到添加的图片,请重新上传")
 	}
@@ -603,14 +632,15 @@ func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input str
 			Where("provider = ? AND external_id = ? AND region = ?", "echotik", opts.DiscoverProductID, region).
 			First(&dp).Error
 		if err == nil {
-			return s.runAnalystFocus(ctx, input, dp)
+			return s.runAnalystFocus(ctx, input, dp, emit)
 		}
 		// 商品记录缺失(可能被清理):退回榜单模式,用户仍能得到答案而不是报错。
+		// 此时已按「会流式」开了广播流但不会有增量,前端等到 done 后回查任务即可,不影响正确性。
 		logger.Warn("[agent] analyst 单品事实缺失,退回榜单模式",
 			logger.String("externalId", opts.DiscoverProductID), logger.String("region", region))
 	}
 	if opts.ProductID != nil {
-		return s.runAnalystWorkspaceFocus(ctx, wsID, input, *opts.ProductID)
+		return s.runAnalystWorkspaceFocus(ctx, wsID, input, *opts.ProductID, emit)
 	}
 
 	regions := detectRegions(input)
