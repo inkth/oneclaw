@@ -44,6 +44,9 @@ type ContextAction = {
   suggestions?: string[];
 };
 
+/** 派活浮层固定展示 2×2 快捷问法；tuple 让新增场景漏配时在类型检查阶段直接报错。 */
+type QuickSuggestions = [string, string, string, string];
+
 const NEW_TASK = "/app/agents/new#agent-composer";
 
 function taskHref(agent: string, prompt: string, productId?: string) {
@@ -58,16 +61,16 @@ function dispatchAction(
   icon: LucideIcon,
   agent: AgentKey,
   prompt: string,
-  opts?: { productId?: string; suggestions?: string[] },
+  opts: { productId?: string; suggestions: QuickSuggestions },
 ): ContextAction {
   return {
     label,
     icon,
     agent,
     prompt,
-    productId: opts?.productId,
-    suggestions: opts?.suggestions,
-    href: taskHref(agent, prompt, opts?.productId),
+    productId: opts.productId,
+    suggestions: opts.suggestions,
+    href: taskHref(agent, prompt, opts.productId),
   };
 }
 
@@ -88,6 +91,7 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
           `${n}的销量主要靠谁带？达人、视频还是自然流量？`,
           `${n}还有利润空间吗？按售价和佣金帮我算笔账。`,
           `${n}是稳定爆品还是短期冲量？现在跟进还来得及吗？`,
+          `${n}的竞争激烈吗？同类卖家和主流价格带是什么情况？`,
         ],
       });
       // discover 引用：派活时后端据此注入销量/佣金/达人等真实数据，走单品判断而非榜单选品
@@ -111,6 +115,7 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
           `和达人${n}谈合作怎么开口？佣金给多少合适？`,
           `达人${n}的内容风格适合带什么类型的商品？`,
           `第一次找达人${n}这种量级的合作，要注意什么坑？`,
+          `达人${n}最近的带货表现稳定吗？有没有数据波动风险？`,
         ],
       });
     }
@@ -118,6 +123,8 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
       suggestions: [
         "新店没销量，达人为什么要理我？怎么破冷启动？",
         "达人建联的话术模板给我一份。",
+        "怎么判断达人是真实带货，还是数据虚高？",
+        "新店应该优先找什么量级、什么类型的达人？",
       ],
     });
   }
@@ -129,6 +136,7 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
           `店铺${n}的选品和打法有什么可复制的？`,
           `如果和店铺${n}做同类目，我该怎么差异化？`,
           `店铺${n}这种体量大概什么运营配置？我能跟吗？`,
+          `店铺${n}的增长主要靠哪些商品和流量渠道？`,
         ],
       });
     }
@@ -136,6 +144,8 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
       suggestions: [
         "怎么从店铺榜找到适合我模仿的对标店？",
         "美区店铺现在什么打法起量最快？",
+        "分析一家对标店，最应该先看哪几个数据？",
+        "怎么判断一家店是稳定经营，还是短期冲量？",
       ],
     });
   }
@@ -148,6 +158,7 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
           `照视频${ref}的结构，帮我写一个仿拍脚本大纲。`,
           `视频${ref}的开头是怎么留住人的？我怎么套用？`,
           `视频${ref}这种拍法，不出镜能做吗？`,
+          `视频${ref}的转化点在哪里？商品卖点是怎么植入的？`,
         ],
       });
     }
@@ -155,22 +166,51 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
       suggestions: [
         "爆款带货视频的通用结构是什么？",
         "不出镜、不真人口播，能做哪些类型的带货视频？",
+        "怎么判断一条热视频是真的能带货，还是只有播放量？",
+        "新手最适合先模仿哪种低成本带货视频？",
       ],
     });
   }
   if (pathname.startsWith("/app/products") && entity?.kind === "my-product") {
     return dispatchAction("为它生成内容", WandSparkles, "LISTING", `请为我的商品【${clip(entity.name)}】生成 TikTok Shop Listing 内容。`, {
       productId: entity.productId,
+      suggestions: [
+        `帮我提炼【${clip(entity.name)}】最值得强调的 5 个卖点。`,
+        `为【${clip(entity.name)}】写一版高转化的英文标题和详情。`,
+        `【${clip(entity.name)}】适合卖给谁？帮我梳理人群和使用场景。`,
+        `为【${clip(entity.name)}】规划主图顺序和每张图的文案。`,
+      ],
     });
   }
   if (pathname.startsWith("/app/assets/materials")) {
-    return dispatchAction("用素材开始创作", ImagePlus, "DIRECTOR", "请基于我的素材，帮我规划一条带货短视频。");
+    return dispatchAction("用素材开始创作", ImagePlus, "DIRECTOR", "请基于我的素材，帮我规划一条带货短视频。", {
+      suggestions: [
+        "用现有素材帮我规划一条 15 秒带货视频。",
+        "检查我的素材还缺哪些镜头，列一份补拍清单。",
+        "把现有素材改成 UGC 风格，帮我写脚本和剪辑节奏。",
+        "基于同一组素材，给我 4 个不同开头的测试方案。",
+      ],
+    });
   }
   if (pathname.startsWith("/app/assets/products")) {
-    return dispatchAction("生成商品内容", WandSparkles, "LISTING", "请为我的商品生成 TikTok Shop Listing 内容。");
+    return dispatchAction("生成商品内容", WandSparkles, "LISTING", "请为我的商品生成 TikTok Shop Listing 内容。", {
+      suggestions: [
+        "帮我写一套 TikTok Shop 商品标题和五点卖点。",
+        "从用户痛点出发，帮我提炼商品的核心卖点。",
+        "帮我定位目标人群、使用场景和内容角度。",
+        "规划一套主图和详情页的图文结构。",
+      ],
+    });
   }
   if (pathname.startsWith("/app/videos")) {
-    return dispatchAction("优化视频脚本", Clapperboard, "DIRECTOR", "请帮我优化当前视频的脚本与转化表达。");
+    return dispatchAction("优化视频脚本", Clapperboard, "DIRECTOR", "请帮我优化当前视频的脚本与转化表达。", {
+      suggestions: [
+        "帮我把前 3 秒改得更抓人，给 4 个开头方案。",
+        "检查脚本节奏，删掉拖沓内容并强化卖点。",
+        "这条视频的转化表达哪里弱？帮我重写 CTA。",
+        "基于当前脚本，再给我 3 个不同角度的测试版本。",
+      ],
+    });
   }
   if (pathname.startsWith("/app/services")) {
     return dispatchAction("规划经营下一步", BarChart3, "ADVISOR", "请根据我的跨境经营目标，建议下一步优先做什么。", {
@@ -178,6 +218,7 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
         "我是新手，帮我规划从开店到第一单的路线。",
         "美区本土店和全托管有什么区别？我适合哪种？",
         "开店前期要准备多少预算？大头花在哪？",
+        "根据我的资源和经验，下一步最该优先做什么？",
       ],
     });
   }
@@ -223,6 +264,8 @@ const ONBOARD_ACTION: ContextAction = dispatchAction(
     suggestions: [
       "开一家美区小店需要什么条件和预算？",
       "没货源、没粉丝，我该从哪一步开始？",
+      "我适合先做选品、内容，还是先找达人合作？",
+      "帮我做一份从零开始的 30 天行动计划。",
     ],
   },
 );
