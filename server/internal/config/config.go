@@ -175,6 +175,7 @@ func (s StorageConfig) Configured() bool {
 type OpenRouterConfig struct {
 	APIKey         string
 	Model          string // 文本默认 deepseek/deepseek-v4-pro(直连可达;推理轻量,现有 800+ 预算即可出全文)
+	AdvisorModel   string // 跨境顾问单独用中文咨询模型,避免切换时影响选品/创作等 Agent
 	TranslateModel string // 选品外文字段翻译默认 deepseek/deepseek-v4-flash(快且便宜)
 	// ReviewModel 复盘深挖 + 看图(Listing/判品类)。须选国内直连可达的多模态模型:
 	// Google 全系在国内 IP 一律 403(地区限制),且经正向代理绕行会被 OpenRouter 判
@@ -291,6 +292,7 @@ func Load() *Config {
 		OpenRouter: OpenRouterConfig{
 			APIKey:         getEnv("OPENROUTER_API_KEY", ""),
 			Model:          getEnv("OPENROUTER_MODEL", "deepseek/deepseek-v4-pro"),
+			AdvisorModel:   getEnv("OPENROUTER_ADVISOR_MODEL", "qwen/qwen3.7-plus"),
 			TranslateModel: getEnv("OPENROUTER_TRANSLATE_MODEL", "deepseek/deepseek-v4-flash"),
 			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "minimax/minimax-m3"),
 			AudioModel:     getEnv("OPENROUTER_AUDIO_MODEL", "mistralai/voxtral-small-24b-2507"),
