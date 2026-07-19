@@ -60,7 +60,7 @@ type agentCreateReq struct {
 	ProductID string `json:"productId"`
 	// ModelAssetID 出镜人设 ID(可选,DIRECTOR):脚本贴合人设,确认出片时默认沿用。
 	ModelAssetID string `json:"modelAssetId"`
-	// MaterialID 素材库图片 ID(可选):视频首帧 / Listing 出图参考。
+	// MaterialID 素材库图片 ID(可选):顾问/选品看图、视频首帧或 Listing 出图参考。
 	MaterialID string `json:"materialId"`
 	// MaterialIDs Listing 的多张商品/细节参考图(可选,最多 8 张)。
 	MaterialIDs []string `json:"materialIds"`

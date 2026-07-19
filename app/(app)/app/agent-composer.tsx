@@ -8,6 +8,7 @@ import {
   Clapperboard,
   FileSpreadsheet,
   FileVideo,
+  ImagePlus,
   Loader2,
   Package,
   ScanText,
@@ -21,7 +22,7 @@ import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { ComposerSendButton, ComposerSurface, ComposerTextarea, ComposerToolbar } from "@/components/ui/Composer";
 import { CreditCost } from "@/components/ui/CreditCost";
-import { Popover } from "@/components/ui/Popover";
+import { Popover, ToolbarButton } from "@/components/ui/Popover";
 import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
 import { TASK_DISPATCHED_EVENT } from "./floating-mascot";
@@ -207,6 +208,10 @@ export function AgentComposer({
   } | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const videoRef = useRef<HTMLInputElement>(null);
+  // 顾问 / 选品只保留一个直达动作：点「添加图片」后立即打开系统图片选择器。
+  const [uploadingContextImage, setUploadingContextImage] = useState(false);
+  const [contextImageName, setContextImageName] = useState("");
+  const contextImageRef = useRef<HTMLInputElement>(null);
   const { open: openAuthModal } = useAuthModal();
 
   const isReview = activeAgent === "REVIEW";
@@ -215,10 +220,12 @@ export function AgentComposer({
   // 视频解析 = 短视频创作的子模式：输入是一条上传的视频，选填关注点，传完才可发。
   const isAnalyze = activeAgent === "DIRECTOR" && directorMode === "analyze";
   const isListing = activeAgent === "LISTING";
+  const isImageContextAgent = activeAgent === "ADVISOR" || activeAgent === "ANALYST";
+  const hasContextImage = isImageContextAgent && (materialIds?.length ?? 0) > 0;
   const listingHasAssets = !!productId || !!personaId || (materialIds?.length ?? 0) > 0;
   const includesTryOn = isListing && !!personaId && (!!productId || (materialIds?.length ?? 0) > 0);
-  const advisorHasContext = activeAgent === "ADVISOR" && (!!productId || !!discoverSelection || !!referenceTask);
-  const analystHasContext = activeAgent === "ANALYST" && (!!productId || !!discoverSelection);
+  const advisorHasContext = activeAgent === "ADVISOR" && (!!productId || !!discoverSelection || !!referenceTask || hasContextImage);
+  const analystHasContext = activeAgent === "ANALYST" && (!!productId || !!discoverSelection || hasContextImage);
   const placeholder =
     isReview && attachedFile
       ? "可补充说明（选填），例：重点看 ROI 低于 2 的素材该停还是改"
@@ -290,6 +297,44 @@ export function AgentComposer({
     }
   }
 
+  async function uploadContextImage(f: File) {
+    if (!f.type.startsWith("image/")) {
+      toast("请选择图片文件");
+      return;
+    }
+    if (f.size > 50 * 1024 * 1024) {
+      toast("图片不能超过 50 MB");
+      return;
+    }
+    if (gateGuest()) return;
+    setUploadingContextImage(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.error?.message || json?.message || "上传失败，稍后再试");
+        return;
+      }
+      const material = json.data?.material ?? json.material;
+      if (!material?.id) {
+        toast.error("上传成功，但没有拿到图片信息");
+        return;
+      }
+      onMaterialIdsChange?.([material.id as string]);
+      setContextImageName((material.originalName as string) || f.name);
+    } catch {
+      toast.error("网络异常，上传失败");
+    } finally {
+      setUploadingContextImage(false);
+    }
+  }
+
   async function submitTask() {
     setSubmitting(true);
     const res = await fetch(`/api/v1/workspaces/${workspaceId}/agent-tasks`, {
@@ -329,8 +374,10 @@ export function AgentComposer({
               ...(activeAgent === "ADVISOR" && referenceTask ? { referenceTaskId: referenceTask.id } : {}),
               // DIRECTOR 用作出镜人设；LISTING 同时有商品图时会自动附加上身图。
               ...((activeAgent === "DIRECTOR" || isListing) && personaId ? { modelAssetId: personaId } : {}),
-              // 视频保持单张首帧；Listing 接收多张商品/细节图。
-              ...(activeAgent === "DIRECTOR" && materialIds?.[0] ? { materialId: materialIds[0] } : {}),
+              // 顾问/选品把单张图片交给多模态模型；视频保持单张首帧；Listing 接收多张商品/细节图。
+              ...(["ADVISOR", "ANALYST", "DIRECTOR"].includes(activeAgent) && materialIds?.[0]
+                ? { materialId: materialIds[0] }
+                : {}),
               ...(isListing && (materialIds?.length ?? 0) > 0 ? { materialIds } : {}),
               // 出片设置（仅短视频）:市场/比例总是显式带上；时长「自动」（null）时不发，交给 AI 配速
               ...(activeAgent === "DIRECTOR"
@@ -419,7 +466,7 @@ export function AgentComposer({
       await submitTask();
       return;
     }
-    if (!input.trim() && !(isListing && listingHasAssets)) return;
+    if (!input.trim() && !(isListing && listingHasAssets) && !advisorHasContext && !analystHasContext) return;
     await submitTask();
   }
 
@@ -565,6 +612,27 @@ export function AgentComposer({
           </div>
         )}
 
+        {/* 顾问 / 选品的单张图片：直接上传，不再进入资产选择弹窗。 */}
+        {hasContextImage && (
+          <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 py-1 pl-2 pr-1 text-xs font-medium text-sky-700">
+              <ImagePlus className="h-3.5 w-3.5" />
+              <span className="max-w-48 truncate">{contextImageName || "已添加图片"}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onMaterialIdsChange?.([]);
+                  setContextImageName("");
+                }}
+                className="rounded-full p-0.5 text-sky-400 hover:bg-sky-100 hover:text-sky-700"
+                aria-label="移除图片"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+        )}
+
         <ComposerTextarea
           variant="console"
           id="agent-composer"
@@ -646,8 +714,42 @@ export function AgentComposer({
             </>
           )}
 
+          {/* 顾问 / 选品：点击后直接选择并上传一张图片。 */}
+          {showAssetChips && isImageContextAgent && !isAnalyze && (
+            <>
+              <input
+                ref={contextImageRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadContextImage(f);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (gateGuest()) return;
+                  contextImageRef.current?.click();
+                }}
+                disabled={uploadingContextImage}
+                className="rounded-xl disabled:pointer-events-none disabled:opacity-60"
+                title={hasContextImage ? "更换图片" : "添加图片"}
+              >
+                <ToolbarButton
+                  icon={uploadingContextImage ? Loader2 : ImagePlus}
+                  label={uploadingContextImage ? "上传中…" : hasContextImage ? "更换图片" : "添加图片"}
+                  active={hasContextImage}
+                  badge={hasContextImage ? 1 : undefined}
+                />
+              </button>
+            </>
+          )}
+
           {/* 创作工具链：商品 / 模特 / 参考素材；视频解析用专门的上传入口。 */}
-          {showAssetChips && !isAnalyze && (
+          {showAssetChips && !isImageContextAgent && !isAnalyze && (
             <AssetChips
               workspaceId={workspaceId}
               activeAgent={activeAgent}

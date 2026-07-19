@@ -98,6 +98,9 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 	if opts.ReferenceTaskID != nil {
 		metaKV["referenceTaskId"] = opts.ReferenceTaskID.String()
 	}
+	if opts.MaterialID != nil {
+		metaKV["materialId"] = opts.MaterialID.String()
+	}
 	if len(metaKV) > 0 {
 		if b, e := json.Marshal(metaKV); e == nil {
 			t.Metadata = model.JSONB(b)
@@ -262,6 +265,7 @@ var retryableAgents = map[string]bool{
 // retryMeta 失败任务 metadata 里可还原派活选项的字段。
 type retryMeta struct {
 	ProductID          string `json:"productId"`
+	MaterialID         string `json:"materialId"`
 	PreferredPersonaID string `json:"preferredPersonaId"`
 	Region             string `json:"region"`
 	DurationSec        int    `json:"durationSec"`
@@ -283,6 +287,9 @@ func optsFromTask(t *model.AgentTask) AgentCreateOpts {
 	}
 	if id, err := uuid.Parse(m.ProductID); err == nil {
 		opts.ProductID = &id
+	}
+	if id, err := uuid.Parse(m.MaterialID); err == nil {
+		opts.MaterialID = &id
 	}
 	if id, err := uuid.Parse(m.PreferredPersonaID); err == nil {
 		opts.PersonaID = &id
@@ -400,6 +407,16 @@ const analystFocusSystem = `你是 发现猫 的"选品分析 Agent"，正在帮
 - 给 2-3 条可执行的下一步建议（如带货角度、定价策略、找什么样的达人）
 - 用户问题里有具体关注点时优先回应
 - 用简洁中文段落输出，不要 JSON，不要 markdown 标题，全文不超过 300 字`
+
+const analystImageSystem = `你是「发现猫」的选品分析 Agent。用户会上传一张商品或商品相关图片，并可能补充一个问题。
+
+先准确说明图片里确实能看见的商品、使用场景、包装文字或关键细节；看不清或不能确定的地方直接说明，不要把猜测写成事实。然后结合跨境电商实操，分析：
+- 可能的目标人群、核心需求与差异化卖点
+- 适合测试的内容角度、演示方式和首轮验证方案
+- 合规、退货、物流、易损、季节性或同质化等明显风险
+- 为了判断是否值得做，还需要补充哪些关键数据
+
+销量、价格、佣金、采购成本、毛利、竞争强度、平台政策等不能单凭图片得出；用户没有提供时，必须明确列为待确认，绝不编造数字。用户有具体问题时优先回答。根据商品复杂度充分展开，用自然中文和轻量 Markdown 输出，不要 JSON。`
 
 const analystSystem = `你是 发现猫 的"选品分析 Agent"。
 下面会给你一份 TikTok Shop 真实热销榜单（EchoTik 数据），请结合用户需求从中筛选 3-5 个最值得做的商品。
@@ -554,9 +571,24 @@ func (s *AgentService) runAnalystWorkspaceFocus(ctx context.Context, wsID uuid.U
 	return strings.TrimSpace(res.Content), meta, res.Usage, nil
 }
 
+func (s *AgentService) runAnalystImageFocus(ctx context.Context, input string, materialID uuid.UUID, imageURL string) (string, any, llm.Usage, error) {
+	res, err := s.llm.ChatVision(ctx, s.llm.ReviewModel(), analystImageSystem, input, []string{imageURL}, false, 4000)
+	if err != nil {
+		return "", nil, llm.Usage{}, err
+	}
+	meta := map[string]any{"source": "material.image", "materialId": materialID.String()}
+	return strings.TrimSpace(res.Content), meta, res.Usage, nil
+}
+
 func (s *AgentService) runAnalyst(ctx context.Context, wsID uuid.UUID, input string, opts AgentCreateOpts) (string, any, llm.Usage, error) {
 	if !s.llm.Configured() {
 		return "", nil, llm.Usage{}, fmt.Errorf("AI 未配置:请在服务端 .env 设置 OPENROUTER_API_KEY")
+	}
+	if opts.MaterialID != nil {
+		if imageURL := s.materialImageURL(ctx, wsID, *opts.MaterialID); imageURL != "" {
+			return s.runAnalystImageFocus(ctx, input, *opts.MaterialID, imageURL)
+		}
+		return "", nil, llm.Usage{}, fmt.Errorf("找不到添加的图片,请重新上传")
 	}
 
 	// 单品判断模式:用户对着详情页具体商品发问(情境派活带 discover 引用),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +78,11 @@ export function DialogShell({
     };
   }, [onClose]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  // 弹窗必须脱离调用方的布局树。消息区等祖先带 transform/动画时，嵌套的
+  // position: fixed 会错误地相对祖先定位，导致遮罩不覆盖侧栏、面板溢出视口。
+  return createPortal(
     <div
       className={cn(
         "fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm",
@@ -110,6 +115,7 @@ export function DialogShell({
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
