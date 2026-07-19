@@ -36,7 +36,7 @@ func (s *AgentService) RunReview(ctx context.Context, wsID uuid.UUID, input stri
 	return s.recordReview(ctx, wsID, taskID, input, result, usage)
 }
 
-// enrichReviewAI 用 google/gemini-3.5-flash 对复盘结果做深挖,把 Markdown 结论写进 result.Analysis。
+// enrichReviewAI 用 ReviewModel(MiniMax M3)对复盘结果做深挖,把 Markdown 结论写进 result.Analysis。
 // 计费扣 1 次 AGENT_TASK;未配置 / 超额 / 调用失败均降级:退回额度、追加 warning、返回零 usage。
 func (s *AgentService) enrichReviewAI(ctx context.Context, wsID, taskID uuid.UUID, result *review.Result) llm.Usage {
 	if !s.llm.Configured() {
@@ -55,7 +55,7 @@ func (s *AgentService) enrichReviewAI(ctx context.Context, wsID, taskID uuid.UUI
 	// 硬超时:必须早于服务端 WriteTimeout,超时即降级而非拖垮整个响应。
 	lctx, cancel := context.WithTimeout(ctx, reviewAITimeout)
 	defer cancel()
-	// max_tokens 给足:gemini-3.5-flash 是 reasoning 模型,推理会吃掉一部分预算,需留够正文(优化清单)。
+	// max_tokens 给足:模型推理会吃掉一部分预算,需留够正文(优化清单)。
 	out, err := s.llm.ChatWithModel(lctx, s.llm.ReviewModel(), reviewSystem, result.GeminiPrompt, false, 4000)
 	if err != nil {
 		s.quota.Refund(ctx, taskID, model.UsageAgentTask) // 失败不烧额度

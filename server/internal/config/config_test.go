@@ -24,12 +24,22 @@ func TestLoadAgencyReferralDefaults(t *testing.T) {
 	}
 }
 
-func TestLoadAdvisorModelDefaultAndOverride(t *testing.T) {
+func TestLoadTextModelDefaults(t *testing.T) {
+	t.Setenv("OPENROUTER_MODEL", "")
 	t.Setenv("OPENROUTER_ADVISOR_MODEL", "")
-	if got := Load().OpenRouter.AdvisorModel; got != "qwen/qwen3.7-plus" {
-		t.Fatalf("default AdvisorModel = %q, want qwen/qwen3.7-plus", got)
-	}
+	t.Setenv("OPENROUTER_TRANSLATE_MODEL", "")
+	t.Setenv("OPENROUTER_REVIEW_MODEL", "")
 
+	cfg := Load().OpenRouter
+	got := []string{cfg.Model, cfg.AdvisorModel, cfg.TranslateModel, cfg.ReviewModel}
+	for i, model := range got {
+		if model != "minimax/minimax-m3" {
+			t.Fatalf("text model default[%d] = %q, want minimax/minimax-m3", i, model)
+		}
+	}
+}
+
+func TestLoadAdvisorModelOverride(t *testing.T) {
 	t.Setenv("OPENROUTER_ADVISOR_MODEL", "deepseek/deepseek-v4-pro")
 	if got := Load().OpenRouter.AdvisorModel; got != "deepseek/deepseek-v4-pro" {
 		t.Fatalf("overridden AdvisorModel = %q, want deepseek/deepseek-v4-pro", got)
