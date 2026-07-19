@@ -98,6 +98,8 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
       suggestions: [
         "现在美区哪些类目对新手比较友好？",
         "帮我定一套自己的选品标准，我做低客单价商品。",
+        "怎么看一个商品是稳定增长，还是短期冲量？",
+        "低客单价商品的售价、毛利和达人佣金怎么定？",
       ],
     });
   }

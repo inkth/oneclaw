@@ -121,7 +121,7 @@ export function QuickDispatchSheet({
       <div
         role="dialog"
         aria-label={`派活给${identity.label}`}
-        className="absolute inset-x-3 bottom-[76px] mx-auto max-w-[560px] rounded-2xl border border-black/[0.08] bg-white p-3 shadow-[0_24px_64px_-24px_rgba(18,20,25,0.35)] md:bottom-6"
+        className="absolute inset-x-3 bottom-[76px] mx-auto max-w-[720px] rounded-3xl border border-black/[0.08] bg-white p-4 shadow-[0_24px_64px_-24px_rgba(18,20,25,0.35)] md:bottom-6"
       >
         <div className="flex items-center gap-2 px-1 pb-2">
           <span className={`h-2 w-2 rounded-full ${identity.dot}`} aria-hidden />
@@ -176,7 +176,7 @@ export function QuickDispatchSheet({
               }
             }}
             rows={3}
-            className="min-h-[72px] text-ink"
+            className="min-h-[104px] text-ink"
             placeholder="想让它帮你做什么？"
           />
           <ComposerToolbar variant="compact" className="border-t border-black/[0.06]">
