@@ -555,8 +555,56 @@ export function AgentComposer({
     await submitTask();
   }
 
+  const imagePreviewTray =
+    displayedImagePreviews.length > 0 ? (
+      <div
+        className={
+          compactAgentSelector
+            ? "mb-2 flex gap-2 overflow-x-auto rounded-2xl border border-black/[0.08] bg-[var(--surface)] p-2 shadow-[0_12px_32px_-28px_rgba(18,20,25,0.55)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            : "flex gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5"
+        }
+        aria-label="已添加图片"
+      >
+        {displayedImagePreviews.map((preview, index) => {
+          const pending = preview.id.startsWith("pending-");
+          return (
+            <div
+              key={preview.id}
+              className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)]"
+              title={preview.name}
+            >
+              {preview.url ? (
+                <Image src={preview.url} alt={`已添加图片 ${index + 1}`} fill sizes="64px" unoptimized className="object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-sky-600">
+                  <ImagePlus className="h-5 w-5" />
+                </span>
+              )}
+              {pending ? (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/25" aria-label="图片上传中">
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => removeComposerImage(preview.id)}
+                  className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/55 text-white shadow-sm transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  aria-label={`移除图片 ${index + 1}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    ) : null;
+
   return (
     <>
+      {/* 会话页把附件托盘放在输入卡上方，粘贴图片时保持输入卡高度和底部锚点不变。 */}
+      {compactAgentSelector && imagePreviewTray}
+
       <ComposerSurface
         variant="console"
         onDragOver={(e) => e.preventDefault()}
@@ -697,43 +745,8 @@ export function AgentComposer({
           </div>
         )}
 
-        {/* 从输入框粘贴或直接添加的图片，用缩略图托盘确认内容；文件名只作为悬浮提示。 */}
-        {displayedImagePreviews.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5">
-            {displayedImagePreviews.map((preview, index) => {
-              const pending = preview.id.startsWith("pending-");
-              return (
-              <div
-                key={preview.id}
-                className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)]"
-                title={preview.name}
-              >
-                {preview.url ? (
-                  <Image src={preview.url} alt={`已添加图片 ${index + 1}`} fill sizes="64px" unoptimized className="object-cover" />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-sky-600">
-                    <ImagePlus className="h-5 w-5" />
-                  </span>
-                )}
-                {pending ? (
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/25" aria-label="图片上传中">
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => removeComposerImage(preview.id)}
-                    className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/55 text-white shadow-sm transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                    aria-label={`移除图片 ${index + 1}`}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-              );
-            })}
-          </div>
-        )}
+        {/* 首页 launcher 保持卡内缩略图；会话页已在卡片上方渲染，避免改变输入卡高度。 */}
+        {!compactAgentSelector && imagePreviewTray}
 
         <ComposerTextarea
           variant="console"
