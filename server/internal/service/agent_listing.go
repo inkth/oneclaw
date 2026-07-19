@@ -76,21 +76,52 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	productID := opts.ProductID
 	user := input
 	coverURL := ""
+	referenceURLs := make([]string, 0, 9)
+	appendReference := func(raw string) {
+		if raw == "" {
+			return
+		}
+		for _, existing := range referenceURLs {
+			if existing == raw {
+				return
+			}
+		}
+		referenceURLs = append(referenceURLs, raw)
+	}
 	if productID != nil {
 		if facts, cover, _, _, ok := s.productFacts(ctx, wsID, *productID, false); ok {
 			user = fmt.Sprintf("%s\n\n商品档案(选品库真实数据):\n%s", input, facts)
 			coverURL = cover
+			appendReference(cover)
 		} else {
 			// 商品查不到就当没传,避免把产出挂到无效商品上
 			productID = nil
 		}
 	}
-	// 出图参考优先商品实拍主图(真货入画);没有商品图时用用户指定的素材图兜底。
-	if coverURL == "" && opts.MaterialID != nil {
-		coverURL = s.materialImageURL(ctx, wsID, *opts.MaterialID)
+	// Listing 可同时看多张商品/细节图；旧客户端的单 materialId 仍兼容。
+	for _, materialID := range opts.MaterialIDs {
+		appendReference(s.materialImageURL(ctx, wsID, materialID))
 	}
-	if coverURL != "" {
-		user += "\n注:已有实拍参考图,出图时会作为参考让真货入画;imagePrompts 请围绕这个商品本身设计构图(白底/场景/细节/对比)。"
+	if opts.MaterialID != nil {
+		appendReference(s.materialImageURL(ctx, wsID, *opts.MaterialID))
+	}
+	if coverURL == "" && len(referenceURLs) > 0 {
+		coverURL = referenceURLs[0]
+	}
+	if len(referenceURLs) > 0 {
+		user += fmt.Sprintf("\n注:附有 %d 张商品实拍/细节参考图。请综合所有角度识别同一商品,不要把包装、局部细节误判为多个商品;imagePrompts 围绕真货设计白底、场景、细节和对比构图。", len(referenceURLs))
+	}
+
+	// Listing 选模特表示用户希望同时得到模特上身图。模特图只辅助配图方案；
+	// 真正的虚拟试穿由同会话伴随 TRYON 任务走专用模型生成。
+	modelURL := ""
+	visionURLs := append([]string(nil), referenceURLs...)
+	if opts.PersonaID != nil && len(referenceURLs) > 0 {
+		modelURL = s.tryOnModelURL(ctx, wsID, *opts.PersonaID)
+		if modelURL != "" {
+			visionURLs = append(visionURLs, modelURL)
+			user += "\n最后一张参考图是用户选择的模特。配图方案请包含一张该模特展示商品的电商上身/出镜图,不要把模特外貌当作商品属性。"
+		}
 	}
 	// 解析一次 LLM 输出为 listingOut;空/截断/无效都算失败(交给调用方决定是否降级)。
 	parseListing := func(r *llm.Result) (listingOut, bool) {
@@ -113,8 +144,8 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	var res *llm.Result
 	var out listingOut
 	ok := false
-	if coverURL != "" {
-		if r, e := s.llm.ChatVision(ctx, s.llm.ReviewModel(), listingSystem, user, []string{coverURL}, true, 3000); e != nil {
+	if len(visionURLs) > 0 {
+		if r, e := s.llm.ChatVision(ctx, s.llm.ReviewModel(), listingSystem, user, visionURLs, true, 3000); e != nil {
 			logger.Warn("[agent] listing vision 看图失败,降级回纯文本",
 				logger.String("workspace", wsID.String()), logger.Err(e))
 		} else if o, good := parseListing(r); good {
@@ -186,6 +217,12 @@ func (s *AgentService) runListing(ctx context.Context, wsID uuid.UUID, input str
 	}
 	if coverURL != "" {
 		meta["coverUrl"] = coverURL
+	}
+	if len(referenceURLs) > 0 {
+		meta["referenceUrls"] = referenceURLs
+	}
+	if modelURL != "" {
+		meta["modelUrl"] = modelURL
 	}
 	if canImage {
 		meta["imagesStatus"] = listingImagesPending

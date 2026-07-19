@@ -8,13 +8,10 @@ import {
   Clapperboard,
   FileSpreadsheet,
   FileVideo,
-  LayoutList,
   Loader2,
   Package,
-  Plus,
   ScanText,
   Send,
-  Shirt,
   Sparkles,
   Upload,
   X,
@@ -22,35 +19,27 @@ import {
 import { type ReviewResult } from "@/lib/review/types";
 import { AGENT_IDENTITY } from "@/lib/ui/tokens";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
-import {
-  ComposerSendButton,
-  ComposerSurface,
-  ComposerTextarea,
-  ComposerToolbar,
-} from "@/components/ui/Composer";
+import { ComposerSendButton, ComposerSurface, ComposerTextarea, ComposerToolbar } from "@/components/ui/Composer";
 import { CreditCost } from "@/components/ui/CreditCost";
 import { Popover } from "@/components/ui/Popover";
 import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
 import { TASK_DISPATCHED_EVENT } from "./floating-mascot";
 import { AssetChips, DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./create/asset-chips";
-import { AssetPickerModal } from "./create/asset-picker-modal";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式（上传报表 → 就地仪表盘）。
-// TRYON 不再是独立胶囊：并入 LISTING 作「上身图」子模式（派活时仍落 TRYON 任务），故不在 PILL_AGENTS。
+// TRYON 不再是独立胶囊：LISTING 同时带模特与商品图时自动附加 TRYON 任务，故不在 PILL_AGENTS。
 // ADVISOR 是对话式跨境顾问（答疑/排路线），与其他 Agent 同流程（照常计积分），排在产出型胶囊之前。
 export type ComposerKind = "ADVISOR" | "ANALYST" | "DIRECTOR" | "LISTING" | "TRYON" | "REVIEW";
-
-/** Listing 内容的两个子模式：文案（标题/卖点/A+/主图）与上身图（虚拟试穿）。 */
-export type ListingMode = "copy" | "tryon";
 
 /** 短视频创作的两个子模式：做视频（写脚本→出片）与视频解析（拆解一条参考带货视频）。 */
 export type DirectorMode = "create" | "analyze";
 
-/** 胶囊行展示的 Agent(5 个；虚拟试穿并入 Listing 子模式)。顾问打头：新手先问路，再派活。 */
-const PILL_AGENTS = (["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map(
-  (kind) => ({ kind: kind as ComposerKind, ...AGENT_IDENTITY[kind] }),
-);
+/** 胶囊行展示的 Agent(5 个；虚拟试穿由 Listing 按附件自动触发)。顾问打头：新手先问路，再派活。 */
+const PILL_AGENTS = (["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"] as const).map((kind) => ({
+  kind: kind as ComposerKind,
+  ...AGENT_IDENTITY[kind],
+}));
 
 const AGENT_DESCRIPTIONS: Record<Exclude<ComposerKind, "TRYON">, string> = {
   ADVISOR: "答疑、拆解问题并规划下一步",
@@ -142,10 +131,8 @@ export function AgentComposer({
   onProductChange,
   personaId,
   onPersonaChange,
-  materialId,
-  onMaterialChange,
-  listingMode = "copy",
-  onListingModeChange,
+  materialIds = [],
+  onMaterialIdsChange,
   directorMode = "create",
   onDirectorModeChange,
   showAssetChips = false,
@@ -170,12 +157,8 @@ export function AgentComposer({
   onProductChange?: (id: string | null) => void;
   personaId?: string | null;
   onPersonaChange?: (id: string | null) => void;
-  materialId?: string | null;
-  onMaterialChange?: (id: string | null) => void;
-  /** Listing 子模式：文案 / 上身图（试穿）;由 Workbench 持有。 */
-  listingMode?: ListingMode;
-  /** 传入则在底栏渲染「文案/上身图」分段开关：仅在没有快捷卡的会话页用（首页靠卡切换）。 */
-  onListingModeChange?: (m: ListingMode) => void;
+  materialIds?: string[];
+  onMaterialIdsChange?: (ids: string[]) => void;
   /** 短视频子模式：做视频 / 视频解析；由 Workbench 持有。 */
   directorMode?: DirectorMode;
   /** 传入则在 DIRECTOR 底栏渲染「做视频/视频解析」分段开关。 */
@@ -193,8 +176,6 @@ export function AgentComposer({
   agentKinds?: ComposerKind[];
 }) {
   const [submitting, setSubmitting] = useState(false);
-  // 虚拟试穿内联选择器（选模特 + 服饰图）开关；复用 DIRECTOR/LISTING 的资产选择弹窗。
-  const [tryOnPickerOpen, setTryOnPickerOpen] = useState(false);
 
   // 出片设置（目标市场/时长/比例）:仅短视频用，作为「偏好」跨条沿用（不随派活清空）,
   // 选项面板挂在 AssetChips 的「设置」chip 里。
@@ -206,21 +187,22 @@ export function AgentComposer({
   const prevAgentRef = useRef<ComposerKind>("ANALYST");
   const fileRef = useRef<HTMLInputElement>(null);
   // 视频解析：上传的待解析视频（已落库为 VIDEO 素材）+ 上传中状态。
-  const [analyzeVideo, setAnalyzeVideo] = useState<{ id: string; name: string } | null>(null);
+  const [analyzeVideo, setAnalyzeVideo] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const videoRef = useRef<HTMLInputElement>(null);
   const { open: openAuthModal } = useAuthModal();
 
   const isReview = activeAgent === "REVIEW";
   const activeIdentity = AGENT_IDENTITY[activeAgent];
-  const selectableAgents = agentKinds
-    ? PILL_AGENTS.filter((agent) => agentKinds.includes(agent.kind))
-    : PILL_AGENTS;
+  const selectableAgents = agentKinds ? PILL_AGENTS.filter((agent) => agentKinds.includes(agent.kind)) : PILL_AGENTS;
   // 视频解析 = 短视频创作的子模式：输入是一条上传的视频，选填关注点，传完才可发。
   const isAnalyze = activeAgent === "DIRECTOR" && directorMode === "analyze";
-  // 虚拟试穿 = Listing 的「上身图」子模式：输入是「模特 + 服饰图」两张图而非文字，凑齐才可发。
-  const isTryOn = activeAgent === "LISTING" && listingMode === "tryon";
-  const tryOnReady = !!personaId && (!!materialId || !!productId);
+  const isListing = activeAgent === "LISTING";
+  const listingHasAssets = !!productId || !!personaId || (materialIds?.length ?? 0) > 0;
+  const includesTryOn = isListing && !!personaId && (!!productId || (materialIds?.length ?? 0) > 0);
   const placeholder =
     isReview && attachedFile
       ? "可补充说明（选填），例：重点看 ROI 低于 2 的素材该停还是改"
@@ -229,11 +211,9 @@ export function AgentComposer({
         : PLACEHOLDERS[activeAgent];
   const canSend = attachedFile
     ? true
-    : isTryOn
-      ? tryOnReady
-      : isAnalyze
-        ? !!analyzeVideo && !uploadingVideo
-        : !isReview && !!input.trim();
+    : isAnalyze
+      ? !!analyzeVideo && !uploadingVideo
+      : !isReview && (!!input.trim() || (isListing && listingHasAssets));
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
@@ -282,7 +262,11 @@ export function AgentComposer({
         return;
       }
       const m = json.data?.material ?? json.material;
-      if (m?.id) setAnalyzeVideo({ id: m.id as string, name: (m.originalName as string) ?? f.name });
+      if (m?.id)
+        setAnalyzeVideo({
+          id: m.id as string,
+          name: (m.originalName as string) ?? f.name,
+        });
     } catch {
       toast.error("网络异常，上传失败");
     } finally {
@@ -305,37 +289,37 @@ export function AgentComposer({
               ...(analyzeVideo ? { materialId: analyzeVideo.id } : {}),
             }
           : {
-        // 归属会话：在某会话内派活则带上，新对话页留空由后端建会话
-        ...(conversationId ? { conversationId } : {}),
-        // 试穿子模式派活落 TRYON 任务（后端不变），其余按当前 Agent
-        agent: isTryOn ? "TRYON" : activeAgent,
-        // 试穿无文字指令（输入是两张图），给个默认 input 满足后端非空校验，也作会话气泡标题
-        input: isTryOn ? input.trim() || "虚拟试穿" : input.trim(),
-        // 创作类 + 试穿携带：DIRECTOR/LISTING 注入收藏真实数据;TRYON 用商品主图当服饰图
-        ...((activeAgent === "DIRECTOR" || activeAgent === "LISTING" || isTryOn) && productId
-          ? { productId }
-          : {}),
-        // 人设/模特：DIRECTOR 出镜口播,TRYON 作试穿模特
-        ...((activeAgent === "DIRECTOR" || isTryOn) && personaId ? { modelAssetId: personaId } : {}),
-        // 参考素材：DIRECTOR 首帧 / LISTING 出图参考 / TRYON 服饰图（优先于商品主图）
-        ...((activeAgent === "DIRECTOR" || activeAgent === "LISTING" || isTryOn) && materialId
-          ? { materialId }
-          : {}),
-        // 出片设置（仅短视频）:市场/比例总是显式带上；时长「自动」（null）时不发，交给 AI 配速
-        ...(activeAgent === "DIRECTOR"
-          ? {
-              region: videoSettings.region,
-              ...(videoSettings.duration ? { durationSec: videoSettings.duration } : {}),
-              aspectRatio: videoSettings.aspect,
-            }
-          : {}),
-      }),
+              // 归属会话：在某会话内派活则带上，新对话页留空由后端建会话
+              ...(conversationId ? { conversationId } : {}),
+              agent: activeAgent,
+              // Listing 允许只选附件不写文字，后端仍需要一条会话气泡标题。
+              input: input.trim() || (isListing && listingHasAssets ? "根据所选商品与素材生成 Listing" : ""),
+              // 创作类携带商品真实数据。
+              ...((activeAgent === "DIRECTOR" || isListing) && productId ? { productId } : {}),
+              // DIRECTOR 用作出镜人设；LISTING 同时有商品图时会自动附加上身图。
+              ...((activeAgent === "DIRECTOR" || isListing) && personaId ? { modelAssetId: personaId } : {}),
+              // 视频保持单张首帧；Listing 接收多张商品/细节图。
+              ...(activeAgent === "DIRECTOR" && materialIds?.[0] ? { materialId: materialIds[0] } : {}),
+              ...(isListing && (materialIds?.length ?? 0) > 0 ? { materialIds } : {}),
+              // 出片设置（仅短视频）:市场/比例总是显式带上；时长「自动」（null）时不发，交给 AI 配速
+              ...(activeAgent === "DIRECTOR"
+                ? {
+                    region: videoSettings.region,
+                    ...(videoSettings.duration ? { durationSec: videoSettings.duration } : {}),
+                    aspectRatio: videoSettings.aspect,
+                  }
+                : {}),
+            },
+      ),
     });
     const json = await res.json();
     setSubmitting(false);
     if (!res.ok || !json.ok) {
       toast.error(json?.error?.message || json?.message || "发送失败，稍后再试");
       return;
+    }
+    if (json.data?.tryOnError) {
+      toast.warning("Listing 已发送，但上身图任务创建失败，可稍后重试");
     }
     onInputChange("");
     setAnalyzeVideo(null);
@@ -360,10 +344,11 @@ export function AgentComposer({
       const fd = new FormData();
       fd.append("file", attachedFile);
       fd.append("targetRoi", targetRoi);
-      const res = await fetch(
-        `${API_BASE}/api/v1/workspaces/${workspaceId}/review/analyze`,
-        { method: "POST", body: fd, credentials: "include" },
-      );
+      const res = await fetch(`${API_BASE}/api/v1/workspaces/${workspaceId}/review/analyze`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
         toast.error(json?.message || "分析失败，请检查报表格式");
@@ -394,14 +379,6 @@ export function AgentComposer({
       toast("先点左下角「上传报表」上传投放报表");
       return;
     }
-    if (isTryOn) {
-      if (!tryOnReady) {
-        toast("请先选择模特和服饰图");
-        return;
-      }
-      await submitTask();
-      return;
-    }
     if (isAnalyze) {
       if (uploadingVideo) return;
       if (!analyzeVideo) {
@@ -411,7 +388,7 @@ export function AgentComposer({
       await submitTask();
       return;
     }
-    if (!input.trim()) return;
+    if (!input.trim() && !(isListing && listingHasAssets)) return;
     await submitTask();
   }
 
@@ -500,7 +477,7 @@ export function AgentComposer({
         )}
 
         {/* 关联商品 chip:收藏接力带入（创作页有 AssetChips 时由选择器展示，不重复出 chip） */}
-        {!showAssetChips && !isTryOn && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
+        {!showAssetChips && (activeAgent === "DIRECTOR" || activeAgent === "LISTING") && productId && (
           <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 py-1 pl-2 pr-1 text-xs font-medium text-violet-700">
               <Package className="h-3.5 w-3.5" />
@@ -562,43 +539,22 @@ export function AgentComposer({
           </div>
         )}
 
-        {isTryOn ? (
-          // 与非试穿的 textarea(rows=4)等高，切换 Agent 时输入卡不跳变
-          <div className="flex min-h-40 items-center px-5 py-5 sm:px-6 sm:py-6">
-            <p className="text-sm leading-relaxed text-zinc-500">
-              选一位模特 + 一张服饰图（上传图，或收藏里带主图的商品）,AI 生成模特上身效果图。
-            </p>
-          </div>
-        ) : (
-          <ComposerTextarea
-            variant="console"
-            id="agent-composer"
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            rows={4}
-            placeholder={placeholder}
-            className={compactAgentSelector ? "pt-3 sm:pt-3" : undefined}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
-            }}
-          />
-        )}
+        <ComposerTextarea
+          variant="console"
+          id="agent-composer"
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => onInputChange(e.target.value)}
+          rows={compactAgentSelector ? 2 : 4}
+          placeholder={placeholder}
+          className={compactAgentSelector ? "pt-2.5 sm:pt-2.5" : undefined}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+          }}
+        />
 
         {/* 操作区与输入面融为一体，减少后台表单式的分割感。 */}
         <ComposerToolbar variant="console">
-          {/* 会话页没有快捷卡，用底栏分段开关切「文案/上身图」;首页该开关不渲染，改由快捷卡切换。 */}
-          {activeAgent === "LISTING" && onListingModeChange && (
-            <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
-              <SubModeButton active={!isTryOn} icon={LayoutList} onClick={() => onListingModeChange("copy")}>
-                文案
-              </SubModeButton>
-              <SubModeButton active={isTryOn} icon={Shirt} onClick={() => onListingModeChange("tryon")}>
-                上身图
-              </SubModeButton>
-            </div>
-          )}
-
           {/* 短视频：做视频 / 视频解析 分段开关 */}
           {activeAgent === "DIRECTOR" && onDirectorModeChange && (
             <div className="inline-flex rounded-full border border-black/10 bg-zinc-50 p-0.5">
@@ -634,11 +590,7 @@ export function AgentComposer({
                 className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink disabled:opacity-50"
                 title="上传要解析的带货视频"
               >
-                {uploadingVideo ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Upload className="h-3.5 w-3.5" />
-                )}
+                {uploadingVideo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                 {uploadingVideo ? "上传中…" : analyzeVideo ? "换一个视频" : "上传视频"}
               </button>
             </>
@@ -668,27 +620,8 @@ export function AgentComposer({
             </>
           )}
 
-          {/* 虚拟试穿：选模特 + 服饰图，与复盘「上传报表」同处底栏左下角 */}
-          {isTryOn && (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  if (gateGuest()) return;
-                  setTryOnPickerOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-black/20 hover:text-ink"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                选择模特与服饰
-              </button>
-              <AssetStatus ok={!!personaId} label="模特" />
-              <AssetStatus ok={!!materialId || !!productId} label="服饰图" />
-            </>
-          )}
-
-          {/* 创作工具链：商品 / 出镜人设 / 首帧素材（试穿、视频解析子模式不用这套，不重复出） */}
-          {showAssetChips && !isTryOn && !isAnalyze && (
+          {/* 创作工具链：商品 / 模特 / 参考素材；视频解析用专门的上传入口。 */}
+          {showAssetChips && !isAnalyze && (
             <AssetChips
               workspaceId={workspaceId}
               activeAgent={activeAgent}
@@ -696,8 +629,8 @@ export function AgentComposer({
               onProductChange={(id) => onProductChange?.(id)}
               personaId={personaId ?? null}
               onPersonaChange={(id) => onPersonaChange?.(id)}
-              materialId={materialId ?? null}
-              onMaterialChange={(id) => onMaterialChange?.(id)}
+              materialIds={materialIds ?? []}
+              onMaterialIdsChange={(ids) => onMaterialIdsChange?.(ids)}
               videoSettings={videoSettings}
               onVideoSettingsChange={setVideoSettings}
               gate={gateGuest}
@@ -705,13 +638,12 @@ export function AgentComposer({
           )}
 
           <div className="ml-auto flex items-center gap-2">
-            {!isReview && !attachedFile && !isTryOn && (
-              <CreditCost credits={CREDIT_COST.agentTask} />
+            {!isReview && !attachedFile && (
+              <CreditCost
+                credits={includesTryOn ? CREDIT_COST.agentTask * 2 + CREDIT_COST.image : CREDIT_COST.agentTask}
+              />
             )}
-            {isTryOn && !attachedFile && <CreditCost credits={CREDIT_COST.image} />}
-            {!isTryOn && (
-              <span className="hidden text-2xs text-zinc-400 lg:inline">⌘/Ctrl + Enter</span>
-            )}
+            <span className="hidden text-2xs text-zinc-400 lg:inline">⌘/Ctrl + Enter</span>
             <ComposerSendButton
               type="button"
               onClick={submit}
@@ -722,8 +654,6 @@ export function AgentComposer({
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : attachedFile ? (
                 <Sparkles className="h-4 w-4" />
-              ) : isTryOn ? (
-                <Shirt className="h-4 w-4" />
               ) : isAnalyze ? (
                 <ScanText className="h-4 w-4" />
               ) : (
@@ -732,41 +662,23 @@ export function AgentComposer({
               {submitting
                 ? attachedFile
                   ? "分析中…"
-                  : isTryOn
-                    ? "生成中…"
-                    : isAnalyze
-                      ? "解析中…"
-                      : "发送中…"
+                  : isAnalyze
+                    ? "解析中…"
+                    : "发送中…"
                 : attachedFile
                   ? "开始复盘"
-                  : isTryOn
-                    ? "生成上身图"
-                    : isAnalyze
-                      ? "开始解析"
-                      : "发送"}
+                  : isAnalyze
+                    ? "开始解析"
+                    : "发送"}
             </ComposerSendButton>
           </div>
         </ComposerToolbar>
       </ComposerSurface>
-      {tryOnPickerOpen && (
-        <AssetPickerModal
-          workspaceId={workspaceId}
-          activeAgent={activeAgent}
-          tryOn={isTryOn}
-          productId={productId ?? null}
-          onProductChange={(id) => onProductChange?.(id)}
-          personaId={personaId ?? null}
-          onPersonaChange={(id) => onPersonaChange?.(id)}
-          materialId={materialId ?? null}
-          onMaterialChange={(id) => onMaterialChange?.(id)}
-          onClose={() => setTryOnPickerOpen(false)}
-        />
-      )}
     </>
   );
 }
 
-/** Listing 子模式分段按钮：选中白底浮起，未选灰字。 */
+/** 子模式分段按钮：选中白底浮起，未选灰字。 */
 function SubModeButton({
   active,
   icon: Icon,
@@ -774,7 +686,7 @@ function SubModeButton({
   children,
 }: {
   active: boolean;
-  icon: typeof Shirt;
+  icon: typeof Clapperboard;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -789,25 +701,5 @@ function SubModeButton({
       <Icon className="h-3.5 w-3.5" />
       {children}
     </button>
-  );
-}
-
-/** 虚拟试穿内联选择状态小药丸：已选 brand 勾，未选灰点。 */
-function AssetStatus({ ok, label }: { ok: boolean; label: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-2xs font-medium ${
-        ok
-          ? "border-violet-200 bg-violet-50 text-violet-700"
-          : "border-black/10 bg-white text-zinc-400"
-      }`}
-    >
-      {ok ? (
-        <Check className="h-3 w-3" />
-      ) : (
-        <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
-      )}
-      {label}
-    </span>
   );
 }

@@ -29,9 +29,8 @@ type TabKey = "upload" | "product" | "model";
 /**
  * 资产选择弹窗：把原先散在 composer 底栏的 商品 / 出镜人设 / 素材 三个 picker
  * 合并到一个带 tab 的弹窗里（上传资产 / 商品 / 模特）。
- * 选择仍按类型单选（≤1 商品 + ≤1 模特 + ≤1 参考图），写回 Workbench 持有的状态,
- * 保住后端「商品=注入真实数据 / 人设=第一人称 / 素材=参考图」语义。
- * 模特 tab 仅短视频（DIRECTOR）/ 虚拟试穿（TRYON）出现。
+ * 视频保持单个首帧/实拍片段；Listing 复用同一界面，允许多选商品/细节图并选择一位模特。
+ * 模特 + 商品/参考图会让 Listing 自动附加一张上身图任务。
  */
 export function AssetPickerModal({
   workspaceId,
@@ -40,9 +39,8 @@ export function AssetPickerModal({
   onProductChange,
   personaId,
   onPersonaChange,
-  materialId,
-  onMaterialChange,
-  tryOn,
+  materialIds,
+  onMaterialIdsChange,
   onClose,
 }: {
   workspaceId: string;
@@ -51,25 +49,21 @@ export function AssetPickerModal({
   onProductChange: (id: string | null) => void;
   personaId: string | null;
   onPersonaChange: (id: string | null) => void;
-  materialId: string | null;
-  onMaterialChange: (id: string | null) => void;
-  /** 试穿子模式：显式开启「模特 + 服饰图」语义（此时 activeAgent 仍是 LISTING）。 */
-  tryOn?: boolean;
+  materialIds: string[];
+  onMaterialIdsChange: (ids: string[]) => void;
   onClose: () => void;
 }) {
-  // 虚拟试穿现为 Listing 的「上身图」子模式：由 tryOn 显式驱动（activeAgent 仍是 LISTING）。
-  // 模特 tab:短视频出镜人设 + 虚拟试穿模特都用它。
-  const isTryOn = tryOn ?? activeAgent === "TRYON";
-  const showModel = activeAgent === "DIRECTOR" || isTryOn;
-  // 短视频(非试穿)可选/可传实拍视频片段:作成片真货开场,AI 只生成承接镜头。
-  const allowVideo = activeAgent === "DIRECTOR" && !isTryOn;
+  const isListing = activeAgent === "LISTING";
+  const showModel = activeAgent === "DIRECTOR" || isListing;
+  // 短视频可选/可传实拍视频片段:作成片真货开场,AI 只生成承接镜头。
+  const allowVideo = activeAgent === "DIRECTOR";
+  const maxMaterials = isListing ? 8 : 1;
   const tabs: { key: TabKey; label: string; icon: typeof Upload }[] = [
     { key: "upload", label: "上传资产", icon: Upload },
     { key: "product", label: "商品", icon: Package },
     ...(showModel ? [{ key: "model" as const, label: "模特", icon: UserRound }] : []),
   ];
-  // 试穿先选模特（主图作服饰可后选）;其余 Agent 默认进上传 tab。
-  const [tab, setTab] = useState<TabKey>(isTryOn ? "model" : "upload");
+  const [tab, setTab] = useState<TabKey>("upload");
 
   const personas = usePersonas(workspaceId, showModel);
   const [products, setProducts] = useState<ProductOption[] | null>(null);
@@ -102,30 +96,41 @@ export function AssetPickerModal({
   const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function handleUpload(file: File) {
-    const isImage = file.type.startsWith("image/");
-    const isVideo = file.type.startsWith("video/");
-    if (!isImage && !(allowVideo && isVideo)) {
+  async function handleUpload(files: File[]) {
+    const availableSlots = isListing ? Math.max(0, maxMaterials - materialIds.length) : 1;
+    const accepted = files
+      .filter((file) => file.type.startsWith("image/") || (allowVideo && file.type.startsWith("video/")))
+      .slice(0, availableSlots);
+    if (availableSlots === 0) {
+      toast(`最多选择 ${maxMaterials} 张参考素材`);
+      return;
+    }
+    if (accepted.length === 0) {
       toast.error(allowVideo ? "请上传图片或视频文件" : "请上传图片文件");
       return;
     }
-    if (isVideo && file.size > 50 << 20) {
+    if (accepted.some((file) => file.type.startsWith("video/") && file.size > 50 << 20)) {
       toast.error("视频超过 50MB 上限,请先压缩");
       return;
     }
     setUploading(true);
-    const form = new FormData();
-    form.append("file", file);
     try {
-      const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, { method: "POST", body: form });
-      const json = await res.json();
-      if (res.ok && json.ok) {
-        const mat = json.data.material as MaterialOption;
-        setMaterials((prev) => [mat, ...(prev ?? [])]);
-        onMaterialChange(mat.id);
-      } else {
-        toast.error(json?.error?.message ?? "上传失败，稍后再试");
+      const uploaded: MaterialOption[] = [];
+      for (const file of accepted) {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, { method: "POST", body: form });
+        const json = await res.json();
+        if (!res.ok || !json.ok) {
+          throw new Error(json?.error?.message ?? "上传失败，稍后再试");
+        }
+        uploaded.push(json.data.material as MaterialOption);
       }
+      setMaterials((prev) => [...uploaded, ...(prev ?? [])]);
+      const next = isListing
+        ? Array.from(new Set([...materialIds, ...uploaded.map((material) => material.id)])).slice(0, maxMaterials)
+        : uploaded.slice(-1).map((material) => material.id);
+      onMaterialIdsChange(next);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "网络错误，请检查网络后重试");
     } finally {
@@ -135,8 +140,20 @@ export function AssetPickerModal({
 
   const selectedProduct = products?.find((p) => p.id === productId) ?? null;
   const selectedPersona = personas?.find((m) => m.id === personaId) ?? null;
-  const selectedMaterial = materials?.find((m) => m.id === materialId) ?? null;
-  const selectedCount = (productId ? 1 : 0) + (personaId ? 1 : 0) + (materialId ? 1 : 0);
+  const selectedMaterials = (materials ?? []).filter((material) => materialIds.includes(material.id));
+  const selectedCount = (productId ? 1 : 0) + (personaId ? 1 : 0) + materialIds.length;
+
+  function toggleMaterial(id: string) {
+    if (materialIds.includes(id)) {
+      onMaterialIdsChange(materialIds.filter((current) => current !== id));
+      return;
+    }
+    if (materialIds.length >= maxMaterials) {
+      toast(`最多选择 ${maxMaterials} 张参考素材`);
+      return;
+    }
+    onMaterialIdsChange(isListing ? [...materialIds, id] : [id]);
+  }
 
   const filteredMaterials = (materials ?? []).filter(
     (m) => !search.trim() || m.originalName.toLowerCase().includes(search.trim().toLowerCase()),
@@ -155,12 +172,10 @@ export function AssetPickerModal({
               <ImagePlus className="h-4 w-4" />
             </span>
             <div>
-              <h2 id="asset-picker-title" className="text-sm font-semibold text-ink">
-                {isTryOn ? "选模特与服饰图" : "添加素材"}
-              </h2>
+              <h2 id="asset-picker-title" className="text-sm font-semibold text-ink">添加素材</h2>
               <div className="text-2xs text-zinc-500">
-                {isTryOn
-                  ? "选一位模特 + 一张服饰图（上传图 / 商品主图），生成上身效果图"
+                {isListing
+                  ? "可选一个商品、多张商品/细节图与一位模特"
                   : allowVideo
                     ? "选商品、模特，上传参考图；也可传一段实拍视频作成片开场（真货镜头）"
                     : "选商品、模特，或上传一张参考图"}
@@ -188,14 +203,15 @@ export function AssetPickerModal({
                 onRemove={() => onPersonaChange(null)}
               />
             )}
-            {selectedMaterial && (
+            {selectedMaterials.map((material) => (
               <SelectedChip
-                thumb={selectedMaterial.type === "VIDEO" ? undefined : selectedMaterial.url}
-                icon={selectedMaterial.type === "VIDEO" ? Clapperboard : undefined}
-                label={selectedMaterial.type === "VIDEO" ? "实拍片段" : "参考图"}
-                onRemove={() => onMaterialChange(null)}
+                key={material.id}
+                thumb={material.type === "VIDEO" ? undefined : material.url}
+                icon={material.type === "VIDEO" ? Clapperboard : undefined}
+                label={material.type === "VIDEO" ? "实拍片段" : material.originalName || "参考图"}
+                onRemove={() => toggleMaterial(material.id)}
               />
-            )}
+            ))}
           </div>
         )}
 
@@ -235,10 +251,11 @@ export function AssetPickerModal({
                 ref={fileRef}
                 type="file"
                 accept={allowVideo ? "image/*,video/*" : "image/*"}
+                multiple={isListing}
                 className="hidden"
                 onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleUpload(f);
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length > 0) handleUpload(files);
                   e.target.value = "";
                 }}
               />
@@ -253,11 +270,11 @@ export function AssetPickerModal({
               ) : (
                 <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
                   {filteredMaterials.map((m) => {
-                    const sel = materialId === m.id;
+                    const sel = materialIds.includes(m.id);
                     return (
                       <button
                         key={m.id}
-                        onClick={() => onMaterialChange(sel ? null : m.id)}
+                        onClick={() => toggleMaterial(m.id)}
                         title={m.originalName}
                         className={`relative aspect-square overflow-hidden rounded-xl border ${
                           sel ? "border-brand-500 ring-2 ring-brand-200" : "border-[var(--dk-stroke-border)]"
@@ -326,8 +343,8 @@ export function AssetPickerModal({
                     );
                   })}
                   <p className="px-2 pt-1 text-2xs text-zinc-400">
-                    {isTryOn
-                      ? "选中商品会用它的主图作为试穿服饰图。"
+                    {isListing
+                      ? "商品档案和主图会用于 Listing；再选模特会自动附加上身图。"
                       : "选中商品会把它的真实数据（售价/毛利/ROI/月销）注入产出。"}
                   </p>
                 </div>

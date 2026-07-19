@@ -53,6 +53,8 @@ type agentCreateReq struct {
 	ModelAssetID string `json:"modelAssetId"`
 	// MaterialID 素材库图片 ID(可选):视频首帧 / Listing 出图参考。
 	MaterialID string `json:"materialId"`
+	// MaterialIDs Listing 的多张商品/细节参考图(可选,最多 8 张)。
+	MaterialIDs []string `json:"materialIds"`
 	// Region 目标市场(可选,DIRECTOR):定口播语言;空则跟随商品来源市场,兜底 US。
 	Region string `json:"region"`
 	// DurationSec 视频时长秒(可选,DIRECTOR):用户在「设置」显式锁的优先于 AI 自选,夹 4-15s;0/缺省=AI 自定。
@@ -100,6 +102,22 @@ func (h *AgentHandler) Create(c *gin.Context) {
 	if opts.MaterialID, valid = parseOpt(in.MaterialID, "materialId"); !valid {
 		return
 	}
+	seenMaterials := make(map[uuid.UUID]bool, len(in.MaterialIDs))
+	for _, raw := range in.MaterialIDs {
+		id, err := uuid.Parse(strings.TrimSpace(raw))
+		if err != nil {
+			_ = c.Error(apperr.BadRequest("materialId 无效:" + raw))
+			return
+		}
+		if !seenMaterials[id] {
+			opts.MaterialIDs = append(opts.MaterialIDs, id)
+			seenMaterials[id] = true
+		}
+	}
+	if len(opts.MaterialIDs) > 8 {
+		_ = c.Error(apperr.BadRequest("参考图最多选择 8 张"))
+		return
+	}
 	opts.Region = in.Region
 	// 时长/比例非法值不报错:由 service 的 clampDuration/normalizeAspect 静默回退,和 region 一致。
 	opts.DurationSec = in.DurationSec
@@ -112,7 +130,31 @@ func (h *AgentHandler) Create(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	Created(c, gin.H{"task": t})
+	payload := gin.H{"task": t}
+	// Listing 仍是一条统一指令;用户同时选了模特和商品图时,自动在同一会话
+	// 附加 TRYON 任务。前端无需再暴露「文案 / 上身图」模式切换。
+	if strings.EqualFold(in.Agent, "LISTING") && opts.PersonaID != nil &&
+		(opts.ProductID != nil || opts.MaterialID != nil || len(opts.MaterialIDs) > 0) {
+		tryOnOpts := opts
+		tryOnOpts.ConversationID = &t.ConversationID
+		tryOnOpts.MaterialIDs = nil
+		// 有商品时优先用商品主图作服饰锚点;否则取用户选择的第一张参考图。
+		if tryOnOpts.ProductID != nil {
+			tryOnOpts.MaterialID = nil
+		} else if len(opts.MaterialIDs) > 0 {
+			first := opts.MaterialIDs[0]
+			tryOnOpts.MaterialID = &first
+		}
+		tryOnTask, tryOnErr := h.agents.Create(
+			c.Request.Context(), wid, "TRYON", "为 Listing 生成模特上身图", tryOnOpts,
+		)
+		if tryOnErr != nil {
+			payload["tryOnError"] = tryOnErr.Error()
+		} else {
+			payload["tryOnTask"] = tryOnTask
+		}
+	}
+	Created(c, payload)
 }
 
 type productBatchReq struct {

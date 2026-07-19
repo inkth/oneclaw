@@ -42,8 +42,8 @@ export function AssetChips({
   onProductChange,
   personaId,
   onPersonaChange,
-  materialId,
-  onMaterialChange,
+  materialIds,
+  onMaterialIdsChange,
   videoSettings,
   onVideoSettingsChange,
   gate,
@@ -54,8 +54,8 @@ export function AssetChips({
   onProductChange: (id: string | null) => void;
   personaId: string | null;
   onPersonaChange: (id: string | null) => void;
-  materialId: string | null;
-  onMaterialChange: (id: string | null) => void;
+  materialIds: string[];
+  onMaterialIdsChange: (ids: string[]) => void;
   /** 出片设置：目标市场（定口播语言）/ 时长 / 比例，仅短视频（DIRECTOR）用。 */
   videoSettings: VideoSettings;
   onVideoSettingsChange: (next: VideoSettings) => void;
@@ -66,7 +66,7 @@ export function AssetChips({
 
   // 资产入口仅创作类 Agent(后端只在 DIRECTOR/LISTING 消费这些 ID)。
   const showAssets = activeAgent === "DIRECTOR" || activeAgent === "LISTING";
-  const selectedCount = (productId ? 1 : 0) + (personaId ? 1 : 0) + (materialId ? 1 : 0);
+  const selectedCount = (productId ? 1 : 0) + (personaId ? 1 : 0) + materialIds.length;
 
   return (
     <>
@@ -175,12 +175,12 @@ export function AssetChips({
       )}
 
       {/* 已选清除：一个 chip 一键全清，避免误带上一次的资产 */}
-      {(productId || personaId || materialId) && (
+      {(productId || personaId || materialIds.length > 0) && (
         <button
           onClick={() => {
             onProductChange(null);
             onPersonaChange(null);
-            onMaterialChange(null);
+            onMaterialIdsChange([]);
           }}
           className="inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-2xs text-zinc-400 transition-colors hover:text-zinc-600"
           title="清除已选资产"
@@ -198,8 +198,8 @@ export function AssetChips({
           onProductChange={onProductChange}
           personaId={personaId}
           onPersonaChange={onPersonaChange}
-          materialId={materialId}
-          onMaterialChange={onMaterialChange}
+          materialIds={materialIds}
+          onMaterialIdsChange={onMaterialIdsChange}
           onClose={() => setPickerOpen(false)}
         />
       )}

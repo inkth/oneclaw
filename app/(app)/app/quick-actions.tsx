@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { AGENT_IDENTITY, type AgentKey } from "@/lib/ui/tokens";
-import type { ComposerKind, ListingMode } from "./agent-composer";
+import type { ComposerKind } from "./agent-composer";
 
 export type QuickAction = {
   key: string;
@@ -34,8 +34,6 @@ export type QuickAction = {
   status: "live" | "soon";
   agent?: ComposerKind;
   promptTemplate?: string;
-  /** Listing 卡专用：点选切到指定子模式（上身图卡切 tryon,文案卡回 copy）。 */
-  listingMode?: ListingMode;
 };
 
 /**
@@ -89,8 +87,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Search,
       status: "live",
       agent: "ANALYST",
-      promptTemplate:
-        "帮我找「」市场本周值得切入的潜力新品：毛利 40%+、竞争度低、月销 1K–5K 且呈上升趋势",
+      promptTemplate: "帮我找「」市场本周值得切入的潜力新品：毛利 40%+、竞争度低、月销 1K–5K 且呈上升趋势",
     },
     {
       key: "analyst-competitor",
@@ -166,9 +163,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Images,
       status: "live",
       agent: "LISTING",
-      listingMode: "copy",
-      promptTemplate:
-        "为「」生成 TikTok Shop Listing：商品标题、五点卖点、主图方案（英文出图 prompt）、推荐标签",
+      promptTemplate: "为「」生成 TikTok Shop Listing：商品标题、五点卖点、主图方案（英文出图 prompt）、推荐标签",
     },
     {
       key: "aplus",
@@ -177,9 +172,7 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: LayoutPanelTop,
       status: "live",
       agent: "LISTING",
-      listingMode: "copy",
-      promptTemplate:
-        "为「」生成图文详情：分模块的卖点图文结构（每模块标题 + 文案 + 配图英文 prompt）",
+      promptTemplate: "为「」生成图文详情：分模块的卖点图文结构（每模块标题 + 文案 + 配图英文 prompt）",
     },
     {
       key: "listing-title",
@@ -188,18 +181,17 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
       icon: Tag,
       status: "live",
       agent: "LISTING",
-      listingMode: "copy",
       promptTemplate: "为「」优化 TikTok Shop 商品标题，覆盖高搜索量关键词并兼顾可读性，给 3 个版本",
     },
     {
-      // 上身图：并入 Listing 的 tryon 子模式，点选切到 composer 内联的「选模特 + 服饰图」。
+      // 上身图不再切子模式：预填意图，用户在统一「添加」里选模特和商品图。
       key: "tryon",
       title: "上身图",
       desc: "真人模特上身效果图",
       icon: Shirt,
       status: "live",
       agent: "LISTING",
-      listingMode: "tryon",
+      promptTemplate: "为所选商品生成完整 Listing，并附加一张所选模特的商品上身效果图",
     },
   ],
   TRYON: [],
@@ -251,11 +243,9 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
  */
 export function QuickActionCards({
   activeAgent,
-  listingMode,
   onPick,
 }: {
   activeAgent: ComposerKind;
-  listingMode?: ListingMode;
   onPick: (a: QuickAction) => void;
 }) {
   const actions = QUICK_ACTIONS_BY_AGENT[activeAgent] ?? [];
@@ -264,8 +254,6 @@ export function QuickActionCards({
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       {actions.map((a) => {
         const soon = a.status === "soon";
-        // 上身图卡是子模式开关：处于该模式时高亮，提示当前正在做上身图。
-        const active = a.listingMode === "tryon" && listingMode === "tryon";
         return (
           <button
             key={a.key}
@@ -278,7 +266,7 @@ export function QuickActionCards({
             }}
             className={`group relative flex min-h-28 flex-col items-start gap-3 rounded-[18px] border border-black/[0.07] bg-white/72 p-4 text-left shadow-[0_8px_24px_-24px_rgba(18,20,25,0.55)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 focus-visible:ring-offset-2 sm:min-h-24 sm:flex-row sm:items-center sm:gap-3.5 ${
               soon ? "opacity-70" : ""
-            } ${active ? "dk-ring" : "hover:-translate-y-0.5 hover:border-black/[0.13] hover:bg-white hover:shadow-[0_14px_30px_-24px_rgba(18,20,25,0.55)]"}`}
+            } hover:-translate-y-0.5 hover:border-black/[0.13] hover:bg-white hover:shadow-[0_14px_30px_-24px_rgba(18,20,25,0.55)]`}
           >
             {soon && (
               <span className="absolute -top-2 right-2">

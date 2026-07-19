@@ -5,7 +5,7 @@ import { SampleVideos, type SampleVid } from "./sample-videos";
 
 export const metadata = { title: "工作台 · 发现猫" };
 
-// 工作台是统一派活台：跨境顾问（ADVISOR） + 创作类（短视频 DIRECTOR / Listing —— 含「上身图」虚拟试穿子模式） + 选品分析（ANALYST） + 投放复盘（REVIEW）同处一框。
+// 工作台是统一派活台：跨境顾问（ADVISOR） + 创作类（短视频 DIRECTOR / Listing，可按附件自动附加上身图） + 选品分析（ANALYST） + 投放复盘（REVIEW）同处一框。
 const AGENT_KINDS = new Set(["ADVISOR", "ANALYST", "DIRECTOR", "LISTING", "REVIEW"]);
 
 // 「爆款短视频示例」临时取数：EchoTik 带货视频榜（公共端点，游客可见）。
@@ -25,9 +25,7 @@ export default async function DashboardPage({
 }) {
   // 其他页面（如收藏「为它做视频 / 做 Listing」）带 ?agent=…&prompt=…&productId=… 接力进来。
   const sp = await searchParams;
-  const initialAgent = AGENT_KINDS.has(sp.agent ?? "")
-    ? (sp.agent as ComposerKind)
-    : undefined;
+  const initialAgent = AGENT_KINDS.has(sp.agent ?? "") ? (sp.agent as ComposerKind) : undefined;
   const initialInput = sp.prompt || undefined;
   const initialProductId = sp.productId || undefined;
   const initialMaterialId = sp.materialId || undefined;

@@ -10,7 +10,6 @@ import {
   AgentPills,
   type ComposerKind,
   type DirectorMode,
-  type ListingMode,
 } from "./agent-composer";
 import { QuickActionCards, type QuickAction } from "./quick-actions";
 import { TaskStream, type StreamTask } from "./task-stream";
@@ -91,9 +90,9 @@ export function Workbench({
   const [productId, setProductId] = useState<string | null>(initialProductId ?? null);
   // 创作工具链选中的资产：与 productId 同生命周期，派活成功即消费清空。
   const [personaId, setPersonaId] = useState<string | null>(null);
-  const [materialId, setMaterialId] = useState<string | null>(initialMaterialId ?? null);
-  // Listing 子模式（文案 / 上身图试穿）:切走 Listing 自动回 copy。
-  const [listingMode, setListingMode] = useState<ListingMode>("copy");
+  const [materialIds, setMaterialIds] = useState<string[]>(
+    initialMaterialId ? [initialMaterialId] : [],
+  );
   // 短视频子模式（做视频 / 视频解析）:切走 DIRECTOR 自动回 create。
   const [directorMode, setDirectorMode] = useState<DirectorMode>("create");
   // 所有 Agent(含同步复盘)统一落任务表，流就是任务列表。
@@ -143,10 +142,11 @@ export function Workbench({
     return () => window.removeEventListener("hashchange", focusFromHash);
   }, []);
 
-  // Agent 切换与其子模式在同一个交互中更新，避免额外的 effect 渲染。
+  // Agent 切换与视频子模式在同一个交互中更新，避免额外的 effect 渲染。
   function changeAgent(next: ComposerKind) {
     setActiveAgent(next);
-    if (next !== "LISTING") setListingMode("copy");
+    // 视频只消费一张首帧；Listing 才支持多张商品/细节图。
+    if (next === "DIRECTOR") setMaterialIds((current) => current.slice(0, 1));
     if (next !== "DIRECTOR") setDirectorMode("create");
   }
 
@@ -196,8 +196,6 @@ export function Workbench({
 
   function pickQuickAction(a: QuickAction) {
     if (a.agent) changeAgent(a.agent);
-    // Listing 卡带子模式：上身图卡切 tryon,文案卡回 copy(切走后再回也保持一致)。
-    if (a.listingMode) setListingMode(a.listingMode);
     if (a.promptTemplate) focusInput(a.promptTemplate);
   }
 
@@ -224,11 +222,8 @@ export function Workbench({
       onProductChange={setProductId}
       personaId={personaId}
       onPersonaChange={setPersonaId}
-      materialId={materialId}
-      onMaterialChange={setMaterialId}
-      listingMode={listingMode}
-      // 有快捷卡的页面（首页）靠卡切「文案/上身图」，不渲染底栏开关；会话页没卡，才给开关。
-      onListingModeChange={showQuickActions ? undefined : setListingMode}
+      materialIds={materialIds}
+      onMaterialIdsChange={setMaterialIds}
       directorMode={directorMode}
       // 视频解析无快捷卡,DIRECTOR 在任何页面都用底栏开关切「做视频/视频解析」。
       onDirectorModeChange={setDirectorMode}
@@ -246,7 +241,7 @@ export function Workbench({
         ) {
           setProductId(null);
           setPersonaId(null);
-          setMaterialId(null);
+          setMaterialIds([]);
         }
         ingest(task);
       }}
@@ -302,7 +297,6 @@ export function Workbench({
       {showQuickActions && (
         <QuickActionCards
           activeAgent={activeAgent}
-          listingMode={listingMode}
           onPick={pickQuickAction}
         />
       )}
