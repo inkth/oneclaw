@@ -19,6 +19,19 @@ export type VideoSettings = {
   aspect: string;
 };
 
+export type DiscoverSelection = {
+  productId: string;
+  region: string;
+  name: string;
+  coverUrl?: string | null;
+};
+
+export type TaskReferenceSelection = {
+  id: string;
+  agent: string;
+  input: string;
+};
+
 export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
   region: "US",
   duration: null,
@@ -40,6 +53,10 @@ export function AssetChips({
   activeAgent,
   productId,
   onProductChange,
+  discoverSelection,
+  onDiscoverSelectionChange,
+  referenceTask,
+  onReferenceTaskChange,
   personaId,
   onPersonaChange,
   materialIds,
@@ -52,6 +69,10 @@ export function AssetChips({
   activeAgent: ComposerKind;
   productId: string | null;
   onProductChange: (id: string | null) => void;
+  discoverSelection: DiscoverSelection | null;
+  onDiscoverSelectionChange: (selection: DiscoverSelection | null) => void;
+  referenceTask: TaskReferenceSelection | null;
+  onReferenceTaskChange: (selection: TaskReferenceSelection | null) => void;
   personaId: string | null;
   onPersonaChange: (id: string | null) => void;
   materialIds: string[];
@@ -64,14 +85,16 @@ export function AssetChips({
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // 资产入口仅创作类 Agent(后端只在 DIRECTOR/LISTING 消费这些 ID)。
-  const showAssets = activeAgent === "DIRECTOR" || activeAgent === "LISTING";
-  const selectedCount = (productId ? 1 : 0) + (personaId ? 1 : 0) + materialIds.length;
+  const showAdd = ["ADVISOR", "ANALYST", "DIRECTOR", "LISTING"].includes(activeAgent);
+  const creative = activeAgent === "DIRECTOR" || activeAgent === "LISTING";
+  const selectedCount = creative
+    ? (productId ? 1 : 0) + (personaId ? 1 : 0) + materialIds.length
+    : (productId ? 1 : 0) + (discoverSelection ? 1 : 0) + (activeAgent === "ADVISOR" && referenceTask ? 1 : 0);
 
   return (
     <>
       {/* 资产：合并为单个「+ 添加」，点开弹窗选 商品 / 模特 / 上传 / AI 生成 */}
-      {showAssets && (
+      {showAdd && (
         <button
           type="button"
           onClick={() => {
@@ -117,7 +140,12 @@ export function AssetChips({
                       key={r.code}
                       className="w-full"
                       active={videoSettings.region === r.code}
-                      onClick={() => onVideoSettingsChange({ ...videoSettings, region: r.code })}
+                      onClick={() =>
+                        onVideoSettingsChange({
+                          ...videoSettings,
+                          region: r.code,
+                        })
+                      }
                     >
                       <span className="truncate">
                         {r.flag} {r.cn}
@@ -130,13 +158,16 @@ export function AssetChips({
 
               {/* 时长 */}
               <div>
-                <div className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-zinc-500">
-                  时长
-                </div>
+                <div className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-zinc-500">时长</div>
                 <div className="flex flex-wrap gap-1.5">
                   <OptionButton
                     active={videoSettings.duration === null}
-                    onClick={() => onVideoSettingsChange({ ...videoSettings, duration: null })}
+                    onClick={() =>
+                      onVideoSettingsChange({
+                        ...videoSettings,
+                        duration: null,
+                      })
+                    }
                   >
                     自动
                   </OptionButton>
@@ -154,9 +185,7 @@ export function AssetChips({
 
               {/* 比例 */}
               <div>
-                <div className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-zinc-500">
-                  比例
-                </div>
+                <div className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-zinc-500">比例</div>
                 <div className="flex flex-wrap gap-1.5">
                   {ASPECT_OPTIONS.map((a) => (
                     <OptionButton
@@ -175,12 +204,14 @@ export function AssetChips({
       )}
 
       {/* 已选清除：一个 chip 一键全清，避免误带上一次的资产 */}
-      {(productId || personaId || materialIds.length > 0) && (
+      {selectedCount > 0 && (
         <button
           onClick={() => {
             onProductChange(null);
             onPersonaChange(null);
             onMaterialIdsChange([]);
+            onDiscoverSelectionChange(null);
+            onReferenceTaskChange(null);
           }}
           className="inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-2xs text-zinc-400 transition-colors hover:text-zinc-600"
           title="清除已选资产"
@@ -192,10 +223,15 @@ export function AssetChips({
 
       {pickerOpen && (
         <AssetPickerModal
+          key={activeAgent}
           workspaceId={workspaceId}
           activeAgent={activeAgent}
           productId={productId}
           onProductChange={onProductChange}
+          discoverSelection={discoverSelection}
+          onDiscoverSelectionChange={onDiscoverSelectionChange}
+          referenceTask={referenceTask}
+          onReferenceTaskChange={onReferenceTaskChange}
           personaId={personaId}
           onPersonaChange={onPersonaChange}
           materialIds={materialIds}

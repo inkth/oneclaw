@@ -1,8 +1,13 @@
 package service
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
+
+	"github.com/faxianmao/server/internal/model"
 )
 
 func TestAdvisorPromptKeepsFinancialAndProductBoundaries(t *testing.T) {
@@ -18,5 +23,30 @@ func TestAdvisorPromptKeepsFinancialAndProductBoundaries(t *testing.T) {
 		if !strings.Contains(advisorSystem, phrase) {
 			t.Errorf("advisorSystem missing guardrail %q", phrase)
 		}
+	}
+}
+
+func TestOptsFromTaskRestoresAdvisorReferences(t *testing.T) {
+	productID := uuid.New()
+	referenceTaskID := uuid.New()
+	meta, err := json.Marshal(map[string]string{
+		"productId":         productID.String(),
+		"discoverProductId": "echo-product-1",
+		"discoverRegion":    "US",
+		"referenceTaskId":   referenceTaskID.String(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	opts := optsFromTask(&model.AgentTask{Metadata: model.JSONB(meta)})
+	if opts.ProductID == nil || *opts.ProductID != productID {
+		t.Fatalf("product reference not restored: %#v", opts.ProductID)
+	}
+	if opts.ReferenceTaskID == nil || *opts.ReferenceTaskID != referenceTaskID {
+		t.Fatalf("analysis reference not restored: %#v", opts.ReferenceTaskID)
+	}
+	if opts.DiscoverProductID != "echo-product-1" || opts.DiscoverRegion != "US" {
+		t.Fatalf("discover reference not restored: %#v", opts)
 	}
 }

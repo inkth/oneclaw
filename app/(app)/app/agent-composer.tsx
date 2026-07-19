@@ -25,7 +25,13 @@ import { Popover } from "@/components/ui/Popover";
 import { CREDIT_COST } from "@/lib/credits";
 import { type StreamTask } from "./task-stream";
 import { TASK_DISPATCHED_EVENT } from "./floating-mascot";
-import { AssetChips, DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./create/asset-chips";
+import {
+  AssetChips,
+  DEFAULT_VIDEO_SETTINGS,
+  type DiscoverSelection,
+  type TaskReferenceSelection,
+  type VideoSettings,
+} from "./create/asset-chips";
 
 // 走后端 agent-tasks 的异步 Agent;REVIEW 是前端同步复盘模式（上传报表 → 就地仪表盘）。
 // TRYON 不再是独立胶囊：LISTING 同时带模特与商品图时自动附加 TRYON 任务，故不在 PILL_AGENTS。
@@ -129,6 +135,10 @@ export function AgentComposer({
   productId,
   onClearProduct,
   onProductChange,
+  discoverSelection,
+  onDiscoverSelectionChange,
+  referenceTask,
+  onReferenceTaskChange,
   personaId,
   onPersonaChange,
   materialIds = [],
@@ -155,6 +165,10 @@ export function AgentComposer({
   onClearProduct?: () => void;
   /** 创作页工具链：商品/人设/素材选择（状态由 Workbench 持有，派活即清空）。 */
   onProductChange?: (id: string | null) => void;
+  discoverSelection?: DiscoverSelection | null;
+  onDiscoverSelectionChange?: (selection: DiscoverSelection | null) => void;
+  referenceTask?: TaskReferenceSelection | null;
+  onReferenceTaskChange?: (selection: TaskReferenceSelection | null) => void;
   personaId?: string | null;
   onPersonaChange?: (id: string | null) => void;
   materialIds?: string[];
@@ -203,6 +217,8 @@ export function AgentComposer({
   const isListing = activeAgent === "LISTING";
   const listingHasAssets = !!productId || !!personaId || (materialIds?.length ?? 0) > 0;
   const includesTryOn = isListing && !!personaId && (!!productId || (materialIds?.length ?? 0) > 0);
+  const advisorHasContext = activeAgent === "ADVISOR" && (!!productId || !!discoverSelection || !!referenceTask);
+  const analystHasContext = activeAgent === "ANALYST" && (!!productId || !!discoverSelection);
   const placeholder =
     isReview && attachedFile
       ? "可补充说明（选填），例：重点看 ROI 低于 2 的素材该停还是改"
@@ -213,7 +229,7 @@ export function AgentComposer({
     ? true
     : isAnalyze
       ? !!analyzeVideo && !uploadingVideo
-      : !isReview && (!!input.trim() || (isListing && listingHasAssets));
+      : !isReview && (!!input.trim() || (isListing && listingHasAssets) || advisorHasContext || analystHasContext);
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
@@ -293,9 +309,24 @@ export function AgentComposer({
               ...(conversationId ? { conversationId } : {}),
               agent: activeAgent,
               // Listing 允许只选附件不写文字，后端仍需要一条会话气泡标题。
-              input: input.trim() || (isListing && listingHasAssets ? "根据所选商品与素材生成 Listing" : ""),
-              // 创作类携带商品真实数据。
-              ...((activeAgent === "DIRECTOR" || isListing) && productId ? { productId } : {}),
+              input:
+                input.trim() ||
+                (isListing && listingHasAssets
+                  ? "根据所选商品与素材生成 Listing"
+                  : activeAgent === "ANALYST" && analystHasContext
+                    ? "帮我判断这个商品是否值得做"
+                    : activeAgent === "ADVISOR" && advisorHasContext
+                      ? "请结合我添加的资料给出下一步建议"
+                      : ""),
+              // 商品档案可作为顾问、选品和创作上下文。
+              ...(["ADVISOR", "ANALYST", "DIRECTOR", "LISTING"].includes(activeAgent) && productId ? { productId } : {}),
+              ...(["ADVISOR", "ANALYST"].includes(activeAgent) && discoverSelection
+                ? {
+                    discoverProductId: discoverSelection.productId,
+                    discoverRegion: discoverSelection.region,
+                  }
+                : {}),
+              ...(activeAgent === "ADVISOR" && referenceTask ? { referenceTaskId: referenceTask.id } : {}),
               // DIRECTOR 用作出镜人设；LISTING 同时有商品图时会自动附加上身图。
               ...((activeAgent === "DIRECTOR" || isListing) && personaId ? { modelAssetId: personaId } : {}),
               // 视频保持单张首帧；Listing 接收多张商品/细节图。
@@ -416,10 +447,7 @@ export function AgentComposer({
                       : "border-[var(--dk-stroke-border)] bg-[var(--dk-surface)] text-[var(--dk-content-secondary)] hover:bg-[var(--dk-action-regular)] hover:text-ink"
                   }`}
                 >
-                  <span
-                    aria-hidden
-                    className={`flex h-6 w-6 items-center justify-center rounded-lg border ${activeIdentity.iconSurface}`}
-                  >
+                  <span aria-hidden className={`flex h-6 w-6 items-center justify-center rounded-lg border ${activeIdentity.iconSurface}`}>
                     <activeIdentity.icon className="h-3.5 w-3.5" />
                   </span>
                   <span className="text-[var(--dk-content-tertiary)]">当前 Agent</span>
@@ -434,9 +462,7 @@ export function AgentComposer({
                 <div>
                   <div className="px-2 pb-2 pt-1">
                     <div className="text-xs font-semibold text-ink">选择接下来回答的 Agent</div>
-                    <div className="mt-0.5 text-2xs text-[var(--dk-content-tertiary)]">
-                      保留当前对话，仅影响下一次发送
-                    </div>
+                    <div className="mt-0.5 text-2xs text-[var(--dk-content-tertiary)]">保留当前对话，仅影响下一次发送</div>
                   </div>
                   <div className="space-y-0.5">
                     {selectableAgents.map((agent) => {
@@ -547,11 +573,7 @@ export function AgentComposer({
           onChange={(e) => onInputChange(e.target.value)}
           rows={compactAgentSelector ? 2 : 4}
           placeholder={placeholder}
-          className={
-            compactAgentSelector
-              ? "max-h-[min(18rem,40dvh)] min-h-28 overflow-y-auto pt-2.5 sm:pt-2.5"
-              : undefined
-          }
+          className={compactAgentSelector ? "max-h-[min(18rem,40dvh)] min-h-28 overflow-y-auto pt-2.5 sm:pt-2.5" : undefined}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
           }}
@@ -631,6 +653,10 @@ export function AgentComposer({
               activeAgent={activeAgent}
               productId={productId ?? null}
               onProductChange={(id) => onProductChange?.(id)}
+              discoverSelection={discoverSelection ?? null}
+              onDiscoverSelectionChange={(selection) => onDiscoverSelectionChange?.(selection)}
+              referenceTask={referenceTask ?? null}
+              onReferenceTaskChange={(selection) => onReferenceTaskChange?.(selection)}
               personaId={personaId ?? null}
               onPersonaChange={(id) => onPersonaChange?.(id)}
               materialIds={materialIds ?? []}
@@ -643,9 +669,7 @@ export function AgentComposer({
 
           <div className="ml-auto flex items-center gap-2">
             {!isReview && !attachedFile && (
-              <CreditCost
-                credits={includesTryOn ? CREDIT_COST.agentTask * 2 + CREDIT_COST.image : CREDIT_COST.agentTask}
-              />
+              <CreditCost credits={includesTryOn ? CREDIT_COST.agentTask * 2 + CREDIT_COST.image : CREDIT_COST.agentTask} />
             )}
             <span className="hidden text-2xs text-zinc-400 lg:inline">⌘/Ctrl + Enter</span>
             <ComposerSendButton
@@ -698,9 +722,7 @@ function SubModeButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-        active ? "bg-white text-ink shadow-sm" : "text-zinc-500 hover:text-ink"
-      }`}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${active ? "bg-white text-ink shadow-sm" : "text-zinc-500 hover:text-ink"}`}
     >
       <Icon className="h-3.5 w-3.5" />
       {children}
