@@ -3,6 +3,7 @@
 package llm
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -21,14 +22,22 @@ const endpoint = "https://openrouter.ai/api/v1/chat/completions"
 const videoEndpoint = "https://openrouter.ai/api/v1/videos"
 
 type Client struct {
-	cfg  config.OpenRouterConfig
+	cfg config.OpenRouterConfig
+	// http 一次性请求用,整体超时 120s。
 	http *http.Client
+	// streamHTTP 流式专用:Client.Timeout 会把「读完整个 body」也算进去,长回答必被腰斩,
+	// 故这里不设整体超时,由调用方的 ctx 单独把关(见 runAdvisor 的 120s)。
+	streamHTTP *http.Client
 }
 
 // New 全部调用一律直连 —— 所选模型均为国内可达。
 // (曾经复盘模型走正向代理绕地区限制,2026-07-17 被 OpenRouter 判 ToS 违规封禁,已整条移除。)
 func New(cfg config.OpenRouterConfig) *Client {
-	return &Client{cfg: cfg, http: &http.Client{Timeout: 120 * time.Second}}
+	return &Client{
+		cfg:        cfg,
+		http:       &http.Client{Timeout: 120 * time.Second},
+		streamHTTP: &http.Client{},
+	}
 }
 
 func (c *Client) Configured() bool       { return c.cfg.Configured() }
@@ -59,8 +68,15 @@ type chatReq struct {
 	MaxTokens      int         `json:"max_tokens"`
 	Temperature    float64     `json:"temperature"`
 	Stream         bool        `json:"stream"`
+	StreamOptions  *streamOpts `json:"stream_options,omitempty"`
 	ResponseFormat *respFormat `json:"response_format,omitempty"`
 	Reasoning      *reasoning  `json:"reasoning,omitempty"`
+}
+
+// streamOpts 流式必须显式要 usage —— 否则最后一个 chunk 不带 token 数,
+// estimateCostCents 拿到 0,成本会静默记错(不报错、不告警)。
+type streamOpts struct {
+	IncludeUsage bool `json:"include_usage"`
 }
 
 type reasoning struct {
@@ -71,6 +87,9 @@ type reasoning struct {
 type ChatOptions struct {
 	Temperature     float64
 	ReasoningEffort string
+	// OnDelta 非空时整条调用改走流式:上游每吐一段正文就回调一次(只回正文,不含 reasoning)。
+	// 返回值仍是累积好的完整文本 + usage,调用方的落库逻辑一行都不用改。
+	OnDelta func(string)
 }
 
 type chatMsg struct {
@@ -114,6 +133,27 @@ func (c *Client) ChatWithModel(ctx context.Context, model, system, user string, 
 	}
 	msgs := []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: user}}
 	return c.do(ctx, model, msgs, jsonMode, maxTokens)
+}
+
+// ChatWithOptions 同 Chat,但允许覆盖采样参数 / 挂流式回调(选品的单品判断走它)。
+func (c *Client) ChatWithOptions(ctx context.Context, system, user string, jsonMode bool, maxTokens int, opts ChatOptions) (*Result, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
+	}
+	msgs := []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: user}}
+	return c.doWithOptions(ctx, c.cfg.Model, msgs, jsonMode, maxTokens, opts)
+}
+
+// ChatVisionWithOptions 同 ChatVision,但允许挂流式回调(选品的看图判断走它)。
+func (c *Client) ChatVisionWithOptions(ctx context.Context, model, system, user string, imageURLs []string, jsonMode bool, maxTokens int, opts ChatOptions) (*Result, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
+	}
+	if model == "" {
+		model = c.cfg.Model
+	}
+	msgs := []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: visionParts(user, imageURLs)}}
+	return c.doWithOptions(ctx, model, msgs, jsonMode, maxTokens, opts)
 }
 
 // Message 一轮对话消息(Role=user|assistant),供带多轮历史的调用点(如跨境顾问)构造上下文。
@@ -243,12 +283,16 @@ func (c *Client) doWithOptions(ctx context.Context, model string, msgs []chatMsg
 	if temperature <= 0 {
 		temperature = 0.7
 	}
+	streaming := opts.OnDelta != nil
 	body := chatReq{
 		Model:       model,
 		Messages:    msgs,
 		MaxTokens:   maxTokens,
 		Temperature: temperature,
-		Stream:      false,
+		Stream:      streaming,
+	}
+	if streaming {
+		body.StreamOptions = &streamOpts{IncludeUsage: true}
 	}
 	if opts.ReasoningEffort != "" {
 		body.Reasoning = &reasoning{Effort: opts.ReasoningEffort}
@@ -266,6 +310,13 @@ func (c *Client) doWithOptions(ctx context.Context, model string, msgs []chatMsg
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("HTTP-Referer", c.cfg.Referer)
 	req.Header.Set("X-Title", "Faxianmao")
+	if streaming {
+		req.Header.Set("Accept", "text/event-stream")
+	}
+
+	if streaming {
+		return c.doStream(req, model, maxTokens, opts.OnDelta)
+	}
 
 	res, err := c.http.Do(req)
 	if err != nil {
@@ -308,6 +359,108 @@ func (c *Client) doWithOptions(ctx context.Context, model string, msgs []chatMsg
 		CostCents: estimateCostCents(model, parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens),
 	}
 	return &Result{Content: parsed.Choices[0].Message.Content, Usage: usage}, nil
+}
+
+// streamChunk 是 SSE 每行 data: 后的增量帧。usage 只在带 include_usage 的末帧出现。
+type streamChunk struct {
+	Choices []struct {
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
+	} `json:"choices"`
+	Usage *struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+	} `json:"usage"`
+	Error *struct {
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+// doStream 读 SSE 流:边收边回调 onDelta,同时累积完整正文与 usage。
+// 契约与 doWithOptions 完全一致(同样的空正文/上游拒绝判据),调用方拿到的仍是最终 Result。
+func (c *Client) doStream(req *http.Request, model string, maxTokens int, onDelta func(string)) (*Result, error) {
+	res, err := c.streamHTTP.Do(req)
+	if err != nil {
+		logger.Warn("[llm] 流式请求失败", logger.String("model", model), logger.Err(err))
+		return nil, fmt.Errorf("llm: 请求失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	// 非 200 时上游回的是普通 JSON 错误体而不是流,照非流式路径的口径留痕。
+	if res.StatusCode >= 400 {
+		var parsed chatResp
+		_ = json.NewDecoder(res.Body).Decode(&parsed)
+		msg := fmt.Sprintf("HTTP %d", res.StatusCode)
+		if parsed.Error != nil && parsed.Error.Message != "" {
+			msg = parsed.Error.Message
+		}
+		logger.Warn("[llm] 流式上游拒绝",
+			logger.String("model", model), logger.Int("http", res.StatusCode), logger.String("upstream", msg))
+		return nil, fmt.Errorf("llm: 上游错误: %s", msg)
+	}
+
+	var (
+		full  strings.Builder
+		usage Usage
+		got   bool // 是否收到过 usage 帧
+	)
+	sc := bufio.NewScanner(res.Body)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024) // 单帧可能较大(长 delta / usage 帧),放宽上限
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		// 空行是 SSE 帧分隔;": OPENROUTER PROCESSING" 是上游保活注释,都跳过。
+		if line == "" || strings.HasPrefix(line, ":") {
+			continue
+		}
+		payload, ok := strings.CutPrefix(line, "data: ")
+		if !ok {
+			continue
+		}
+		if payload == "[DONE]" {
+			break
+		}
+		var chunk streamChunk
+		if json.Unmarshal([]byte(payload), &chunk) != nil {
+			continue // 单帧解析失败不致命,跳过继续读
+		}
+		if chunk.Error != nil {
+			logger.Warn("[llm] 流中上游拒绝",
+				logger.String("model", model), logger.String("upstream", chunk.Error.Message))
+			return nil, fmt.Errorf("llm: 上游错误: %s", chunk.Error.Message)
+		}
+		if chunk.Usage != nil {
+			usage.TokensIn, usage.TokensOut, got = chunk.Usage.PromptTokens, chunk.Usage.CompletionTokens, true
+		}
+		for _, ch := range chunk.Choices {
+			if ch.Delta.Content == "" {
+				continue
+			}
+			full.WriteString(ch.Delta.Content)
+			onDelta(ch.Delta.Content)
+		}
+	}
+	if err := sc.Err(); err != nil {
+		// 读到一半断流:已推给用户的部分不算数,按失败处理,避免半截答案落库当成品。
+		logger.Warn("[llm] 流中断", logger.String("model", model), logger.Err(err))
+		return nil, fmt.Errorf("llm: 流中断: %w", err)
+	}
+
+	// 与非流式同一条防线:reasoning 模型烧光 max_tokens 时正文为空,必须当失败。
+	if strings.TrimSpace(full.String()) == "" {
+		logger.Warn("[llm] 流式正文为空(疑似 max_tokens 被推理耗尽)",
+			logger.String("model", model), logger.Int("max_tokens", maxTokens),
+			logger.Int("tokens_out", usage.TokensOut))
+		return nil, fmt.Errorf("llm: 模型返回空正文(model=%s, max_tokens=%d)", model, maxTokens)
+	}
+	// usage 拿不到 → 成本会静默记 0。这类降级过去在生产埋了数周,必须留痕。
+	if !got || usage.TokensOut == 0 {
+		logger.Warn("[llm] 流式未拿到 usage,本次成本将记为 0",
+			logger.String("model", model), logger.Int("chars", len([]rune(full.String()))))
+	}
+	usage.Model = model
+	usage.CostCents = estimateCostCents(model, usage.TokensIn, usage.TokensOut)
+	return &Result{Content: full.String(), Usage: usage}, nil
 }
 
 // ExtractJSON 从可能带 markdown 围栏的文本里抽出 JSON 串(对齐前端 extractJson)。

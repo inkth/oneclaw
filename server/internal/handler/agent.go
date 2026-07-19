@@ -1,12 +1,16 @@
 package handler
 
 import (
+	"io"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	apperr "github.com/faxianmao/server/internal/errors"
+	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/service"
 )
 
@@ -372,6 +376,89 @@ func (h *AgentHandler) Get(c *gin.Context) {
 		return
 	}
 	OK(c, gin.H{"task": t})
+}
+
+// SSE 相关时长。任务侧最长的是顾问(execute 给 150s),这里留出余量后收尾,
+// 让前端回落到轮询而不是把连接无限挂住。
+const (
+	streamMaxDuration = 3 * time.Minute
+	streamHeartbeat   = 15 * time.Second
+)
+
+// Stream 以 SSE 推送任务的实时正文(顾问 / 选品的带引用路径)。
+//
+// 事件:
+//
+//	delta  {"text":"…"}    新增正文,前端追加渲染
+//	done   {}              本次流结束,前端回查任务拿终态(产出/metadata 以库为准)
+//	idle   {}              当前无流可订 —— 该 Agent 不流式、或任务已结束,前端按原轮询走
+//
+// 无论走哪条分支,前端的 5 秒轮询都不拆:SSE 只负责「看得见在写」,
+// 终态正确性始终由任务表兜底。
+func (h *AgentHandler) Stream(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	tid, err := uuid.Parse(c.Param("tid"))
+	if err != nil {
+		_ = c.Error(apperr.BadRequest("任务 ID 无效"))
+		return
+	}
+	cur, live, err := h.agents.SubscribeTask(c.Request.Context(), wid, tid)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	// nginx 认这个头就地关掉本响应的缓冲。nginx.conf 里也配了 proxy_buffering off,
+	// 双保险:任一侧漏了,增量都会被缓冲到「一次性吐出来」,退化成没做流式。
+	c.Header("X-Accel-Buffering", "no")
+
+	// 服务端全局 WriteTimeout 是 60s(cmd/main.go),顾问却能跑到 150s —— 不解除的话
+	// 长回答必被从中间掐断。只摘掉这条连接的写超时,其余路由的保护原样保留。
+	if err := http.NewResponseController(c.Writer).SetWriteDeadline(time.Time{}); err != nil {
+		// 拿不到就退化为「最多流 60s」,前端会回落轮询;但这属于静默降级,必须留痕。
+		logger.Warn("[agent] SSE 无法解除写超时,长回答可能被 WriteTimeout 截断",
+			logger.String("task", tid.String()), logger.Err(err))
+	}
+
+	if !live {
+		c.SSEvent("idle", gin.H{})
+		return
+	}
+	defer cur.Close()
+
+	ctx := c.Request.Context()
+	deadline := time.After(streamMaxDuration)
+	beat := time.NewTicker(streamHeartbeat)
+	defer beat.Stop()
+
+	c.Stream(func(io.Writer) bool {
+		chunk, finished := cur.Read()
+		if chunk != "" {
+			c.SSEvent("delta", gin.H{"text": chunk})
+			return true
+		}
+		if finished {
+			c.SSEvent("done", gin.H{})
+			return false
+		}
+		select {
+		case <-cur.Wake():
+		case <-beat.C:
+			c.SSEvent("ping", gin.H{}) // 穿透中间层的保活,前端忽略
+		case <-deadline:
+			c.SSEvent("idle", gin.H{})
+			return false
+		case <-ctx.Done(): // 客户端断开
+			return false
+		}
+		return true
+	})
 }
 
 // ── 会话(Conversation)─────────────────────────────────────────────────────
