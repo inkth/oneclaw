@@ -54,7 +54,7 @@ const PERIOD_OPTIONS: Array<{
 }> = [
   { months: 1, label: "月付" },
   { months: 3, label: "季付", discount: "9 折" },
-  { months: 12, label: "年付", discount: "7.5 折", recommended: true },
+  { months: 12, label: "年付", discount: "8.5 折", recommended: true },
 ];
 
 const PLAN_META = {
@@ -113,7 +113,7 @@ export function CheckoutModal({
 
   // 价目（与 Go 端 service/billing.go 保持一致）
   const priceCents = useMemo(() => {
-    const mult = period === 1 ? 1 : period === 3 ? 2.7 : 9;
+    const mult = period === 1 ? 1 : period === 3 ? 2.7 : 10.2;
     return Math.round(planMeta.monthlyCents * mult);
   }, [period, planMeta.monthlyCents]);
 

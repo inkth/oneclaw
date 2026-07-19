@@ -69,7 +69,7 @@ func TestQuotaDecisionTeamBaseline(t *testing.T) {
 	}
 }
 
-// 周期折扣定价:1 月原价、3 月×2.7、12 月×9(7.5 折);非法方案/周期报错。
+// 周期折扣定价:1 月原价、3 月×2.7、12 月×10.2(8.5 折);非法方案/周期报错。
 func TestPriceCents(t *testing.T) {
 	cases := []struct {
 		plan    string
@@ -79,11 +79,11 @@ func TestPriceCents(t *testing.T) {
 	}{
 		{model.PlanPro, 1, 19900, false},
 		{model.PlanPro, 3, 53730, false},   // 19900*2.7
-		{model.PlanPro, 12, 179100, false}, // 19900*9
+		{model.PlanPro, 12, 202980, false}, // 19900*10.2
 		{model.PlanTeam, 1, 39900, false},
-		{model.PlanTeam, 12, 359100, false},
-		{model.PlanFree, 1, 0, true}, // FREE 不可下单
-		{model.PlanPro, 6, 0, true},  // 不支持的周期
+		{model.PlanTeam, 12, 406980, false}, // 39900*10.2
+		{model.PlanFree, 1, 0, true},        // FREE 不可下单
+		{model.PlanPro, 6, 0, true},         // 不支持的周期
 	}
 	for _, c := range cases {
 		got, err := priceCents(c.plan, c.months)

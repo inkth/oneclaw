@@ -40,7 +40,7 @@ func (s *BillingService) shouldCommission(isMock bool) bool {
 	return s.dev && s.commissionOnMock
 }
 
-// 月度价目(分)。周期折扣:3 个月 9 折,12 个月 7.5 折。与 /pricing 页一致。
+// 月度价目(分)。周期折扣:3 个月 9 折,12 个月 8.5 折。与 /pricing 页一致。
 var planMonthlyCents = map[string]int{
 	model.PlanPro:  19900,
 	model.PlanTeam: 39900,
@@ -57,7 +57,7 @@ func priceCents(plan string, months int) (int, error) {
 	case 3:
 		return int(float64(monthly)*2.7 + 0.5), nil
 	case 12:
-		return monthly * 9, nil
+		return (monthly*102 + 5) / 10, nil
 	default:
 		return 0, apperr.BadRequest("订阅周期仅支持 1/3/12 个月")
 	}
