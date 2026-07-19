@@ -144,6 +144,40 @@ func (c *Client) ChatThreadWithOptions(ctx context.Context, model, system string
 	return c.doWithOptions(ctx, model, msgs, jsonMode, maxTokens, opts)
 }
 
+// ChatThreadVisionWithOptions 在多轮文本历史的最后一条 user 消息中附加图片。
+// 这样顾问既能延续当前会话，也能看见用户本轮新上传的图片。
+func (c *Client) ChatThreadVisionWithOptions(ctx context.Context, model, system string, thread []Message, imageURLs []string, jsonMode bool, maxTokens int, opts ChatOptions) (*Result, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
+	}
+	if model == "" {
+		model = c.cfg.Model
+	}
+	msgs := make([]chatMsg, 0, len(thread)+1)
+	msgs = append(msgs, chatMsg{Role: "system", Content: system})
+	for i, m := range thread {
+		content := any(m.Content)
+		if i == len(thread)-1 && m.Role == "user" {
+			content = visionParts(m.Content, imageURLs)
+		}
+		msgs = append(msgs, chatMsg{Role: m.Role, Content: content})
+	}
+	return c.doWithOptions(ctx, model, msgs, jsonMode, maxTokens, opts)
+}
+
+func visionParts(text string, imageURLs []string) []map[string]any {
+	parts := []map[string]any{{"type": "text", "text": text}}
+	for _, u := range imageURLs {
+		if u = strings.TrimSpace(u); u != "" {
+			parts = append(parts, map[string]any{
+				"type":      "image_url",
+				"image_url": map[string]string{"url": u},
+			})
+		}
+	}
+	return parts
+}
+
 // ChatVision 让多模态模型「看图」对话:user 文本 + 一张或多张图片 URL 一起喂给模型。
 // model 须指向 vision-capable 模型(默认即 ReviewModel=minimax/minimax-m3);全部直连。
 func (c *Client) ChatVision(ctx context.Context, model, system, user string, imageURLs []string, jsonMode bool, maxTokens int) (*Result, error) {
@@ -154,15 +188,7 @@ func (c *Client) ChatVision(ctx context.Context, model, system, user string, ima
 		model = c.cfg.Model
 	}
 	// user 消息体构造为 content-parts 数组:先文本,再逐张图(照搬视频路径的 image_url 写法)。
-	parts := []map[string]any{{"type": "text", "text": user}}
-	for _, u := range imageURLs {
-		if u = strings.TrimSpace(u); u != "" {
-			parts = append(parts, map[string]any{
-				"type":      "image_url",
-				"image_url": map[string]string{"url": u},
-			})
-		}
-	}
+	parts := visionParts(user, imageURLs)
 	msgs := []chatMsg{{Role: "system", Content: system}, {Role: "user", Content: parts}}
 	return c.do(ctx, model, msgs, jsonMode, maxTokens)
 }

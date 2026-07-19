@@ -18,6 +18,7 @@ func TestAdvisorPromptKeepsFinancialAndProductBoundaries(t *testing.T) {
 		"不能在回答中声称已经替用户创建任务",
 		"根据问题复杂度决定篇幅",
 		"不要为了凑短而省略关键前提",
+		"不能只凭图片推断商品规格、销量、成本、佣金或平台政策",
 	}
 	for _, phrase := range want {
 		if !strings.Contains(advisorSystem, phrase) {
@@ -28,9 +29,11 @@ func TestAdvisorPromptKeepsFinancialAndProductBoundaries(t *testing.T) {
 
 func TestOptsFromTaskRestoresAdvisorReferences(t *testing.T) {
 	productID := uuid.New()
+	materialID := uuid.New()
 	referenceTaskID := uuid.New()
 	meta, err := json.Marshal(map[string]string{
 		"productId":         productID.String(),
+		"materialId":        materialID.String(),
 		"discoverProductId": "echo-product-1",
 		"discoverRegion":    "US",
 		"referenceTaskId":   referenceTaskID.String(),
@@ -42,6 +45,9 @@ func TestOptsFromTaskRestoresAdvisorReferences(t *testing.T) {
 	opts := optsFromTask(&model.AgentTask{Metadata: model.JSONB(meta)})
 	if opts.ProductID == nil || *opts.ProductID != productID {
 		t.Fatalf("product reference not restored: %#v", opts.ProductID)
+	}
+	if opts.MaterialID == nil || *opts.MaterialID != materialID {
+		t.Fatalf("material reference not restored: %#v", opts.MaterialID)
 	}
 	if opts.ReferenceTaskID == nil || *opts.ReferenceTaskID != referenceTaskID {
 		t.Fatalf("analysis reference not restored: %#v", opts.ReferenceTaskID)
