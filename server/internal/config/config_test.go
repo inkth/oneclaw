@@ -23,3 +23,15 @@ func TestLoadAgencyReferralDefaults(t *testing.T) {
 		t.Fatalf("agency referral defaults = %q/%d, want oc_ref/30", cfg.Cookie.ReferralName, cfg.Agency.ReferralTTLDays)
 	}
 }
+
+func TestLoadAdvisorModelDefaultAndOverride(t *testing.T) {
+	t.Setenv("OPENROUTER_ADVISOR_MODEL", "")
+	if got := Load().OpenRouter.AdvisorModel; got != "qwen/qwen3.7-plus" {
+		t.Fatalf("default AdvisorModel = %q, want qwen/qwen3.7-plus", got)
+	}
+
+	t.Setenv("OPENROUTER_ADVISOR_MODEL", "deepseek/deepseek-v4-pro")
+	if got := Load().OpenRouter.AdvisorModel; got != "deepseek/deepseek-v4-pro" {
+		t.Fatalf("overridden AdvisorModel = %q, want deepseek/deepseek-v4-pro", got)
+	}
+}

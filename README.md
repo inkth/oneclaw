@@ -52,7 +52,7 @@ go run ./cmd           # 默认 :8082,启动自动建表
 - `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` —— Postgres
 - `JWT_SECRET` —— 会话签名
 - `ECHOTIK_BASE_URL` / `ECHOTIK_USERNAME` / `ECHOTIK_PASSWORD` —— 选品数据(缺则发现页走 mock)
-- `OPENROUTER_API_KEY`(+ `OPENROUTER_MODEL` / `OPENROUTER_IMAGE_MODEL` / `OPENROUTER_VIDEO_MODEL`)—— LLM / 出图(seedream)/ 视频(缺则 Agent 走降级)
+- `OPENROUTER_API_KEY`(+ `OPENROUTER_MODEL` / `OPENROUTER_ADVISOR_MODEL` / `OPENROUTER_IMAGE_MODEL` / `OPENROUTER_VIDEO_MODEL`)—— LLM / 跨境顾问 / 出图(seedream)/ 视频(缺则 Agent 走降级)
 - `SMS_PROVIDER` —— 手机验证码
 - COS 桶配置 —— 对象存储(榜单封面永久化依赖)
 

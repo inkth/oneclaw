@@ -33,6 +33,7 @@ func New(cfg config.OpenRouterConfig) *Client {
 
 func (c *Client) Configured() bool       { return c.cfg.Configured() }
 func (c *Client) Model() string          { return c.cfg.Model }
+func (c *Client) AdvisorModel() string   { return c.cfg.AdvisorModel }
 func (c *Client) TranslateModel() string { return c.cfg.TranslateModel }
 func (c *Client) ReviewModel() string    { return c.cfg.ReviewModel }
 func (c *Client) AudioModel() string     { return c.cfg.AudioModel }
@@ -59,6 +60,17 @@ type chatReq struct {
 	Temperature    float64     `json:"temperature"`
 	Stream         bool        `json:"stream"`
 	ResponseFormat *respFormat `json:"response_format,omitempty"`
+	Reasoning      *reasoning  `json:"reasoning,omitempty"`
+}
+
+type reasoning struct {
+	Effort string `json:"effort"`
+}
+
+// ChatOptions 只用于需要覆盖公共采样参数的调用点。零值保持现有行为。
+type ChatOptions struct {
+	Temperature     float64
+	ReasoningEffort string
 }
 
 type chatMsg struct {
@@ -112,6 +124,12 @@ type Message struct {
 
 // ChatThread 带多轮历史的对话:system + 依次的历史消息(model 空回退默认文本模型)。
 func (c *Client) ChatThread(ctx context.Context, model, system string, thread []Message, jsonMode bool, maxTokens int) (*Result, error) {
+	return c.ChatThreadWithOptions(ctx, model, system, thread, jsonMode, maxTokens, ChatOptions{})
+}
+
+// ChatThreadWithOptions 带多轮历史并允许按 Agent 覆盖采样/思考强度。
+// 跨境顾问使用它降低随机性；其他 Agent 继续沿用公共默认值。
+func (c *Client) ChatThreadWithOptions(ctx context.Context, model, system string, thread []Message, jsonMode bool, maxTokens int, opts ChatOptions) (*Result, error) {
 	if !c.Configured() {
 		return nil, fmt.Errorf("llm: OPENROUTER_API_KEY 未配置")
 	}
@@ -123,7 +141,7 @@ func (c *Client) ChatThread(ctx context.Context, model, system string, thread []
 	for _, m := range thread {
 		msgs = append(msgs, chatMsg{Role: m.Role, Content: m.Content})
 	}
-	return c.do(ctx, model, msgs, jsonMode, maxTokens)
+	return c.doWithOptions(ctx, model, msgs, jsonMode, maxTokens, opts)
 }
 
 // ChatVision 让多模态模型「看图」对话:user 文本 + 一张或多张图片 URL 一起喂给模型。
@@ -188,15 +206,26 @@ func (c *Client) ChatAV(ctx context.Context, model, system, user string, audio *
 
 // do 是 chat completion 的公共执行体:构造请求 + 选 client(复盘/vision 模型走代理)+ 发送 + 解析 usage。
 func (c *Client) do(ctx context.Context, model string, msgs []chatMsg, jsonMode bool, maxTokens int) (*Result, error) {
+	return c.doWithOptions(ctx, model, msgs, jsonMode, maxTokens, ChatOptions{})
+}
+
+func (c *Client) doWithOptions(ctx context.Context, model string, msgs []chatMsg, jsonMode bool, maxTokens int, opts ChatOptions) (*Result, error) {
 	if maxTokens <= 0 {
 		maxTokens = 2000
+	}
+	temperature := opts.Temperature
+	if temperature <= 0 {
+		temperature = 0.7
 	}
 	body := chatReq{
 		Model:       model,
 		Messages:    msgs,
 		MaxTokens:   maxTokens,
-		Temperature: 0.7,
+		Temperature: temperature,
 		Stream:      false,
+	}
+	if opts.ReasoningEffort != "" {
+		body.Reasoning = &reasoning{Effort: opts.ReasoningEffort}
 	}
 	if jsonMode {
 		body.ResponseFormat = &respFormat{Type: "json_object"}
@@ -294,6 +323,7 @@ var priceTable = map[string][2]float64{ // {input, output}
 	"deepseek/deepseek-v4-pro":   {0.435, 0.87},
 	"deepseek/deepseek-v4-flash": {0.098, 0.196},
 	"deepseek/deepseek-chat":     {0.2, 0.8},
+	"qwen/qwen3.7-plus":          {0.32, 1.28},
 	// minimax 由生产实测两次调用的 usage.cost 反解(251in/603out=$0.000772、251in/429out=$0.000563);
 	// 含图调用实际计费略高于此(图片另算),粗估用途够。
 	"minimax/minimax-m3": {0.2, 1.2},
