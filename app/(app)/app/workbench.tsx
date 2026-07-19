@@ -18,6 +18,21 @@ import { ReviewTrend } from "./review-trend";
 import { industryPresets } from "@/components/OnboardingCard";
 
 const POLL_MS = 5000;
+const PRIMARY_AGENT_KINDS = new Set<ComposerKind>([
+  "ADVISOR",
+  "ANALYST",
+  "DIRECTOR",
+  "LISTING",
+  "REVIEW",
+]);
+
+function taskAgentToComposerKind(agent: string | undefined): ComposerKind | undefined {
+  if (agent === "TRYON") return "LISTING";
+  if (agent === "VIDEO_ANALYSIS") return "DIRECTOR";
+  return agent && PRIMARY_AGENT_KINDS.has(agent as ComposerKind)
+    ? (agent as ComposerKind)
+    : undefined;
+}
 
 /**
  * 会话流工作台：胶囊行 + 超大输入卡 + 任务消息流 + 快捷功能卡。
@@ -69,8 +84,8 @@ export function Workbench({
   /** 是否在输入框下方挂对话流（任务消息流）。工作台关掉：派活后只提示去「会话」看进展与结果。 */
   showStream?: boolean;
 }) {
-  const [activeAgent, setActiveAgent] = useState<ComposerKind>(
-    initialAgent ?? agents?.[0] ?? "ADVISOR",
+  const [activeAgent, setActiveAgent] = useState<ComposerKind>(() =>
+    initialAgent ?? taskAgentToComposerKind(initialTasks[0]?.agent) ?? agents?.[0] ?? "ADVISOR",
   );
   const [input, setInput] = useState(initialInput ?? "");
   const [productId, setProductId] = useState<string | null>(initialProductId ?? null);
@@ -192,6 +207,7 @@ export function Workbench({
   }
 
   const allowReview = !agents || agents.includes("REVIEW");
+  const isExistingConversation = showStream && !!conversationId;
 
   // 输入卡只定义一处，聊天页与首页 launcher 复用，避免两套 props 漂移。
   const composer = (
@@ -219,6 +235,8 @@ export function Workbench({
       showAssetChips={showAssetChips}
       textareaRef={textareaRef}
       allowReview={allowReview}
+      compactAgentSelector={isExistingConversation}
+      agentKinds={agents}
       onDispatched={(task) => {
         // 关联资产是一次性的：派活成功即消费，避免下一条任务误带上一次的选择
         if (
@@ -266,8 +284,8 @@ export function Workbench({
 
           {/* 底部常驻对话框：胶囊在上、超大输入卡在下；磨砂遮罩让会话流从下方滚过。 */}
           <div className="sticky bottom-[68px] z-20 mt-3 bg-background/92 pb-2 pt-3 backdrop-blur-md md:bottom-0">
-            {pills}
-            <div className="mt-3">{composer}</div>
+            {!isExistingConversation && pills}
+            <div className={isExistingConversation ? "" : "mt-3"}>{composer}</div>
           </div>
         </div>
       </>
