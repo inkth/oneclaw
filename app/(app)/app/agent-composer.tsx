@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import {
   Check,
@@ -211,7 +212,8 @@ export function AgentComposer({
   // 顾问 / 选品只保留一个直达动作：点「添加图片」后立即打开系统图片选择器。
   const [uploadingImage, setUploadingImage] = useState(false);
   const uploadingImageRef = useRef(false);
-  const [contextImageName, setContextImageName] = useState("");
+  const [imagePreviews, setImagePreviews] = useState<{ id: string; name: string; url: string }[]>([]);
+  const [pendingImagePreviews, setPendingImagePreviews] = useState<{ id: string; name: string; url: string }[]>([]);
   const contextImageRef = useRef<HTMLInputElement>(null);
   const { open: openAuthModal } = useAuthModal();
 
@@ -223,6 +225,11 @@ export function AgentComposer({
   const isListing = activeAgent === "LISTING";
   const isImageContextAgent = activeAgent === "ADVISOR" || activeAgent === "ANALYST";
   const hasContextImage = isImageContextAgent && (materialIds?.length ?? 0) > 0;
+  const visibleImagePreviews = imagePreviews.filter((preview) => materialIds.includes(preview.id));
+  const displayedImagePreviews =
+    pendingImagePreviews.length > 0 && !isListing
+      ? pendingImagePreviews
+      : [...visibleImagePreviews, ...pendingImagePreviews];
   const listingHasAssets = !!productId || !!personaId || (materialIds?.length ?? 0) > 0;
   const includesTryOn = isListing && !!personaId && (!!productId || (materialIds?.length ?? 0) > 0);
   const advisorHasContext = activeAgent === "ADVISOR" && (!!productId || !!discoverSelection || !!referenceTask || hasContextImage);
@@ -300,7 +307,7 @@ export function AgentComposer({
     }
   }
 
-  async function uploadImageMaterial(f: File): Promise<{ id: string; originalName: string }> {
+  async function uploadImageMaterial(f: File): Promise<{ id: string; name: string; url: string }> {
     const fd = new FormData();
     fd.append("file", f);
     const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, {
@@ -316,7 +323,8 @@ export function AgentComposer({
     if (!material?.id) throw new Error("上传成功，但没有拿到图片信息");
     return {
       id: material.id as string,
-      originalName: (material.originalName as string) || f.name || "粘贴的图片",
+      name: (material.originalName as string) || f.name || "粘贴的图片",
+      url: (material.url as string) || "",
     };
   }
 
@@ -342,10 +350,16 @@ export function AgentComposer({
       return;
     }
     const accepted = images.slice(0, availableSlots);
+    const pendingPreviews = accepted.map((file, index) => ({
+      id: `pending-${Date.now()}-${index}`,
+      name: file.name || "粘贴的图片",
+      url: URL.createObjectURL(file),
+    }));
     uploadingImageRef.current = true;
+    setPendingImagePreviews(pendingPreviews);
     setUploadingImage(true);
     try {
-      const uploaded: { id: string; originalName: string }[] = [];
+      const uploaded: { id: string; name: string; url: string }[] = [];
       for (const file of accepted) {
         uploaded.push(await uploadImageMaterial(file));
       }
@@ -354,7 +368,13 @@ export function AgentComposer({
         ? Array.from(new Set([...materialIds, ...uploaded.map((material) => material.id)])).slice(0, 8)
         : [uploaded[uploaded.length - 1].id];
       onMaterialIdsChange?.(nextIds);
-      if (isImageContextAgent) setContextImageName(uploaded[uploaded.length - 1].originalName);
+      setImagePreviews((current) => {
+        const byId = new Map([...current, ...uploaded].map((preview) => [preview.id, preview]));
+        return nextIds.flatMap((id) => {
+          const preview = byId.get(id);
+          return preview ? [preview] : [];
+        });
+      });
 
       if (source === "paste") {
         toast.success(uploaded.length > 1 ? `已粘贴 ${uploaded.length} 张图片` : "图片已粘贴");
@@ -365,6 +385,8 @@ export function AgentComposer({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "网络异常，上传失败");
     } finally {
+      pendingPreviews.forEach((preview) => URL.revokeObjectURL(preview.url));
+      setPendingImagePreviews([]);
       uploadingImageRef.current = false;
       setUploadingImage(false);
     }
@@ -387,6 +409,11 @@ export function AgentComposer({
     }
     // 不 preventDefault：剪贴板同时含文字和图片时，textarea 仍按原生行为粘贴文字。
     void uploadComposerImages(images, "paste");
+  }
+
+  function removeComposerImage(id: string) {
+    onMaterialIdsChange?.(materialIds.filter((materialId) => materialId !== id));
+    setImagePreviews((current) => current.filter((preview) => preview.id !== id));
   }
 
   async function submitTask() {
@@ -670,34 +697,41 @@ export function AgentComposer({
           </div>
         )}
 
-        {/* 顾问 / 选品的单张图片：直接上传，不再进入资产选择弹窗。 */}
-        {hasContextImage && (
-          <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 py-1 pl-2 pr-1 text-xs font-medium text-sky-700">
-              <ImagePlus className="h-3.5 w-3.5" />
-              <span className="max-w-48 truncate">{contextImageName || "已添加图片"}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  onMaterialIdsChange?.([]);
-                  setContextImageName("");
-                }}
-                className="rounded-full p-0.5 text-sky-400 hover:bg-sky-100 hover:text-sky-700"
-                aria-label="移除图片"
+        {/* 从输入框粘贴或直接添加的图片，用缩略图托盘确认内容；文件名只作为悬浮提示。 */}
+        {displayedImagePreviews.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5">
+            {displayedImagePreviews.map((preview, index) => {
+              const pending = preview.id.startsWith("pending-");
+              return (
+              <div
+                key={preview.id}
+                className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--dk-stroke-border)] bg-[var(--dk-surface-2)]"
+                title={preview.name}
               >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          </div>
-        )}
-
-        {/* 创作类 Agent 从剪贴板上传时，素材按钮尚未更新数量，先给出明确进度。 */}
-        {uploadingImage && !isImageContextAgent && (
-          <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              图片上传中…
-            </span>
+                {preview.url ? (
+                  <Image src={preview.url} alt={`已添加图片 ${index + 1}`} fill sizes="64px" unoptimized className="object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-sky-600">
+                    <ImagePlus className="h-5 w-5" />
+                  </span>
+                )}
+                {pending ? (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/25" aria-label="图片上传中">
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => removeComposerImage(preview.id)}
+                    className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/55 text-white shadow-sm transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    aria-label={`移除图片 ${index + 1}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              );
+            })}
           </div>
         )}
 
