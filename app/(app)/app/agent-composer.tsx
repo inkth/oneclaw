@@ -209,7 +209,8 @@ export function AgentComposer({
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const videoRef = useRef<HTMLInputElement>(null);
   // 顾问 / 选品只保留一个直达动作：点「添加图片」后立即打开系统图片选择器。
-  const [uploadingContextImage, setUploadingContextImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const uploadingImageRef = useRef(false);
   const [contextImageName, setContextImageName] = useState("");
   const contextImageRef = useRef<HTMLInputElement>(null);
   const { open: openAuthModal } = useAuthModal();
@@ -232,11 +233,13 @@ export function AgentComposer({
       : isAnalyze
         ? "可选：想重点拆解什么？例：重点看开头钩子怎么写（留空=全面解析）"
         : PLACEHOLDERS[activeAgent];
-  const canSend = attachedFile
-    ? true
-    : isAnalyze
-      ? !!analyzeVideo && !uploadingVideo
-      : !isReview && (!!input.trim() || (isListing && listingHasAssets) || advisorHasContext || analystHasContext);
+  const canSend =
+    !uploadingImage &&
+    (attachedFile
+      ? true
+      : isAnalyze
+        ? !!analyzeVideo && !uploadingVideo
+        : !isReview && (!!input.trim() || (isListing && listingHasAssets) || advisorHasContext || analystHasContext));
 
   function gateGuest(): boolean {
     if (!isGuest) return false;
@@ -297,42 +300,93 @@ export function AgentComposer({
     }
   }
 
-  async function uploadContextImage(f: File) {
-    if (!f.type.startsWith("image/")) {
+  async function uploadImageMaterial(f: File): Promise<{ id: string; originalName: string }> {
+    const fd = new FormData();
+    fd.append("file", f);
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      throw new Error(json?.error?.message || json?.message || "上传失败，稍后再试");
+    }
+    const material = json.data?.material ?? json.material;
+    if (!material?.id) throw new Error("上传成功，但没有拿到图片信息");
+    return {
+      id: material.id as string,
+      originalName: (material.originalName as string) || f.name || "粘贴的图片",
+    };
+  }
+
+  async function uploadComposerImages(files: File[], source: "picker" | "paste") {
+    const images = files.filter((file) => file.type.startsWith("image/"));
+    if (images.length === 0) {
       toast("请选择图片文件");
       return;
     }
-    if (f.size > 50 * 1024 * 1024) {
+    if (images.some((file) => file.size > 50 * 1024 * 1024)) {
       toast("图片不能超过 50 MB");
       return;
     }
     if (gateGuest()) return;
-    setUploadingContextImage(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", f);
-      const res = await fetch(`/api/v1/workspaces/${workspaceId}/materials`, {
-        method: "POST",
-        body: fd,
-        credentials: "include",
-      });
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.ok) {
-        toast.error(json?.error?.message || json?.message || "上传失败，稍后再试");
-        return;
-      }
-      const material = json.data?.material ?? json.material;
-      if (!material?.id) {
-        toast.error("上传成功，但没有拿到图片信息");
-        return;
-      }
-      onMaterialIdsChange?.([material.id as string]);
-      setContextImageName((material.originalName as string) || f.name);
-    } catch {
-      toast.error("网络异常，上传失败");
-    } finally {
-      setUploadingContextImage(false);
+    if (uploadingImageRef.current) {
+      toast("上一张图片还在上传，请稍候");
+      return;
     }
+
+    const availableSlots = isListing ? Math.max(0, 8 - materialIds.length) : 1;
+    if (availableSlots === 0) {
+      toast("Listing 最多添加 8 张图片");
+      return;
+    }
+    const accepted = images.slice(0, availableSlots);
+    uploadingImageRef.current = true;
+    setUploadingImage(true);
+    try {
+      const uploaded: { id: string; originalName: string }[] = [];
+      for (const file of accepted) {
+        uploaded.push(await uploadImageMaterial(file));
+      }
+
+      const nextIds = isListing
+        ? Array.from(new Set([...materialIds, ...uploaded.map((material) => material.id)])).slice(0, 8)
+        : [uploaded[uploaded.length - 1].id];
+      onMaterialIdsChange?.(nextIds);
+      if (isImageContextAgent) setContextImageName(uploaded[uploaded.length - 1].originalName);
+
+      if (source === "paste") {
+        toast.success(uploaded.length > 1 ? `已粘贴 ${uploaded.length} 张图片` : "图片已粘贴");
+      }
+      if (images.length > accepted.length) {
+        toast.message(`已达到图片上限，本次添加 ${accepted.length} 张`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "网络异常，上传失败");
+    } finally {
+      uploadingImageRef.current = false;
+      setUploadingImage(false);
+    }
+  }
+
+  function handleComposerPaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const itemImages = Array.from(event.clipboardData.items)
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+    const images =
+      itemImages.length > 0
+        ? itemImages
+        : Array.from(event.clipboardData.files).filter((file) => file.type.startsWith("image/"));
+    if (images.length === 0) return;
+
+    if (isReview || isAnalyze || !["ADVISOR", "ANALYST", "DIRECTOR", "LISTING"].includes(activeAgent)) {
+      toast("当前模式不支持粘贴图片");
+      return;
+    }
+    // 不 preventDefault：剪贴板同时含文字和图片时，textarea 仍按原生行为粘贴文字。
+    void uploadComposerImages(images, "paste");
   }
 
   async function submitTask() {
@@ -449,6 +503,10 @@ export function AgentComposer({
   async function submit() {
     if (submitting) return;
     if (gateGuest()) return;
+    if (uploadingImage) {
+      toast("图片正在上传，请稍候");
+      return;
+    }
     if (attachedFile) {
       await analyze();
       return;
@@ -633,12 +691,23 @@ export function AgentComposer({
           </div>
         )}
 
+        {/* 创作类 Agent 从剪贴板上传时，素材按钮尚未更新数量，先给出明确进度。 */}
+        {uploadingImage && !isImageContextAgent && (
+          <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              图片上传中…
+            </span>
+          </div>
+        )}
+
         <ComposerTextarea
           variant="console"
           id="agent-composer"
           ref={textareaRef}
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
+          onPaste={handleComposerPaste}
           rows={compactAgentSelector ? 2 : 4}
           placeholder={placeholder}
           className={compactAgentSelector ? "max-h-[min(18rem,40dvh)] min-h-28 overflow-y-auto pt-2.5 sm:pt-2.5" : undefined}
@@ -724,7 +793,7 @@ export function AgentComposer({
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) uploadContextImage(f);
+                  if (f) void uploadComposerImages([f], "picker");
                   e.target.value = "";
                 }}
               />
@@ -734,13 +803,13 @@ export function AgentComposer({
                   if (gateGuest()) return;
                   contextImageRef.current?.click();
                 }}
-                disabled={uploadingContextImage}
+                disabled={uploadingImage}
                 className="rounded-xl disabled:pointer-events-none disabled:opacity-60"
                 title={hasContextImage ? "更换图片" : "添加图片"}
               >
                 <ToolbarButton
-                  icon={uploadingContextImage ? Loader2 : ImagePlus}
-                  label={uploadingContextImage ? "上传中…" : hasContextImage ? "更换图片" : "添加图片"}
+                  icon={uploadingImage ? Loader2 : ImagePlus}
+                  label={uploadingImage ? "上传中…" : hasContextImage ? "更换图片" : "添加图片"}
                   active={hasContextImage}
                   badge={hasContextImage ? 1 : undefined}
                 />
