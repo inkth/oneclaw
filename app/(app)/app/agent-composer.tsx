@@ -547,7 +547,11 @@ export function AgentComposer({
           onChange={(e) => onInputChange(e.target.value)}
           rows={compactAgentSelector ? 2 : 4}
           placeholder={placeholder}
-          className={compactAgentSelector ? "pt-2.5 sm:pt-2.5" : undefined}
+          className={
+            compactAgentSelector
+              ? "max-h-[min(18rem,40dvh)] min-h-28 overflow-y-auto pt-2.5 sm:pt-2.5"
+              : undefined
+          }
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
           }}
