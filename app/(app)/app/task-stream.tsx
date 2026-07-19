@@ -164,7 +164,7 @@ function UserBubble({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-end">
       {/* 用户原文不渲染 markdown（那是他自己敲的字），但换行要保留 */}
-      <div className="max-w-[85%] whitespace-pre-wrap rounded-lg rounded-br-md bg-[var(--dk-btn-black)] px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+      <div className="max-w-[85%] whitespace-pre-wrap rounded-[24px] rounded-br-[10px] border border-[#dbe5ff] bg-[var(--signal-soft)] px-4 py-2.5 text-sm leading-relaxed text-[#24355f] shadow-[0_1px_2px_rgba(49,94,251,0.08)]">
         {children}
       </div>
     </div>
