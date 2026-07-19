@@ -150,18 +150,6 @@ export function IdentityAvatar({
           )}
         </g>
 
-        {/* 猫耳：品牌的一点轻在场，压在抽象图案之上。
-            两条硬约束：
-            1) 画在旋转组**之外**——耳朵跟着 seed 转就成了随机三角形，不再是耳朵。
-            2) 整组统一 opacity，而不是给 fill/stroke 各自设 alpha；描边只为把尖角磨圆，
-               分别设 alpha 会在轮廓处叠出一圈更亮的边。
-            3) 两耳中间必须留空。内侧底角一旦碰上（第一版是 32.5/31.5），整体立刻读成
-               蝴蝶结或字母 M，怎么调透明度都救不回来。 */}
-        <g opacity="0.26" fill="#fff" stroke="#fff" strokeWidth="3" strokeLinejoin="round">
-          <path d="M17.5 8 L27 26 L13 26 Z" />
-          <path d="M46.5 8 L37 26 L51 26 Z" />
-        </g>
-
         <rect width="64" height="64" fill={`url(#${uid}h)`} />
         {/* 内描边：贴在浅色卡片上时给一圈收边 */}
         <circle cx="32" cy="32" r="31.5" fill="none" stroke="#000" strokeOpacity="0.08" />
