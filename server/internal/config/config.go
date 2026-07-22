@@ -187,6 +187,17 @@ type OpenRouterConfig struct {
 	// voxtral-small-24b 国内直连可达、实测 ~20s 出准确逐句转录+翻译;第二段拆解仍走 ReviewModel。
 	AudioModel string
 	VideoModel string // 视频默认 bytedance/seedance-2.0-fast
+	// VideoResolution 出片分辨率,显式钉死、不吃上游默认档。OpenRouter 视频按 秒×分辨率 计价
+	// (seedance-2.0-fast:480p $0.054/s、720p $0.121/s、1080p $0.272/s,2026-07-22 核对),
+	// 积分单价(billing.go 35积分/s)按 720p ≈12.1¢/s 标定 —— 上游默认档若漂移到 1080p
+	// 成本直接 2.25 倍,故必须显式传;改档要同步 billing 定价。
+	VideoResolution string
+	// VideoModelAlt + VideoModelAltWorkspaces 备选出片模型灰度:名单里的工作台出片改用备选模型,
+	// 其余工作台不受影响。用于换模型的质量/成本对比实验(wan-2.6 图生视频 720p $0.10/s、
+	// 纯文生 $0.08/s,比 seedance-fast 省 17-34%,且同样支持口播音画同步/对口型/参考图):
+	// 先把自己的 workspace ID 加进名单出几条片对比,质量达标再考虑切默认。名单空 = 灰度关闭。
+	VideoModelAlt           string
+	VideoModelAltWorkspaces []string
 	// ImageModel 图像默认 bytedance-seed/seedream-4.5:字节自家 provider,国内直连可达
 	// (不像 Google/OpenAI 系对国内 IP 屏蔽),支持参考图编辑/多图合成/虚拟试穿,直接返回 JPEG。
 	ImageModel string
@@ -290,15 +301,18 @@ func Load() *Config {
 			COSDomain:    getEnv("TENCENT_COS_DOMAIN", ""),
 		},
 		OpenRouter: OpenRouterConfig{
-			APIKey:         getEnv("OPENROUTER_API_KEY", ""),
-			Model:          getEnv("OPENROUTER_MODEL", "minimax/minimax-m3"),
-			AdvisorModel:   getEnv("OPENROUTER_ADVISOR_MODEL", "minimax/minimax-m3"),
-			TranslateModel: getEnv("OPENROUTER_TRANSLATE_MODEL", "minimax/minimax-m3"),
-			ReviewModel:    getEnv("OPENROUTER_REVIEW_MODEL", "minimax/minimax-m3"),
-			AudioModel:     getEnv("OPENROUTER_AUDIO_MODEL", "mistralai/voxtral-small-24b-2507"),
-			VideoModel:     getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
-			ImageModel:     getEnv("OPENROUTER_IMAGE_MODEL", "bytedance-seed/seedream-4.5"),
-			Referer:        getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
+			APIKey:                  getEnv("OPENROUTER_API_KEY", ""),
+			Model:                   getEnv("OPENROUTER_MODEL", "minimax/minimax-m3"),
+			AdvisorModel:            getEnv("OPENROUTER_ADVISOR_MODEL", "minimax/minimax-m3"),
+			TranslateModel:          getEnv("OPENROUTER_TRANSLATE_MODEL", "minimax/minimax-m3"),
+			ReviewModel:             getEnv("OPENROUTER_REVIEW_MODEL", "minimax/minimax-m3"),
+			AudioModel:              getEnv("OPENROUTER_AUDIO_MODEL", "mistralai/voxtral-small-24b-2507"),
+			VideoModel:              getEnv("OPENROUTER_VIDEO_MODEL", "bytedance/seedance-2.0-fast"),
+			VideoResolution:         getEnv("OPENROUTER_VIDEO_RESOLUTION", "720p"),
+			VideoModelAlt:           getEnv("OPENROUTER_VIDEO_MODEL_ALT", "alibaba/wan-2.6"),
+			VideoModelAltWorkspaces: splitCSV(getEnv("OPENROUTER_VIDEO_MODEL_ALT_WORKSPACES", "")),
+			ImageModel:              getEnv("OPENROUTER_IMAGE_MODEL", "bytedance-seed/seedream-4.5"),
+			Referer:                 getEnv("OPENROUTER_REFERER", "https://faxianmao.com"),
 		},
 		Agency: AgencyConfig{
 			BonusCredits:        getEnvInt("AGENCY_BONUS_CREDITS", 300),

@@ -39,7 +39,7 @@ func directorSystemFor(v voiceSpec) string {
 若用户消息含「本店投放经验」,据其漏斗短板优先调整(钩子弱就强化前 2 秒、转化弱就强化卖点+结尾 CTA),并让角度贴近其中列出的「跑赢角度」;这是本店真实成绩,优先级高于通用套路。
 
 规则:
-- 视频总时长 4-15 秒,原则是「讲完就停」:钩子+核心卖点+行动号召能在 6-9 秒讲完就不要拖长(3 镜头、每镜头 2-3 秒);只有叙事确实需要过程展示(如效果前后对比、多配件开箱)才用 10-15 秒;时间轴必须连续且与总时长一致
+- 视频总时长 4-10 秒(用户显式锁定时长时以锁定值为准,最长 15 秒),原则是「讲完就停」:钩子+核心卖点+行动号召能在 6-9 秒讲完就不要拖长(3 镜头、每镜头 2-3 秒);只有叙事确实需要过程展示(如效果前后对比、多配件开箱)才用满上限;时间轴必须连续且与总时长一致
 - 口播是%s(%s观众听的),地道口语化 UGC 语气,短句,每镜头一句;要像母语者随手拍,不要翻译腔
 - videoPrompt 是多镜头提示词:视觉描述用英文,逐镜头描述画面/运镜/光线,并把口播台词用引号原文写进对应镜头
   (视频模型支持音画联合生成,会按引号内台词输出配音,所以引号内必须是%s台词),镜头间用自然剪切衔接
@@ -79,6 +79,25 @@ func normalizeStyle(s string) string {
 		return s
 	}
 	return model.VideoStyleScene
+}
+
+// aiMaxDurationSec AI 自选时长上限。出片按秒计费(720p ≈12.1¢/s),而 AI 自选历史上一半以上
+// 落在 12s(单条 ¥10.4);带货短视频 6-9 秒讲完转化最好,自选收到 10s 直接省 ~20% 生成成本。
+// 用户在「设置」显式锁定时长时不受此限,仍可 4-15s(clampDuration)。
+const aiMaxDurationSec = 10
+
+// aiDuration 把 AI 自选时长夹进 4-10s;未给值默认 8s(3 镜头紧凑配速,短=省)。
+func aiDuration(sec int) int {
+	switch {
+	case sec <= 0:
+		return 8
+	case sec < 4:
+		return 4
+	case sec > aiMaxDurationSec:
+		return aiMaxDurationSec
+	default:
+		return sec
+	}
 }
 
 // clampDuration 把用户在「设置」里指定的时长夹进 Seedance 2.0 支持的 4-15s;
@@ -294,18 +313,11 @@ func (s *AgentService) directorGenerate(ctx context.Context, wsID uuid.UUID, inp
 	if strings.TrimSpace(out.VideoPrompt) == "" {
 		out.VideoPrompt = input
 	}
-	// 时长:用户在「设置」显式锁的优先于 AI 自选;都没有时给 8s(3 镜头紧凑配速;生成按秒计费,短=省)。统一夹 Seedance 2.0 的 4-15s。
+	// 时长:用户在「设置」显式锁的优先于 AI 自选(4-15s);AI 自选夹 4-10s,未给值默认 8s。
 	if d := clampDuration(dc.durationSec); d > 0 {
 		out.DurationSec = d
 	} else {
-		switch {
-		case out.DurationSec <= 0:
-			out.DurationSec = 8
-		case out.DurationSec < 4:
-			out.DurationSec = 4
-		case out.DurationSec > 15:
-			out.DurationSec = 15
-		}
+		out.DurationSec = aiDuration(out.DurationSec)
 	}
 	// 比例:用户显式锁的优先,否则沿用 AI 值,空则默认竖屏 9:16。
 	if ar := normalizeAspect(dc.aspectRatio); ar != "" {
@@ -672,17 +684,12 @@ func (s *AgentService) ConfirmVideo(ctx context.Context, wsID, taskID uuid.UUID,
 				fmt.Sprintf(`{"personaId":%q,"personaName":%q}`, persona.ID.String(), persona.Name)))
 	}
 
-	// 封面:有商品实拍图(即首帧)直接用,和成片首帧一致还省一次生图;否则 seedream 兜底。
+	// 封面:有商品实拍图(即首帧)直接用,和成片首帧一致还省一次生图;
+	// 没有的,成片完成时从视频抽帧兜底(rehostToCOS)—— 免费且封面=真实画面,
+	// 不再花一次 seedream 生图(生成期间无封面,前端本就展示生成中态)。
 	if d.FirstFrameURL != "" {
 		s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", v.ID).
 			Update("thumbnail_url", d.FirstFrameURL)
-	} else {
-		vid, prompt, ar := v.ID, d.VideoPrompt, d.AspectRatio
-		go func() {
-			cctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-			defer cancel()
-			s.videos.GenerateCover(cctx, vid, prompt, ar)
-		}()
 	}
 	return v, nil
 }

@@ -148,11 +148,11 @@ const QUICK_ACTIONS_BY_AGENT: Record<ComposerKind, QuickAction[]> = {
     {
       key: "video-quicksell",
       title: "卖点速览",
-      desc: "15 秒讲清核心卖点",
+      desc: "10 秒讲清核心卖点",
       icon: Clapperboard,
       status: "live",
       agent: "DIRECTOR",
-      promptTemplate: "为「」生成一条 15 秒卖点速览短视频，快节奏罗列核心优势，结尾强 CTA",
+      promptTemplate: "为「」生成一条 10 秒内的卖点速览短视频，快节奏罗列核心优势，结尾强 CTA",
     },
   ],
   LISTING: [

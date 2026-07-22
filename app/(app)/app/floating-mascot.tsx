@@ -185,7 +185,7 @@ function actionFor(pathname: string, entity: PageEntity | null): ContextAction {
   if (pathname.startsWith("/app/assets/materials")) {
     return dispatchAction("用素材开始创作", ImagePlus, "DIRECTOR", "请基于我的素材，帮我规划一条带货短视频。", {
       suggestions: [
-        "用现有素材帮我规划一条 15 秒带货视频。",
+        "用现有素材帮我规划一条 10 秒带货视频。",
         "检查我的素材还缺哪些镜头，列一份补拍清单。",
         "把现有素材改成 UGC 风格，帮我写脚本和剪辑节奏。",
         "基于同一组素材，给我 4 个不同开头的测试方案。",

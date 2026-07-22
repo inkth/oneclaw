@@ -11,7 +11,7 @@ const MEMBERS = [
     name: "短视频创作",
     icon: Clapperboard,
     task: "从商品信息里挑叙事角度",
-    output: "15s UGC 脚本 · 9:16 分镜",
+    output: "10s UGC 脚本 · 9:16 分镜",
   },
   {
     name: "Listing 内容",
@@ -101,7 +101,7 @@ export function Team() {
 
                 <div className="bg-white p-5 sm:p-6">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-semibold text-zinc-500">15s UGC 分镜</div>
+                    <div className="text-xs font-semibold text-zinc-500">10s UGC 分镜</div>
                     <span className="text-2xs text-brand-600">9:16</span>
                   </div>
                   <div className="mt-4 grid grid-cols-4 gap-2">

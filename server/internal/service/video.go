@@ -354,7 +354,10 @@ func (s *VideoService) dispatch(ctx context.Context, v *model.Video, resolution 
 	if len(v.ReferenceImageURLs) > 0 {
 		_ = json.Unmarshal(v.ReferenceImageURLs, &refs)
 	}
+	// 模型按工作台选:灰度名单里的用备选模型(质量/成本对比实验),engine 记实际用的。
+	engine := s.llm.VideoModelFor(v.WorkspaceID.String())
 	params := llm.VideoParams{
+		Model:  engine,
 		Prompt: prompt, DurationSec: v.DurationSec, AspectRatio: v.AspectRatio,
 		Resolution: resolution, FirstFrameURL: ff, ReferenceImageURLs: refs,
 	}
@@ -380,7 +383,6 @@ func (s *VideoService) dispatch(ctx context.Context, v *model.Video, resolution 
 		v.ErrorMessage = &msg
 		return
 	}
-	engine := s.llm.VideoModel()
 	updates := map[string]any{
 		"processing": model.VideoGenerating, "engine": engine,
 		"provider_job_id": job.ID, "polling_url": job.PollingURL,
@@ -483,32 +485,6 @@ func (s *VideoService) applyJob(ctx context.Context, videoID uuid.UUID, job *llm
 	}
 }
 
-// GenerateCover 用 seedream 生成封面 → 上传 COS → 回写 thumbnail_url(best-effort)。
-// seedream 走字节自家 provider,国内直连可达,不受 Google/OpenAI 图像模型的区域屏蔽。
-func (s *VideoService) GenerateCover(ctx context.Context, videoID uuid.UUID, prompt, aspectRatio string) {
-	if !s.llm.Configured() || !s.storage.Configured() {
-		return
-	}
-	if aspectRatio == "" {
-		aspectRatio = "9:16" // 短视频封面默认竖版
-	}
-	data, ct, err := s.llm.GenerateImage(ctx, "vertical short-video cover poster, no text, "+prompt, aspectRatio, nil)
-	if err != nil {
-		logger.Warn("[video] 封面生成失败", logger.String("video", videoID.String()), logger.Err(err))
-		return
-	}
-	ext := ".png"
-	if strings.Contains(ct, "jpeg") || strings.Contains(ct, "jpg") {
-		ext = ".jpg"
-	}
-	url, err := s.storage.Put(ctx, "thumbnails/"+videoID.String()+ext, data, ct)
-	if err != nil {
-		logger.Warn("[video] 封面上传失败", logger.String("video", videoID.String()), logger.Err(err))
-		return
-	}
-	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", videoID).Update("thumbnail_url", url)
-}
-
 // rehostToCOS 拉取 OpenRouter 视频字节(带 key)→ 上传 COS,返回永久 URL。
 func (s *VideoService) rehostToCOS(ctx context.Context, videoID uuid.UUID, srcURL string) (string, error) {
 	data, ct, err := s.llm.Download(ctx, srcURL)
@@ -528,6 +504,11 @@ func (s *VideoService) rehostToCOS(ctx context.Context, videoID uuid.UUID, srcUR
 		if e := s.db.WithContext(ctx).First(&v, "id = ?", videoID).Error; e == nil {
 			if processed, ok := s.postProcessVideo(ctx, v, data); ok {
 				data = processed
+			}
+			// 无封面的片(没商品实拍图可用)从成片抽帧兜底:免费且封面=真实画面,
+			// 替代此前每条一次的 seedream 生图;实拍开场拼接后抽到的正是真货镜头。
+			if v.ThumbnailURL == nil || strings.TrimSpace(*v.ThumbnailURL) == "" {
+				s.coverFromVideoBytes(ctx, v.ID, data)
 			}
 		}
 	}

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/model"
 )
@@ -304,6 +306,46 @@ func (s *VideoService) renderPost(ctx context.Context, v model.Video, raw []byte
 		return raw, false
 	}
 	return processed, true
+}
+
+// coverFromVideoBytes 从成片抽 1 帧作封面:写临时文件 → ffmpeg 取第 1 秒画面(避开可能的
+// 黑场首帧;成片最短 4s,不会越界)→ 上传 COS → 回写 thumbnail_url。全程 best-effort:
+// 失败只记日志、封面留空,不影响成片。
+func (s *VideoService) coverFromVideoBytes(ctx context.Context, videoID uuid.UUID, raw []byte) {
+	if !s.storage.Configured() {
+		return
+	}
+	dir, err := os.MkdirTemp("", "vcover-*")
+	if err != nil {
+		return
+	}
+	defer os.RemoveAll(dir)
+	inPath, outPath := dir+"/in.mp4", dir+"/cover.jpg"
+	if os.WriteFile(inPath, raw, 0o600) != nil {
+		return
+	}
+	cctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if out, err := exec.CommandContext(cctx, "ffmpeg", "-y", "-ss", "1", "-i", inPath,
+		"-frames:v", "1", "-q:v", "3", outPath).CombinedOutput(); err != nil {
+		tail := string(out)
+		if len(tail) > 300 {
+			tail = tail[len(tail)-300:]
+		}
+		logger.Warn("[video] 封面抽帧失败", logger.String("video", videoID.String()),
+			logger.String("err", err.Error()), logger.String("ffmpeg", tail))
+		return
+	}
+	img, err := os.ReadFile(outPath)
+	if err != nil || len(img) == 0 {
+		return
+	}
+	url, err := s.storage.Put(ctx, "thumbnails/"+videoID.String()+".jpg", img, "image/jpeg")
+	if err != nil {
+		logger.Warn("[video] 封面上传失败", logger.String("video", videoID.String()), logger.Err(err))
+		return
+	}
+	s.db.WithContext(ctx).Model(&model.Video{}).Where("id = ?", videoID).Update("thumbnail_url", url)
 }
 
 // ── 实拍开场拼接(真货镜头) ────────────────────────────────────────────────

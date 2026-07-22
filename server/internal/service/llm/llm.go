@@ -50,6 +50,19 @@ func (c *Client) VideoModel() string {
 	return c.cfg.VideoModel
 }
 
+// VideoModelFor 返回该工作台出片用的模型:在灰度名单里的工作台用备选模型
+// (换模型的质量/成本对比实验,见 config.VideoModelAlt),其余用默认模型。
+func (c *Client) VideoModelFor(wsID string) string {
+	if c.cfg.VideoModelAlt != "" {
+		for _, id := range c.cfg.VideoModelAltWorkspaces {
+			if id == wsID {
+				return c.cfg.VideoModelAlt
+			}
+		}
+	}
+	return c.cfg.VideoModel
+}
+
 type Usage struct {
 	Model     string `json:"model"`
 	TokensIn  int    `json:"tokensIn"`
@@ -553,6 +566,11 @@ func (c *Client) SubmitVideo(ctx context.Context, p VideoParams) (*VideoJob, err
 	model := p.Model
 	if model == "" {
 		model = c.cfg.VideoModel
+	}
+	// 分辨率兜底到配置档(默认 720p):视频按 秒×分辨率 计价,不传则吃上游默认档,
+	// 默认档漂移(如 1080p)会让成本翻倍以上,必须显式钉住。
+	if p.Resolution == "" {
+		p.Resolution = c.cfg.VideoResolution
 	}
 	body := map[string]any{"model": model, "prompt": p.Prompt}
 	if p.DurationSec > 0 {

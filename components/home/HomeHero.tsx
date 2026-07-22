@@ -41,7 +41,7 @@ const PROMPTS: DemoPrompt[] = [
   {
     agent: "短视频创作",
     kind: "DIRECTOR",
-    text: "给这款便携榨汁杯生成一支 15 秒带货短视频，叙事角度你帮我挑",
+    text: "给这款便携榨汁杯生成一支 10 秒带货短视频，叙事角度你帮我挑",
     icon: Video,
   },
   {
