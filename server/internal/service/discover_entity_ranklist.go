@@ -40,9 +40,10 @@ func (s *DiscoverService) writeEntityRanklist(ctx context.Context, kind string, 
 	if existing, _, ok := s.lookupRanklistIDs(ctx, kind, p); ok && len(existing) > len(ids) {
 		ids = mergeIDsAt(existing, ids, 0)
 	}
+	// 类目键取最深已选层级(类目 id 全局唯一,单列即可区分层级;仅一级时与旧键一致)。
 	e := model.EntityRanklistEntry{
 		Provider: providerEchoTik, Kind: kind, Region: p.Region,
-		RankType: p.RankType, RankField: p.RankField, CategoryID: p.CategoryID,
+		RankType: p.RankType, RankField: p.RankField, CategoryID: p.CategoryKey(),
 		PageNum: 1, ExternalIDs: ids, FetchedAt: time.Now(),
 	}
 	err := s.db.WithContext(ctx).Clauses(clause.OnConflict{
@@ -105,7 +106,7 @@ func (s *DiscoverService) lookupRanklistIDs(ctx context.Context, kind string, p 
 	var e model.EntityRanklistEntry
 	err := s.db.WithContext(ctx).
 		Where("provider = ? AND kind = ? AND region = ? AND rank_type = ? AND rank_field = ? AND category_id = ? AND page_num = 1",
-			providerEchoTik, kind, p.Region, p.RankType, p.RankField, p.CategoryID).
+			providerEchoTik, kind, p.Region, p.RankType, p.RankField, p.CategoryKey()).
 		First(&e).Error
 	if err != nil || len(e.ExternalIDs) == 0 {
 		return nil, time.Time{}, false

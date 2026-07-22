@@ -83,6 +83,10 @@ export function DiscoverClient({
   field,
   categoryId,
   categories,
+  categoryL2Id = null,
+  categoriesL2 = [],
+  categoryL3Id = null,
+  categoriesL3 = [],
   keyword = "",
   view = null,
   warming,
@@ -97,6 +101,10 @@ export function DiscoverClient({
   field: Field;
   categoryId: string | null;
   categories: CategoryOption[];
+  categoryL2Id?: string | null;
+  categoriesL2?: CategoryOption[];
+  categoryL3Id?: string | null;
+  categoriesL3?: CategoryOption[];
   keyword?: string;
   view?: "hot7d" | "accel" | null;
   state: DiscoverState;
@@ -178,6 +186,11 @@ export function DiscoverClient({
         fields={PRODUCT_FIELDS}
         categoryId={categoryId}
         categories={categories}
+        categoryL2Id={categoryL2Id}
+        categoriesL2={categoriesL2}
+        categoryL3Id={categoryL3Id}
+        categoriesL3={categoriesL3}
+        supportsSubCategories
         keyword={keyword}
         searchPlaceholder="搜索商品或关键词"
       />

@@ -12,8 +12,10 @@ export { REGIONS };
 export type CategoryOption = { id: string; name: string };
 export type FieldOption = { v: number; cn: string };
 
-/** 选品各榜共用的筛选栏：关键词搜索 + 地区 + 一级类目。改 URL query 触发 SSR 重取。
+/** 选品各榜共用的筛选栏：关键词搜索 + 地区 + 类目（最多三级级联）。改 URL query 触发 SSR 重取。
  *  榜单类型 / 排序固定走默认值（由页面 query 决定），不在 UI 暴露。
+ *  类目级联：选中一级后出现「二级分类」行，选中二级后出现「三级分类」行（商品/店铺榜,
+ *  上游原生支持;达人/视频榜只传一级类目,不传下级选项即维持单级）。
  *  搜索态（keyword 非空）:走 EchoTik 关键词搜索，接口只认 region(不支持类目/分页),
  *  故此时隐藏类目行，地区改为「在新地区重搜」。 */
 export function FilterBar({
@@ -23,6 +25,11 @@ export function FilterBar({
   field,
   categoryId = null,
   categories = [],
+  categoryL2Id = null,
+  categoriesL2 = [],
+  categoryL3Id = null,
+  categoriesL3 = [],
+  supportsSubCategories = false,
   keyword = "",
   ai = false,
   searchPlaceholder = "输入关键词搜索…",
@@ -35,6 +42,13 @@ export function FilterBar({
   fields?: FieldOption[];
   categoryId?: string | null;
   categories?: CategoryOption[];
+  /** 当前选中的二级/三级类目与其候选（由页面按已选链条服务端取好传入;不支持的榜不传）。 */
+  categoryL2Id?: string | null;
+  categoriesL2?: CategoryOption[];
+  categoryL3Id?: string | null;
+  categoriesL3?: CategoryOption[];
+  /** 该榜是否支持二/三级级联（商品/店铺=true;达人/视频只认一级）。影响筛选记忆的深链写入。 */
+  supportsSubCategories?: boolean;
   /** 当前关键词（URL ?q=）;非空=搜索态。 */
   keyword?: string;
   /** 当前是否只看 AI 视频（URL ?ai=1）。UI 筛选行已下线，仅保留读取/透传。 */
@@ -48,13 +62,21 @@ export function FilterBar({
   // 在选品内记住地区/类别（localStorage）:切榜由 Tab 带参，这里管刷新/裸进入回填。
   // categories 非空=该榜支持类目（商品/店铺）;视频/达人榜无类目，只记地区不擦类目。
   // 搜索态下视作「不跟踪类目」:别让搜索期间被丢弃的类目把记忆里的选择擦成 null。
-  useDiscoverFilterMemory(basePath, region, categoryId, categories.length > 0 && !searching);
+  useDiscoverFilterMemory(
+    basePath,
+    region,
+    { categoryId, categoryL2Id, categoryL3Id },
+    categories.length > 0 && !searching,
+    supportsSubCategories,
+  );
 
   function navigate(patch: {
     region?: Region;
     rank_type?: number;
     field?: number;
     category_id?: string | null;
+    category_l2_id?: string | null;
+    category_l3_id?: string | null;
     q?: string | null;
     ai?: boolean;
   }) {
@@ -64,6 +86,11 @@ export function FilterBar({
     p.set("field", String(patch.field ?? field));
     const cat = patch.category_id === undefined ? categoryId : patch.category_id;
     if (cat) p.set("category_id", cat);
+    // 下级仅在上级仍选中时保留（切一级/清一级时调用方显式传 null 清链）。
+    const cat2 = patch.category_l2_id === undefined ? categoryL2Id : patch.category_l2_id;
+    if (cat && cat2) p.set("category_l2_id", cat2);
+    const cat3 = patch.category_l3_id === undefined ? categoryL3Id : patch.category_l3_id;
+    if (cat && cat2 && cat3) p.set("category_l3_id", cat3);
     const q = patch.q === undefined ? keyword : patch.q;
     if (q && q.trim()) p.set("q", q.trim());
     const aiOn = patch.ai === undefined ? ai : patch.ai;
@@ -81,8 +108,10 @@ export function FilterBar({
         key={keyword}
         keyword={keyword}
         placeholder={searchPlaceholder}
-        // 提交搜索：丢弃类目（接口不支持组合），回到第 1 页。清空：退出搜索态。
-        onSubmit={(kw) => navigate({ q: kw || null, category_id: null })}
+        // 提交搜索：丢弃类目链（接口不支持组合），回到第 1 页。清空：退出搜索态。
+        onSubmit={(kw) =>
+          navigate({ q: kw || null, category_id: null, category_l2_id: null, category_l3_id: null })
+        }
       />
 
       <CollapsibleRow
@@ -91,8 +120,13 @@ export function FilterBar({
           key: r.code,
           active: region === r.code,
           label: <><span className="mr-1">{r.flag}</span>{r.cn}</>,
-          // 搜索态切地区=在新地区重搜（保留 q）;否则正常切榜并清类目。
-          onClick: () => navigate({ region: r.code, category_id: searching ? undefined : null }),
+          // 搜索态切地区=在新地区重搜（保留 q）;否则正常切榜并清类目（整条链）。
+          onClick: () =>
+            navigate(
+              searching
+                ? { region: r.code }
+                : { region: r.code, category_id: null, category_l2_id: null, category_l3_id: null },
+            ),
         }))}
       />
 
@@ -104,13 +138,50 @@ export function FilterBar({
             key: "__all__",
             active: (categoryId ?? "") === "",
             label: "全部",
-            onClick: () => navigate({ category_id: null }),
+            onClick: () => navigate({ category_id: null, category_l2_id: null, category_l3_id: null }),
           }}
           items={categories.map((c) => ({
             key: c.id,
             active: (categoryId ?? "") === c.id,
             label: c.name,
-            onClick: () => navigate({ category_id: c.id }),
+            // 切一级清下级链（换大类后旧的二/三级不再属于它）。
+            onClick: () => navigate({ category_id: c.id, category_l2_id: null, category_l3_id: null }),
+          }))}
+        />
+      )}
+
+      {!!categoryId && categoriesL2.length > 0 && !searching && (
+        <CollapsibleRow
+          label="二级分类"
+          lead={{
+            key: "__all__",
+            active: (categoryL2Id ?? "") === "",
+            label: "全部",
+            onClick: () => navigate({ category_l2_id: null, category_l3_id: null }),
+          }}
+          items={categoriesL2.map((c) => ({
+            key: c.id,
+            active: (categoryL2Id ?? "") === c.id,
+            label: c.name,
+            onClick: () => navigate({ category_l2_id: c.id, category_l3_id: null }),
+          }))}
+        />
+      )}
+
+      {!!categoryL2Id && categoriesL3.length > 0 && !searching && (
+        <CollapsibleRow
+          label="三级分类"
+          lead={{
+            key: "__all__",
+            active: (categoryL3Id ?? "") === "",
+            label: "全部",
+            onClick: () => navigate({ category_l3_id: null }),
+          }}
+          items={categoriesL3.map((c) => ({
+            key: c.id,
+            active: (categoryL3Id ?? "") === c.id,
+            label: c.name,
+            onClick: () => navigate({ category_l3_id: c.id }),
           }))}
         />
       )}

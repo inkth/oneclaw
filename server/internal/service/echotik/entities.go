@@ -46,9 +46,12 @@ func getEntityRanklist[T any](ctx context.Context, c *Client, endpoint, fieldPar
 					"rank_type":   strconv.Itoa(p.RankType),
 					fieldParam:    strconv.Itoa(p.RankField),
 					categoryParam: p.CategoryID,
-					"date":        date,
-					"page_size":   strconv.Itoa(pageSize),
-					"page_num":    strconv.Itoa(startPage + i),
+					// 二级/三级类目仅店铺榜上游支持;达人/视频榜调用方不设值,这里恒空不发。
+					"category_l2_id": p.CategoryL2ID,
+					"category_l3_id": p.CategoryL3ID,
+					"date":           date,
+					"page_size":      strconv.Itoa(pageSize),
+					"page_num":       strconv.Itoa(startPage + i),
 				}
 				// AI 视频筛选(仅视频榜设置;其余榜此字段恒空,上游亦忽略)。
 				if p.CreatedByAI != "" {

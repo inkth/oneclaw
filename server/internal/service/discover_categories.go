@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
+	"github.com/faxianmao/server/internal/logger"
 	"github.com/faxianmao/server/internal/service/echotik"
 )
 
@@ -83,6 +85,42 @@ func (s *DiscoverService) Categories(ctx context.Context, region string) []Categ
 	})
 
 	if configured {
+		s.cacheSetJSON(ctx, key, out)
+	}
+	return out
+}
+
+// CategoryChildren 二级/三级类目筛选项(level=子级层级 2|3,parentID=上一级类目 id)。
+// 与 L1 同节奏 7 天缓存;无静态兜底:未配置凭证/上游失败返回空,前端只降级隐藏下级行,
+// 一级筛选不受影响。
+func (s *DiscoverService) CategoryChildren(ctx context.Context, region, parentID string, level int) []CategoryOption {
+	if parentID == "" || (level != 2 && level != 3) || !s.echo.Configured() {
+		return []CategoryOption{}
+	}
+	key := fmt.Sprintf("categories:l%d:%s:%s", level, region, parentID)
+	var cached []CategoryOption
+	if _, ok := s.cacheGetJSON(ctx, key, categoriesTTL, &cached); ok {
+		return cached
+	}
+
+	raw, err := s.echo.GetCategoryChildren(ctx, level, region, "zh-CN", parentID)
+	if err != nil {
+		logger.Warn("拉取子类目失败", logger.Int("level", level), logger.String("parent", parentID), logger.Err(err))
+		return []CategoryOption{}
+	}
+	out := make([]CategoryOption, 0, len(raw))
+	for _, c := range raw {
+		if c.CategoryID == "" || c.CategoryID == "0" {
+			continue
+		}
+		// 防御:上游若忽略 parent_id 参数回了全量,按行内 parent_id 本地过滤。
+		if c.ParentID != "" && c.ParentID != parentID {
+			continue
+		}
+		out = append(out, CategoryOption{ID: c.CategoryID, Name: c.CategoryName})
+	}
+	// 空结果不写缓存:上游偶发抖动不该被钉死 7 天。
+	if len(out) > 0 {
 		s.cacheSetJSON(ctx, key, out)
 	}
 	return out

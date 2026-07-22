@@ -216,13 +216,30 @@ type RanklistParams struct {
 	RankType   int
 	RankField  int
 	CategoryID string // 一级类目 id,空=全部
-	Date       string // YYYY-MM-DD,空则自动回退到昨天
-	PageNum    int
-	PageSize   int
-	Keyword    string // 非空=走关键词搜索(/echotik/search/items)而非榜单
+	// 二级/三级类目 id(仅商品榜/店铺榜上游支持;达人/视频榜只认一级)。
+	// 上游三级参数各自独立,调用时把已知链条全带上(category_id + category_l2_id + category_l3_id)。
+	CategoryL2ID string
+	CategoryL3ID string
+	Date         string // YYYY-MM-DD,空则自动回退到昨天
+	PageNum      int
+	PageSize     int
+	Keyword      string // 非空=走关键词搜索(/echotik/search/items)而非榜单
 	// CreatedByAI 仅视频榜有效:"true"=只看 AI 生成视频、"false"=只看真人视频、""=不限。
 	// 上游 /echotik/video/ranklist 原生支持 created_by_ai 参数(店铺/达人榜忽略此字段)。
 	CreatedByAI string
+}
+
+// CategoryKey 最深一级已选类目 id(L3→L2→L1),空=未筛类目。
+// 类目 id 全局唯一(TikTok Shop 各级不重号),可直接当缓存/顺序表的类目键——
+// 仅选一级时值同旧 CategoryID,既有缓存键不受影响。
+func (p RanklistParams) CategoryKey() string {
+	if p.CategoryL3ID != "" {
+		return p.CategoryL3ID
+	}
+	if p.CategoryL2ID != "" {
+		return p.CategoryL2ID
+	}
+	return p.CategoryID
 }
 
 // Category 一级类目行。

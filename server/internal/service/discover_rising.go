@@ -16,10 +16,28 @@ import (
 // 加速比就爆表,设底防小基数噪声霸榜。
 const risingAccelMinSale = 100
 
+// CategoryFilter 三级类目筛选(空=该级不筛)。按最深已选层级过滤主表对应列。
+type CategoryFilter struct {
+	L1, L2, L3 string
+}
+
+// column 最深已选层级对应的主表列与值;全空返回 ("","")。
+func (f CategoryFilter) column() (string, string) {
+	switch {
+	case f.L3 != "":
+		return "category_l3_id", f.L3
+	case f.L2 != "":
+		return "category_l2_id", f.L2
+	case f.L1 != "":
+		return "category_id", f.L1
+	}
+	return "", ""
+}
+
 // RisingProducts 动量榜。mode: "hot7d"=近 7 天销量降序(默认);
 // "accel"=加速比(近7天销量/累计销量)降序,新品爆发排前(累计低但 7 天猛涨的黑马)。
 // 只读 DB,无 SWR/预热——底层行由榜单同步保鲜,雷达是它们的另一种排序投影。
-func (s *DiscoverService) RisingProducts(ctx context.Context, wsID uuid.UUID, region, categoryID, mode string, limit int) *RanklistResult {
+func (s *DiscoverService) RisingProducts(ctx context.Context, wsID uuid.UUID, region string, cat CategoryFilter, mode string, limit int) *RanklistResult {
 	if s.db == nil {
 		return &RanklistResult{State: "empty", Products: []DecoratedProduct{}}
 	}
@@ -29,8 +47,8 @@ func (s *DiscoverService) RisingProducts(ctx context.Context, wsID uuid.UUID, re
 
 	q := s.db.WithContext(ctx).
 		Where("provider = ? AND region = ? AND sale7d_cnt > 0", providerEchoTik, region)
-	if categoryID != "" {
-		q = q.Where("category_id = ?", categoryID)
+	if col, val := cat.column(); col != "" {
+		q = q.Where(col+" = ?", val)
 	}
 	switch mode {
 	case "accel":

@@ -45,6 +45,10 @@ export function SellersClient({
   field,
   categoryId,
   categories,
+  categoryL2Id = null,
+  categoriesL2 = [],
+  categoryL3Id = null,
+  categoriesL3 = [],
   keyword = "",
   state,
   warming,
@@ -57,6 +61,10 @@ export function SellersClient({
   field: number;
   categoryId: string | null;
   categories: CategoryOption[];
+  categoryL2Id?: string | null;
+  categoriesL2?: CategoryOption[];
+  categoryL3Id?: string | null;
+  categoriesL3?: CategoryOption[];
   keyword?: string;
   state: DiscoverState;
   warming?: boolean;
@@ -85,6 +93,11 @@ export function SellersClient({
         field={field}
         categoryId={categoryId}
         categories={categories}
+        categoryL2Id={categoryL2Id}
+        categoriesL2={categoriesL2}
+        categoryL3Id={categoryL3Id}
+        categoriesL3={categoriesL3}
+        supportsSubCategories
         keyword={keyword}
         searchPlaceholder="搜索店铺名"
       />

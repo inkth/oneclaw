@@ -72,10 +72,13 @@ func (h *DiscoverHandler) Ranklist(c *gin.Context) {
 		RankType:   defaultInt(c.Query("rank_type"), echotik.RankHot),
 		RankField:  defaultInt(c.Query("product_rank_field"), echotik.FieldSales),
 		CategoryID: c.Query("category_id"),
-		PageSize:   defaultInt(c.Query("page_size"), 12),
-		PageNum:    pageNumParam(c),
-		Date:       c.Query("date"),
-		Keyword:    c.Query("keyword"),
+		// 二级/三级类目(级联筛选;上游商品榜原生支持)。
+		CategoryL2ID: c.Query("category_l2_id"),
+		CategoryL3ID: c.Query("category_l3_id"),
+		PageSize:     defaultInt(c.Query("page_size"), 12),
+		PageNum:      pageNumParam(c),
+		Date:         c.Query("date"),
+		Keyword:      c.Query("keyword"),
 	}
 	res, err := h.discover.Ranklist(c.Request.Context(), wid, p)
 	if err != nil {
@@ -92,10 +95,13 @@ func (h *DiscoverHandler) RanklistPublic(c *gin.Context) {
 		RankType:   defaultInt(c.Query("rank_type"), echotik.RankHot),
 		RankField:  defaultInt(c.Query("product_rank_field"), echotik.FieldSales),
 		CategoryID: c.Query("category_id"),
-		PageSize:   defaultInt(c.Query("page_size"), 12),
-		PageNum:    pageNumParam(c),
-		Date:       c.Query("date"),
-		Keyword:    c.Query("keyword"),
+		// 二级/三级类目(级联筛选;上游商品榜原生支持)。
+		CategoryL2ID: c.Query("category_l2_id"),
+		CategoryL3ID: c.Query("category_l3_id"),
+		PageSize:     defaultInt(c.Query("page_size"), 12),
+		PageNum:      pageNumParam(c),
+		Date:         c.Query("date"),
+		Keyword:      c.Query("keyword"),
 	}
 	res, err := h.discover.Ranklist(c.Request.Context(), uuid.Nil, p)
 	if err != nil {
@@ -112,15 +118,23 @@ func (h *DiscoverHandler) Rising(c *gin.Context) {
 		return
 	}
 	res := h.discover.RisingProducts(c.Request.Context(), wid,
-		defaultStr(c.Query("region"), "US"), c.Query("category_id"),
+		defaultStr(c.Query("region"), "US"), risingCategoryFilter(c),
 		defaultStr(c.Query("mode"), "hot7d"), defaultInt(c.Query("limit"), 20))
 	OK(c, res)
+}
+
+func risingCategoryFilter(c *gin.Context) service.CategoryFilter {
+	return service.CategoryFilter{
+		L1: c.Query("category_id"),
+		L2: c.Query("category_l2_id"),
+		L3: c.Query("category_l3_id"),
+	}
 }
 
 // RisingPublic GET /discover/rising —— 公共爆品雷达,游客可访问。
 func (h *DiscoverHandler) RisingPublic(c *gin.Context) {
 	res := h.discover.RisingProducts(c.Request.Context(), uuid.Nil,
-		defaultStr(c.Query("region"), "US"), c.Query("category_id"),
+		defaultStr(c.Query("region"), "US"), risingCategoryFilter(c),
 		defaultStr(c.Query("mode"), "hot7d"), defaultInt(c.Query("limit"), 20))
 	OK(c, res)
 }
