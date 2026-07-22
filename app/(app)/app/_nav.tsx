@@ -112,15 +112,20 @@ function activeTabHref(board: Board, pathname: string): string | undefined {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 }
 
-/** 选品板块：把当前 region/category_id 带到各 Tab href 上，切榜不丢筛选
- *  (同一地区下 4 个榜共用同一份类目，带 category 恒有效；收藏页忽略未知 query)。
+/** 选品板块：把当前 region/类目链 带到各 Tab href 上，切榜不丢筛选
+ *  (同一地区下 4 个榜共用同一份类目，带 category 恒有效；收藏页忽略未知 query;
+ *  二/三级仅商品/店铺榜消费,达人/视频榜忽略——切回来时链条还在)。
  *  返回 query 后缀,activeHref 也需拼上它——Tabs 按 href 全等判断激活态。 */
 function discoverTabSuffix(sp: ReadonlyURLSearchParams): string {
   const p = new URLSearchParams();
   const region = sp.get("region");
   const category = sp.get("category_id");
+  const categoryL2 = sp.get("category_l2_id");
+  const categoryL3 = sp.get("category_l3_id");
   if (region) p.set("region", region);
   if (category) p.set("category_id", category);
+  if (category && categoryL2) p.set("category_l2_id", categoryL2);
+  if (category && categoryL2 && categoryL3) p.set("category_l3_id", categoryL3);
   const qs = p.toString();
   return qs ? `?${qs}` : "";
 }

@@ -95,6 +95,7 @@ func New(d Deps) *gin.Engine {
 	api.GET("/discover/influencer-ranklist", discH.InfluencerRanklist)
 	api.GET("/discover/video-ranklist", discH.VideoRanklist)
 	api.GET("/discover/categories", discH.Categories)
+	api.GET("/discover/categories/children", discH.CategoryChildren)
 	api.GET("/discover/sellers/:sellerId", discH.SellerDetail)
 	api.GET("/discover/influencers/:userId", discH.InfluencerDetail)
 	api.GET("/discover/videos/:videoId", discH.VideoDetail)

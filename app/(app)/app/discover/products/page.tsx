@@ -1,5 +1,5 @@
 import { getMe, apiServer } from "@/lib/api-client";
-import { fetchCategories } from "../_components/categories";
+import { fetchCategories, fetchCategoryChildren } from "../_components/categories";
 import { REGION_CODES, type Region } from "../_components/regions";
 import { DiscoverClient } from "./discover-client";
 
@@ -48,23 +48,29 @@ export default async function DiscoverProductsPage({
   const rankType = Number(sp.rank_type) || 1;
   const field = Number(sp.field) || 1;
   const categoryId = sp.category_id || null;
+  // 二级/三级类目链:上级未选时下级无效(直链/旧书签容错)。
+  const categoryL2Id = (categoryId && sp.category_l2_id) || null;
+  const categoryL3Id = (categoryL2Id && sp.category_l3_id) || null;
   const page = Math.min(Math.max(Number(sp.page) || 1, 1), 10);
   const q = (sp.q ?? "").trim();
   // 爆品雷达视图(本地动量榜):hot7d=近7天爆量 / accel=上升黑马。搜索态优先于雷达。
   const view = !q && (sp.view === "hot7d" || sp.view === "accel") ? sp.view : null;
+  const catQuery = `${categoryId ? `&category_id=${categoryId}` : ""}${categoryL2Id ? `&category_l2_id=${categoryL2Id}` : ""}${categoryL3Id ? `&category_l3_id=${categoryL3Id}` : ""}`;
   // 搜索：走 EchoTik 关键词搜索（只认 region,单次 ≤30、无分页）;否则正常榜单+分页。
   const query = q
     ? `region=${region}&product_rank_field=${field}&page_size=30&keyword=${encodeURIComponent(q)}`
-    : `region=${region}&rank_type=${rankType}&product_rank_field=${field}${categoryId ? `&category_id=${categoryId}` : ""}&page_size=16&page_num=${page}`;
+    : `region=${region}&rank_type=${rankType}&product_rank_field=${field}${catQuery}&page_size=16&page_num=${page}`;
   const path = view
-    ? `discover/rising?region=${region}&mode=${view}${categoryId ? `&category_id=${categoryId}` : ""}&limit=20`
+    ? `discover/rising?region=${region}&mode=${view}${catQuery}&limit=20`
     : `discover/ranklist?${query}`;
 
-  const [result, categories] = await Promise.all([
+  const [result, categories, categoriesL2, categoriesL3] = await Promise.all([
     apiServer<RanklistResult>(
       workspace ? `/workspaces/${workspace.id}/${path}` : `/${path}`,
     ).catch((): RanklistResult => ({ state: "error", products: [] })),
     fetchCategories(region),
+    fetchCategoryChildren(region, categoryId, 2),
+    fetchCategoryChildren(region, categoryL2Id, 3),
   ]);
 
   return (
@@ -76,6 +82,10 @@ export default async function DiscoverProductsPage({
       field={field as 1 | 2 | 3}
       categoryId={categoryId}
       categories={categories}
+      categoryL2Id={categoryL2Id}
+      categoriesL2={categoriesL2}
+      categoryL3Id={categoryL3Id}
+      categoriesL3={categoriesL3}
       keyword={q}
       state={result.state as "live" | "cached" | "empty" | "error"}
       fetchedAt={result.fetchedAt ?? null}

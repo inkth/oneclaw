@@ -22,6 +22,24 @@ func (c *Client) GetCategoriesL1(ctx context.Context, region, language string) (
 	return env.Data, nil
 }
 
+// GetCategoryChildren 拉二级/三级类目(level=2|3)。parent_id 过滤父级(上级任意层 id),
+// language 必填。响应行带 parent_id/category_level,与 l1 同结构。
+// 该接口无静态兜底:未配置凭证或上游失败时调用方返回空,前端不渲染下级筛选行。
+func (c *Client) GetCategoryChildren(ctx context.Context, level int, region, language, parentID string) ([]Category, error) {
+	if level != 2 && level != 3 {
+		return nil, fmt.Errorf("类目层级只有 2/3,收到 %d", level)
+	}
+	params := map[string]string{"language": language, "region": region, "parent_id": parentID}
+	var env Envelope[[]Category]
+	if err := c.call(ctx, fmt.Sprintf("/echotik/category/l%d", level), params, &env); err != nil {
+		return nil, err
+	}
+	if env.Code != 0 && env.Code != 200 {
+		return nil, fmt.Errorf("echotik code %d: %s", env.Code, env.Message)
+	}
+	return env.Data, nil
+}
+
 // FallbackCategoriesL1 类目静态兜底(真实 EchoTik 一级类目 ID + 中文名,非假数据):
 // 未配置凭证或类目接口临时不可用时,类目下拉/类目扫/回填仍能工作。
 // 表照抄 /echotik/category/l1?language=zh-CN 的返回(2026-07 核对,各 region 一致)。

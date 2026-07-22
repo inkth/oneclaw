@@ -109,12 +109,12 @@ func (s *DiscoverService) Ranklist(ctx context.Context, wsID uuid.UUID, p echoti
 		return s.searchProducts(ctx, wsID, p), nil
 	}
 
-	// ── 类目筛选:本地按累计销量分页;后台异步拉深保鲜。 ──
-	if p.CategoryID != "" {
+	// ── 类目筛选(任意层级):本地按累计销量分页;后台异步拉深保鲜。 ──
+	if p.CategoryKey() != "" {
 		if s.echo.Configured() {
 			goRefresh(ctx, "ranklist-category", func(bg context.Context) {
 				if _, e := s.RefreshRanklistDeep(bg, p, p.PageNum); e != nil {
-					logger.Warn("类目商品榜后台刷新失败", logger.String("cat", p.CategoryID), logger.Err(e))
+					logger.Warn("类目商品榜后台刷新失败", logger.String("cat", p.CategoryKey()), logger.Err(e))
 				}
 			})
 		}
@@ -206,7 +206,7 @@ func (s *DiscoverService) RefreshRanklist(ctx context.Context, p echotik.Ranklis
 	if err != nil {
 		return 0, err
 	}
-	writeDefault := p.CategoryID == ""
+	writeDefault := p.CategoryKey() == ""
 	dps := s.persist(ctx, p, raw, writeDefault, writeDefault, writeDefault, true)
 	return len(dps), nil
 }
@@ -224,7 +224,7 @@ func (s *DiscoverService) RefreshRanklistDeep(ctx context.Context, p echotik.Ran
 	if upto < 1 {
 		upto = 1
 	}
-	writeDefault := p.CategoryID == "" // 仅默认榜累积顺序表/写快照
+	writeDefault := p.CategoryKey() == "" // 仅默认榜累积顺序表/写快照
 	var allIDs []string
 	seen := make(map[string]struct{})
 	total := 0
@@ -332,6 +332,7 @@ func (s *DiscoverService) loadProductsOrdered(ctx context.Context, region string
 }
 
 // lookupProductsByCategory 本地按类目取商品榜(累计销量降序,按页 offset)。数据足够时类目筛选零 EchoTik。
+// 按已选的最深层级过滤对应列(主表同步时三级 id 全落库,深层筛选同样零上游调用)。
 func (s *DiscoverService) lookupProductsByCategory(ctx context.Context, p echotik.RanklistParams) ([]model.DiscoverProduct, bool) {
 	if s.db == nil {
 		return nil, false
@@ -340,9 +341,16 @@ func (s *DiscoverService) lookupProductsByCategory(ctx context.Context, p echoti
 	if p.PageNum > 1 {
 		offset = (p.PageNum - 1) * p.PageSize
 	}
+	col := "category_id"
+	switch {
+	case p.CategoryL3ID != "":
+		col = "category_l3_id"
+	case p.CategoryL2ID != "":
+		col = "category_l2_id"
+	}
 	var dps []model.DiscoverProduct
 	if err := s.db.WithContext(ctx).
-		Where("provider = ? AND region = ? AND category_id = ?", providerEchoTik, p.Region, p.CategoryID).
+		Where("provider = ? AND region = ? AND "+col+" = ?", providerEchoTik, p.Region, p.CategoryKey()).
 		Order("total_sale_cnt DESC").Offset(offset).Limit(p.PageSize).Find(&dps).Error; err != nil || len(dps) == 0 {
 		return nil, false
 	}

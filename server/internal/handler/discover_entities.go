@@ -16,7 +16,10 @@ func entityParams(c *gin.Context, defaultField int) echotik.RanklistParams {
 		RankType:   defaultInt(c.Query("rank_type"), echotik.RankHot),
 		RankField:  entityField(c.Query("field"), defaultField),
 		CategoryID: c.Query("category_id"),
-		PageSize:   defaultInt(c.Query("page_size"), 20),
+		// 二级/三级类目:仅店铺榜前端会传(上游店铺榜原生支持;达人/视频榜只认一级)。
+		CategoryL2ID: c.Query("category_l2_id"),
+		CategoryL3ID: c.Query("category_l3_id"),
+		PageSize:     defaultInt(c.Query("page_size"), 20),
 		PageNum:    pageNumParam(c),
 		Date:       c.Query("date"),
 		Keyword:    c.Query("keyword"),
@@ -54,6 +57,14 @@ func (h *DiscoverHandler) VideoRanklist(c *gin.Context) {
 func (h *DiscoverHandler) Categories(c *gin.Context) {
 	region := defaultStr(c.Query("region"), "US")
 	OK(c, gin.H{"categories": h.discover.Categories(c.Request.Context(), region)})
+}
+
+// CategoryChildren GET /discover/categories/children?region=US&parent_id=601450&level=2
+// —— 二级/三级类目筛选项(level=子级层级)。失败/未配置返回空数组,前端隐藏下级行。
+func (h *DiscoverHandler) CategoryChildren(c *gin.Context) {
+	region := defaultStr(c.Query("region"), "US")
+	level := defaultInt(c.Query("level"), 2)
+	OK(c, gin.H{"categories": h.discover.CategoryChildren(c.Request.Context(), region, c.Query("parent_id"), level)})
 }
 
 // SellerDetail GET /discover/sellers/:sellerId?region=US —— 店铺详情(公开只读)。
