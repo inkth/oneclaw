@@ -10,7 +10,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { TrendChart, type TrendSeries } from "../_components/TrendChart";
 import { FavoriteButton } from "../_components/FavoriteButton";
 import { useReportPageEntity } from "../../page-entity";
-import { fmt, fmtMoney, initial, fmtUnixDate, stringToGradient } from "../_components/format";
+import { fmt, fmtMoney, initial, stringToGradient } from "../_components/format";
+import { VideoTable } from "../_components/VideoTable";
 import {
   Award,
   ArrowLeft,
@@ -19,10 +20,7 @@ import {
   Eye,
   DollarSign,
   Video,
-  Play,
-  Heart,
   Mail,
-  Megaphone,
 } from "lucide-react";
 
 export type InfluencerDetail = {
@@ -219,47 +217,24 @@ export function InfluencerDetailClient({
             <span className="text-sm font-medium text-zinc-900">热门作品</span>
             <span className="text-xs text-zinc-400">点击在 TikTok 打开</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {i.videos.map((v) => {
-              const url = v.uniqueId
+          <VideoTable
+            rows={i.videos.map((v) => ({
+              videoId: v.videoId,
+              cover: v.cover,
+              title: v.desc,
+              createTime: v.createTime,
+              isAd: v.isAd,
+              views: v.views,
+              digg: v.digg,
+              comments: v.comments,
+              shares: v.shares,
+              saleCnt: v.saleCnt,
+              saleGmv: v.saleGmv,
+              playUrl: v.uniqueId
                 ? `https://www.tiktok.com/@${v.uniqueId}/video/${v.videoId}`
-                : "";
-              const inner = (
-                <>
-                  <div className="relative aspect-[9/16] overflow-hidden rounded-lg bg-zinc-100">
-                    <Img src={v.cover} seed={v.videoId} className="h-full w-full object-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity group-hover:opacity-100">
-                      <Play className="h-8 w-8 text-white drop-shadow" />
-                    </div>
-                    {v.isAd && (
-                      <div className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded bg-fuchsia-600/90 px-1.5 py-0.5 text-2xs text-white">
-                        <Megaphone className="h-2.5 w-2.5" /> 广告
-                      </div>
-                    )}
-                    <div className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-2xs text-white tabular-nums">
-                      {fmt(v.views)} 播放
-                    </div>
-                  </div>
-                  <div className="mt-1.5 line-clamp-2 text-xs text-zinc-600">{v.desc || "—"}</div>
-                  <div className="mt-0.5 flex items-center justify-between text-2xs text-zinc-400 tabular-nums">
-                    <span>{fmtUnixDate(v.createTime)}</span>
-                    <span className="inline-flex items-center gap-0.5">
-                      <Heart className="h-2.5 w-2.5" /> {fmt(v.digg)}
-                    </span>
-                  </div>
-                </>
-              );
-              return url ? (
-                <a key={v.videoId} href={url} target="_blank" rel="noopener noreferrer" className="group block">
-                  {inner}
-                </a>
-              ) : (
-                <div key={v.videoId} className="group block">
-                  {inner}
-                </div>
-              );
-            })}
-          </div>
+                : undefined,
+            }))}
+          />
         </Card>
       )}
     </div>

@@ -15,7 +15,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { type Tone } from "@/lib/ui/tokens";
 import { TrendChart } from "../_components/TrendChart";
-import { fmt, fmtMoney, initial, fmtUnixDate, stringToGradient } from "../_components/format";
+import { fmt, fmtMoney, initial, stringToGradient } from "../_components/format";
+import { VideoTable } from "../_components/VideoTable";
 import {
   Loader2,
   Bookmark,
@@ -25,8 +26,6 @@ import {
   DollarSign,
   Users,
   Video,
-  Play,
-  Heart,
   ShieldCheck,
   Truck,
   Search,
@@ -452,69 +451,24 @@ export function ProductDetailClient({
       {p.videos.length > 0 && (
         <Card>
           <SectionHeader icon={Video} title="关联热门视频" meta={`共 ${p.videos.length} 条 · 按带货量排序`} />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            {[...p.videos]
+          <VideoTable
+            showRank
+            rows={[...p.videos]
               .sort((a, b) => b.saleCnt - a.saleCnt || b.views - a.views)
-              .map((v) => {
-              const playable = v.playAddr?.startsWith("http");
-              const inner = (
-                <>
-                  <div className="relative aspect-[9/16] overflow-hidden rounded-t-lg bg-zinc-100">
-                    <Img
-                      src={v.cover}
-                      seed={v.videoId}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    {/* 顶部：播放量 + 带货徽标 */}
-                    <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-1 p-2">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums backdrop-blur-sm">
-                        <Play className="h-2.5 w-2.5 fill-current" />
-                        {fmt(v.views)}
-                      </span>
-                      {v.saleCnt > 0 && (
-                        <span className="inline-flex items-center rounded-md bg-emerald-600/90 px-1.5 py-0.5 text-2xs font-medium text-white tabular-nums backdrop-blur-sm">
-                          带货 {fmt(v.saleCnt)}
-                        </span>
-                      )}
-                    </div>
-                    {playable && (
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
-                          <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-                        </span>
-                      </div>
-                    )}
-                    {/* 底部渐变 + 点赞 / 日期 */}
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/65 via-black/25 to-transparent px-2 pb-1.5 pt-6 text-2xs text-white tabular-nums">
-                      <span className="inline-flex items-center gap-1">
-                        <Heart className="h-3 w-3" /> {fmt(v.digg)}
-                      </span>
-                      <span className="text-white/80">{fmtUnixDate(v.createTime)}</span>
-                    </div>
-                  </div>
-                  <div className="px-2.5 pb-2.5 pt-2">
-                    {v.desc ? (
-                      <p className="line-clamp-2 min-h-8 text-xs leading-4 text-zinc-600 transition-colors group-hover:text-zinc-900">
-                        {v.desc}
-                      </p>
-                    ) : (
-                      <p className="min-h-8 text-xs leading-4 text-zinc-400">无文案</p>
-                    )}
-                  </div>
-                </>
-              );
-              const shell = "group block overflow-hidden dk-card dk-lift focus-visible:ring-2 focus-visible:ring-ai-violet/30";
-              return playable ? (
-                <a key={v.videoId} href={v.playAddr} target="_blank" rel="noopener noreferrer" className={shell}>
-                  {inner}
-                </a>
-              ) : (
-                <div key={v.videoId} className={shell}>
-                  {inner}
-                </div>
-              );
-            })}
-          </div>
+              .map((v) => ({
+                videoId: v.videoId,
+                cover: v.cover,
+                title: v.desc,
+                createTime: v.createTime,
+                views: v.views,
+                digg: v.digg,
+                comments: v.comments,
+                shares: v.shares,
+                saleCnt: v.saleCnt,
+                saleGmv: v.saleGmv,
+                playUrl: v.playAddr?.startsWith("http") ? v.playAddr : undefined,
+              }))}
+          />
         </Card>
       )}
     </div>
