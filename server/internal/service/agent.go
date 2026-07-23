@@ -43,7 +43,7 @@ func NewAgentService(db *gorm.DB, l *llm.Client, videos *VideoService, discover 
 // 一段用户永远看不到的 JSON,流它没有意义。
 func streamableTask(agent string, opts AgentCreateOpts) bool {
 	switch agent {
-	case model.AgentAdvisor:
+	case model.AgentAdvisor, model.AgentScout:
 		return true
 	case model.AgentAnalyst:
 		return opts.MaterialID != nil || opts.DiscoverProductID != "" || opts.ProductID != nil
@@ -53,6 +53,7 @@ func streamableTask(agent string, opts AgentCreateOpts) bool {
 
 var validAgents = map[string]bool{
 	model.AgentAdvisor:       true,
+	model.AgentScout:         true,
 	model.AgentAnalyst:       true,
 	model.AgentDirector:      true,
 	model.AgentListing:       true,
@@ -76,6 +77,8 @@ type AgentCreateOpts struct {
 	DiscoverRegion    string
 	// ReferenceTaskID 用户主动选中的已完成分析任务(ADVISOR):把原问题和结果作为参考上下文。
 	ReferenceTaskID *uuid.UUID
+	// DiscoverCategoryID 选品官(SCOUT)订阅的一级类目(空=全类目):与 Region 一起决定注入的报告与榜单事实。
+	DiscoverCategoryID string
 }
 
 // Create 建 QUEUED 任务并起 goroutine 异步执行,立即返回任务。
@@ -118,6 +121,15 @@ func (s *AgentService) Create(ctx context.Context, wsID uuid.UUID, agent, input 
 	}
 	if opts.MaterialID != nil {
 		metaKV["materialId"] = opts.MaterialID.String()
+	}
+	// SCOUT 的订阅上下文(市场/类目)派活时就落 metadata:失败重试(optsFromTask)才能还原数据面。
+	if agent == model.AgentScout {
+		if opts.Region != "" {
+			metaKV["region"] = opts.Region
+		}
+		if opts.DiscoverCategoryID != "" {
+			metaKV["discoverCategoryId"] = opts.DiscoverCategoryID
+		}
 	}
 	if len(metaKV) > 0 {
 		if b, e := json.Marshal(metaKV); e == nil {
@@ -206,7 +218,7 @@ func (s *AgentService) Get(ctx context.Context, wsID, taskID uuid.UUID) (*model.
 func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts AgentCreateOpts) {
 	// 顾问复杂推理和视频解析都可能超过普通文本派活时长,分别放宽超时。
 	timeout := 2 * time.Minute
-	if agent == model.AgentAdvisor {
+	if agent == model.AgentAdvisor || agent == model.AgentScout {
 		// M3 的完整复杂方案可能超过一分钟,给模型请求之外留出任务状态落库时间。
 		timeout = 150 * time.Second
 	} else if agent == model.AgentVideoAnalysis {
@@ -241,6 +253,8 @@ func (s *AgentService) execute(taskID, wsID uuid.UUID, agent, input string, opts
 	switch agent {
 	case model.AgentAdvisor:
 		output, meta, usage, err = s.runAdvisor(ctx, taskID, wsID, input, opts, emit)
+	case model.AgentScout:
+		output, meta, usage, err = s.runScout(ctx, taskID, wsID, input, opts, emit)
 	case model.AgentAnalyst:
 		output, meta, usage, err = s.runAnalyst(ctx, wsID, input, opts, emit)
 	case model.AgentDirector:
@@ -283,6 +297,7 @@ func (s *AgentService) fail(ctx context.Context, taskID uuid.UUID, msg string) {
 // 这类失败引导用户回素材选择器重派。
 var retryableAgents = map[string]bool{
 	model.AgentAdvisor:  true,
+	model.AgentScout:    true,
 	model.AgentAnalyst:  true,
 	model.AgentDirector: true,
 	model.AgentListing:  true,
@@ -299,6 +314,7 @@ type retryMeta struct {
 	DiscoverProductID  string `json:"discoverProductId"`
 	DiscoverRegion     string `json:"discoverRegion"`
 	ReferenceTaskID    string `json:"referenceTaskId"`
+	DiscoverCategoryID string `json:"discoverCategoryId"`
 }
 
 // optsFromTask 从任务 metadata 还原 AgentCreateOpts,让重试沿用原商品/市场/人设/时长/比例。
@@ -325,6 +341,7 @@ func optsFromTask(t *model.AgentTask) AgentCreateOpts {
 	opts.AspectRatio = m.AspectRatio
 	opts.DiscoverProductID = m.DiscoverProductID
 	opts.DiscoverRegion = m.DiscoverRegion
+	opts.DiscoverCategoryID = m.DiscoverCategoryID
 	if id, err := uuid.Parse(m.ReferenceTaskID); err == nil {
 		opts.ReferenceTaskID = &id
 	}

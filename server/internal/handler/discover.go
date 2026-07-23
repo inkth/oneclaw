@@ -131,6 +131,34 @@ func risingCategoryFilter(c *gin.Context) service.CategoryFilter {
 	}
 }
 
+// Report GET /workspaces/:wid/discover/report?region=&category_id= —— 选品官当日报告(带个性化水合)。
+// 当日未生成时触发异步生成并回落最近一期(generating=true),前端据此轮询。
+func (h *DiscoverHandler) Report(c *gin.Context) {
+	_, wid, ok := authorizeWorkspace(c, h.ws)
+	if !ok {
+		return
+	}
+	res, err := h.discover.GetDailyReport(c.Request.Context(), wid,
+		defaultStr(c.Query("region"), "US"), c.Query("category_id"))
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, res)
+}
+
+// ReportPublic GET /discover/report —— 公共选品官报告,游客可看(无个性化浮层)。
+// 报告按 (日期×区域×类目) 全局共享,游客首访同样可触发当日生成(受唯一键约束,不放大成本)。
+func (h *DiscoverHandler) ReportPublic(c *gin.Context) {
+	res, err := h.discover.GetDailyReport(c.Request.Context(), uuid.Nil,
+		defaultStr(c.Query("region"), "US"), c.Query("category_id"))
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	OK(c, res)
+}
+
 // RisingPublic GET /discover/rising —— 公共爆品雷达,游客可访问。
 func (h *DiscoverHandler) RisingPublic(c *gin.Context) {
 	res := h.discover.RisingProducts(c.Request.Context(), uuid.Nil,

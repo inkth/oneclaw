@@ -419,6 +419,34 @@ func (s *DiscoverVideoSnapshot) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
+// DiscoverReport 选品官每日报告(全局共享,非工作台维度)。(provider, dt, region, category_id) 唯一,
+// category_id 空串=全类目。内容由 LLM 基于本地 DB 数据(动量榜/近7天窗口/热门视频)生成,
+// 同一组合当天只生成一次,所有用户共读;个性化(已导入浮层等)在读路径水合时叠加。
+type DiscoverReport struct {
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
+	Provider   string    `gorm:"not null;uniqueIndex:uq_drep_key" json:"provider"`
+	Dt         string    `gorm:"not null;uniqueIndex:uq_drep_key;index" json:"dt"`
+	Region     string    `gorm:"not null;uniqueIndex:uq_drep_key" json:"region"`
+	CategoryID string    `gorm:"column:category_id;not null;default:'';uniqueIndex:uq_drep_key" json:"categoryId"`
+	Status     string    `gorm:"not null;default:'RUNNING'" json:"status"` // RUNNING | DONE | FAILED
+	Summary    string    `gorm:"type:text;default:''" json:"summary"`      // 开场总评(轻 markdown)
+	Sections   JSONB     `gorm:"type:jsonb" json:"sections,omitempty"`     // 结构化正文(机会/提醒/视频洞察)
+	ErrorMsg   string    `gorm:"column:error_msg;type:text;default:''" json:"-"`
+	Model      string    `gorm:"default:''" json:"-"`
+	TokensIn   int       `gorm:"column:tokens_in;default:0" json:"-"`
+	TokensOut  int       `gorm:"column:tokens_out;default:0" json:"-"`
+	CostCents  int       `gorm:"column:cost_cents;default:0" json:"-"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+func (r *DiscoverReport) BeforeCreate(*gorm.DB) error {
+	if r.ID == uuid.Nil {
+		r.ID = uuid.New()
+	}
+	return nil
+}
+
 // EntityRanklistEntry 店铺/达人/视频榜单顺序快照。
 // (provider, kind, region, rank_type, rank_field, category_id, page_num) 唯一。
 // 取代 DiscoverCache 存榜单:榜单读 = 本表顺序 + 关联实体主表渲染(零 EchoTik);job 定时刷新顺序。

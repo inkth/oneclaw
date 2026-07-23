@@ -6,6 +6,7 @@ import {
   Clapperboard,
   Compass,
   LayoutList,
+  Radar,
   ScanText,
   Shirt,
   TrendingUp,
@@ -39,6 +40,7 @@ export type Tone = keyof typeof STATUS_TONES;
  *  改写为近黑，用 brand-* 的话工作台内这块图标会整块变黑。 */
 export const AGENT_IDENTITY = {
   ADVISOR: { label: "跨境顾问", icon: Compass as LucideIcon, tone: "warning" as Tone, dot: "bg-amber-500", iconSurface: "border-amber-100 bg-amber-50 text-amber-700", tile: "from-amber-400 to-orange-500" },
+  SCOUT: { label: "选品官", icon: Radar as LucideIcon, tone: "brand" as Tone, dot: "bg-indigo-500", iconSurface: "border-indigo-100 bg-indigo-50 text-indigo-700", tile: "from-indigo-500 to-violet-600" },
   ANALYST: { label: "选品分析", icon: TrendingUp as LucideIcon, tone: "brand" as Tone, dot: "bg-brand-500", iconSurface: "border-indigo-100 bg-indigo-50 text-indigo-700", tile: "from-violet-500 to-indigo-600" },
   DIRECTOR: { label: "短视频创作", icon: Clapperboard as LucideIcon, tone: "violet" as Tone, dot: "bg-violet-500", iconSurface: "border-violet-100 bg-violet-50 text-violet-700", tile: "from-fuchsia-500 to-pink-500" },
   LISTING: { label: "Listing 内容", icon: LayoutList as LucideIcon, tone: "info" as Tone, dot: "bg-sky-500", iconSurface: "border-sky-100 bg-sky-50 text-sky-700", tile: "from-sky-400 to-blue-500" },

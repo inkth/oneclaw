@@ -65,12 +65,15 @@ const BOARDS: Board[] = [
     ],
   },
   {
+    // 选品板块以「选品官」Agent 页为门面（每日报告 + 追问对话），四个榜单降级为
+    // 板块内的证据页 Tab——报告里的每个结论都能点进榜单/详情核对数据。
     key: "discover",
     label: "选品",
     icon: Compass,
-    href: "/app/discover/products",
+    href: "/app/discover",
     paths: ["/app/discover"],
     tabs: [
+      { label: "选品官", href: "/app/discover" },
       { label: "商品", href: "/app/discover/products" },
       { label: "店铺", href: "/app/discover/sellers" },
       { label: "达人", href: "/app/discover/influencers" },

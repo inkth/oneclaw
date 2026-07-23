@@ -67,6 +67,7 @@ func main() {
 		&model.DiscoverVideo{},
 		&model.DiscoverVideoSnapshot{},
 		&model.EntityRanklistEntry{},
+		&model.DiscoverReport{},
 		&model.DiscoverCache{},
 		&model.CoverAsset{},
 		&model.WorkspaceDiscoverInteraction{},
