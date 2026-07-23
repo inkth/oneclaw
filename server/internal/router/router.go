@@ -88,6 +88,7 @@ func New(d Deps) *gin.Engine {
 	// 公共:游客可逛的爆品榜 + 商品详情(无个性化浮层)
 	api.GET("/discover/ranklist", discH.RanklistPublic)
 	api.GET("/discover/rising", discH.RisingPublic)
+	api.GET("/discover/report", discH.ReportPublic)
 	api.GET("/discover/products/:externalId", discH.Detail)
 
 	// 公共:店铺 / 达人 / 带货视频榜(只读,无个性化)+ 一级类目筛选项
@@ -118,6 +119,7 @@ func New(d Deps) *gin.Engine {
 
 		priv.GET("/workspaces/:wid/discover/ranklist", discH.Ranklist)
 		priv.GET("/workspaces/:wid/discover/rising", discH.Rising)
+		priv.GET("/workspaces/:wid/discover/report", discH.Report)
 		priv.GET("/workspaces/:wid/discover/products/:externalId", discH.DetailFull)
 		priv.POST("/workspaces/:wid/discover/import-product", discH.Import)
 		priv.POST("/workspaces/:wid/discover/analyze", discH.Analyze)

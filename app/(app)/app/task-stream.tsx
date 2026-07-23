@@ -111,14 +111,14 @@ const OUTPUT_COLLAPSE_LIMIT = 600;
  * 只有 ADVISOR 是"长篇自然语言回答"（会用小标题/清单讲流程），后端 prompt 已放开 markdown。
  * ANALYST 是 300 字内短判断、DIRECTOR 是口播脚本原文，都按纯文本呈现更干净。
  */
-const MARKDOWN_AGENTS = new Set(["ADVISOR"]);
+const MARKDOWN_AGENTS = new Set(["ADVISOR", "SCOUT"]);
 
 /**
  * 会实时吐字的 Agent。顾问恒有；选品只有「带引用」的三条路径有（单品/工作台商品/看图），
  * 默认的榜单模式产出由后端按真实数据拼装、没有 token 流。
  * 前端分不清选品走的哪条，所以一律订阅：没流可订时后端回 idle，就地退回等待态。
  */
-const STREAM_AGENTS = new Set(["ADVISOR", "ANALYST"]);
+const STREAM_AGENTS = new Set(["ADVISOR", "ANALYST", "SCOUT"]);
 
 /**
  * 订阅任务的实时正文（SSE）。返回边生成边到的文本，任务终态后由轮询拿到的 output 接管。

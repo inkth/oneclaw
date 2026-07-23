@@ -80,6 +80,8 @@ type agentCreateReq struct {
 	DiscoverRegion    string `json:"discoverRegion"`
 	// ReferenceTaskID 已完成的分析任务 ID(可选,ADVISOR):作为本次咨询的参考。
 	ReferenceTaskID string `json:"referenceTaskId"`
+	// DiscoverCategoryID 选品官订阅的一级类目(可选,SCOUT):与 Region 一起决定注入的报告与榜单数据。
+	DiscoverCategoryID string `json:"discoverCategoryId"`
 }
 
 func (h *AgentHandler) Create(c *gin.Context) {
@@ -143,6 +145,7 @@ func (h *AgentHandler) Create(c *gin.Context) {
 	// discover 引用非 uuid(EchoTik externalId),原样透传;记录缺失时 service 退回榜单模式。
 	opts.DiscoverProductID = strings.TrimSpace(in.DiscoverProductID)
 	opts.DiscoverRegion = in.DiscoverRegion
+	opts.DiscoverCategoryID = strings.TrimSpace(in.DiscoverCategoryID)
 	t, err := h.agents.Create(c.Request.Context(), wid, in.Agent, in.Input, opts)
 	if err != nil {
 		_ = c.Error(err)

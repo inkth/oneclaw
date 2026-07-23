@@ -106,6 +106,15 @@ func (j *DiscoverSync) runOnce(ctx context.Context) {
 		j.sweepCategories(ctx)
 		j.lastSweepDay = today
 	}
+
+	// 选品官日报预热:榜单刷完后为各 combo 站点生成当日全类目报告(幂等,已生成即空跑;
+	// 分类目报告由用户首访触发,不在此穷举)。每轮都调:唯一键保证一天最多真生成一次,
+	// 且新的一天首轮同步后报告立即就绪,不用等用户来踩冷启动。
+	if ctx.Err() == nil {
+		for _, c := range j.cfg.Combos {
+			j.discover.PrewarmDailyReport(ctx, c.Region)
+		}
+	}
 }
 
 // entityPrewarmPageSize 预热店铺/达人/视频三榜的条数,必须与前端各 entity 页请求的

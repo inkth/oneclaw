@@ -39,6 +39,7 @@ const (
 	ModelGenderNeutral    = "NEUTRAL"
 
 	AgentAdvisor       = "ADVISOR" // 跨境顾问:全局对话式助理(答疑/排路线/接力派活),免积分
+	AgentScout         = "SCOUT"   // 选品官:选品板块专属对话 Agent,基于每日选品报告+本地榜单数据答追问
 	AgentAnalyst       = "ANALYST"
 	AgentDirector      = "DIRECTOR"
 	AgentListing       = "LISTING"
