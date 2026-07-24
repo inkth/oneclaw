@@ -18,7 +18,9 @@ import (
 	"github.com/faxianmao/server/internal/logger"
 )
 
-const endpoint = "https://openrouter.ai/api/v1/chat/completions"
+// endpoint 是 var 而非 const:单测用 httptest 换掉它验证线协议(见 tools_test.go)。
+var endpoint = "https://openrouter.ai/api/v1/chat/completions"
+
 const videoEndpoint = "https://openrouter.ai/api/v1/videos"
 
 type Client struct {
@@ -84,6 +86,7 @@ type chatReq struct {
 	StreamOptions  *streamOpts `json:"stream_options,omitempty"`
 	ResponseFormat *respFormat `json:"response_format,omitempty"`
 	Reasoning      *reasoning  `json:"reasoning,omitempty"`
+	Tools          []wireTool  `json:"tools,omitempty"`
 }
 
 // streamOpts 流式必须显式要 usage —— 否则最后一个 chunk 不带 token 数,
@@ -110,6 +113,10 @@ type chatMsg struct {
 	// Content 多数时候是纯文本 string;vision 调用时是 content-parts 数组
 	// ([{type:"text"...},{type:"image_url"...}])。OpenRouter 两种都接受。
 	Content any `json:"content"`
+	// 工具调用往返(仅 ChatThreadTools 路径使用,零值不上线材):
+	// assistant 消息带 tool_calls;role=tool 的结果消息带 tool_call_id。
+	ToolCalls  []wireToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string         `json:"tool_call_id,omitempty"`
 }
 
 type respFormat struct {
@@ -119,7 +126,8 @@ type respFormat struct {
 type chatResp struct {
 	Choices []struct {
 		Message struct {
-			Content string `json:"content"`
+			Content   string         `json:"content"`
+			ToolCalls []wireToolCall `json:"tool_calls"`
 		} `json:"message"`
 	} `json:"choices"`
 	Usage struct {
